@@ -745,6 +745,17 @@ function renderModule(m){
   </section>`;
 }
 
+function kindCounts(list){
+  let f = 0, m = 0, i = 0;
+  for (const x of list) { if (x.kind === 'macro') m++; else if (x.kind === 'inline') i++; else f++; }
+  return { f, m, i };
+}
+function totalKinds(){
+  const all = [];
+  for (const m of MODULES) for (const lib of ['hal', 'll']) for (const x of (m[lib] || [])) all.push(x);
+  return kindCounts(all);
+}
+
 /* ================= 主渲染 ================= */
 function render(){
   /* 重建前快照当前展开状态(toggle 事件异步, 这里兜底): 开着的记入 openSet, 当前折叠的 srcbox 记入 closedSrc */
@@ -762,9 +773,10 @@ function render(){
     /* 扁平结果: 不按模块分组, HAL/LL 靠颜色区分, 不显示空列提示 */
     let fnCards = '', pvCards = '', tyCards = '', chips = '';
     let fnN = 0, pvN = 0, tyN = 0, coN = 0;
+    const fnKinds = { f: 0, m: 0, i: 0 };
     for (const m of MODULES) {
-      for (const f of (m.hal||[])) if (entryMatch(f, curTokens, curCase, curScopes)) { fnCards += renderFuncCard(f, 'hal', m.module); fnN++; }
-      for (const f of (m.ll||[]))  if (entryMatch(f, curTokens, curCase, curScopes)) { fnCards += renderFuncCard(f, 'll',  m.module); fnN++; }
+      for (const f of (m.hal||[])) if (entryMatch(f, curTokens, curCase, curScopes)) { fnCards += renderFuncCard(f, 'hal', m.module); fnN++; fnKinds[f.kind === 'macro' ? 'm' : f.kind === 'inline' ? 'i' : 'f']++; }
+      for (const f of (m.ll||[]))  if (entryMatch(f, curTokens, curCase, curScopes)) { fnCards += renderFuncCard(f, 'll',  m.module); fnN++; fnKinds[f.kind === 'macro' ? 'm' : f.kind === 'inline' ? 'i' : 'f']++; }
       for (const t of (m.types||[])) if (typeMatch(t, curTokens, curCase, curScopes)) { tyCards += renderTypeCard(t, m.module); tyN++; }
       for (const c of (m.consts||[])) if (constMatch(c, curTokens, curCase, curScopes)) { chips += `<button class="chip" data-const="${esc(c.name)}" data-mod="${esc(m.module)}" title="${esc((c.value||'')+' — '+(c.desc||''))}">${hl(c.name, curTokens, curCase)}</button>`; coN++; }
     }
@@ -772,8 +784,11 @@ function render(){
       for (const p of PRIVATES) if (privMatch(p, curTokens, curCase, curScopes)) { pvCards += renderFuncCard(privEntry(p), 'priv', p.module); pvN++; }
     }
     total = fnN + pvN + tyN + coN;
+    const parts = [`函数 <b>${fnKinds.f}</b>`];
+    if (fnKinds.m) parts.push(`宏 <b>${fnKinds.m}</b>`);
+    if (fnKinds.i) parts.push(`内联 <b>${fnKinds.i}</b>`);
     main.innerHTML = `
-      <div class="sr-head">匹配 <b>${total}</b> 项: 函数 ${fnN} · 私有 ${pvN} · 类型 ${tyN} · 常量 ${coN}<span style="color:var(--ink3)"> — 在全部模块中扁平搜索, HAL=蓝 / LL=绿 / 私有=棕</span></div>
+      <div class="sr-head">匹配 <b>${total}</b> 项: ${parts.join(' · ')} · 私有 ${pvN} · 类型 ${tyN} · 常量 ${coN}<span style="color:var(--ink3)"> — 在全部模块中扁平搜索, HAL=蓝 / LL=绿 / 私有=棕</span></div>
       <div class="cols" style="grid-template-columns:1fr">${fnCards}${pvCards}</div>
       ${tyN ? `<div class="sr-sec">类型</div>${tyCards}` : ''}
       ${coN ? `<div class="sr-sec">常量</div><div class="chips">${chips}</div>` : ''}
@@ -783,9 +798,10 @@ function render(){
     main.innerHTML = renderModule(m);
   }
 
+  const tk = totalKinds();
   document.getElementById('stats').innerHTML = searching
     ? `<b>${total}</b> 项结果`
-    : `函数 <b>${MODULES.reduce((s,m)=>s+(m.hal||[]).length+(m.ll||[]).length,0)}</b> · 私有 <b>${PRIVATES.length}</b> · 类型 <b>${typeReg.size}</b> · 常量 <b>${constReg.size}</b>`;
+    : `函数 <b>${tk.f}</b> · 宏 <b>${tk.m}</b> · 内联 <b>${tk.i}</b> · 私有 <b>${PRIVATES.length}</b> · 类型 <b>${typeReg.size}</b> · 常量 <b>${constReg.size}</b>`;
 }
 function typeMatch(t, tokens, cs, scopes){
   if (!tokens.length) return true;
