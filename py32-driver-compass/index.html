@@ -282,6 +282,9 @@
   #typeModal table th,#typeModal table td{border:1px solid var(--line);padding:5px 9px;text-align:left;vertical-align:top}
   #typeModal table th{background:#1d1f24;color:var(--ink2)}
   #typeModal table td code{font-size:11.5px;white-space:nowrap;color:var(--ink)}
+#typeModal tr.ctxrow{background:#1d2530}
+#typeModal tr.ctxrow td:first-child{box-shadow:inset 3px 0 0 var(--hal)}
+.ctxbadge{display:inline-block;margin-left:6px;padding:0 5px;border-radius:3px;background:#26364a;color:#9cc4f0;font-size:10.5px;white-space:nowrap}
 
   mark{background:#5a4a1f;color:#f5e6b8;border-radius:2px;padding:0 1px}
   #toTop{
@@ -372,6 +375,7 @@ const constReg = new Map();  // 常量名 -> {entry, module}
 const regReg = new Map();    // 寄存器名 -> entry
 const callGraph = new Map(); // 函数名 -> {calls, refs, calledBy, refBy, priv}
 const entryNameSet = new Set();   // 文档化函数/宏名(源码内可点击跳转)
+let codeHLModule = '';            // 当前渲染卡片的模块 id(源码内 ->REG 的上下文兜底)
 function buildIndex(){
   typeReg.clear(); constReg.clear(); regReg.clear(); entryNameSet.clear();
   for (const m of MODULES) {
@@ -489,6 +493,7 @@ function codeHL(text){
   }
   const TOKEN = /\/\*[\s\S]*?\*\/|\/\/[^\n]*|0[xX][0-9A-Fa-f]+[uUlL]*|\d+[uUlL]*|-&gt;[A-Za-z_]\w*|[A-Za-z_]\w*|[^A-Za-z0-9_]/y;
   let out = '', i = 0;
+  let prevIdent = '';   // 上一个标识符: 用于在 ->NAME 处推断"从哪个外设实例点进来"
   while (i < s.length) {
     if (s[i] === '<') {                 // 已有标签(搜索高亮的 mark), 原样跳过
       let j = s.indexOf('>', i);
@@ -503,17 +508,23 @@ function codeHL(text){
     const tok = m[0];
     if (tok.startsWith('/*') || tok.startsWith('//')) {
       out += `<span class="c-comment">${tok}</span>`;
+    } else if (tok === ';' || tok === '}' || tok === '{') {
+      prevIdent = '';
+      out += tok;
     } else if (/^0[xX]/.test(tok) || /^\d/.test(tok)) {
       out += `<span class="c-num">${tok}</span>`;
     } else if (tok.startsWith('-&gt;')) {
       const reg = tok.slice('-&gt;'.length);
       if (regReg.has(reg)) {
-        out += `<span class="c-op">-&gt;</span><a class="tlink t-reg" data-reg="${esc(reg)}" title="点击查看寄存器详情">${reg}</a>`;
+        // 上下文外设: 优先用 -> 前面的实例名, 其次用当前卡片所属模块
+        const ctx = periphFromInstance(prevIdent) || MODULE_PERIPH[codeHLModule] || '';
+        out += `<span class="c-op">-&gt;</span><a class="tlink t-reg" data-reg="${esc(reg)}" data-ctx="${esc(ctx)}" title="点击查看寄存器详情${ctx ? '（' + periphShortName(ctx) + ' 上下文）' : ''}">${reg}</a>`;
       } else {
         out += `<span class="c-reg">${tok}</span>`;
       }
     } else if (/^[A-Za-z_]/.test(tok)) {
       const w = tok;
+      prevIdent = w;
       if (typeReg.has(w)) {
         out += `<a class="tlink ${typeClass(w)}" data-type="${w}" title="点击查看定义">${w}</a>`;
       } else {
@@ -593,16 +604,16 @@ function renderFuncCard(f, lib, showMod){
   </details>`;
 }
 
-/* 成员名单元格: 若是已知寄存器则渲染为可点击链接 */
-function memberNameCell(name){
+/* 成员名单元格: 若是已知寄存器则渲染为可点击链接(带上所属类型作为上下文外设) */
+function memberNameCell(name, ctxPeriph){
   return regReg.has(name)
-    ? `<a class="tlink t-reg" data-reg="${esc(name)}" title="点击查看寄存器详情">${esc(name)}</a>`
+    ? `<a class="tlink t-reg" data-reg="${esc(name)}" data-ctx="${esc(ctxPeriph || '')}" title="点击查看寄存器详情${ctxPeriph ? '（' + periphShortName(ctxPeriph) + ' 上下文）' : ''}">${esc(name)}</a>`
     : `<code>${esc(name)}</code>`;
 }
 
 function renderTypeCard(t, showMod){
   const members = (t.members || []).map(m => `
-    <tr><td>${memberNameCell(m.name)}</td><td><code>${esc(m.value || m.type || '')}</code></td><td>${esc(m.desc || '')}</td></tr>`).join('');
+    <tr><td>${memberNameCell(m.name, t.name)}</td><td><code>${esc(m.value || m.type || '')}</code></td><td>${esc(m.desc || '')}</td></tr>`).join('');
   return `
   <details class="card typecard" data-name="${esc(t.name)}"${openSet.has('type:' + t.name) ? ' open' : ''}>
     <summary>
@@ -730,6 +741,7 @@ function colHtml(m, lib, showMod){
 }
 
 function renderModule(m){
+  codeHLModule = m.moduleId;   // 源码内 ->REG 的上下文兜底(如 I2C 模块里的 Instance->CCR)
   const halN = (m.hal||[]).length, llN = (m.ll||[]).length;
   return `
   <section class="grp" id="grp-${esc(m.moduleId)}" data-module="${esc(m.moduleId)}">
@@ -775,6 +787,7 @@ function render(){
     let fnN = 0, pvN = 0, tyN = 0, coN = 0;
     const fnKinds = { f: 0, m: 0, i: 0 };
     for (const m of MODULES) {
+      codeHLModule = m.moduleId;
       for (const f of (m.hal||[])) if (entryMatch(f, curTokens, curCase, curScopes)) { fnCards += renderFuncCard(f, 'hal', m.module); fnN++; fnKinds[f.kind === 'macro' ? 'm' : f.kind === 'inline' ? 'i' : 'f']++; }
       for (const f of (m.ll||[]))  if (entryMatch(f, curTokens, curCase, curScopes)) { fnCards += renderFuncCard(f, 'll',  m.module); fnN++; fnKinds[f.kind === 'macro' ? 'm' : f.kind === 'inline' ? 'i' : 'f']++; }
       for (const t of (m.types||[])) if (typeMatch(t, curTokens, curCase, curScopes)) { tyCards += renderTypeCard(t, m.module); tyN++; }
@@ -821,15 +834,46 @@ function constMatch(c, tokens, cs, scopes){
 /* ================= 类型/常量/寄存器弹窗(支持鼠标侧键前进后退) ================= */
 function showType(name){ const r = typeReg.get(name); if (r) openModal(name, r); }
 function showConst(name){ const r = constReg.get(name); if (r) openModal(name, r); }
-function showReg(name){
+/* 实例名/模块 → 候选外设(用于寄存器弹窗"从哪个外设点进来"的上下文定位) */
+const INSTANCE_PERIPH = {
+  I2Cx:'I2C_TypeDef', I2C1:'I2C_TypeDef', I2C:'I2C_TypeDef',
+  ADC:'ADC_Common_TypeDef', ADC1_COMMON:'ADC_Common_TypeDef', ADCxy_COMMON:'ADC_Common_TypeDef', ADC_COMMON:'ADC_Common_TypeDef', ADC1:'ADC_Common_TypeDef',
+  TIMx:'TIM_TypeDef', TIM1:'TIM_TypeDef', TIM14:'TIM_TypeDef', TIM:'TIM_TypeDef',
+  GPIOx:'GPIO_TypeDef', GPIOA:'GPIO_TypeDef', GPIOB:'GPIO_TypeDef', GPIOC:'GPIO_TypeDef',
+  USARTx:'USART_TypeDef', USART1:'USART_TypeDef', SPIx:'SPI_TypeDef', SPI1:'SPI_TypeDef',
+  LPTIMx:'LPTIM_TypeDef', LPTIM1:'LPTIM_TypeDef', IWDG:'IWDG_TypeDef', PWR:'PWR_TypeDef',
+  FLASH:'FLASH_TypeDef', CRC:'CRC_TypeDef', EXTI:'EXTI_TypeDef', RCC:'RCC_TypeDef',
+  SYSCFG:'SYSCFG_TypeDef', DBGMCU:'DBGMCU_TypeDef',
+  COMP:'COMP_TypeDef', COMP1:'COMP_TypeDef', COMP2:'COMP_TypeDef', COMP12_COMMON:'COMP_Common_TypeDef',
+  SCB:'SCB_Type', NVIC:'NVIC_Type', SysTick:'SysTick_Type'
+};
+const MODULE_PERIPH = {
+  adc:'ADC_Common_TypeDef', i2c:'I2C_TypeDef', spi:'SPI_TypeDef', tim:'TIM_TypeDef',
+  usart:'USART_TypeDef', uart:'USART_TypeDef', gpio:'GPIO_TypeDef', lptim:'LPTIM_TypeDef',
+  iwdg:'IWDG_TypeDef', pwr:'PWR_TypeDef', flash:'FLASH_TypeDef', crc:'CRC_TypeDef',
+  exti:'EXTI_TypeDef', rcc:'RCC_TypeDef', comp:'COMP_TypeDef', cortex:'SCB_Type'
+};
+function periphShortName(p){ return String(p || '').replace(/_Type(Def)?$/, ''); }
+/* 从实例名(如 I2Cx / ADCxy_COMMON / htim->Instance 的前缀)推断候选外设 */
+function periphFromInstance(name){
+  if (!name) return '';
+  if (INSTANCE_PERIPH[name]) return INSTANCE_PERIPH[name];
+  const m = String(name).match(/^([A-Za-z]+?)(?:xy|xx|_COMMON|\d+)?(?:_[A-Z]+)?$/);
+  if (m && INSTANCE_PERIPH[m[1]]) return INSTANCE_PERIPH[m[1]];
+  return '';
+}
+function showReg(name, ctxPeriph){
   const r = regReg.get(name);
   if (!r) return;
   const el = document.getElementById('typeModal');
-  const cands = r.candidates || [];
+  const cands = (r.candidates || []).slice();
+  // 上下文候选置顶: 从 I2C 代码点进来就把 I2C 那一行排最前
+  if (ctxPeriph) cands.sort((a, b) => (b.periph === ctxPeriph ? 1 : 0) - (a.periph === ctxPeriph ? 1 : 0));
   const rows = cands.map(c => `
-    <tr>
-      <td><code>${esc(c.periph || '')}</code></td>
+    <tr${c.periph === ctxPeriph ? ' class="ctxrow"' : ''}>
+      <td><code>${esc(c.periph || '')}</code>${c.periph === ctxPeriph ? ' <span class="ctxbadge">当前上下文</span>' : ''}</td>
       <td><code>${esc(c.offset || '')}</code></td>
+      <td>${esc(c.zh || '')}</td>
       <td>${esc(c.desc || '')}</td>
     </tr>`).join('');
   const instHint = cands[0] && /GPIO_TypeDef|USART_TypeDef|TIM_TypeDef|SPI_TypeDef|I2C_TypeDef|ADC_TypeDef/.test(cands[0].periph)
@@ -842,10 +886,10 @@ function showReg(name){
       <button class="m-close" title="关闭 (Esc)">✕</button>
     </div>
     ${r.zh ? `<div class="m-desc">${esc(r.zh)}</div>` : ''}
-    <div class="tdef">${esc(name)} — ${cands.length > 1 ? '同名寄存器存在于多个外设' : (cands[0].periph || '')}</div>
-    <table><tr><th style="width:170px">外设结构体</th><th style="width:90px">偏移</th><th>用途</th></tr>${rows}</table>
+    <div class="tdef">${esc(name)} — ${cands.length > 1 ? '同名寄存器存在于多个外设(中文名按候选外设分别标注)' : periphShortName(cands[0] && cands[0].periph)}</div>
+    <table><tr><th style="width:170px">外设结构体</th><th style="width:80px">偏移</th><th style="width:190px">中文名</th><th>用途</th></tr>${rows}</table>
     ${r.note ? `<div class="retval" style="margin-top:10px"><b>要点:</b> ${esc(r.note)}</div>` : ''}
-    <div class="meta" style="margin-top:10px"><span>来源: 芯片头文件 + 参考手册</span></div>`;
+    <div class="meta" style="margin-top:10px"><span>来源: 芯片头文件(偏移按结构体布局计算) + 参考手册</span></div>`;
   el.classList.add('open');
   document.getElementById('mask').classList.add('open');
 }
@@ -871,7 +915,7 @@ function openModal(name, rec){
     members = `<tr><td><code>${esc(name)}</code></td><td><code>${esc(e.value || '')}</code></td><td>${esc(e.desc || '')}</td></tr>`;
   } else {
     members = (e.members || []).map(m => `
-      <tr><td>${memberNameCell(m.name)}</td><td><code>${esc(m.value || m.type || '')}</code></td><td>${esc(m.desc || '')}</td></tr>`).join('');
+      <tr><td>${memberNameCell(m.name, name)}</td><td><code>${esc(m.value || m.type || '')}</code></td><td>${esc(m.desc || '')}</td></tr>`).join('');
   }
   el.innerHTML = `
     <div class="m-head">
@@ -897,7 +941,7 @@ function doCopy(txt, btn){
   const old = btn.textContent; btn.textContent = '已复制 ✓'; setTimeout(()=>btn.textContent=old, 1200);
 }
 function typeHash(name){ return '#type/' + encodeURIComponent(name); }
-function regHash(name){ return '#reg/' + encodeURIComponent(name); }
+function regHash(name, ctx){ return '#reg/' + encodeURIComponent(name) + (ctx ? '@' + encodeURIComponent(ctx) : ''); }
 
 /* ===== 视图状态 <-> URL hash: 支持鼠标侧键前进/后退 =====
    #m/模块id      模块视图
@@ -926,8 +970,11 @@ function parseHash(){
     if (constReg.has(name)) { showConst(name); return; }
   }
   if (h.startsWith('#reg/')) {
-    const name = decodeURIComponent(h.slice(5));
-    if (regReg.has(name)) { showReg(name); return; }
+    const raw = decodeURIComponent(h.slice(5));
+    const at = raw.indexOf('@');
+    const name = at > 0 ? raw.slice(0, at) : raw;
+    const ctx = at > 0 ? raw.slice(at + 1) : '';
+    if (regReg.has(name)) { showReg(name, ctx); return; }
   }
   if (h.startsWith('#s/')) {
     closeModal();
@@ -970,7 +1017,7 @@ document.addEventListener('click', e => {
   if (rl) {
     e.preventDefault();
     const name = rl.dataset.reg;
-    if (regReg.has(name)) { location.hash = regHash(name); parseHash(); }
+    if (regReg.has(name)) { location.hash = regHash(name, rl.dataset.ctx); parseHash(); }
     return;
   }
   const tl = t.closest('a.tlink');
