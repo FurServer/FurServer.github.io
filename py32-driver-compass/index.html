@@ -215,6 +215,12 @@
     margin:0;padding:8px 12px;overflow-x:auto;white-space:pre;tab-size:4;
   }
 
+  /* ===== 悬停同名标识符高亮 (缓亮缓灭: CSS 过渡 + JS 延迟熄灭防抖) ===== */
+  .vtok{border-radius:3px;padding:0 1px;margin:0 -1px;transition:background-color .16s ease, color .16s ease, box-shadow .16s ease}
+  .vtok.hl-var{background:#2f5d54;color:#d8f7ec;box-shadow:inset 0 0 0 1px #47897c}
+  .vtok.hl-var *{color:#d8f7ec}
+  mark.vtok.hl-var{background:#2f5d54;color:#d8f7ec}
+
   /* ===== 宏展开体代码着色 ===== */
   .c-comment{color:#7a8a7a;font-style:italic}
   .c-kw{color:#cf8e5f;font-weight:600}
@@ -428,7 +434,7 @@ function typeClass(tn){
   return 't-unk';
 }
 
-/* 类型字符串 → 带颜色/链接的 HTML */
+/* 类型字符串 → 带颜色/链接的 HTML (标识符附 data-var, 可参与悬停同名高亮) */
 function renderType(tstr){
   let s = String(tstr).trim();
   const m = s.match(/^([A-Za-z_]\w*)([\s\*]+)?$/);
@@ -439,7 +445,7 @@ function renderType(tstr){
     const inner = isLink
       ? `<a class="tlink ${cls}" data-type="${esc(base)}" title="点击查看定义">${esc(base)}</a>`
       : `<span class="tp ${cls}">${esc(base)}</span>`;
-    return inner + esc(rest);
+    return `<span class="vtok" data-var="${esc(base)}">${inner}</span>` + esc(rest);
   }
   return `<span class="tp t-unk">${esc(s)}</span>`;
 }
@@ -491,14 +497,30 @@ function codeHL(text){
     const re = new RegExp(curTokens.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), curCase ? 'g' : 'gi');
     s = s.replace(re, m => `<mark>${m}</mark>`);
   }
-  const TOKEN = /\/\*[\s\S]*?\*\/|\/\/[^\n]*|0[xX][0-9A-Fa-f]+[uUlL]*|\d+[uUlL]*|-&gt;[A-Za-z_]\w*|[A-Za-z_]\w*|[^A-Za-z0-9_]/y;
+  // 实体必须先于单字符规则匹配: esc() 已把 & < > " 变成 &amp; &lt; &gt; &quot;,
+  // 否则 "&amp;" 会被拆成 "&" + 标识符 "amp" + ";" 从而在页面上显示出字面量 &amp; (踩坑)
+  const TOKEN = /\/\*[\s\S]*?\*\/|\/\/[^\n]*|&(?:amp|lt|gt|quot|apos|nbsp|#\d+|#x[0-9A-Fa-f]+);|0[xX][0-9A-Fa-f]+[uUlL]*|\d+[uUlL]*|-&gt;[A-Za-z_]\w*|[A-Za-z_]\w*|[^A-Za-z0-9_]/y;
   let out = '', i = 0;
   let prevIdent = '';   // 上一个标识符: 用于在 ->NAME 处推断"从哪个外设实例点进来"
   while (i < s.length) {
     if (s[i] === '<') {                 // 已有标签(搜索高亮的 mark), 原样跳过
       let j = s.indexOf('>', i);
       if (j === -1) j = s.length - 1;
-      out += s.slice(i, j + 1);
+      const tag = s.slice(i, j + 1);
+      if (tag === '<mark>') {
+        // 搜索命中的词也要能悬停高亮: 把 <mark> 文本取出, 附上 data-var 再放回
+        const close = s.indexOf('</mark>', j + 1);
+        if (close !== -1) {
+          const inner = s.slice(j + 1, close);
+          if (/^[A-Za-z_]\w*$/.test(inner)) {
+            out += `<mark class="vtok" data-var="${esc(inner)}">${inner}</mark>`;
+            prevIdent = inner;
+            i = close + '</mark>'.length;
+            continue;
+          }
+        }
+      }
+      out += tag;
       i = j + 1;
       continue;
     }
@@ -508,6 +530,8 @@ function codeHL(text){
     const tok = m[0];
     if (tok.startsWith('/*') || tok.startsWith('//')) {
       out += `<span class="c-comment">${tok}</span>`;
+    } else if (tok.startsWith('&') && tok.endsWith(';')) {
+      out += tok;   // HTML 实体(&amp; &lt; 等): 原样输出, 不再当标识符处理
     } else if (tok === ';' || tok === '}' || tok === '{') {
       prevIdent = '';
       out += tok;
@@ -518,26 +542,30 @@ function codeHL(text){
       if (regReg.has(reg)) {
         // 上下文外设: 优先用 -> 前面的实例名, 其次用当前卡片所属模块
         const ctx = periphFromInstance(prevIdent) || MODULE_PERIPH[codeHLModule] || '';
-        out += `<span class="c-op">-&gt;</span><a class="tlink t-reg" data-reg="${esc(reg)}" data-ctx="${esc(ctx)}" title="点击查看寄存器详情${ctx ? '（' + periphShortName(ctx) + ' 上下文）' : ''}">${reg}</a>`;
+        out += `<span class="c-op">-&gt;</span><a class="tlink t-reg" data-reg="${esc(reg)}" data-var="${esc(reg)}" data-ctx="${esc(ctx)}" title="点击查看寄存器详情${ctx ? '（' + periphShortName(ctx) + ' 上下文）' : ''}">${reg}</a>`;
       } else {
-        out += `<span class="c-reg">${tok}</span>`;
+        out += `<span class="c-reg" data-var="${esc(reg)}">${tok}</span>`;
       }
     } else if (/^[A-Za-z_]/.test(tok)) {
       const w = tok;
       prevIdent = w;
+      let inner;
+      let hoverable = true;   // 关键字不参与同名高亮(否则悬停 if/return 会满屏标亮)
       if (typeReg.has(w)) {
-        out += `<a class="tlink ${typeClass(w)}" data-type="${w}" title="点击查看定义">${w}</a>`;
+        inner = `<a class="tlink ${typeClass(w)}" data-type="${w}" title="点击查看定义">${w}</a>`;
       } else {
         const cls = typeClass(w);
-        if (cls !== 't-unk') out += `<span class="tp ${cls}">${w}</span>`;
-        else if (entryNameSet.has(w)) out += `<a class="tlink t-fn" data-fn="${w}" title="点击查看该函数/宏">${w}</a>`;
-        else if (C_KEYWORDS.has(w)) out += `<span class="c-kw">${w}</span>`;
-        else if (constReg.has(w)) out += `<a class="tlink t-const" data-type="${w}" title="点击查看定义">${w}</a>`;
-        else if (MACRO_FUNCS.has(w)) out += `<span class="c-mfn">${w}</span>`;
-        else if (/^[A-Z_][A-Z0-9_]{2,}$/.test(w)) out += `<span class="c-const">${w}</span>`;
-        else if (w.startsWith('__') && w !== '__I' && w !== '__O' && w !== '__IO') out += `<span class="c-ph">${w}</span>`;
-        else out += w;
+        if (cls !== 't-unk') inner = `<span class="tp ${cls}">${w}</span>`;
+        else if (entryNameSet.has(w)) inner = `<a class="tlink t-fn" data-fn="${w}" title="点击查看该函数/宏">${w}</a>`;
+        else if (C_KEYWORDS.has(w)) { inner = `<span class="c-kw">${w}</span>`; hoverable = false; }
+        else if (constReg.has(w)) inner = `<a class="tlink t-const" data-type="${w}" title="点击查看定义">${w}</a>`;
+        else if (MACRO_FUNCS.has(w)) inner = `<span class="c-mfn">${w}</span>`;
+        else if (/^[A-Z_][A-Z0-9_]{2,}$/.test(w)) inner = `<span class="c-const">${w}</span>`;
+        else if (w.startsWith('__') && w !== '__I' && w !== '__O' && w !== '__IO') inner = `<span class="c-ph">${w}</span>`;
+        else inner = esc(w);
       }
+      // 包一层便于悬停(保留内层链接/着色的语义与样式)
+      out += hoverable ? `<span class="vtok" data-var="${esc(w)}">${inner}</span>` : inner;
     } else {
       out += tok;
     }
@@ -549,13 +577,14 @@ function codeHL(text){
 /* ================= 卡片渲染 ================= */
 function renderFuncCard(f, lib, showMod){
   const ps = (f.params || []);
-  const argShort = ps.length > 6 ? ps.slice(0, 6).map(p=>p.name).join(', ') + ', …' : ps.map(p=>p.name).join(', ');
   const nameHL = hl(f.name, curTokens, curCase);
-  const argsHL = hl(argShort, curTokens, curCase);
+  // 卡片头的参数列表也可悬停(作用域退化到整卡, 见 applyVarHl)
+  const argsHL = ps.map(p => `<span class="vtok" data-var="${esc(p.name)}">${hl(p.name, curTokens, curCase)}</span>`).join(', ') +
+    (ps.length > 6 ? ', …' : '');
   const brief = hl(f.brief || '', curTokens, curCase);
   const params = ps.map(p => `
     <tr>
-      <td>${esc(p.name)}</td>
+      <td><span class="vtok" data-var="${esc(p.name)}">${esc(p.name)}</span></td>
       <td class="ptype">${renderType(p.type || '')}</td>
       <td>${hl(p.desc || '', curTokens, curCase)}</td>
     </tr>`).join('');
@@ -565,7 +594,7 @@ function renderFuncCard(f, lib, showMod){
     ? `<span class="rt">#define</span> ${codeHL(String(f.src || f.sig).replace(/^#define\s*/, ''))}`
     : f.kind === 'priv'
       ? `<span class="fnn">${codeHL(f.sig)}</span>`
-      : `<span class="rt">${renderType(f.retval ? f.retval.type : 'void')}</span> <span class="fnn">${esc(f.name)}</span>(${ps.map(p => `<span>${renderType(p.type || '')}</span> <span>${esc(p.name)}</span>`).join(', ')})`;
+      : `<span class="rt">${renderType(f.retval ? f.retval.type : 'void')}</span> <span class="fnn">${esc(f.name)}</span>(${ps.map(p => `<span class="vtok" data-var="${esc(p.name)}"><span>${renderType(p.type || '')}</span> <span>${esc(p.name)}</span></span>`).join(', ')})`;
   const notes = (f.notes || []).length ? `<ul class="notes">${f.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : '';
   const retval = f.retval && f.retval.desc ? `<div class="retval"><b>返回:</b> ${esc(f.retval.desc)}</div>` : '';
   const srcLines = f.src ? f.src.split('\n').length : 0;
@@ -770,6 +799,8 @@ function totalKinds(){
 
 /* ================= 主渲染 ================= */
 function render(){
+  /* 重建会丢弃旧 DOM: 悬停高亮的元素引用随之失效, 先清掉状态 */
+  if (typeof clearVarHl === 'function') { if (hlVarTimer) { clearTimeout(hlVarTimer); hlVarTimer = null; } clearVarHl(); }
   /* 重建前快照当前展开状态(toggle 事件异步, 这里兜底): 开着的记入 openSet, 当前折叠的 srcbox 记入 closedSrc */
   /* 重建前快照当前展开状态(toggle 事件异步, 这里兜底): 只记录"当前展开"的。
      closedSrc(用户手动收起)只由 toggle 事件产生, 快照不推断, 避免误伤搜索自动展开 */
@@ -1062,6 +1093,39 @@ window.addEventListener('popstate', parseHash);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('typeModal').classList.contains('open')) { closeModal(); history.back(); } });
 window.addEventListener('scroll', () => { document.getElementById('toTop').style.display = window.scrollY > 600 ? 'block' : 'none'; });
 document.getElementById('toTop').addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
+
+/* ================= 悬停同名标识符高亮 =================
+   鼠标落在源码里任一标识符(参数/局部变量/宏/函数/类型/常量)上 → 高亮**同一代码块内**所有同名 token。
+   缓亮缓灭: 高亮用 CSS transition, 熄灭延迟 130ms(期间移到别的标识符则取消熄灭, 快速划动不会闪) */
+const VAR_FADE_MS = 130;
+let hlVarScope = null, hlVarName = '', hlVarEls = [], hlVarTimer = null;
+function clearVarHl(){
+  for (const el of hlVarEls) el.classList.remove('hl-var');
+  hlVarEls = []; hlVarName = ''; hlVarScope = null;
+}
+function applyVarHl(el){
+  // 作用域 = 整张卡片正文(签名 + 源码 + 参数表同享); 卡片头的参数名则退化到整张卡片
+  const scope = el.closest('.card-body') || el.closest('details.card') || el.closest('pre.codehl') || el.parentElement;
+  if (!scope) return;
+  const name = el.dataset.var;
+  if (!name) return;
+  if (name === hlVarName && scope === hlVarScope) return;   // 同一名字/同一块 → 不动, 避免自闪
+  for (const x of hlVarEls) x.classList.remove('hl-var');   // 旧的高亮淡出(过渡), 新的淡入
+  hlVarScope = scope; hlVarName = name;
+  hlVarEls = [...scope.querySelectorAll('[data-var]')].filter(x => x.dataset.var === name);
+  for (const x of hlVarEls) x.classList.add('hl-var');
+}
+document.addEventListener('mouseover', e => {
+  const t = e.target && e.target.closest ? e.target.closest('[data-var]') : null;
+  if (t) {
+    if (hlVarTimer) { clearTimeout(hlVarTimer); hlVarTimer = null; }   // 落在标识符上 → 撤销熄灭
+    applyVarHl(t);
+    return;
+  }
+  // 移到非标识符处(含移出代码块/移出窗口): 延迟熄灭
+  if (hlVarEls.length && !hlVarTimer) hlVarTimer = setTimeout(() => { hlVarTimer = null; clearVarHl(); }, VAR_FADE_MS);
+});
+window.addEventListener('blur', () => { if (hlVarTimer) { clearTimeout(hlVarTimer); hlVarTimer = null; } clearVarHl(); });
 
 /* 搜索输入(防抖) */
 const qEl = document.getElementById('q');
