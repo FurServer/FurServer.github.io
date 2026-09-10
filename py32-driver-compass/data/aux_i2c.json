@@ -1,0 +1,714 @@
+{
+  "module": "I2C",
+  "moduleId": "i2c",
+  "hal": [
+    {
+      "name": "I2C_10BIT_ADDRESS",
+      "sig": "#define I2C_10BIT_ADDRESS(__ADDRESS__)                     ((uint8_t)((uint16_t)((__ADDRESS__) & (uint16_t)0x00FF)))",
+      "brief": "取 10 位从机地址的低 8 位作为首地址字节。",
+      "params": [
+        {
+          "name": "__ADDRESS__",
+          "type": "宏参数",
+          "desc": "10 位从机地址"
+        }
+      ],
+      "retval": {
+        "type": "uint8_t",
+        "desc": "10 位地址的低 8 位"
+      },
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define I2C_10BIT_ADDRESS(__ADDRESS__)                     ((uint8_t)((uint16_t)((__ADDRESS__) & (uint16_t)0x00FF)))"
+    },
+    {
+      "name": "I2C_7BIT_ADD_READ",
+      "sig": "#define I2C_7BIT_ADD_READ(__ADDRESS__)                     ((uint8_t)((__ADDRESS__) | 0x01))",
+      "brief": "在 7 位从机地址最低位置 1(读方向), 生成读操作地址字节。",
+      "params": [
+        {
+          "name": "__ADDRESS__",
+          "type": "宏参数",
+          "desc": "7 位从机地址"
+        }
+      ],
+      "retval": {
+        "type": "uint8_t",
+        "desc": "带读方向位的地址字节"
+      },
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define I2C_7BIT_ADD_READ(__ADDRESS__)                     ((uint8_t)((__ADDRESS__) | 0x01))"
+    },
+    {
+      "name": "I2C_7BIT_ADD_WRITE",
+      "sig": "#define I2C_7BIT_ADD_WRITE(__ADDRESS__)                    ((uint8_t)((__ADDRESS__) & (uint8_t)(~0x01)))",
+      "brief": "清除 7 位从机地址最低位(写方向), 生成写操作地址字节。",
+      "params": [
+        {
+          "name": "__ADDRESS__",
+          "type": "宏参数",
+          "desc": "7 位从机地址"
+        }
+      ],
+      "retval": {
+        "type": "uint8_t",
+        "desc": "带写方向位的地址字节"
+      },
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define I2C_7BIT_ADD_WRITE(__ADDRESS__)                    ((uint8_t)((__ADDRESS__) & (uint8_t)(~0x01)))"
+    },
+    {
+      "name": "I2C_10BIT_HEADER_READ",
+      "sig": "#define I2C_10BIT_HEADER_READ(__ADDRESS__)                 ((uint8_t)((uint16_t)((uint16_t)(((uint16_t)((__ADDRESS__) & (uint16_t)0x0300)) >> 7) | (uint16_t)(0x00F1))))",
+      "brief": "组装 10 位从机地址的读方向首字节(11110 + 地址高两位 + 读方向位 1), 用于发送地址首帧。",
+      "params": [
+        {
+          "name": "__ADDRESS__",
+          "type": "宏参数",
+          "desc": "10 位从机地址"
+        }
+      ],
+      "retval": {
+        "type": "uint8_t",
+        "desc": "10 位地址读首字节"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define I2C_10BIT_HEADER_READ(__ADDRESS__)                 ((uint8_t)((uint16_t)((uint16_t)(((uint16_t)((__ADDRESS__) & (uint16_t)0x0300)) >> 7) | (uint16_t)(0x00F1))))"
+    },
+    {
+      "name": "I2C_10BIT_HEADER_WRITE",
+      "sig": "#define I2C_10BIT_HEADER_WRITE(__ADDRESS__)                ((uint8_t)((uint16_t)((uint16_t)(((uint16_t)((__ADDRESS__) & (uint16_t)0x0300)) >> 7) | (uint16_t)0x00F0)))",
+      "brief": "组装 10 位从机地址的写方向首字节(11110 + 地址高两位 + 写方向位 0), 用于发送地址首帧。",
+      "params": [
+        {
+          "name": "__ADDRESS__",
+          "type": "宏参数",
+          "desc": "10 位从机地址"
+        }
+      ],
+      "retval": {
+        "type": "uint8_t",
+        "desc": "10 位地址写首字节"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define I2C_10BIT_HEADER_WRITE(__ADDRESS__)                ((uint8_t)((uint16_t)((uint16_t)(((uint16_t)((__ADDRESS__) & (uint16_t)0x0300)) >> 7) | (uint16_t)0x00F0)))"
+    },
+    {
+      "name": "I2C_CCR_CALCULATION",
+      "sig": "#define I2C_CCR_CALCULATION(__PCLK__, __SPEED__, __COEFF__)     (((((__PCLK__) - 1U)/((__SPEED__) * (__COEFF__))) + 1U) & I2C_CCR_CCR)",
+      "brief": "计算 CCR 寄存器 CCR 位段的值: 按 ((PCLK-1)/(SPEED×COEFF)+1) 向上取整后掩码到 I2C_CCR_CCR。",
+      "params": [
+        {
+          "name": "__PCLK__",
+          "type": "宏参数",
+          "desc": "I2C 外设时钟频率(Hz)"
+        },
+        {
+          "name": "__SPEED__",
+          "type": "宏参数",
+          "desc": "目标通信速率(Hz)"
+        },
+        {
+          "name": "__COEFF__",
+          "type": "宏参数",
+          "desc": "分频系数: 标准模式为 2, 快速模式为 3 或 25"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "CCR 位段的分频值"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define I2C_CCR_CALCULATION(__PCLK__, __SPEED__, __COEFF__)     (((((__PCLK__) - 1U)/((__SPEED__) * (__COEFF__))) + 1U) & I2C_CCR_CCR)"
+    },
+    {
+      "name": "I2C_CHECK_FLAG",
+      "sig": "#define I2C_CHECK_FLAG(__ISR__, __FLAG__)         ((((__ISR__) & ((__FLAG__) & I2C_FLAG_MASK)) == ((__FLAG__) & I2C_FLAG_MASK)) ? SET : RESET)",
+      "brief": "检查 ISR 寄存器中指定标志位是否置位(先与 I2C_FLAG_MASK 掩码), 置位返回 SET。",
+      "params": [
+        {
+          "name": "__ISR__",
+          "type": "宏参数",
+          "desc": "I2C 状态寄存器值(如 ISR / SR1)"
+        },
+        {
+          "name": "__FLAG__",
+          "type": "宏参数",
+          "desc": "要检查的标志位"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位返回 SET, 否则返回 RESET"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define I2C_CHECK_FLAG(__ISR__, __FLAG__)         ((((__ISR__) & ((__FLAG__) & I2C_FLAG_MASK)) == ((__FLAG__) & I2C_FLAG_MASK)) ? SET : RESET)"
+    },
+    {
+      "name": "I2C_CHECK_IT_SOURCE",
+      "sig": "#define I2C_CHECK_IT_SOURCE(__CR1__, __IT__)      ((((__CR1__) & (__IT__)) == (__IT__)) ? SET : RESET)",
+      "brief": "检查 CR1 寄存器中指定中断使能位是否置位, 置位返回 SET。",
+      "params": [
+        {
+          "name": "__CR1__",
+          "type": "宏参数",
+          "desc": "CR1 寄存器当前值"
+        },
+        {
+          "name": "__IT__",
+          "type": "宏参数",
+          "desc": "要检查的中断源使能位"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "中断源已使能返回 SET, 否则返回 RESET"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define I2C_CHECK_IT_SOURCE(__CR1__, __IT__)      ((((__CR1__) & (__IT__)) == (__IT__)) ? SET : RESET)"
+    },
+    {
+      "name": "I2C_FREQRANGE",
+      "sig": "#define I2C_FREQRANGE(__PCLK__)                            ((__PCLK__)/1000000U)",
+      "brief": "计算 CR2 寄存器 FREQ 位段的值, 即外设时钟频率的 MHz 数。",
+      "params": [
+        {
+          "name": "__PCLK__",
+          "type": "宏参数",
+          "desc": "I2C 外设时钟频率(Hz)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "FREQ 位段值(PCLK 的 MHz 数)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define I2C_FREQRANGE(__PCLK__)                            ((__PCLK__)/1000000U)"
+    },
+    {
+      "name": "I2C_MEM_ADD_LSB",
+      "sig": "#define I2C_MEM_ADD_LSB(__ADDRESS__)                       ((uint8_t)((uint16_t)((__ADDRESS__) & (uint16_t)0x00FF)))",
+      "brief": "提取内存地址的低字节, 用于组装内存地址字节。",
+      "params": [
+        {
+          "name": "__ADDRESS__",
+          "type": "宏参数",
+          "desc": "内存地址"
+        }
+      ],
+      "retval": {
+        "type": "uint8_t",
+        "desc": "内存地址低 8 位"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define I2C_MEM_ADD_LSB(__ADDRESS__)                       ((uint8_t)((uint16_t)((__ADDRESS__) & (uint16_t)0x00FF)))"
+    },
+    {
+      "name": "I2C_MEM_ADD_MSB",
+      "sig": "#define I2C_MEM_ADD_MSB(__ADDRESS__)                       ((uint8_t)((uint16_t)(((uint16_t)((__ADDRESS__) & (uint16_t)0xFF00)) >> 8)))",
+      "brief": "提取内存地址的高字节, 用于组装内存地址字节。",
+      "params": [
+        {
+          "name": "__ADDRESS__",
+          "type": "宏参数",
+          "desc": "内存地址"
+        }
+      ],
+      "retval": {
+        "type": "uint8_t",
+        "desc": "内存地址高 8 位"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define I2C_MEM_ADD_MSB(__ADDRESS__)                       ((uint8_t)((uint16_t)(((uint16_t)((__ADDRESS__) & (uint16_t)0xFF00)) >> 8)))"
+    },
+    {
+      "name": "I2C_MIN_PCLK_FREQ",
+      "sig": "#define I2C_MIN_PCLK_FREQ(__PCLK__, __SPEED__)             (((__SPEED__) <= 100000U) ? ((__PCLK__) < I2C_MIN_PCLK_FREQ_STANDARD) : ((__PCLK__) < I2C_MIN_PCLK_FREQ_FAST))",
+      "brief": "判断外设时钟频率是否低于指定速率所需的最小值: 标准模式(≤100kHz)为 2MHz, 快速模式为 4MHz, 低于则返回 1。",
+      "params": [
+        {
+          "name": "__PCLK__",
+          "type": "宏参数",
+          "desc": "I2C 外设时钟频率(Hz)"
+        },
+        {
+          "name": "__SPEED__",
+          "type": "宏参数",
+          "desc": "目标通信速率(Hz)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "PCLK 低于所需最小频率返回 1, 否则返回 0"
+      },
+      "notes": [
+        "HAL_I2C_Init 中用于校验 PCLK1 是否满足所选速率要求。"
+      ],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define I2C_MIN_PCLK_FREQ(__PCLK__, __SPEED__)             (((__SPEED__) <= 100000U) ? ((__PCLK__) < I2C_MIN_PCLK_FREQ_STANDARD) : ((__PCLK__) < I2C_MIN_PCLK_FREQ_FAST))"
+    },
+    {
+      "name": "I2C_RISE_TIME",
+      "sig": "#define I2C_RISE_TIME(__FREQRANGE__, __SPEED__)            (((__SPEED__) <= 100000U) ? ((__FREQRANGE__) + 1U) : ((((__FREQRANGE__) * 300U) / 1000U) + 1U))",
+      "brief": "计算 TRISE 寄存器的上升时间值: 标准模式为 FREQRANGE+1, 快速模式按 FREQRANGE×300/1000+1 计算。",
+      "params": [
+        {
+          "name": "__FREQRANGE__",
+          "type": "宏参数",
+          "desc": "CR2 寄存器 FREQ 值(外设时钟的 MHz 数)"
+        },
+        {
+          "name": "__SPEED__",
+          "type": "宏参数",
+          "desc": "目标通信速率(Hz)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "TRISE 位段值"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define I2C_RISE_TIME(__FREQRANGE__, __SPEED__)            (((__SPEED__) <= 100000U) ? ((__FREQRANGE__) + 1U) : ((((__FREQRANGE__) * 300U) / 1000U) + 1U))"
+    },
+    {
+      "name": "I2C_SPEED",
+      "sig": "#define I2C_SPEED(__PCLK__, __SPEED__, __DUTYCYCLE__)      (((__SPEED__) <= 100000U)? (I2C_SPEED_STANDARD((__PCLK__), (__SPEED__))) : \\\n                                                                  ((I2C_SPEED_FAST((__PCLK__), (__SPEED__), (__DUTYCYCLE__)) & I2C_CCR_CCR) == 0U)? 1U : \\\n                                                                  ((I2C_SPEED_FAST((__PCLK__), (__SPEED__), (__DUTYCYCLE__))) | I2C_CCR_FS))",
+      "brief": "组装 CCR 寄存器的完整配置值: 标准模式直接取 CCR 分频值, 快速模式在 CCR 非零时附加 FS 位。",
+      "params": [
+        {
+          "name": "__PCLK__",
+          "type": "宏参数",
+          "desc": "I2C 外设时钟频率(Hz)"
+        },
+        {
+          "name": "__SPEED__",
+          "type": "宏参数",
+          "desc": "目标通信速率(Hz)"
+        },
+        {
+          "name": "__DUTYCYCLE__",
+          "type": "宏参数",
+          "desc": "快速模式占空比, 取 I2C_DUTYCYCLE_2 或 I2C_DUTYCYCLE_16_9"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "CCR 寄存器配置值(含 FS 位)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define I2C_SPEED(__PCLK__, __SPEED__, __DUTYCYCLE__)      (((__SPEED__) <= 100000U)? (I2C_SPEED_STANDARD((__PCLK__), (__SPEED__))) : \\\r\n                                                                  ((I2C_SPEED_FAST((__PCLK__), (__SPEED__), (__DUTYCYCLE__)) & I2C_CCR_CCR) == 0U)? 1U : \\\r\n                                                                  ((I2C_SPEED_FAST((__PCLK__), (__SPEED__), (__DUTYCYCLE__))) | I2C_CCR_FS))"
+    },
+    {
+      "name": "I2C_SPEED_FAST",
+      "sig": "#define I2C_SPEED_FAST(__PCLK__, __SPEED__, __DUTYCYCLE__) (((__DUTYCYCLE__) == I2C_DUTYCYCLE_2)? I2C_CCR_CALCULATION((__PCLK__), (__SPEED__), 3U) : (I2C_CCR_CALCULATION((__PCLK__), (__SPEED__), 25U) | I2C_DUTYCYCLE_16_9))",
+      "brief": "计算快速模式下的 CCR 值: DUTYCYCLE_2 用分频系数 3, DUTYCYCLE_16_9 用系数 25 并附加 DUTY 位。",
+      "params": [
+        {
+          "name": "__PCLK__",
+          "type": "宏参数",
+          "desc": "I2C 外设时钟频率(Hz)"
+        },
+        {
+          "name": "__SPEED__",
+          "type": "宏参数",
+          "desc": "目标通信速率(Hz)"
+        },
+        {
+          "name": "__DUTYCYCLE__",
+          "type": "宏参数",
+          "desc": "快速模式占空比, 取 I2C_DUTYCYCLE_2 或 I2C_DUTYCYCLE_16_9"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "快速模式 CCR 值(含 DUTY 位)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define I2C_SPEED_FAST(__PCLK__, __SPEED__, __DUTYCYCLE__) (((__DUTYCYCLE__) == I2C_DUTYCYCLE_2)? I2C_CCR_CALCULATION((__PCLK__), (__SPEED__), 3U) : (I2C_CCR_CALCULATION((__PCLK__), (__SPEED__), 25U) | I2C_DUTYCYCLE_16_9))"
+    },
+    {
+      "name": "I2C_SPEED_STANDARD",
+      "sig": "#define I2C_SPEED_STANDARD(__PCLK__, __SPEED__)            ((I2C_CCR_CALCULATION((__PCLK__), (__SPEED__), 2U) < 4U)? 4U:I2C_CCR_CALCULATION((__PCLK__), (__SPEED__), 2U))",
+      "brief": "计算标准模式下的 CCR 值, 计算结果小于 4 时钳位为 4, 满足规范对标准模式 CCR 的最小要求。",
+      "params": [
+        {
+          "name": "__PCLK__",
+          "type": "宏参数",
+          "desc": "I2C 外设时钟频率(Hz)"
+        },
+        {
+          "name": "__SPEED__",
+          "type": "宏参数",
+          "desc": "目标通信速率(Hz)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标准模式 CCR 值(最小为 4)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define I2C_SPEED_STANDARD(__PCLK__, __SPEED__)            ((I2C_CCR_CALCULATION((__PCLK__), (__SPEED__), 2U) < 4U)? 4U:I2C_CCR_CALCULATION((__PCLK__), (__SPEED__), 2U))"
+    },
+    {
+      "name": "IS_I2C_ADDRESSING_MODE",
+      "sig": "#define IS_I2C_ADDRESSING_MODE(ADDRESS) (((ADDRESS) == I2C_ADDRESSINGMODE_7BIT) || \\\n                                         ((ADDRESS) == I2C_ADDRESSINGMODE_10BIT))",
+      "brief": "校验寻址模式参数是否为 7 位或 10 位寻址。",
+      "params": [
+        {
+          "name": "ADDRESS",
+          "type": "宏参数",
+          "desc": "寻址模式参数, 取 I2C_ADDRESSINGMODE_7BIT / I2C_ADDRESSINGMODE_10BIT"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define IS_I2C_ADDRESSING_MODE(ADDRESS) (((ADDRESS) == I2C_ADDRESSINGMODE_7BIT) || \\\r\n                                         ((ADDRESS) == I2C_ADDRESSINGMODE_10BIT))"
+    },
+    {
+      "name": "IS_I2C_CLOCK_SPEED",
+      "sig": "#define IS_I2C_CLOCK_SPEED(SPEED) (((SPEED) > 0U) && ((SPEED) <= 400000U))",
+      "brief": "校验目标通信速率是否大于 0 且不超过 400kHz(快速模式上限)。",
+      "params": [
+        {
+          "name": "SPEED",
+          "type": "宏参数",
+          "desc": "目标通信速率(Hz)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define IS_I2C_CLOCK_SPEED(SPEED) (((SPEED) > 0U) && ((SPEED) <= 400000U))"
+    },
+    {
+      "name": "IS_I2C_DUAL_ADDRESS",
+      "sig": "#define IS_I2C_DUAL_ADDRESS(ADDRESS) (((ADDRESS) == I2C_DUALADDRESS_DISABLE) || \\\n                                      ((ADDRESS) == I2C_DUALADDRESS_ENABLE))",
+      "brief": "校验双地址模式参数是否为禁止或使能。",
+      "params": [
+        {
+          "name": "ADDRESS",
+          "type": "宏参数",
+          "desc": "双地址模式参数, 取 I2C_DUALADDRESS_DISABLE / I2C_DUALADDRESS_ENABLE"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define IS_I2C_DUAL_ADDRESS(ADDRESS) (((ADDRESS) == I2C_DUALADDRESS_DISABLE) || \\\r\n                                      ((ADDRESS) == I2C_DUALADDRESS_ENABLE))"
+    },
+    {
+      "name": "IS_I2C_DUTY_CYCLE",
+      "sig": "#define IS_I2C_DUTY_CYCLE(CYCLE) (((CYCLE) == I2C_DUTYCYCLE_2) || \\\n                                  ((CYCLE) == I2C_DUTYCYCLE_16_9))",
+      "brief": "校验快速模式占空比参数是否为 2 或 16/9。",
+      "params": [
+        {
+          "name": "CYCLE",
+          "type": "宏参数",
+          "desc": "占空比参数, 取 I2C_DUTYCYCLE_2 / I2C_DUTYCYCLE_16_9"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define IS_I2C_DUTY_CYCLE(CYCLE) (((CYCLE) == I2C_DUTYCYCLE_2) || \\\r\n                                  ((CYCLE) == I2C_DUTYCYCLE_16_9))"
+    },
+    {
+      "name": "IS_I2C_GENERAL_CALL",
+      "sig": "#define IS_I2C_GENERAL_CALL(CALL) (((CALL) == I2C_GENERALCALL_DISABLE) || \\\n                                   ((CALL) == I2C_GENERALCALL_ENABLE))",
+      "brief": "校验广播呼叫(General Call)模式参数是否为禁止或使能。",
+      "params": [
+        {
+          "name": "CALL",
+          "type": "宏参数",
+          "desc": "广播呼叫模式参数, 取 I2C_GENERALCALL_DISABLE / I2C_GENERALCALL_ENABLE"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define IS_I2C_GENERAL_CALL(CALL) (((CALL) == I2C_GENERALCALL_DISABLE) || \\\r\n                                   ((CALL) == I2C_GENERALCALL_ENABLE))"
+    },
+    {
+      "name": "IS_I2C_MEMADD_SIZE",
+      "sig": "#define IS_I2C_MEMADD_SIZE(SIZE) (((SIZE) == I2C_MEMADD_SIZE_8BIT) || \\\n                                  ((SIZE) == I2C_MEMADD_SIZE_16BIT))",
+      "brief": "校验内存地址宽度参数是否为 8 位或 16 位。",
+      "params": [
+        {
+          "name": "SIZE",
+          "type": "宏参数",
+          "desc": "内存地址宽度参数, 取 I2C_MEMADD_SIZE_8BIT / I2C_MEMADD_SIZE_16BIT"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define IS_I2C_MEMADD_SIZE(SIZE) (((SIZE) == I2C_MEMADD_SIZE_8BIT) || \\\r\n                                  ((SIZE) == I2C_MEMADD_SIZE_16BIT))"
+    },
+    {
+      "name": "IS_I2C_NO_STRETCH",
+      "sig": "#define IS_I2C_NO_STRETCH(STRETCH) (((STRETCH) == I2C_NOSTRETCH_DISABLE) || \\\n                                    ((STRETCH) == I2C_NOSTRETCH_ENABLE))",
+      "brief": "校验时钟拉伸(Clock Stretching)模式参数是否为禁止或使能。",
+      "params": [
+        {
+          "name": "STRETCH",
+          "type": "宏参数",
+          "desc": "时钟拉伸模式参数, 取 I2C_NOSTRETCH_DISABLE / I2C_NOSTRETCH_ENABLE"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define IS_I2C_NO_STRETCH(STRETCH) (((STRETCH) == I2C_NOSTRETCH_DISABLE) || \\\r\n                                    ((STRETCH) == I2C_NOSTRETCH_ENABLE))"
+    },
+    {
+      "name": "IS_I2C_OWN_ADDRESS1",
+      "sig": "#define IS_I2C_OWN_ADDRESS1(ADDRESS1) (((ADDRESS1) & 0xFFFFFC00U) == 0U)",
+      "brief": "校验自身地址 1 是否合法: 高 22 位必须为 0, 即地址限 10 位范围内。",
+      "params": [
+        {
+          "name": "ADDRESS1",
+          "type": "宏参数",
+          "desc": "自身地址 1(10 位地址)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define IS_I2C_OWN_ADDRESS1(ADDRESS1) (((ADDRESS1) & 0xFFFFFC00U) == 0U)"
+    },
+    {
+      "name": "IS_I2C_OWN_ADDRESS2",
+      "sig": "#define IS_I2C_OWN_ADDRESS2(ADDRESS2) (((ADDRESS2) & 0xFFFFFF01U) == 0U)",
+      "brief": "校验自身地址 2 是否合法: 与掩码 0xFFFFFF01 按位与后必须为 0, 即仅最低位允许非零。",
+      "params": [
+        {
+          "name": "ADDRESS2",
+          "type": "宏参数",
+          "desc": "自身地址 2"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define IS_I2C_OWN_ADDRESS2(ADDRESS2) (((ADDRESS2) & 0xFFFFFF01U) == 0U)"
+    },
+    {
+      "name": "IS_I2C_TRANSFER_OPTIONS_REQUEST",
+      "sig": "#define IS_I2C_TRANSFER_OPTIONS_REQUEST(REQUEST)      (((REQUEST) == I2C_FIRST_FRAME)              || \\\n                                                       ((REQUEST) == I2C_FIRST_AND_NEXT_FRAME)     || \\\n                                                       ((REQUEST) == I2C_NEXT_FRAME)               || \\\n                                                       ((REQUEST) == I2C_FIRST_AND_LAST_FRAME)     || \\\n                                                       ((REQUEST) == I2C_LAST_FRAME)               || \\\n                                                       ((REQUEST) == I2C_LAST_FRAME_NO_STOP)       || \\\n                                                       IS_I2C_TRANSFER_OTHER_OPTIONS_REQUEST(REQUEST))",
+      "brief": "校验传输帧选项参数是否为合法的首帧/后续帧/末帧等组合(I2C_FIRST_FRAME、I2C_NEXT_FRAME、I2C_LAST_FRAME 等)。",
+      "params": [
+        {
+          "name": "REQUEST",
+          "type": "宏参数",
+          "desc": "传输帧选项参数, 取 I2C_FIRST_FRAME / I2C_FIRST_AND_NEXT_FRAME / I2C_NEXT_FRAME / I2C_FIRST_AND_LAST_FRAME / I2C_LAST_FRAME / I2C_LAST_FRAME_NO_STOP 或其它帧选项"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define IS_I2C_TRANSFER_OPTIONS_REQUEST(REQUEST)      (((REQUEST) == I2C_FIRST_FRAME)              || \\\r\n                                                       ((REQUEST) == I2C_FIRST_AND_NEXT_FRAME)     || \\\r\n                                                       ((REQUEST) == I2C_NEXT_FRAME)               || \\\r\n                                                       ((REQUEST) == I2C_FIRST_AND_LAST_FRAME)     || \\\r\n                                                       ((REQUEST) == I2C_LAST_FRAME)               || \\\r\n                                                       ((REQUEST) == I2C_LAST_FRAME_NO_STOP)       || \\\r\n                                                       IS_I2C_TRANSFER_OTHER_OPTIONS_REQUEST(REQUEST))"
+    },
+    {
+      "name": "IS_I2C_TRANSFER_OTHER_OPTIONS_REQUEST",
+      "sig": "#define IS_I2C_TRANSFER_OTHER_OPTIONS_REQUEST(REQUEST) (((REQUEST) == I2C_OTHER_FRAME)     || \\\n                                                        ((REQUEST) == I2C_OTHER_AND_LAST_FRAME))",
+      "brief": "校验传输帧选项是否为其它帧模式: I2C_OTHER_FRAME 或 I2C_OTHER_AND_LAST_FRAME。",
+      "params": [
+        {
+          "name": "REQUEST",
+          "type": "宏参数",
+          "desc": "传输帧选项参数, 取 I2C_OTHER_FRAME / I2C_OTHER_AND_LAST_FRAME"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define IS_I2C_TRANSFER_OTHER_OPTIONS_REQUEST(REQUEST) (((REQUEST) == I2C_OTHER_FRAME)     || \\\r\n                                                        ((REQUEST) == I2C_OTHER_AND_LAST_FRAME))"
+    }
+  ],
+  "ll": [
+    {
+      "name": "__LL_I2C_SPEED_TO_CCR",
+      "sig": "#define __LL_I2C_SPEED_TO_CCR(__PCLK__, __SPEED__, __DUTYCYCLE__)       (uint32_t)(((__SPEED__) <= LL_I2C_MAX_SPEED_STANDARD)? \\\n                                                                                  (__LL_I2C_SPEED_STANDARD_TO_CCR((__PCLK__), (__SPEED__))) : \\\n                                                                                  (__LL_I2C_SPEED_FAST_TO_CCR((__PCLK__), (__SPEED__), (__DUTYCYCLE__))))",
+      "brief": "根据目标速率自动选择标准或快速模式公式, 计算 I2C CCR 寄存器的时钟分频值。",
+      "params": [
+        {
+          "name": "__PCLK__",
+          "type": "宏参数",
+          "desc": "I2C 外设时钟频率(Hz)"
+        },
+        {
+          "name": "__SPEED__",
+          "type": "宏参数",
+          "desc": "目标通信速率(Hz), 标准模式最大 100kHz, 快速模式最大 400kHz"
+        },
+        {
+          "name": "__DUTYCYCLE__",
+          "type": "宏参数",
+          "desc": "快速模式下的占空比, 取 LL_I2C_DUTYCYCLE_2 或 LL_I2C_DUTYCYCLE_16_9"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "CCR 寄存器时钟分频值"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "macro",
+      "src": "#define __LL_I2C_SPEED_TO_CCR(__PCLK__, __SPEED__, __DUTYCYCLE__)       (uint32_t)(((__SPEED__) <= LL_I2C_MAX_SPEED_STANDARD)? \\\r\n                                                                                  (__LL_I2C_SPEED_STANDARD_TO_CCR((__PCLK__), (__SPEED__))) : \\\r\n                                                                                  (__LL_I2C_SPEED_FAST_TO_CCR((__PCLK__), (__SPEED__), (__DUTYCYCLE__))))"
+    },
+    {
+      "name": "IS_LL_I2C_CLOCK_SPEED",
+      "sig": "#define IS_LL_I2C_CLOCK_SPEED(__VALUE__)           (((__VALUE__) > 0U) && ((__VALUE__) <= LL_I2C_MAX_SPEED_FAST))",
+      "brief": "校验 LL 层目标通信速率是否大于 0 且不超过 400kHz(LL_I2C_MAX_SPEED_FAST)。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "目标通信速率(Hz)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_i2c.c",
+      "kind": "macro",
+      "src": "#define IS_LL_I2C_CLOCK_SPEED(__VALUE__)           (((__VALUE__) > 0U) && ((__VALUE__) <= LL_I2C_MAX_SPEED_FAST))"
+    },
+    {
+      "name": "IS_LL_I2C_DUTY_CYCLE",
+      "sig": "#define IS_LL_I2C_DUTY_CYCLE(__VALUE__)            (((__VALUE__) == LL_I2C_DUTYCYCLE_2) || \\\n                                                 ((__VALUE__) == LL_I2C_DUTYCYCLE_16_9))",
+      "brief": "校验 LL 层快速模式占空比参数是否为 LL_I2C_DUTYCYCLE_2 或 LL_I2C_DUTYCYCLE_16_9。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "占空比参数, 取 LL_I2C_DUTYCYCLE_2 / LL_I2C_DUTYCYCLE_16_9"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_i2c.c",
+      "kind": "macro",
+      "src": "#define IS_LL_I2C_DUTY_CYCLE(__VALUE__)            (((__VALUE__) == LL_I2C_DUTYCYCLE_2) || \\\r\n                                                 ((__VALUE__) == LL_I2C_DUTYCYCLE_16_9))"
+    },
+    {
+      "name": "IS_LL_I2C_OWN_ADDRESS1",
+      "sig": "#define IS_LL_I2C_OWN_ADDRESS1(__VALUE__)       ((__VALUE__) <= 0x000003FFU)",
+      "brief": "校验 LL 层自身地址 1 是否在 10 位地址范围内(≤ 0x3FF)。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "自身地址 1"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_i2c.c",
+      "kind": "macro",
+      "src": "#define IS_LL_I2C_OWN_ADDRESS1(__VALUE__)       ((__VALUE__) <= 0x000003FFU)"
+    },
+    {
+      "name": "IS_LL_I2C_TYPE_ACKNOWLEDGE",
+      "sig": "#define IS_LL_I2C_TYPE_ACKNOWLEDGE(__VALUE__)   (((__VALUE__) == LL_I2C_ACK) || \\\n                                                 ((__VALUE__) == LL_I2C_NACK))",
+      "brief": "校验应答类型参数是否为 ACK 或 NACK。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "应答类型, 取 LL_I2C_ACK / LL_I2C_NACK"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_i2c.c",
+      "kind": "macro",
+      "src": "#define IS_LL_I2C_TYPE_ACKNOWLEDGE(__VALUE__)   (((__VALUE__) == LL_I2C_ACK) || \\\r\n                                                 ((__VALUE__) == LL_I2C_NACK))"
+    }
+  ],
+  "types": [],
+  "consts": []
+}

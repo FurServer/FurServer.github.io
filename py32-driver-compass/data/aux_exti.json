@@ -1,0 +1,218 @@
+{
+  "module": "EXTI",
+  "moduleId": "exti",
+  "hal": [
+    {
+      "name": "IS_EXTI_CONFIG_LINE",
+      "sig": "#define IS_EXTI_CONFIG_LINE(__LINE__)   (((__LINE__) & EXTI_CONFIG) != 0x00u)",
+      "brief": "校验 EXTI 线路编码是否带 EXTI_CONFIG 属性(配置型线路, 如比较器输出线路 17/18)",
+      "params": [
+        {
+          "name": "__LINE__",
+          "type": "宏参数",
+          "desc": "待校验的 EXTI 线路编码(EXTI_LINE_*)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_exti.h",
+      "kind": "macro",
+      "src": "#define IS_EXTI_CONFIG_LINE(__LINE__)   (((__LINE__) & EXTI_CONFIG) != 0x00u)"
+    },
+    {
+      "name": "IS_EXTI_GPIO_PIN",
+      "sig": "#define IS_EXTI_GPIO_PIN(__PIN__)       ((__PIN__) < 8u)",
+      "brief": "校验 EXTI GPIO 引脚号是否小于 8(仅线路 0~7 支持 GPIO 外部中断复用)",
+      "params": [
+        {
+          "name": "__PIN__",
+          "type": "宏参数",
+          "desc": "待校验的 GPIO 引脚号(0~7)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_exti.h",
+      "kind": "macro",
+      "src": "#define IS_EXTI_GPIO_PIN(__PIN__)       ((__PIN__) < 8u)"
+    },
+    {
+      "name": "IS_EXTI_GPIO_PORT",
+      "sig": "#define IS_EXTI_GPIO_PORT(__PORT__)     (((__PORT__) == EXTI_GPIOA) || \\\n                                         ((__PORT__) == EXTI_GPIOB) || \\\n                                         ((__PORT__) == EXTI_GPIOC))",
+      "brief": "校验 EXTI GPIO 端口选择是否为 EXTI_GPIOA/EXTI_GPIOB/EXTI_GPIOC 之一",
+      "params": [
+        {
+          "name": "__PORT__",
+          "type": "宏参数",
+          "desc": "待校验的 GPIO 端口选择(EXTI_GPIOA/EXTI_GPIOB/EXTI_GPIOC)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_exti.h",
+      "kind": "macro",
+      "src": "#define IS_EXTI_GPIO_PORT(__PORT__)     (((__PORT__) == EXTI_GPIOA) || \\\r\n                                         ((__PORT__) == EXTI_GPIOB) || \\\r\n                                         ((__PORT__) == EXTI_GPIOC))"
+    },
+    {
+      "name": "IS_EXTI_LINE",
+      "sig": "#define IS_EXTI_LINE(__LINE__)          ((((__LINE__) & ~(EXTI_PROPERTY_MASK | EXTI_REG_MASK | EXTI_PIN_MASK)) == 0x00u) && \\\n                                        ((((__LINE__) & EXTI_PROPERTY_MASK) == EXTI_DIRECT)   || \\\n                                         (((__LINE__) & EXTI_PROPERTY_MASK) == EXTI_CONFIG)   || \\\n                                         (((__LINE__) & EXTI_PROPERTY_MASK) == EXTI_GPIO))    && \\\n                                         (((__LINE__) & (EXTI_REG_MASK | EXTI_PIN_MASK))      < \\\n                                         (((EXTI_LINE_NB / 32u) << EXTI_REG_SHIFT) | (EXTI_LINE_NB % 32u))))",
+      "brief": "校验 EXTI 线路编码完整合法性: 无越界位, 属性段必须为 DIRECT/CONFIG/GPIO 之一, 且寄存器与引脚段组合不超出芯片支持的线路总数(EXTI_LINE_NB)",
+      "params": [
+        {
+          "name": "__LINE__",
+          "type": "宏参数",
+          "desc": "待校验的 EXTI 线路编码(EXTI_LINE_*)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_exti.h",
+      "kind": "macro",
+      "src": "#define IS_EXTI_LINE(__LINE__)          ((((__LINE__) & ~(EXTI_PROPERTY_MASK | EXTI_REG_MASK | EXTI_PIN_MASK)) == 0x00u) && \\\r\n                                        ((((__LINE__) & EXTI_PROPERTY_MASK) == EXTI_DIRECT)   || \\\r\n                                         (((__LINE__) & EXTI_PROPERTY_MASK) == EXTI_CONFIG)   || \\\r\n                                         (((__LINE__) & EXTI_PROPERTY_MASK) == EXTI_GPIO))    && \\\r\n                                         (((__LINE__) & (EXTI_REG_MASK | EXTI_PIN_MASK))      < \\\r\n                                         (((EXTI_LINE_NB / 32u) << EXTI_REG_SHIFT) | (EXTI_LINE_NB % 32u))))"
+    },
+    {
+      "name": "IS_EXTI_MODE",
+      "sig": "#define IS_EXTI_MODE(__LINE__)          ((((__LINE__) & EXTI_MODE_MASK) != 0x00u) && \\\n                                         (((__LINE__) & ~EXTI_MODE_MASK) == 0x00u))",
+      "brief": "校验 EXTI 模式值非零且仅含中断/事件位(不超出 EXTI_MODE_MASK 范围)",
+      "params": [
+        {
+          "name": "__LINE__",
+          "type": "宏参数",
+          "desc": "待校验的 EXTI 模式值(EXTI_MODE_INTERRUPT/EXTI_MODE_EVENT 组合)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [
+        "宏参数名沿用源码的 __LINE__, 实际语义为待校验的模式值"
+      ],
+      "file": "py32f002b_hal_exti.h",
+      "kind": "macro",
+      "src": "#define IS_EXTI_MODE(__LINE__)          ((((__LINE__) & EXTI_MODE_MASK) != 0x00u) && \\\r\n                                         (((__LINE__) & ~EXTI_MODE_MASK) == 0x00u))"
+    },
+    {
+      "name": "IS_EXTI_PENDING_EDGE",
+      "sig": "#define IS_EXTI_PENDING_EDGE(__LINE__)  (((__LINE__) == EXTI_TRIGGER_RISING) || \\\n                                         ((__LINE__) == EXTI_TRIGGER_FALLING))",
+      "brief": "校验触发边沿为单一上升沿或单一下降沿(不允许双沿, 用于挂起标志相关操作)",
+      "params": [
+        {
+          "name": "__LINE__",
+          "type": "宏参数",
+          "desc": "待校验的触发边沿值(EXTI_TRIGGER_RISING/EXTI_TRIGGER_FALLING)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [
+        "宏参数名沿用源码的 __LINE__, 实际语义为待校验的边沿值"
+      ],
+      "file": "py32f002b_hal_exti.h",
+      "kind": "macro",
+      "src": "#define IS_EXTI_PENDING_EDGE(__LINE__)  (((__LINE__) == EXTI_TRIGGER_RISING) || \\\r\n                                         ((__LINE__) == EXTI_TRIGGER_FALLING))"
+    },
+    {
+      "name": "IS_EXTI_TRIGGER",
+      "sig": "#define IS_EXTI_TRIGGER(__LINE__)       (((__LINE__) & ~EXTI_TRIGGER_MASK) == 0x00u)",
+      "brief": "校验触发边沿值不超出 EXTI_TRIGGER_MASK 范围(上升沿/下降沿组合)",
+      "params": [
+        {
+          "name": "__LINE__",
+          "type": "宏参数",
+          "desc": "待校验的触发边沿值(EXTI_TRIGGER_RISING/EXTI_TRIGGER_FALLING 组合)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [
+        "宏参数名沿用源码的 __LINE__, 实际语义为待校验的触发值"
+      ],
+      "file": "py32f002b_hal_exti.h",
+      "kind": "macro",
+      "src": "#define IS_EXTI_TRIGGER(__LINE__)       (((__LINE__) & ~EXTI_TRIGGER_MASK) == 0x00u)"
+    }
+  ],
+  "ll": [
+    {
+      "name": "IS_LL_EXTI_LINE",
+      "sig": "#define IS_LL_EXTI_LINE(__VALUE__)                   ((__VALUE__ == LL_EXTI_LINE_0 ) || \\\n                                                      (__VALUE__ == LL_EXTI_LINE_1 ) || \\\n                                                      (__VALUE__ == LL_EXTI_LINE_2 ) || \\\n                                                      (__VALUE__ == LL_EXTI_LINE_3 ) || \\\n                                                      (__VALUE__ == LL_EXTI_LINE_4 ) || \\\n                                                      (__VALUE__ == LL_EXTI_LINE_5 ) || \\\n                                                      (__VALUE__ == LL_EXTI_LINE_6 ) || \\\n                                                      (__VALUE__ == LL_EXTI_LINE_7 ) || \\\n                                                      (__VALUE__ == LL_EXTI_LINE_17 ) || \\\n                                                      (__VALUE__ == LL_EXTI_LINE_18 ) || \\\n                                                      (__VALUE__ == LL_EXTI_LINE_29 ))",
+      "brief": "校验 LL EXTI 线路是否为芯片可用线路(0~7、17、18、29)之一",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的 EXTI 线路掩码(LL_EXTI_LINE_*)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [
+        "线路 17/18 对应比较器 COMP1/COMP2 输出, 线路 29 对应 LPTIM(见 py32f002b_hal_exti.h)"
+      ],
+      "file": "py32f002b_ll_exti.c",
+      "kind": "macro",
+      "src": "#define IS_LL_EXTI_LINE(__VALUE__)                   ((__VALUE__ == LL_EXTI_LINE_0 ) || \\\r\n                                                      (__VALUE__ == LL_EXTI_LINE_1 ) || \\\r\n                                                      (__VALUE__ == LL_EXTI_LINE_2 ) || \\\r\n                                                      (__VALUE__ == LL_EXTI_LINE_3 ) || \\\r\n                                                      (__VALUE__ == LL_EXTI_LINE_4 ) || \\\r\n                                                      (__VALUE__ == LL_EXTI_LINE_5 ) || \\\r\n                                                      (__VALUE__ == LL_EXTI_LINE_6 ) || \\\r\n                                                      (__VALUE__ == LL_EXTI_LINE_7 ) || \\\r\n                                                      (__VALUE__ == LL_EXTI_LINE_17 ) || \\\r\n                                                      (__VALUE__ == LL_EXTI_LINE_18 ) || \\\r\n                                                      (__VALUE__ == LL_EXTI_LINE_29 ))"
+    },
+    {
+      "name": "IS_LL_EXTI_MODE",
+      "sig": "#define IS_LL_EXTI_MODE(__VALUE__)                   (((__VALUE__) == LL_EXTI_MODE_IT)            \\\n                                                   || ((__VALUE__) == LL_EXTI_MODE_EVENT)         \\\n                                                   || ((__VALUE__) == LL_EXTI_MODE_IT_EVENT))",
+      "brief": "校验 LL EXTI 模式是否为中断/事件/中断+事件之一",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的模式(LL_EXTI_MODE_IT/LL_EXTI_MODE_EVENT/LL_EXTI_MODE_IT_EVENT)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_exti.c",
+      "kind": "macro",
+      "src": "#define IS_LL_EXTI_MODE(__VALUE__)                   (((__VALUE__) == LL_EXTI_MODE_IT)            \\\r\n                                                   || ((__VALUE__) == LL_EXTI_MODE_EVENT)         \\\r\n                                                   || ((__VALUE__) == LL_EXTI_MODE_IT_EVENT))"
+    },
+    {
+      "name": "IS_LL_EXTI_TRIGGER",
+      "sig": "#define IS_LL_EXTI_TRIGGER(__VALUE__)                (((__VALUE__) == LL_EXTI_TRIGGER_NONE)       \\\n                                                   || ((__VALUE__) == LL_EXTI_TRIGGER_RISING)     \\\n                                                   || ((__VALUE__) == LL_EXTI_TRIGGER_FALLING)    \\\n                                                   || ((__VALUE__) == LL_EXTI_TRIGGER_RISING_FALLING))",
+      "brief": "校验 LL EXTI 触发边沿是否为无/上升沿/下降沿/双沿之一",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的触发边沿(LL_EXTI_TRIGGER_*)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_exti.c",
+      "kind": "macro",
+      "src": "#define IS_LL_EXTI_TRIGGER(__VALUE__)                (((__VALUE__) == LL_EXTI_TRIGGER_NONE)       \\\r\n                                                   || ((__VALUE__) == LL_EXTI_TRIGGER_RISING)     \\\r\n                                                   || ((__VALUE__) == LL_EXTI_TRIGGER_FALLING)    \\\r\n                                                   || ((__VALUE__) == LL_EXTI_TRIGGER_RISING_FALLING))"
+    }
+  ],
+  "types": [],
+  "consts": []
+}

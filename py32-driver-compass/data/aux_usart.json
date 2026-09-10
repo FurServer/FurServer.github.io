@@ -1,0 +1,700 @@
+{
+  "module": "USART",
+  "moduleId": "usart",
+  "hal": [
+    {
+      "name": "IS_USART_BAUDRATE",
+      "sig": "#define IS_USART_BAUDRATE(BAUDRATE)  ((BAUDRATE) <= 4500000U)",
+      "brief": "校验波特率是否不超过最大允许值 4500000 (4.5MHz)",
+      "params": [
+        {
+          "name": "BAUDRATE",
+          "type": "宏参数",
+          "desc": "待校验的波特率值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define IS_USART_BAUDRATE(BAUDRATE)  ((BAUDRATE) <= 4500000U)"
+    },
+    {
+      "name": "IS_USART_CLOCK",
+      "sig": "#define IS_USART_CLOCK(CLOCK)        (((CLOCK) == USART_CLOCK_DISABLE) || \\\n                                      ((CLOCK) == USART_CLOCK_ENABLE))",
+      "brief": "校验同步时钟输出配置是否为 USART_CLOCK_DISABLE 或 USART_CLOCK_ENABLE",
+      "params": [
+        {
+          "name": "CLOCK",
+          "type": "宏参数",
+          "desc": "待校验的时钟输出配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define IS_USART_CLOCK(CLOCK)        (((CLOCK) == USART_CLOCK_DISABLE) || \\\r\n                                      ((CLOCK) == USART_CLOCK_ENABLE))"
+    },
+    {
+      "name": "IS_USART_LASTBIT",
+      "sig": "#define IS_USART_LASTBIT(LASTBIT)    (((LASTBIT) == USART_LASTBIT_DISABLE) || \\\n                                      ((LASTBIT) == USART_LASTBIT_ENABLE))",
+      "brief": "校验最后一位数据时钟脉冲输出配置是否为 USART_LASTBIT_DISABLE 或 USART_LASTBIT_ENABLE",
+      "params": [
+        {
+          "name": "LASTBIT",
+          "type": "宏参数",
+          "desc": "待校验的最后一位时钟脉冲输出配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define IS_USART_LASTBIT(LASTBIT)    (((LASTBIT) == USART_LASTBIT_DISABLE) || \\\r\n                                      ((LASTBIT) == USART_LASTBIT_ENABLE))"
+    },
+    {
+      "name": "IS_USART_MODE",
+      "sig": "#define IS_USART_MODE(MODE)          ((((MODE) & (~((uint32_t)USART_MODE_TX_RX))) == 0x00U) && ((MODE) != 0x00U))",
+      "brief": "校验模式参数为 USART_MODE_TX_RX 的合法子集 (无越界位) 且非 0",
+      "params": [
+        {
+          "name": "MODE",
+          "type": "宏参数",
+          "desc": "待校验的收发模式组合值 (如 USART_MODE_TX、USART_MODE_RX、USART_MODE_TX_RX)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define IS_USART_MODE(MODE)          ((((MODE) & (~((uint32_t)USART_MODE_TX_RX))) == 0x00U) && ((MODE) != 0x00U))"
+    },
+    {
+      "name": "IS_USART_PARITY",
+      "sig": "#define IS_USART_PARITY(PARITY)      (((PARITY) == USART_PARITY_NONE) || \\\n                                      ((PARITY) == USART_PARITY_EVEN) || \\\n                                      ((PARITY) == USART_PARITY_ODD))",
+      "brief": "校验奇偶校验配置是否为 USART_PARITY_NONE/EVEN/ODD 之一",
+      "params": [
+        {
+          "name": "PARITY",
+          "type": "宏参数",
+          "desc": "待校验的奇偶校验配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define IS_USART_PARITY(PARITY)      (((PARITY) == USART_PARITY_NONE) || \\\r\n                                      ((PARITY) == USART_PARITY_EVEN) || \\\r\n                                      ((PARITY) == USART_PARITY_ODD))"
+    },
+    {
+      "name": "IS_USART_PHASE",
+      "sig": "#define IS_USART_PHASE(CPHA)         (((CPHA) == USART_PHASE_1EDGE) || \\\n                                      ((CPHA) == USART_PHASE_2EDGE))",
+      "brief": "校验同步时钟相位是否为 USART_PHASE_1EDGE 或 USART_PHASE_2EDGE",
+      "params": [
+        {
+          "name": "CPHA",
+          "type": "宏参数",
+          "desc": "待校验的时钟相位配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define IS_USART_PHASE(CPHA)         (((CPHA) == USART_PHASE_1EDGE) || \\\r\n                                      ((CPHA) == USART_PHASE_2EDGE))"
+    },
+    {
+      "name": "IS_USART_POLARITY",
+      "sig": "#define IS_USART_POLARITY(CPOL)      (((CPOL) == USART_POLARITY_LOW) || \\\n                                      ((CPOL) == USART_POLARITY_HIGH))",
+      "brief": "校验同步时钟极性是否为 USART_POLARITY_LOW 或 USART_POLARITY_HIGH",
+      "params": [
+        {
+          "name": "CPOL",
+          "type": "宏参数",
+          "desc": "待校验的时钟极性配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define IS_USART_POLARITY(CPOL)      (((CPOL) == USART_POLARITY_LOW) || \\\r\n                                      ((CPOL) == USART_POLARITY_HIGH))"
+    },
+    {
+      "name": "IS_USART_STOPBITS",
+      "sig": "#define IS_USART_STOPBITS(STOPBITS)  (((STOPBITS) == USART_STOPBITS_1) || \\\n                                      ((STOPBITS) == USART_STOPBITS_2))",
+      "brief": "校验停止位配置是否为 USART_STOPBITS_1 或 USART_STOPBITS_2",
+      "params": [
+        {
+          "name": "STOPBITS",
+          "type": "宏参数",
+          "desc": "待校验的停止位配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define IS_USART_STOPBITS(STOPBITS)  (((STOPBITS) == USART_STOPBITS_1) || \\\r\n                                      ((STOPBITS) == USART_STOPBITS_2))"
+    },
+    {
+      "name": "IS_USART_WORD_LENGTH",
+      "sig": "#define IS_USART_WORD_LENGTH(LENGTH) (((LENGTH) == USART_WORDLENGTH_8B) || \\\n                                      ((LENGTH) == USART_WORDLENGTH_9B))",
+      "brief": "校验数据字长是否为 USART_WORDLENGTH_8B 或 USART_WORDLENGTH_9B",
+      "params": [
+        {
+          "name": "LENGTH",
+          "type": "宏参数",
+          "desc": "待校验的数据字长配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define IS_USART_WORD_LENGTH(LENGTH) (((LENGTH) == USART_WORDLENGTH_8B) || \\\r\n                                      ((LENGTH) == USART_WORDLENGTH_9B))"
+    },
+    {
+      "name": "USART_BRR",
+      "sig": "#define USART_BRR(_PCLK_, _BAUD_)      (((USART_DIVMANT((_PCLK_), (_BAUD_)) << 4U) + \\\n                                        ((USART_DIVFRAQ((_PCLK_), (_BAUD_)) & 0xF0U) << 1U)) + \\\n                                         (USART_DIVFRAQ((_PCLK_), (_BAUD_)) & 0x0FU))",
+      "brief": "按采样率 16 计算并组合出写入 USART BRR 寄存器的波特率分频值 (整数部分左移 4 位, 与小数部分按 BRR 位域拼接)",
+      "params": [
+        {
+          "name": "_PCLK_",
+          "type": "宏参数",
+          "desc": "USART 外设时钟频率 (PCLK)"
+        },
+        {
+          "name": "_BAUD_",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "BRR 寄存器写入值 (波特率分频系数)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define USART_BRR(_PCLK_, _BAUD_)      (((USART_DIVMANT((_PCLK_), (_BAUD_)) << 4U) + \\\r\n                                        ((USART_DIVFRAQ((_PCLK_), (_BAUD_)) & 0xF0U) << 1U)) + \\\r\n                                         (USART_DIVFRAQ((_PCLK_), (_BAUD_)) & 0x0FU))"
+    },
+    {
+      "name": "USART_DIV",
+      "sig": "#define USART_DIV(_PCLK_, _BAUD_)      (((_PCLK_)*25U)/(4U*(_BAUD_)))",
+      "brief": "按采样率 16 计算 USART 波特率分频系数并放大 100 倍, 公式为 (_PCLK_×25)/(4×_BAUD_), 等效于 (_PCLK_/(16×_BAUD_))×100",
+      "params": [
+        {
+          "name": "_PCLK_",
+          "type": "宏参数",
+          "desc": "USART 外设时钟频率 (PCLK)"
+        },
+        {
+          "name": "_BAUD_",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "放大 100 倍的波特率分频系数, 供 DIVMANT/DIVFRAQ 宏拆出整数与小数部分"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define USART_DIV(_PCLK_, _BAUD_)      (((_PCLK_)*25U)/(4U*(_BAUD_)))"
+    },
+    {
+      "name": "USART_DIVFRAQ",
+      "sig": "#define USART_DIVFRAQ(_PCLK_, _BAUD_)  (((USART_DIV((_PCLK_), (_BAUD_)) - (USART_DIVMANT((_PCLK_), (_BAUD_)) * 100U)) * 16U + 50U) / 100U)",
+      "brief": "按采样率 16 计算 USART 波特率分频的小数部分 (4 位小数, 含四舍五入)",
+      "params": [
+        {
+          "name": "_PCLK_",
+          "type": "宏参数",
+          "desc": "USART 外设时钟频率 (PCLK)"
+        },
+        {
+          "name": "_BAUD_",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "分频小数部分 (0~16, 对应 BRR 低 4 位小数位)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define USART_DIVFRAQ(_PCLK_, _BAUD_)  (((USART_DIV((_PCLK_), (_BAUD_)) - (USART_DIVMANT((_PCLK_), (_BAUD_)) * 100U)) * 16U + 50U) / 100U)"
+    },
+    {
+      "name": "USART_DIVMANT",
+      "sig": "#define USART_DIVMANT(_PCLK_, _BAUD_)  (USART_DIV((_PCLK_), (_BAUD_))/100U)",
+      "brief": "按采样率 16 计算 USART 波特率分频的整数部分",
+      "params": [
+        {
+          "name": "_PCLK_",
+          "type": "宏参数",
+          "desc": "USART 外设时钟频率 (PCLK)"
+        },
+        {
+          "name": "_BAUD_",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "分频整数部分 (对应 BRR 高 12 位)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define USART_DIVMANT(_PCLK_, _BAUD_)  (USART_DIV((_PCLK_), (_BAUD_))/100U)"
+    }
+  ],
+  "ll": [
+    {
+      "name": "__LL_USART_DIV_SAMPLING16_100",
+      "sig": "#define __LL_USART_DIV_SAMPLING16_100(__PERIPHCLK__, __BAUDRATE__)     (((__PERIPHCLK__)*25)/(4*(__BAUDRATE__)))",
+      "brief": "按采样率 16 计算 USART 波特率分频系数并放大 100 倍, 公式为 (外设时钟×25)/(4×波特率), 等效于 (外设时钟/(16×波特率))×100",
+      "params": [
+        {
+          "name": "__PERIPHCLK__",
+          "type": "宏参数",
+          "desc": "USART 外设时钟频率(Hz)"
+        },
+        {
+          "name": "__BAUDRATE__",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "放大 100 倍的波特率分频系数, 供 DIVMANT/DIVFRAQ 宏拆出整数与小数部分"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.h",
+      "kind": "macro",
+      "src": "#define __LL_USART_DIV_SAMPLING16_100(__PERIPHCLK__, __BAUDRATE__)     (((__PERIPHCLK__)*25)/(4*(__BAUDRATE__)))"
+    },
+    {
+      "name": "__LL_USART_DIV_SAMPLING8_100",
+      "sig": "#define __LL_USART_DIV_SAMPLING8_100(__PERIPHCLK__, __BAUDRATE__)      (((__PERIPHCLK__)*25)/(2*(__BAUDRATE__)))",
+      "brief": "按采样率 8 计算 USART 波特率分频系数并放大 100 倍, 公式为 (外设时钟×25)/(2×波特率), 等效于 (外设时钟/(8×波特率))×100",
+      "params": [
+        {
+          "name": "__PERIPHCLK__",
+          "type": "宏参数",
+          "desc": "USART 外设时钟频率(Hz)"
+        },
+        {
+          "name": "__BAUDRATE__",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "放大 100 倍的波特率分频系数, 供 DIVMANT/DIVFRAQ 宏拆出整数与小数部分"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.h",
+      "kind": "macro",
+      "src": "#define __LL_USART_DIV_SAMPLING8_100(__PERIPHCLK__, __BAUDRATE__)      (((__PERIPHCLK__)*25)/(2*(__BAUDRATE__)))"
+    },
+    {
+      "name": "__LL_USART_DIVFRAQ_SAMPLING16",
+      "sig": "#define __LL_USART_DIVFRAQ_SAMPLING16(__PERIPHCLK__, __BAUDRATE__)     (((__LL_USART_DIV_SAMPLING16_100((__PERIPHCLK__), (__BAUDRATE__)) - (__LL_USART_DIVMANT_SAMPLING16((__PERIPHCLK__), (__BAUDRATE__)) * 100)) * 16 + 50) / 100)",
+      "brief": "按采样率 16 计算 USART 波特率分频的小数部分 (4 位小数, 含四舍五入)",
+      "params": [
+        {
+          "name": "__PERIPHCLK__",
+          "type": "宏参数",
+          "desc": "USART 外设时钟频率(Hz)"
+        },
+        {
+          "name": "__BAUDRATE__",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "分频小数部分 (0~16, 对应 BRR 低 4 位小数位)"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.h",
+      "kind": "macro",
+      "src": "#define __LL_USART_DIVFRAQ_SAMPLING16(__PERIPHCLK__, __BAUDRATE__)     (((__LL_USART_DIV_SAMPLING16_100((__PERIPHCLK__), (__BAUDRATE__)) - (__LL_USART_DIVMANT_SAMPLING16((__PERIPHCLK__), (__BAUDRATE__)) * 100)) * 16 + 50) / 100)"
+    },
+    {
+      "name": "__LL_USART_DIVFRAQ_SAMPLING8",
+      "sig": "#define __LL_USART_DIVFRAQ_SAMPLING8(__PERIPHCLK__, __BAUDRATE__)      (((__LL_USART_DIV_SAMPLING8_100((__PERIPHCLK__), (__BAUDRATE__)) - (__LL_USART_DIVMANT_SAMPLING8((__PERIPHCLK__), (__BAUDRATE__)) * 100)) * 8 + 50) / 100)",
+      "brief": "按采样率 8 计算 USART 波特率分频的小数部分 (3 位小数, 含四舍五入)",
+      "params": [
+        {
+          "name": "__PERIPHCLK__",
+          "type": "宏参数",
+          "desc": "USART 外设时钟频率(Hz)"
+        },
+        {
+          "name": "__BAUDRATE__",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "分频小数部分 (0~8, 对应 BRR 低 3 位小数位)"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.h",
+      "kind": "macro",
+      "src": "#define __LL_USART_DIVFRAQ_SAMPLING8(__PERIPHCLK__, __BAUDRATE__)      (((__LL_USART_DIV_SAMPLING8_100((__PERIPHCLK__), (__BAUDRATE__)) - (__LL_USART_DIVMANT_SAMPLING8((__PERIPHCLK__), (__BAUDRATE__)) * 100)) * 8 + 50) / 100)"
+    },
+    {
+      "name": "__LL_USART_DIVMANT_SAMPLING16",
+      "sig": "#define __LL_USART_DIVMANT_SAMPLING16(__PERIPHCLK__, __BAUDRATE__)     (__LL_USART_DIV_SAMPLING16_100((__PERIPHCLK__), (__BAUDRATE__))/100)",
+      "brief": "按采样率 16 计算 USART 波特率分频的整数部分",
+      "params": [
+        {
+          "name": "__PERIPHCLK__",
+          "type": "宏参数",
+          "desc": "USART 外设时钟频率(Hz)"
+        },
+        {
+          "name": "__BAUDRATE__",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "分频整数部分 (对应 BRR 高 12 位)"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.h",
+      "kind": "macro",
+      "src": "#define __LL_USART_DIVMANT_SAMPLING16(__PERIPHCLK__, __BAUDRATE__)     (__LL_USART_DIV_SAMPLING16_100((__PERIPHCLK__), (__BAUDRATE__))/100)"
+    },
+    {
+      "name": "__LL_USART_DIVMANT_SAMPLING8",
+      "sig": "#define __LL_USART_DIVMANT_SAMPLING8(__PERIPHCLK__, __BAUDRATE__)      (__LL_USART_DIV_SAMPLING8_100((__PERIPHCLK__), (__BAUDRATE__))/100)",
+      "brief": "按采样率 8 计算 USART 波特率分频的整数部分",
+      "params": [
+        {
+          "name": "__PERIPHCLK__",
+          "type": "宏参数",
+          "desc": "USART 外设时钟频率(Hz)"
+        },
+        {
+          "name": "__BAUDRATE__",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "分频整数部分 (对应 BRR 高 12 位)"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.h",
+      "kind": "macro",
+      "src": "#define __LL_USART_DIVMANT_SAMPLING8(__PERIPHCLK__, __BAUDRATE__)      (__LL_USART_DIV_SAMPLING8_100((__PERIPHCLK__), (__BAUDRATE__))/100)"
+    },
+    {
+      "name": "IS_LL_USART_BAUDRATE",
+      "sig": "#define IS_LL_USART_BAUDRATE(__BAUDRATE__) ((__BAUDRATE__) <= 4500000U)",
+      "brief": "校验波特率是否不超过最大允许值 4500000 (4.5MHz)",
+      "params": [
+        {
+          "name": "__BAUDRATE__",
+          "type": "宏参数",
+          "desc": "待校验的波特率值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.c",
+      "kind": "macro",
+      "src": "#define IS_LL_USART_BAUDRATE(__BAUDRATE__) ((__BAUDRATE__) <= 4500000U)"
+    },
+    {
+      "name": "IS_LL_USART_BRR_MAX",
+      "sig": "#define IS_LL_USART_BRR_MAX(__VALUE__) ((__VALUE__) <= 0x0000FFFFU)",
+      "brief": "校验 BRR 值是否不超过 0x0000FFFF (16 位上限)",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的 BRR 值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.c",
+      "kind": "macro",
+      "src": "#define IS_LL_USART_BRR_MAX(__VALUE__) ((__VALUE__) <= 0x0000FFFFU)"
+    },
+    {
+      "name": "IS_LL_USART_BRR_MIN",
+      "sig": "#define IS_LL_USART_BRR_MIN(__VALUE__) ((__VALUE__) >= 16U)",
+      "brief": "校验 BRR 值是否不小于 16 (满足最小分频要求)",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的 BRR 值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.c",
+      "kind": "macro",
+      "src": "#define IS_LL_USART_BRR_MIN(__VALUE__) ((__VALUE__) >= 16U)"
+    },
+    {
+      "name": "IS_LL_USART_CLOCKOUTPUT",
+      "sig": "#define IS_LL_USART_CLOCKOUTPUT(__VALUE__) (((__VALUE__) == LL_USART_CLOCK_DISABLE) \\\n                                         || ((__VALUE__) == LL_USART_CLOCK_ENABLE))",
+      "brief": "校验同步时钟输出配置是否为 LL_USART_CLOCK_DISABLE 或 LL_USART_CLOCK_ENABLE",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的时钟输出配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.c",
+      "kind": "macro",
+      "src": "#define IS_LL_USART_CLOCKOUTPUT(__VALUE__) (((__VALUE__) == LL_USART_CLOCK_DISABLE) \\\r\n                                         || ((__VALUE__) == LL_USART_CLOCK_ENABLE))"
+    },
+    {
+      "name": "IS_LL_USART_CLOCKPHASE",
+      "sig": "#define IS_LL_USART_CLOCKPHASE(__VALUE__) (((__VALUE__) == LL_USART_PHASE_1EDGE) \\\n                                        || ((__VALUE__) == LL_USART_PHASE_2EDGE))",
+      "brief": "校验同步时钟相位是否为 LL_USART_PHASE_1EDGE 或 LL_USART_PHASE_2EDGE",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的时钟相位配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.c",
+      "kind": "macro",
+      "src": "#define IS_LL_USART_CLOCKPHASE(__VALUE__) (((__VALUE__) == LL_USART_PHASE_1EDGE) \\\r\n                                        || ((__VALUE__) == LL_USART_PHASE_2EDGE))"
+    },
+    {
+      "name": "IS_LL_USART_CLOCKPOLARITY",
+      "sig": "#define IS_LL_USART_CLOCKPOLARITY(__VALUE__) (((__VALUE__) == LL_USART_POLARITY_LOW) \\\n                                           || ((__VALUE__) == LL_USART_POLARITY_HIGH))",
+      "brief": "校验同步时钟极性是否为 LL_USART_POLARITY_LOW 或 LL_USART_POLARITY_HIGH",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的时钟极性配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.c",
+      "kind": "macro",
+      "src": "#define IS_LL_USART_CLOCKPOLARITY(__VALUE__) (((__VALUE__) == LL_USART_POLARITY_LOW) \\\r\n                                           || ((__VALUE__) == LL_USART_POLARITY_HIGH))"
+    },
+    {
+      "name": "IS_LL_USART_DATAWIDTH",
+      "sig": "#define IS_LL_USART_DATAWIDTH(__VALUE__) (((__VALUE__) == LL_USART_DATAWIDTH_8B) \\\n                                       || ((__VALUE__) == LL_USART_DATAWIDTH_9B))",
+      "brief": "校验数据宽度是否为 LL_USART_DATAWIDTH_8B 或 LL_USART_DATAWIDTH_9B",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的数据宽度配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.c",
+      "kind": "macro",
+      "src": "#define IS_LL_USART_DATAWIDTH(__VALUE__) (((__VALUE__) == LL_USART_DATAWIDTH_8B) \\\r\n                                       || ((__VALUE__) == LL_USART_DATAWIDTH_9B))"
+    },
+    {
+      "name": "IS_LL_USART_DIRECTION",
+      "sig": "#define IS_LL_USART_DIRECTION(__VALUE__) (((__VALUE__) == LL_USART_DIRECTION_NONE) \\\n                                       || ((__VALUE__) == LL_USART_DIRECTION_RX) \\\n                                       || ((__VALUE__) == LL_USART_DIRECTION_TX) \\\n                                       || ((__VALUE__) == LL_USART_DIRECTION_TX_RX))",
+      "brief": "校验收发方向是否为 LL_USART_DIRECTION_NONE/RX/TX/TX_RX 之一",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的收发方向配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.c",
+      "kind": "macro",
+      "src": "#define IS_LL_USART_DIRECTION(__VALUE__) (((__VALUE__) == LL_USART_DIRECTION_NONE) \\\r\n                                       || ((__VALUE__) == LL_USART_DIRECTION_RX) \\\r\n                                       || ((__VALUE__) == LL_USART_DIRECTION_TX) \\\r\n                                       || ((__VALUE__) == LL_USART_DIRECTION_TX_RX))"
+    },
+    {
+      "name": "IS_LL_USART_HWCONTROL",
+      "sig": "#define IS_LL_USART_HWCONTROL(__VALUE__) (((__VALUE__) == LL_USART_HWCONTROL_NONE) \\\n                                       || ((__VALUE__) == LL_USART_HWCONTROL_RTS) \\\n                                       || ((__VALUE__) == LL_USART_HWCONTROL_CTS) \\\n                                       || ((__VALUE__) == LL_USART_HWCONTROL_RTS_CTS))",
+      "brief": "校验硬件流控配置是否为 LL_USART_HWCONTROL_NONE/RTS/CTS/RTS_CTS 之一",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的硬件流控配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.c",
+      "kind": "macro",
+      "src": "#define IS_LL_USART_HWCONTROL(__VALUE__) (((__VALUE__) == LL_USART_HWCONTROL_NONE) \\\r\n                                       || ((__VALUE__) == LL_USART_HWCONTROL_RTS) \\\r\n                                       || ((__VALUE__) == LL_USART_HWCONTROL_CTS) \\\r\n                                       || ((__VALUE__) == LL_USART_HWCONTROL_RTS_CTS))"
+    },
+    {
+      "name": "IS_LL_USART_LASTBITCLKOUTPUT",
+      "sig": "#define IS_LL_USART_LASTBITCLKOUTPUT(__VALUE__) (((__VALUE__) == LL_USART_LASTCLKPULSE_NO_OUTPUT) \\\n                                              || ((__VALUE__) == LL_USART_LASTCLKPULSE_OUTPUT))",
+      "brief": "校验最后一位数据时钟脉冲输出配置是否为 LL_USART_LASTCLKPULSE_NO_OUTPUT 或 LL_USART_LASTCLKPULSE_OUTPUT",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的最后一位时钟脉冲输出配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.c",
+      "kind": "macro",
+      "src": "#define IS_LL_USART_LASTBITCLKOUTPUT(__VALUE__) (((__VALUE__) == LL_USART_LASTCLKPULSE_NO_OUTPUT) \\\r\n                                              || ((__VALUE__) == LL_USART_LASTCLKPULSE_OUTPUT))"
+    },
+    {
+      "name": "IS_LL_USART_OVERSAMPLING",
+      "sig": "#define IS_LL_USART_OVERSAMPLING(__VALUE__) (((__VALUE__) == LL_USART_OVERSAMPLING_16) \\\n                                          || ((__VALUE__) == LL_USART_OVERSAMPLING_8))",
+      "brief": "校验过采样倍率是否为 LL_USART_OVERSAMPLING_16 或 LL_USART_OVERSAMPLING_8",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的过采样配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.c",
+      "kind": "macro",
+      "src": "#define IS_LL_USART_OVERSAMPLING(__VALUE__) (((__VALUE__) == LL_USART_OVERSAMPLING_16) \\\r\n                                          || ((__VALUE__) == LL_USART_OVERSAMPLING_8))"
+    },
+    {
+      "name": "IS_LL_USART_PARITY",
+      "sig": "#define IS_LL_USART_PARITY(__VALUE__) (((__VALUE__) == LL_USART_PARITY_NONE) \\\n                                    || ((__VALUE__) == LL_USART_PARITY_EVEN) \\\n                                    || ((__VALUE__) == LL_USART_PARITY_ODD))",
+      "brief": "校验奇偶校验配置是否为 LL_USART_PARITY_NONE/EVEN/ODD 之一",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的奇偶校验配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.c",
+      "kind": "macro",
+      "src": "#define IS_LL_USART_PARITY(__VALUE__) (((__VALUE__) == LL_USART_PARITY_NONE) \\\r\n                                    || ((__VALUE__) == LL_USART_PARITY_EVEN) \\\r\n                                    || ((__VALUE__) == LL_USART_PARITY_ODD))"
+    },
+    {
+      "name": "IS_LL_USART_STOPBITS",
+      "sig": "#define IS_LL_USART_STOPBITS(__VALUE__) (((__VALUE__) == LL_USART_STOPBITS_1) \\\n                                      || ((__VALUE__) == LL_USART_STOPBITS_2))",
+      "brief": "校验停止位配置是否为 LL_USART_STOPBITS_1 或 LL_USART_STOPBITS_2",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的停止位配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_usart.c",
+      "kind": "macro",
+      "src": "#define IS_LL_USART_STOPBITS(__VALUE__) (((__VALUE__) == LL_USART_STOPBITS_1) \\\r\n                                      || ((__VALUE__) == LL_USART_STOPBITS_2))"
+    }
+  ],
+  "types": [],
+  "consts": []
+}

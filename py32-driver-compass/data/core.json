@@ -1,0 +1,1557 @@
+{
+  "module": "核心 / 基础",
+  "moduleId": "core",
+  "intro": "HAL 库核心: 系统初始化、时基(tick)管理、延时、器件信息读取。对应 py32f002b_hal.c / py32f002b_hal_def.h / py32f0xx_hal.h。",
+  "files": [
+    "py32f002b_hal.c",
+    "py32f002b_hal_def.h",
+    "py32f0xx_hal.h"
+  ],
+  "hal": [
+    {
+      "name": "HAL_Init",
+      "sig": "HAL_StatusTypeDef HAL_Init(void)",
+      "brief": "系统初始化: 配置 Flash 预取与指令缓存、时基来源、NVIC, 并调用 HAL_MspInit() 完成底层硬件初始化。应在复位后、配置时钟之前调用。",
+      "params": [],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "初始化结果: HAL_OK 成功; HAL_ERROR 失败(如 SysTick 配置失败)"
+      },
+      "notes": [
+        "默认使用 SysTick 作为时基, 按 1ms 递增 uwTick; SysTick 配置基于 HSI 时钟(系统复位后的默认时钟)。",
+        "内部会调用 HAL_MspInit(), 该函数为弱定义, 可在用户文件里重写。"
+      ],
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_Init(void)\r\n{\r\n  HAL_StatusTypeDef  status = HAL_OK;\r\n\r\n  /* Configure Flash prefetch, Instruction cache             */\r\n  /* Default configuration at reset is:                      */\r\n  /* - Prefetch disabled                                     */\r\n  /* - Instruction cache enabled                             */\r\n\r\n  /* Use SysTick as time base source and configure 1ms tick (default clock after Reset is HSI) */\r\n  if (HAL_InitTick(TICK_INT_PRIORITY) != HAL_OK)\r\n  {\r\n    status = HAL_ERROR;\r\n  }\r\n  else\r\n  {\r\n    /* Init the low level hardware */\r\n    HAL_MspInit();\r\n  }\r\n\r\n  /* Return function status */\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_DeInit",
+      "sig": "HAL_StatusTypeDef HAL_DeInit(void)",
+      "brief": "反初始化 HAL 公共部分: 复位全部外设总线并停止时基。",
+      "params": [],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "始终返回 HAL_OK"
+      },
+      "notes": [
+        "此函数为可选调用。"
+      ],
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_DeInit(void)\r\n{\r\n  /* Reset of all peripherals */\r\n  __HAL_RCC_APB1_FORCE_RESET();\r\n  __HAL_RCC_APB1_RELEASE_RESET();\r\n\r\n  __HAL_RCC_APB2_FORCE_RESET();\r\n  __HAL_RCC_APB2_RELEASE_RESET();\r\n\r\n  __HAL_RCC_AHB_FORCE_RESET();\r\n  __HAL_RCC_AHB_RELEASE_RESET();\r\n\r\n  __HAL_RCC_IOP_FORCE_RESET();\r\n  __HAL_RCC_IOP_RELEASE_RESET();\r\n\r\n  /* De-Init the low level hardware */\r\n  HAL_MspDeInit();\r\n\r\n  /* Return function status */\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_MspInit",
+      "sig": "void HAL_MspInit(void)",
+      "brief": "初始化底层硬件(MSP, MCU 支持包)。弱定义空函数, 用户应在自己的文件里实现(如 HAL 库建议的 py32f002b_hal_msp.c)。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "由 HAL_Init() 内部调用。"
+      ],
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "__weak void HAL_MspInit(void)\r\n{\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_MspInit could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_MspDeInit",
+      "sig": "void HAL_MspDeInit(void)",
+      "brief": "反初始化底层硬件。弱定义空函数, 用户可重写。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "由 HAL_DeInit() 内部调用。"
+      ],
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "__weak void HAL_MspDeInit(void)\r\n{\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_MspDeInit could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_InitTick",
+      "sig": "HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)",
+      "brief": "配置时基来源: 让时基以 1ms 为单位产生 Tick 中断, 中断优先级为 TickPriority。",
+      "params": [
+        {
+          "name": "TickPriority",
+          "type": "uint32_t",
+          "desc": "Tick 中断优先级(数值越小优先级越高)"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败"
+      },
+      "notes": [
+        "默认使用 SysTick 作为时基, 由 HAL_Init() 或 HAL_RCC_ClockConfig() 自动调用。",
+        "弱定义, 可重写。"
+      ],
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "__weak HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)\r\n{\r\n  HAL_StatusTypeDef  status = HAL_OK;\r\n\r\n  if (uwTickFreq != 0U)\r\n  {\r\n    /*Configure the SysTick to have interrupt in 1ms time basis*/\r\n    if (HAL_SYSTICK_Config(SystemCoreClock / (1000U /uwTickFreq)) == 0U)\r\n    {\r\n      /* Configure the SysTick IRQ priority */\r\n      if (TickPriority < (1UL << __NVIC_PRIO_BITS))\r\n      {\r\n        HAL_NVIC_SetPriority(SysTick_IRQn, TickPriority, 0U);\r\n        uwTickPrio = TickPriority;\r\n      }\r\n      else\r\n      {\r\n        status = HAL_ERROR;\r\n      }\r\n    }\r\n    else\r\n    {\r\n      status = HAL_ERROR;\r\n    }\r\n  }\r\n  else\r\n  {\r\n    status = HAL_ERROR;\r\n  }\r\n\r\n  /* Return function status */\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_IncTick",
+      "sig": "void HAL_IncTick(void)",
+      "brief": "递增全局时基变量 uwTick, 供应用作为时间基准。默认在 SysTick 中断里每 1ms 调用一次。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可重写。"
+      ],
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "__weak void HAL_IncTick(void)\r\n{\r\n  uwTick += uwTickFreq;\r\n}"
+    },
+    {
+      "name": "HAL_GetTick",
+      "sig": "uint32_t HAL_GetTick(void)",
+      "brief": "返回以毫秒为单位的 Tick 计数值。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "当前 tick 值(毫秒)"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "__weak uint32_t HAL_GetTick(void)\r\n{\r\n  return uwTick;\r\n}"
+    },
+    {
+      "name": "HAL_GetTickPrio",
+      "sig": "uint32_t HAL_GetTickPrio(void)",
+      "brief": "返回 Tick 中断优先级。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "tick 中断优先级"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "uint32_t HAL_GetTickPrio(void)\r\n{\r\n  return uwTickPrio;\r\n}"
+    },
+    {
+      "name": "HAL_SetTickFreq",
+      "sig": "HAL_StatusTypeDef HAL_SetTickFreq(uint32_t Freq)",
+      "brief": "设置新的 Tick 频率。",
+      "params": [
+        {
+          "name": "Freq",
+          "type": "uint32_t",
+          "desc": "新频率, 可取 HAL_TICK_FREQ_10HZ / HAL_TICK_FREQ_100HZ / HAL_TICK_FREQ_1KHZ"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_SetTickFreq(uint32_t Freq)\r\n{\r\n  HAL_StatusTypeDef status  = HAL_OK;\r\n  assert_param(IS_TICKFREQ(Freq));\r\n\r\n  if (uwTickFreq != Freq)\r\n  {\r\n    /* Apply the new tick Freq  */\r\n    status = HAL_InitTick(uwTickPrio);\r\n    if (status == HAL_OK)\r\n    {\r\n      uwTickFreq = Freq;\r\n    }\r\n  }\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_GetTickFreq",
+      "sig": "uint32_t HAL_GetTickFreq(void)",
+      "brief": "返回当前 Tick 频率(Hz)。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "tick 频率(Hz)"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "uint32_t HAL_GetTickFreq(void)\r\n{\r\n  return uwTickFreq;\r\n}"
+    },
+    {
+      "name": "HAL_Delay",
+      "sig": "void HAL_Delay(uint32_t Delay)",
+      "brief": "阻塞式毫秒延时, 基于 uwTick 计数实现。",
+      "params": [
+        {
+          "name": "Delay",
+          "type": "uint32_t",
+          "desc": "延时时间, 单位毫秒"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "默认时基为 SysTick。若在某个外设 ISR 中调用 HAL_Delay(), 需保证 SysTick 中断优先级(数值上)高于该外设中断, 否则会阻塞。",
+        "弱定义, 可重写。"
+      ],
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "__weak void HAL_Delay(uint32_t Delay)\r\n{\r\n  uint32_t tickstart = HAL_GetTick();\r\n  uint32_t wait = Delay;\r\n\r\n  /* Add a freq to guarantee minimum wait */\r\n  if (wait < HAL_MAX_DELAY)\r\n  {\r\n    wait += (uint32_t)(uwTickFreq);\r\n  }\r\n\r\n  while ((HAL_GetTick() - tickstart) < wait)\r\n  {\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_SuspendTick",
+      "sig": "void HAL_SuspendTick(void)",
+      "brief": "挂起 Tick 递增: 关闭 SysTick 中断, 停止 tick 计数。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "__weak void HAL_SuspendTick(void)\r\n{\r\n  /* Disable SysTick Interrupt */\r\n  CLEAR_BIT(SysTick->CTRL,SysTick_CTRL_TICKINT_Msk);\r\n}"
+    },
+    {
+      "name": "HAL_ResumeTick",
+      "sig": "void HAL_ResumeTick(void)",
+      "brief": "恢复 Tick 递增: 重新使能 SysTick 中断。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "__weak void HAL_ResumeTick(void)\r\n{\r\n  /* Enable SysTick Interrupt */\r\n  SET_BIT(SysTick->CTRL, SysTick_CTRL_TICKINT_Msk);\r\n}"
+    },
+    {
+      "name": "HAL_GetHalVersion",
+      "sig": "uint32_t HAL_GetHalVersion(void)",
+      "brief": "返回 HAL 驱动库版本号, 格式 0xXYZR(每个十进制一位, R 为修订号)。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "版本号"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "uint32_t HAL_GetHalVersion(void)\r\n{\r\n  return __PY32F002B_HAL_VERSION;\r\n}"
+    },
+    {
+      "name": "HAL_GetREVID",
+      "sig": "uint32_t HAL_GetREVID(void)",
+      "brief": "返回器件修订标识(Revision ID)。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "修订标识"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "uint32_t HAL_GetREVID(void)\r\n{\r\n  return ((DBGMCU->IDCODE & DBGMCU_IDCODE_REV_ID) >> 16U);\r\n}"
+    },
+    {
+      "name": "HAL_GetDEVID",
+      "sig": "uint32_t HAL_GetDEVID(void)",
+      "brief": "返回器件标识(Device ID)。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "器件标识"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "uint32_t HAL_GetDEVID(void)\r\n{\r\n  return ((DBGMCU->IDCODE) & DBGMCU_IDCODE_DEV_ID);\r\n}"
+    },
+    {
+      "name": "HAL_GetUIDw0",
+      "sig": "uint32_t HAL_GetUIDw0(void)",
+      "brief": "返回 96 位唯一器件 ID(UID)的第一个 32 位字。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "UID 字 0"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "uint32_t HAL_GetUIDw0(void)\r\n{\r\n  return (READ_REG(*((uint32_t *)UID_BASE)));\r\n}"
+    },
+    {
+      "name": "HAL_GetUIDw1",
+      "sig": "uint32_t HAL_GetUIDw1(void)",
+      "brief": "返回 96 位唯一器件 ID(UID)的第二个 32 位字。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "UID 字 1"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "uint32_t HAL_GetUIDw1(void)\r\n{\r\n  return (READ_REG(*((uint32_t *)(UID_BASE + 4U))));\r\n}"
+    },
+    {
+      "name": "HAL_GetUIDw2",
+      "sig": "uint32_t HAL_GetUIDw2(void)",
+      "brief": "返回 96 位唯一器件 ID(UID)的第三个 32 位字。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "UID 字 2"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "uint32_t HAL_GetUIDw2(void)\r\n{\r\n  return (READ_REG(*((uint32_t *)(UID_BASE + 8U))));\r\n}"
+    },
+    {
+      "name": "HAL_DBGMCU_EnableDBGMCUStopMode",
+      "sig": "void HAL_DBGMCU_EnableDBGMCUStopMode(void)",
+      "brief": "使能 STOP 模式下的调试模块, 使调试器在 STOP 模式下仍可连接。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "void HAL_DBGMCU_EnableDBGMCUStopMode(void)\r\n{\r\n  SET_BIT(DBGMCU->CR, DBGMCU_CR_DBG_STOP);\r\n}"
+    },
+    {
+      "name": "HAL_DBGMCU_DisableDBGMCUStopMode",
+      "sig": "void HAL_DBGMCU_DisableDBGMCUStopMode(void)",
+      "brief": "禁止 STOP 模式下的调试模块。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "void HAL_DBGMCU_DisableDBGMCUStopMode(void)\r\n{\r\n  CLEAR_BIT(DBGMCU->CR, DBGMCU_CR_DBG_STOP);\r\n}"
+    },
+    {
+      "name": "HAL_SYSCFG_SetRemapMemory",
+      "sig": "void HAL_SYSCFG_SetRemapMemory(uint32_t Memory)",
+      "brief": "设置 0x00000000 地址的内存映射: 可选择主 Flash / 系统 Flash / SRAM 映射到起始地址。",
+      "params": [
+        {
+          "name": "Memory",
+          "type": "uint32_t",
+          "desc": "映射目标: SYSCFG_BOOT_MAINFLASH / SYSCFG_BOOT_SYSTEMFLASH / SYSCFG_BOOT_SRAM"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "void HAL_SYSCFG_SetRemapMemory(uint32_t Memory)\r\n{\r\n  MODIFY_REG(SYSCFG->CFGR1, SYSCFG_CFGR1_MEM_MODE, Memory);\r\n}"
+    },
+    {
+      "name": "HAL_SYSCFG_GetRemapMemory",
+      "sig": "uint32_t HAL_SYSCFG_GetRemapMemory(void)",
+      "brief": "读取当前 0x00000000 地址的内存映射配置。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "当前映射, 对应 SYSCFG_BOOT_* 之一"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "uint32_t HAL_SYSCFG_GetRemapMemory(void)\r\n{\r\n  return (uint32_t)(READ_BIT(SYSCFG->CFGR1, SYSCFG_CFGR1_MEM_MODE));\r\n}"
+    },
+    {
+      "name": "HAL_SYSCFG_SetTIM1CH1Source",
+      "sig": "void HAL_SYSCFG_SetTIM1CH1Source(uint32_t Source)",
+      "brief": "设置 TIM1 通道 1 的输入源(GPIO / COMP1 / COMP2)。",
+      "params": [
+        {
+          "name": "Source",
+          "type": "uint32_t",
+          "desc": "输入源: SYSCFG_CH1_SRC_TIM1_GPIO / SYSCFG_CH1_SRC_TIM1_COMP1 / SYSCFG_CH1_SRC_TIM1_COMP2"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "void HAL_SYSCFG_SetTIM1CH1Source(uint32_t Source)\r\n{\r\n  MODIFY_REG(SYSCFG->CFGR1, SYSCFG_CFGR1_TIM1_IC1_SRC, Source);  \r\n}"
+    },
+    {
+      "name": "HAL_SYSCFG_GetTIM1CH1Source",
+      "sig": "uint32_t HAL_SYSCFG_GetTIM1CH1Source(void)",
+      "brief": "读取 TIM1 通道 1 当前的输入源配置。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "输入源, 对应 SYSCFG_CH1_SRC_TIM1_* 之一"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "uint32_t HAL_SYSCFG_GetTIM1CH1Source(void)\r\n{\r\n  return (uint32_t)(READ_BIT(SYSCFG->CFGR1, SYSCFG_CFGR1_TIM1_IC1_SRC));\r\n}"
+    },
+    {
+      "name": "HAL_SYSCFG_EnableI2CFastModePlus",
+      "sig": "void HAL_SYSCFG_EnableI2CFastModePlus(uint32_t I2CFastModePlus)",
+      "brief": "使能指定引脚的 I2C 快速模式+(Fast mode Plus)功能。",
+      "params": [
+        {
+          "name": "I2CFastModePlus",
+          "type": "uint32_t",
+          "desc": "引脚组合: SYSCFG_I2C_FMP_PA2 / PB3 / PB4 / PB6, 可任意组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "部分器件/封装上某些 IO 可能不可用, 以数据手册为准。"
+      ],
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "void HAL_SYSCFG_EnableI2CFastModePlus(uint32_t I2CFastModePlus)\r\n{\r\n  SET_BIT(SYSCFG->CFGR1, I2CFastModePlus);\r\n}"
+    },
+    {
+      "name": "HAL_SYSCFG_DisableI2CFastModePlus",
+      "sig": "void HAL_SYSCFG_DisableI2CFastModePlus(uint32_t I2CFastModePlus)",
+      "brief": "禁止指定引脚的 I2C 快速模式+功能。",
+      "params": [
+        {
+          "name": "I2CFastModePlus",
+          "type": "uint32_t",
+          "desc": "引脚组合: SYSCFG_I2C_FMP_PA2 / PB3 / PB4 / PB6"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "void HAL_SYSCFG_DisableI2CFastModePlus(uint32_t I2CFastModePlus)\r\n{\r\n  CLEAR_BIT(SYSCFG->CFGR1, I2CFastModePlus);\r\n}"
+    },
+    {
+      "name": "HAL_SYSCFG_TIM1ETRSource",
+      "sig": "void HAL_SYSCFG_TIM1ETRSource(uint32_t ETRSource)",
+      "brief": "设置 TIM1 外部触发(ETR)输入源: GPIO / COMP1 / COMP2 / ADC。",
+      "params": [
+        {
+          "name": "ETRSource",
+          "type": "uint32_t",
+          "desc": "ETR 源: SYSCFG_ETR_SRC_TIM1_GPIO / COMP1 / COMP2 / ADC"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "void HAL_SYSCFG_TIM1ETRSource(uint32_t ETRSource)\r\n{\r\n  MODIFY_REG(SYSCFG->CFGR2, SYSCFG_CFGR2_ETR_SRC_TIM1, ETRSource);  \r\n}"
+    },
+    {
+      "name": "HAL_SYSCFG_EnableGPIONoiseFilter",
+      "sig": "void HAL_SYSCFG_EnableGPIONoiseFilter(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)",
+      "brief": "使能指定引脚的数字噪声滤波功能。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针, 可取 GPIOA / GPIOB / GPIOC"
+        },
+        {
+          "name": "GPIO_Pin",
+          "type": "uint16_t",
+          "desc": "要滤波的引脚, 可取 GPIO_PIN_x 任意组合(x = 0..7)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "部分器件/封装上某些 IO 可能不可用, 以数据手册为准。"
+      ],
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "void HAL_SYSCFG_EnableGPIONoiseFilter(GPIO_TypeDef *GPIOx,uint16_t GPIO_Pin)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_GPIO_ALL_INSTANCE(GPIOx));\r\n  assert_param(IS_GPIO_PIN(GPIO_Pin));\r\n  if(GPIOx == GPIOA)\r\n  {    \r\n    SET_BIT(SYSCFG->GPIO_ENS, GPIO_Pin);\r\n  }\r\n  else if(GPIOx == GPIOB)\r\n  {\r\n    SET_BIT(SYSCFG->GPIO_ENS, (GPIO_Pin << 8U));\r\n  }\r\n  else if(GPIOx == GPIOC)\r\n  {\r\n    SET_BIT(SYSCFG->GPIO_ENS, (GPIO_Pin << 16U));\r\n  }\r\n  else\r\n  {\r\n    \r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_SYSCFG_DisableGPIONoiseFilter",
+      "sig": "void HAL_SYSCFG_DisableGPIONoiseFilter(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)",
+      "brief": "禁止指定引脚的数字噪声滤波功能。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针, 可取 GPIOA / GPIOB / GPIOC"
+        },
+        {
+          "name": "GPIO_Pin",
+          "type": "uint16_t",
+          "desc": "要取消滤波的引脚, 可取 GPIO_PIN_x 任意组合(x = 0..7)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal.c",
+      "kind": "function",
+      "src": "void HAL_SYSCFG_DisableGPIONoiseFilter(GPIO_TypeDef *GPIOx,uint16_t GPIO_Pin)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_GPIO_ALL_INSTANCE(GPIOx));\r\n  assert_param(IS_GPIO_PIN(GPIO_Pin));\r\n  if(GPIOx == GPIOA)\r\n  {    \r\n    CLEAR_BIT(SYSCFG->GPIO_ENS, GPIO_Pin);\r\n  }\r\n  else if(GPIOx == GPIOB)\r\n  {\r\n    CLEAR_BIT(SYSCFG->GPIO_ENS, (GPIO_Pin << 8U));\r\n  }\r\n  else if(GPIOx == GPIOC)\r\n  {\r\n    CLEAR_BIT(SYSCFG->GPIO_ENS, (GPIO_Pin << 16U));\r\n  }\r\n  else\r\n  {\r\n    \r\n  }\r\n}"
+    },
+    {
+      "name": "__HAL_DBGMCU_FREEZE_IWDG",
+      "sig": "#define __HAL_DBGMCU_FREEZE_IWDG()           (DBGMCU->APBFZ1 |= (DBGMCU_APB_FZ1_DBG_IWDG_STOP))",
+      "brief": "宏: 调试模式下冻结 IWDG(停止计数), 便于调试。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx_hal.h",
+      "kind": "macro",
+      "src": "#define __HAL_DBGMCU_FREEZE_IWDG()           (DBGMCU->APBFZ1 |= (DBGMCU_APB_FZ1_DBG_IWDG_STOP))"
+    },
+    {
+      "name": "__HAL_DBGMCU_UNFREEZE_IWDG",
+      "sig": "#define __HAL_DBGMCU_UNFREEZE_IWDG()         (DBGMCU->APBFZ1 &= ~(DBGMCU_APB_FZ1_DBG_IWDG_STOP))",
+      "brief": "宏: 解除调试模式下的 IWDG 冻结。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx_hal.h",
+      "kind": "macro",
+      "src": "#define __HAL_DBGMCU_UNFREEZE_IWDG()         (DBGMCU->APBFZ1 &= ~(DBGMCU_APB_FZ1_DBG_IWDG_STOP))"
+    },
+    {
+      "name": "__HAL_DBGMCU_FREEZE_LPTIM",
+      "sig": "#define __HAL_DBGMCU_FREEZE_LPTIM()            (DBGMCU->APBFZ1 |= (DBGMCU_APB_FZ1_DBG_LPTIM_STOP))",
+      "brief": "宏: 调试模式下冻结 LPTIM。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx_hal.h",
+      "kind": "macro",
+      "src": "#define __HAL_DBGMCU_FREEZE_LPTIM()            (DBGMCU->APBFZ1 |= (DBGMCU_APB_FZ1_DBG_LPTIM_STOP))"
+    },
+    {
+      "name": "__HAL_DBGMCU_UNFREEZE_LPTIM",
+      "sig": "#define __HAL_DBGMCU_UNFREEZE_LPTIM()          (DBGMCU->APBFZ1 &= ~(DBGMCU_APB_FZ1_DBG_LPTIM_STOP))",
+      "brief": "宏: 解除调试模式下的 LPTIM 冻结。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx_hal.h",
+      "kind": "macro",
+      "src": "#define __HAL_DBGMCU_UNFREEZE_LPTIM()          (DBGMCU->APBFZ1 &= ~(DBGMCU_APB_FZ1_DBG_LPTIM_STOP))"
+    },
+    {
+      "name": "__HAL_DBGMCU_FREEZE_TIM1",
+      "sig": "#define __HAL_DBGMCU_FREEZE_TIM1()           (DBGMCU->APBFZ2 |= (DBGMCU_APB_FZ2_DBG_TIM1_STOP))",
+      "brief": "宏: 调试模式下冻结 TIM1。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx_hal.h",
+      "kind": "macro",
+      "src": "#define __HAL_DBGMCU_FREEZE_TIM1()           (DBGMCU->APBFZ2 |= (DBGMCU_APB_FZ2_DBG_TIM1_STOP))"
+    },
+    {
+      "name": "__HAL_DBGMCU_UNFREEZE_TIM1",
+      "sig": "#define __HAL_DBGMCU_UNFREEZE_TIM1()         (DBGMCU->APBFZ2 &= ~(DBGMCU_APB_FZ2_DBG_TIM1_STOP))",
+      "brief": "宏: 解除调试模式下的 TIM1 冻结。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx_hal.h",
+      "kind": "macro",
+      "src": "#define __HAL_DBGMCU_UNFREEZE_TIM1()         (DBGMCU->APBFZ2 &= ~(DBGMCU_APB_FZ2_DBG_TIM1_STOP))"
+    },
+    {
+      "name": "__HAL_DBGMCU_FREEZE_TIM14",
+      "sig": "#define __HAL_DBGMCU_FREEZE_TIM14()          (DBGMCU->APBFZ2 |= (DBGMCU_APB_FZ2_DBG_TIM14_STOP))",
+      "brief": "宏: 调试模式下冻结 TIM14。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx_hal.h",
+      "kind": "macro",
+      "src": "#define __HAL_DBGMCU_FREEZE_TIM14()          (DBGMCU->APBFZ2 |= (DBGMCU_APB_FZ2_DBG_TIM14_STOP))"
+    },
+    {
+      "name": "__HAL_DBGMCU_UNFREEZE_TIM14",
+      "sig": "#define __HAL_DBGMCU_UNFREEZE_TIM14()        (DBGMCU->APBFZ2 &= ~(DBGMCU_APB_FZ2_DBG_TIM14_STOP))",
+      "brief": "宏: 解除调试模式下的 TIM14 冻结。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx_hal.h",
+      "kind": "macro",
+      "src": "#define __HAL_DBGMCU_UNFREEZE_TIM14()        (DBGMCU->APBFZ2 &= ~(DBGMCU_APB_FZ2_DBG_TIM14_STOP))"
+    },
+    {
+      "name": "__HAL_SYSCFG_COMP1_OCREF_CLR_TIM1_ENABLE",
+      "sig": "#define __HAL_SYSCFG_COMP1_OCREF_CLR_TIM1_ENABLE()           SET_BIT(SYSCFG->CFGR1, SYSCFG_CFGR1_COMP1_OCREF_CLR_TIM1)",
+      "brief": "宏: 使能 COMP1 输出作为 TIM1 OCREF_CLR(输出比较参考清除)输入。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx_hal.h",
+      "kind": "macro",
+      "src": "#define __HAL_SYSCFG_COMP1_OCREF_CLR_TIM1_ENABLE()           SET_BIT(SYSCFG->CFGR1, SYSCFG_CFGR1_COMP1_OCREF_CLR_TIM1)"
+    },
+    {
+      "name": "__HAL_SYSCFG_COMP1_OCREF_CLR_TIM1_DISABLE",
+      "sig": "#define __HAL_SYSCFG_COMP1_OCREF_CLR_TIM1_DISABLE()          CLEAR_BIT(SYSCFG->CFGR1, SYSCFG_CFGR1_COMP1_OCREF_CLR_TIM1)",
+      "brief": "宏: 禁止 COMP1 输出作为 TIM1 OCREF_CLR 输入。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx_hal.h",
+      "kind": "macro",
+      "src": "#define __HAL_SYSCFG_COMP1_OCREF_CLR_TIM1_DISABLE()          CLEAR_BIT(SYSCFG->CFGR1, SYSCFG_CFGR1_COMP1_OCREF_CLR_TIM1)"
+    },
+    {
+      "name": "__HAL_SYSCFG_COMP2_OCREF_CLR_TIM1_ENABLE",
+      "sig": "#define __HAL_SYSCFG_COMP2_OCREF_CLR_TIM1_ENABLE()           SET_BIT(SYSCFG->CFGR1, SYSCFG_CFGR1_COMP2_OCREF_CLR_TIM1)",
+      "brief": "宏: 使能 COMP2 输出作为 TIM1 OCREF_CLR 输入。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx_hal.h",
+      "kind": "macro",
+      "src": "#define __HAL_SYSCFG_COMP2_OCREF_CLR_TIM1_ENABLE()           SET_BIT(SYSCFG->CFGR1, SYSCFG_CFGR1_COMP2_OCREF_CLR_TIM1)"
+    },
+    {
+      "name": "__HAL_SYSCFG_COMP2_OCREF_CLR_TIM1_DISABLE",
+      "sig": "#define __HAL_SYSCFG_COMP2_OCREF_CLR_TIM1_DISABLE()          CLEAR_BIT(SYSCFG->CFGR1, SYSCFG_CFGR1_COMP2_OCREF_CLR_TIM1)",
+      "brief": "宏: 禁止 COMP2 输出作为 TIM1 OCREF_CLR 输入。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx_hal.h",
+      "kind": "macro",
+      "src": "#define __HAL_SYSCFG_COMP2_OCREF_CLR_TIM1_DISABLE()          CLEAR_BIT(SYSCFG->CFGR1, SYSCFG_CFGR1_COMP2_OCREF_CLR_TIM1)"
+    },
+    {
+      "name": "__HAL_SYSCFG_BREAK_LOCKUP_LOCK",
+      "sig": "#define __HAL_SYSCFG_BREAK_LOCKUP_LOCK()        SET_BIT(SYSCFG->CFGR2, SYSCFG_CFGR2_LOCKUP_LOCK)",
+      "brief": "宏: 使能并锁定 Cortex-M0+ LOCKUP(硬故障)输出到 TIM1 刹车(Break)输入的连接。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "notes": [
+        "配置被锁定后, 只能通过系统复位解锁。"
+      ],
+      "file": "py32f0xx_hal.h",
+      "kind": "macro",
+      "src": "#define __HAL_SYSCFG_BREAK_LOCKUP_LOCK()        SET_BIT(SYSCFG->CFGR2, SYSCFG_CFGR2_LOCKUP_LOCK)"
+    },
+    {
+      "name": "__HAL_SYSCFG_COMP1_BREAK_TIM1",
+      "sig": "#define __HAL_SYSCFG_COMP1_BREAK_TIM1()           SET_BIT(SYSCFG->CFGR2, SYSCFG_CFGR2_COMP1_BRK_TIM1)",
+      "brief": "宏: 使能 COMP1 作为 TIM1 刹车输入。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx_hal.h",
+      "kind": "macro",
+      "src": "#define __HAL_SYSCFG_COMP1_BREAK_TIM1()           SET_BIT(SYSCFG->CFGR2, SYSCFG_CFGR2_COMP1_BRK_TIM1)"
+    },
+    {
+      "name": "__HAL_SYSCFG_COMP2_BREAK_TIM1",
+      "sig": "#define __HAL_SYSCFG_COMP2_BREAK_TIM1()           SET_BIT(SYSCFG->CFGR2, SYSCFG_CFGR2_COMP2_BRK_TIM1)",
+      "brief": "宏: 使能 COMP2 作为 TIM1 刹车输入。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx_hal.h",
+      "kind": "macro",
+      "src": "#define __HAL_SYSCFG_COMP2_BREAK_TIM1()           SET_BIT(SYSCFG->CFGR2, SYSCFG_CFGR2_COMP2_BRK_TIM1)"
+    },
+    {
+      "name": "__HAL_RESET_HANDLE_STATE",
+      "sig": "#define __HAL_RESET_HANDLE_STATE(__HANDLE__) ((__HANDLE__)->State = 0U)",
+      "brief": "宏: 将外设句柄的 State 字段清零。首次把局部句柄传给 HAL_PPP_Init() 前必须调用, 否则 State 为随机值会导致 MspInit 不被执行; 也用于重新配置底层硬件时替代 DeInit+Init。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "外设句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_def.h",
+      "kind": "macro",
+      "src": "#define __HAL_RESET_HANDLE_STATE(__HANDLE__) ((__HANDLE__)->State = 0U)"
+    },
+    {
+      "name": "__HAL_LOCK",
+      "sig": "#define __HAL_LOCK(__HANDLE__)                                           \\\r\n                                do{                                        \\\r\n                                    if((__HANDLE__)->Lock == HAL_LOCKED)   \\\r\n                                    {                                      \\\r\n                                       return HAL_BUSY;                    \\\r\n                                    }                                      \\\r\n                                    else                                   \\\r\n                                    {                                      \\\r\n                                       (__HANDLE__)->Lock = HAL_LOCKED;    \\\r\n                                    }                                      \\\r\n                                  }while (0U)",
+      "brief": "宏: 锁定外设句柄, 防止并发访问。若句柄已被锁定则直接返回 HAL_BUSY。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "外设句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无(已锁定时函数直接返回 HAL_BUSY)"
+      },
+      "file": "py32f002b_hal_def.h",
+      "kind": "macro",
+      "src": "#define __HAL_LOCK(__HANDLE__)                                           \\\r\n                                do{                                        \\\r\n                                    if((__HANDLE__)->Lock == HAL_LOCKED)   \\\r\n                                    {                                      \\\r\n                                       return HAL_BUSY;                    \\\r\n                                    }                                      \\\r\n                                    else                                   \\\r\n                                    {                                      \\\r\n                                       (__HANDLE__)->Lock = HAL_LOCKED;    \\\r\n                                    }                                      \\\r\n                                  }while (0U)"
+    },
+    {
+      "name": "__HAL_UNLOCK",
+      "sig": "#define __HAL_UNLOCK(__HANDLE__)                                          \\\r\n                                  do{                                       \\\r\n                                      (__HANDLE__)->Lock = HAL_UNLOCKED;    \\\r\n                                    }while (0U)",
+      "brief": "宏: 解锁外设句柄(将 Lock 置为 HAL_UNLOCKED)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "外设句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_def.h",
+      "kind": "macro",
+      "src": "#define __HAL_UNLOCK(__HANDLE__)                                          \\\r\n                                  do{                                       \\\r\n                                      (__HANDLE__)->Lock = HAL_UNLOCKED;    \\\r\n                                    }while (0U)"
+    },
+    {
+      "name": "WRITE_REG",
+      "sig": "#define WRITE_REG(REG, VAL)   ((REG) = (VAL))",
+      "brief": "宏: 向寄存器写入值(直接赋值)。",
+      "params": [
+        {
+          "name": "REG",
+          "type": "宏参数",
+          "desc": "寄存器地址/左值, 如 GPIOA->MODER"
+        },
+        {
+          "name": "VAL",
+          "type": "宏参数",
+          "desc": "要写入的值"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define WRITE_REG(REG, VAL)   ((REG) = (VAL))"
+    },
+    {
+      "name": "READ_REG",
+      "sig": "#define READ_REG(REG)         ((REG))",
+      "brief": "宏: 读取寄存器值(返回该表达式本身)。",
+      "params": [
+        {
+          "name": "REG",
+          "type": "宏参数",
+          "desc": "寄存器地址/表达式"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "寄存器当前值"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define READ_REG(REG)         ((REG))"
+    },
+    {
+      "name": "MODIFY_REG",
+      "sig": "#define MODIFY_REG(REG, CLEARMASK, SETMASK)  WRITE_REG((REG), (((READ_REG(REG)) & (~(CLEARMASK))) | (SETMASK)))",
+      "brief": "宏: 读-改-写寄存器: 先按 CLEARMASK 清零特定位, 再按 SETMASK 置位。",
+      "params": [
+        {
+          "name": "REG",
+          "type": "宏参数",
+          "desc": "寄存器地址"
+        },
+        {
+          "name": "CLEARMASK",
+          "type": "宏参数",
+          "desc": "要清零的位掩码"
+        },
+        {
+          "name": "SETMASK",
+          "type": "宏参数",
+          "desc": "要置位的位掩码"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define MODIFY_REG(REG, CLEARMASK, SETMASK)  WRITE_REG((REG), (((READ_REG(REG)) & (~(CLEARMASK))) | (SETMASK)))"
+    },
+    {
+      "name": "SET_BIT",
+      "sig": "#define SET_BIT(REG, BIT)     ((REG) |= (BIT))",
+      "brief": "宏: 将寄存器指定位置位(或运算)。",
+      "params": [
+        {
+          "name": "REG",
+          "type": "宏参数",
+          "desc": "寄存器地址"
+        },
+        {
+          "name": "BIT",
+          "type": "宏参数",
+          "desc": "要置位的位掩码"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define SET_BIT(REG, BIT)     ((REG) |= (BIT))"
+    },
+    {
+      "name": "CLEAR_BIT",
+      "sig": "#define CLEAR_BIT(REG, BIT)   ((REG) &= ~(BIT))",
+      "brief": "宏: 将寄存器指定位清零(与非运算)。",
+      "params": [
+        {
+          "name": "REG",
+          "type": "宏参数",
+          "desc": "寄存器地址"
+        },
+        {
+          "name": "BIT",
+          "type": "宏参数",
+          "desc": "要清零的位掩码"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define CLEAR_BIT(REG, BIT)   ((REG) &= ~(BIT))"
+    },
+    {
+      "name": "READ_BIT",
+      "sig": "#define READ_BIT(REG, BIT)    ((REG) & (BIT))",
+      "brief": "宏: 读取寄存器的指定位(与运算, 不改变寄存器)。",
+      "params": [
+        {
+          "name": "REG",
+          "type": "宏参数",
+          "desc": "寄存器地址"
+        },
+        {
+          "name": "BIT",
+          "type": "宏参数",
+          "desc": "要读取的位掩码"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "被掩码后的位值"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define READ_BIT(REG, BIT)    ((REG) & (BIT))"
+    },
+    {
+      "name": "CLEAR_REG",
+      "sig": "#define CLEAR_REG(REG)        ((REG) = (0x0))",
+      "brief": "宏: 将寄存器整体清零。",
+      "params": [
+        {
+          "name": "REG",
+          "type": "宏参数",
+          "desc": "寄存器地址"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define CLEAR_REG(REG)        ((REG) = (0x0))"
+    },
+    {
+      "name": "ATOMIC_SET_BIT",
+      "sig": "#define ATOMIC_SET_BIT(REG, BIT)                             \\\r\n  do {                                                       \\\r\n    uint32_t primask;                                        \\\r\n    primask = __get_PRIMASK();                               \\\r\n    __set_PRIMASK(1);                                        \\\r\n    SET_BIT((REG), (BIT));                                   \\\r\n    __set_PRIMASK(primask);                                  \\\r\n  } while(0)",
+      "brief": "宏: 关中断后置位, 再开中断(原子操作, 防止读改写被打断)。",
+      "params": [
+        {
+          "name": "REG",
+          "type": "宏参数",
+          "desc": "寄存器地址"
+        },
+        {
+          "name": "BIT",
+          "type": "宏参数",
+          "desc": "要置位的位掩码"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define ATOMIC_SET_BIT(REG, BIT)                             \\\r\n  do {                                                       \\\r\n    uint32_t primask;                                        \\\r\n    primask = __get_PRIMASK();                               \\\r\n    __set_PRIMASK(1);                                        \\\r\n    SET_BIT((REG), (BIT));                                   \\\r\n    __set_PRIMASK(primask);                                  \\\r\n  } while(0)"
+    },
+    {
+      "name": "ATOMIC_CLEAR_BIT",
+      "sig": "#define ATOMIC_CLEAR_BIT(REG, BIT)                           \\\r\n  do {                                                       \\\r\n    uint32_t primask;                                        \\\r\n    primask = __get_PRIMASK();                               \\\r\n    __set_PRIMASK(1);                                        \\\r\n    CLEAR_BIT((REG), (BIT));                                 \\\r\n    __set_PRIMASK(primask);                                  \\\r\n  } while(0)",
+      "brief": "宏: 关中断后清零指定位, 再开中断(原子操作)。",
+      "params": [
+        {
+          "name": "REG",
+          "type": "宏参数",
+          "desc": "寄存器地址"
+        },
+        {
+          "name": "BIT",
+          "type": "宏参数",
+          "desc": "要清零的位掩码"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define ATOMIC_CLEAR_BIT(REG, BIT)                           \\\r\n  do {                                                       \\\r\n    uint32_t primask;                                        \\\r\n    primask = __get_PRIMASK();                               \\\r\n    __set_PRIMASK(1);                                        \\\r\n    CLEAR_BIT((REG), (BIT));                                 \\\r\n    __set_PRIMASK(primask);                                  \\\r\n  } while(0)"
+    },
+    {
+      "name": "ATOMIC_MODIFY_REG",
+      "sig": "#define ATOMIC_MODIFY_REG(REG, CLEARMSK, SETMASK)            \\\r\n  do {                                                       \\\r\n    uint32_t primask;                                        \\\r\n    primask = __get_PRIMASK();                               \\\r\n    __set_PRIMASK(1);                                        \\\r\n    MODIFY_REG((REG), (CLEARMSK), (SETMASK));                \\\r\n    __set_PRIMASK(primask);                                  \\\r\n  } while(0)",
+      "brief": "宏: 关中断后读改写寄存器, 再开中断(原子操作)。",
+      "params": [
+        {
+          "name": "REG",
+          "type": "宏参数",
+          "desc": "寄存器地址"
+        },
+        {
+          "name": "CLEARMSK",
+          "type": "宏参数",
+          "desc": "要清零的位掩码"
+        },
+        {
+          "name": "SETMASK",
+          "type": "宏参数",
+          "desc": "要置位的位掩码"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define ATOMIC_MODIFY_REG(REG, CLEARMSK, SETMASK)            \\\r\n  do {                                                       \\\r\n    uint32_t primask;                                        \\\r\n    primask = __get_PRIMASK();                               \\\r\n    __set_PRIMASK(1);                                        \\\r\n    MODIFY_REG((REG), (CLEARMSK), (SETMASK));                \\\r\n    __set_PRIMASK(primask);                                  \\\r\n  } while(0)"
+    },
+    {
+      "name": "ATOMIC_SETH_BIT",
+      "sig": "#define ATOMIC_SETH_BIT(REG, BIT) ATOMIC_SET_BIT(REG, BIT)                                   \\\r\n\r\n/* Atomic 16-bit register access macro to clear one or several bits */",
+      "brief": "宏: 原子置位(半字别名, 等价 ATOMIC_SET_BIT)。",
+      "params": [
+        {
+          "name": "REG",
+          "type": "宏参数",
+          "desc": "寄存器地址"
+        },
+        {
+          "name": "BIT",
+          "type": "宏参数",
+          "desc": "位掩码"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define ATOMIC_SETH_BIT(REG, BIT) ATOMIC_SET_BIT(REG, BIT)                                   \\\r\n\r\n/* Atomic 16-bit register access macro to clear one or several bits */"
+    },
+    {
+      "name": "ATOMIC_CLEARH_BIT",
+      "sig": "#define ATOMIC_CLEARH_BIT(REG, BIT) ATOMIC_CLEAR_BIT(REG, BIT)                               \\\r\n\r\n/* Atomic 16-bit register access macro to clear and set one or several bits */",
+      "brief": "宏: 原子清零(半字别名, 等价 ATOMIC_CLEAR_BIT)。",
+      "params": [
+        {
+          "name": "REG",
+          "type": "宏参数",
+          "desc": "寄存器地址"
+        },
+        {
+          "name": "BIT",
+          "type": "宏参数",
+          "desc": "位掩码"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define ATOMIC_CLEARH_BIT(REG, BIT) ATOMIC_CLEAR_BIT(REG, BIT)                               \\\r\n\r\n/* Atomic 16-bit register access macro to clear and set one or several bits */"
+    },
+    {
+      "name": "ATOMIC_MODIFYH_REG",
+      "sig": "#define ATOMIC_MODIFYH_REG(REG, CLEARMSK, SETMASK) ATOMIC_MODIFY_REG(REG, CLEARMSK, SETMASK) \\\r\n\r\n#define HW32_REG(ADDRESS)     ( * ((volatile unsigned           int * )(ADDRESS)))",
+      "brief": "宏: 原子读改写(半字别名, 等价 ATOMIC_MODIFY_REG)。",
+      "params": [
+        {
+          "name": "REG",
+          "type": "宏参数",
+          "desc": "寄存器地址"
+        },
+        {
+          "name": "CLEARMSK",
+          "type": "宏参数",
+          "desc": "要清零的位掩码"
+        },
+        {
+          "name": "SETMASK",
+          "type": "宏参数",
+          "desc": "要置位的位掩码"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define ATOMIC_MODIFYH_REG(REG, CLEARMSK, SETMASK) ATOMIC_MODIFY_REG(REG, CLEARMSK, SETMASK) \\\r\n\r\n#define HW32_REG(ADDRESS)     ( * ((volatile unsigned           int * )(ADDRESS)))"
+    },
+    {
+      "name": "HW32_REG",
+      "sig": "#define HW32_REG(ADDRESS)     ( * ((volatile unsigned           int * )(ADDRESS)))",
+      "brief": "宏: 把地址当作 32 位寄存器直接读写。",
+      "params": [
+        {
+          "name": "ADDRESS",
+          "type": "宏参数",
+          "desc": "寄存器绝对地址"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "该地址的 32 位值"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define HW32_REG(ADDRESS)     ( * ((volatile unsigned           int * )(ADDRESS)))"
+    },
+    {
+      "name": "HW16_REG",
+      "sig": "#define HW16_REG(ADDRESS)     ( * ((volatile unsigned short     int * )(ADDRESS)))",
+      "brief": "宏: 把地址当作 16 位寄存器直接读写。",
+      "params": [
+        {
+          "name": "ADDRESS",
+          "type": "宏参数",
+          "desc": "寄存器绝对地址"
+        }
+      ],
+      "retval": {
+        "type": "uint16_t",
+        "desc": "该地址的 16 位值"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define HW16_REG(ADDRESS)     ( * ((volatile unsigned short     int * )(ADDRESS)))"
+    },
+    {
+      "name": "HW8_REG",
+      "sig": "#define HW8_REG(ADDRESS)      ( * ((volatile unsigned          char * )(ADDRESS)))",
+      "brief": "宏: 把地址当作 8 位寄存器直接读写。",
+      "params": [
+        {
+          "name": "ADDRESS",
+          "type": "宏参数",
+          "desc": "寄存器绝对地址"
+        }
+      ],
+      "retval": {
+        "type": "uint8_t",
+        "desc": "该地址的 8 位值"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define HW8_REG(ADDRESS)      ( * ((volatile unsigned          char * )(ADDRESS)))"
+    },
+    {
+      "name": "M32",
+      "sig": "#define M32(ADDRESS)          HW32_REG(ADDRESS)",
+      "brief": "宏: 32 位绝对地址寄存器访问的简写(HW32_REG 别名)。",
+      "params": [
+        {
+          "name": "ADDRESS",
+          "type": "宏参数",
+          "desc": "寄存器绝对地址"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "该地址的 32 位值"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define M32(ADDRESS)          HW32_REG(ADDRESS)"
+    },
+    {
+      "name": "M16",
+      "sig": "#define M16(ADDRESS)          HW16_REG(ADDRESS)",
+      "brief": "宏: 16 位绝对地址寄存器访问的简写(HW16_REG 别名)。",
+      "params": [
+        {
+          "name": "ADDRESS",
+          "type": "宏参数",
+          "desc": "寄存器绝对地址"
+        }
+      ],
+      "retval": {
+        "type": "uint16_t",
+        "desc": "该地址的 16 位值"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define M16(ADDRESS)          HW16_REG(ADDRESS)"
+    },
+    {
+      "name": "M8",
+      "sig": "#define M8(ADDRESS)           HW8_REG(ADDRESS)",
+      "brief": "宏: 8 位绝对地址寄存器访问的简写(HW8_REG 别名)。",
+      "params": [
+        {
+          "name": "ADDRESS",
+          "type": "宏参数",
+          "desc": "寄存器绝对地址"
+        }
+      ],
+      "retval": {
+        "type": "uint8_t",
+        "desc": "该地址的 8 位值"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define M8(ADDRESS)           HW8_REG(ADDRESS)"
+    },
+    {
+      "name": "IS_FUNCTIONAL_STATE",
+      "sig": "#define IS_FUNCTIONAL_STATE(STATE) (((STATE) == DISABLE) || ((STATE) == ENABLE))",
+      "brief": "宏: 校验参数是否为合法的 FunctionalState 值(DISABLE 或 ENABLE)。",
+      "params": [
+        {
+          "name": "STATE",
+          "type": "宏参数",
+          "desc": "要校验的状态值"
+        }
+      ],
+      "retval": {
+        "type": "uint8_t",
+        "desc": "合法返回 1, 否则 0"
+      },
+      "file": "py32f0xx.h",
+      "kind": "macro",
+      "src": "#define IS_FUNCTIONAL_STATE(STATE) (((STATE) == DISABLE) || ((STATE) == ENABLE))"
+    },
+    {
+      "name": "HAL_IS_BIT_SET",
+      "sig": "#define HAL_IS_BIT_SET(REG, BIT)         (((REG) & (BIT)) != 0U)",
+      "brief": "宏: 判断寄存器指定位是否置位。",
+      "params": [
+        {
+          "name": "REG",
+          "type": "宏参数",
+          "desc": "寄存器/表达式"
+        },
+        {
+          "name": "BIT",
+          "type": "宏参数",
+          "desc": "位掩码"
+        }
+      ],
+      "retval": {
+        "type": "uint8_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_hal_def.h",
+      "kind": "macro",
+      "src": "#define HAL_IS_BIT_SET(REG, BIT)         (((REG) & (BIT)) != 0U)"
+    },
+    {
+      "name": "HAL_IS_BIT_CLR",
+      "sig": "#define HAL_IS_BIT_CLR(REG, BIT)         (((REG) & (BIT)) == 0U)",
+      "brief": "宏: 判断寄存器指定位是否清零。",
+      "params": [
+        {
+          "name": "REG",
+          "type": "宏参数",
+          "desc": "寄存器/表达式"
+        },
+        {
+          "name": "BIT",
+          "type": "宏参数",
+          "desc": "位掩码"
+        }
+      ],
+      "retval": {
+        "type": "uint8_t",
+        "desc": "清零返回 1, 否则 0"
+      },
+      "file": "py32f002b_hal_def.h",
+      "kind": "macro",
+      "src": "#define HAL_IS_BIT_CLR(REG, BIT)         (((REG) & (BIT)) == 0U)"
+    },
+    {
+      "name": "HAL_MAX_DELAY",
+      "sig": "#define HAL_MAX_DELAY      0xFFFFFFFFU",
+      "brief": "宏: HAL_Delay 支持的最大延时值(0xFFFFFFFF 毫秒)。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "0xFFFFFFFFU"
+      },
+      "file": "py32f002b_hal_def.h",
+      "kind": "macro",
+      "src": "#define HAL_MAX_DELAY      0xFFFFFFFFU"
+    },
+    {
+      "name": "UNUSED",
+      "sig": "#define UNUSED(X) (void)X      /* To avoid gcc/g++ warnings */",
+      "brief": "宏: 消除未使用参数/变量的编译警告。",
+      "params": [
+        {
+          "name": "X",
+          "type": "宏参数",
+          "desc": "要标记为已使用的变量/参数"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_def.h",
+      "kind": "macro",
+      "src": "#define UNUSED(X) (void)X      /* To avoid gcc/g++ warnings */"
+    }
+  ],
+  "ll": [],
+  "types": [
+    {
+      "name": "HAL_StatusTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_OK = 0x00U, HAL_ERROR = 0x01U, HAL_BUSY = 0x02U, HAL_TIMEOUT = 0x03U } HAL_StatusTypeDef;",
+      "desc": "HAL 通用状态枚举: 几乎所有 HAL 函数用它作为返回值。",
+      "members": [
+        {
+          "name": "HAL_OK",
+          "value": "0x00U",
+          "desc": "成功"
+        },
+        {
+          "name": "HAL_ERROR",
+          "value": "0x01U",
+          "desc": "出错(参数错误或操作失败)"
+        },
+        {
+          "name": "HAL_BUSY",
+          "value": "0x02U",
+          "desc": "忙(外设正在处理, 或已被锁定)"
+        },
+        {
+          "name": "HAL_TIMEOUT",
+          "value": "0x03U",
+          "desc": "超时(操作在限定时间内未完成)"
+        }
+      ],
+      "file": "py32f002b_hal_def.h"
+    },
+    {
+      "name": "HAL_LockTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_UNLOCKED = 0x00U, HAL_LOCKED = 0x01U } HAL_LockTypeDef;",
+      "desc": "HAL 外设句柄锁状态, 用于防止对同一外设的并发访问。",
+      "members": [
+        {
+          "name": "HAL_UNLOCKED",
+          "value": "0x00U",
+          "desc": "未锁定"
+        },
+        {
+          "name": "HAL_LOCKED",
+          "value": "0x01U",
+          "desc": "已锁定"
+        }
+      ],
+      "file": "py32f002b_hal_def.h"
+    },
+    {
+      "name": "HAL_TickFreqTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_TICK_FREQ_10HZ = 100U, HAL_TICK_FREQ_100HZ = 10U, HAL_TICK_FREQ_1KHZ = 1U, HAL_TICK_FREQ_DEFAULT = HAL_TICK_FREQ_1KHZ } HAL_TickFreqTypeDef;",
+      "desc": "时基 Tick 频率枚举: 10Hz/100Hz/1kHz, 默认 1kHz。",
+      "members": [
+        {
+          "name": "HAL_TICK_FREQ_10HZ",
+          "value": "100U",
+          "desc": "10Hz(每 100ms 一次 tick)"
+        },
+        {
+          "name": "HAL_TICK_FREQ_100HZ",
+          "value": "10U",
+          "desc": "100Hz(每 10ms 一次 tick)"
+        },
+        {
+          "name": "HAL_TICK_FREQ_1KHZ",
+          "value": "1U",
+          "desc": "1kHz(每 1ms 一次 tick)"
+        },
+        {
+          "name": "HAL_TICK_FREQ_DEFAULT",
+          "value": "HAL_TICK_FREQ_1KHZ",
+          "desc": "默认 1kHz"
+        }
+      ],
+      "file": "py32f0xx_hal.h"
+    },
+    {
+      "name": "FlagStatus",
+      "kind": "enum",
+      "def": "typedef enum { RESET = 0, SET = !RESET } FlagStatus, ITStatus;",
+      "desc": "CMSIS 通用标志状态枚举(RESET=0 / SET=1), 与 ITStatus 共享同一类型。",
+      "members": [
+        {
+          "name": "RESET",
+          "value": "0",
+          "desc": "标志未置位/复位状态"
+        },
+        {
+          "name": "SET",
+          "value": "!RESET",
+          "desc": "标志已置位"
+        }
+      ],
+      "file": "py32f0xx.h"
+    },
+    {
+      "name": "ITStatus",
+      "kind": "enum",
+      "def": "typedef enum { RESET = 0, SET = !RESET } FlagStatus, ITStatus;",
+      "desc": "CMSIS 中断状态枚举(RESET=0 / SET=1), 与 FlagStatus 共享同一类型。",
+      "members": [
+        {
+          "name": "RESET",
+          "value": "0",
+          "desc": "中断标志未置位"
+        },
+        {
+          "name": "SET",
+          "value": "!RESET",
+          "desc": "中断标志已置位"
+        }
+      ],
+      "file": "py32f0xx.h"
+    },
+    {
+      "name": "FunctionalState",
+      "kind": "enum",
+      "def": "typedef enum { DISABLE = 0, ENABLE = !DISABLE } FunctionalState;",
+      "desc": "CMSIS 功能开关枚举(DISABLE=0 / ENABLE=1), 常作 HAL/LL 函数的开关参数。",
+      "members": [
+        {
+          "name": "DISABLE",
+          "value": "0",
+          "desc": "禁止/关闭"
+        },
+        {
+          "name": "ENABLE",
+          "value": "!DISABLE",
+          "desc": "使能/开启"
+        }
+      ],
+      "file": "py32f0xx.h"
+    },
+    {
+      "name": "ErrorStatus",
+      "kind": "enum",
+      "def": "typedef enum { SUCCESS = 0U, ERROR = !SUCCESS } ErrorStatus;",
+      "desc": "CMSIS 通用错误状态枚举(SUCCESS=0 / ERROR=1), LL 库函数常用返回值。",
+      "members": [
+        {
+          "name": "SUCCESS",
+          "value": "0U",
+          "desc": "成功"
+        },
+        {
+          "name": "ERROR",
+          "value": "!SUCCESS",
+          "desc": "失败"
+        }
+      ],
+      "file": "py32f0xx.h"
+    }
+  ],
+  "consts": [
+    {
+      "name": "SYSCFG_BOOT_MAINFLASH",
+      "value": "0x00000000U",
+      "desc": "主 Flash 映射到 0x00000000",
+      "group": "启动映射",
+      "file": "py32f0xx_hal.h",
+      "src": "#define SYSCFG_BOOT_MAINFLASH          0x00000000U                      /*!< Main Flash memory mapped at 0x0000 0000   */"
+    },
+    {
+      "name": "SYSCFG_BOOT_SYSTEMFLASH",
+      "value": "SYSCFG_CFGR1_MEM_MODE_0",
+      "desc": "系统 Flash 映射到 0x00000000",
+      "group": "启动映射",
+      "file": "py32f0xx_hal.h",
+      "src": "#define SYSCFG_BOOT_SYSTEMFLASH        SYSCFG_CFGR1_MEM_MODE_0          /*!< System Flash memory mapped at 0x0000 0000 */"
+    },
+    {
+      "name": "SYSCFG_BOOT_SRAM",
+      "value": "(SYSCFG_CFGR1_MEM_MODE_1 | SYSCFG_CFGR1_MEM_MODE_0)",
+      "desc": "片内 SRAM 映射到 0x00000000",
+      "group": "启动映射",
+      "file": "py32f0xx_hal.h",
+      "src": "#define SYSCFG_BOOT_SRAM               (SYSCFG_CFGR1_MEM_MODE_1 | SYSCFG_CFGR1_MEM_MODE_0)  /*!< Embedded SRAM mapped at 0x0000 0000 */"
+    },
+    {
+      "name": "SYSCFG_CH1_SRC_TIM1_GPIO",
+      "value": "0x00000000U",
+      "desc": "TIM1 CH1 输入源: GPIO",
+      "group": "TIM1 CH1 输入源",
+      "file": "py32f0xx_hal.h",
+      "src": "#define SYSCFG_CH1_SRC_TIM1_GPIO          0x00000000U"
+    },
+    {
+      "name": "SYSCFG_CH1_SRC_TIM1_COMP1",
+      "value": "SYSCFG_CFGR1_TIM1_IC1_SRC_0",
+      "desc": "TIM1 CH1 输入源: COMP1",
+      "group": "TIM1 CH1 输入源",
+      "file": "py32f0xx_hal.h",
+      "src": "#define SYSCFG_CH1_SRC_TIM1_COMP1         SYSCFG_CFGR1_TIM1_IC1_SRC_0"
+    },
+    {
+      "name": "SYSCFG_CH1_SRC_TIM1_COMP2",
+      "value": "SYSCFG_CFGR1_TIM1_IC1_SRC_1",
+      "desc": "TIM1 CH1 输入源: COMP2",
+      "group": "TIM1 CH1 输入源",
+      "file": "py32f0xx_hal.h",
+      "src": "#define SYSCFG_CH1_SRC_TIM1_COMP2         SYSCFG_CFGR1_TIM1_IC1_SRC_1"
+    },
+    {
+      "name": "SYSCFG_I2C_FMP_PA2",
+      "value": "SYSCFG_CFGR1_I2C_PA2_FMP",
+      "desc": "PA2 使能 I2C 快速模式+",
+      "group": "I2C 快速模式+",
+      "file": "py32f0xx_hal.h",
+      "src": "#define SYSCFG_I2C_FMP_PA2                SYSCFG_CFGR1_I2C_PA2_FMP"
+    },
+    {
+      "name": "SYSCFG_I2C_FMP_PB3",
+      "value": "SYSCFG_CFGR1_I2C_PB3_FMP",
+      "desc": "PB3 使能 I2C 快速模式+",
+      "group": "I2C 快速模式+",
+      "file": "py32f0xx_hal.h",
+      "src": "#define SYSCFG_I2C_FMP_PB3                SYSCFG_CFGR1_I2C_PB3_FMP"
+    },
+    {
+      "name": "SYSCFG_I2C_FMP_PB4",
+      "value": "SYSCFG_CFGR1_I2C_PB4_FMP",
+      "desc": "PB4 使能 I2C 快速模式+",
+      "group": "I2C 快速模式+",
+      "file": "py32f0xx_hal.h",
+      "src": "#define SYSCFG_I2C_FMP_PB4                SYSCFG_CFGR1_I2C_PB4_FMP"
+    },
+    {
+      "name": "SYSCFG_I2C_FMP_PB6",
+      "value": "SYSCFG_CFGR1_I2C_PB6_FMP",
+      "desc": "PB6 使能 I2C 快速模式+",
+      "group": "I2C 快速模式+",
+      "file": "py32f0xx_hal.h",
+      "src": "#define SYSCFG_I2C_FMP_PB6                SYSCFG_CFGR1_I2C_PB6_FMP"
+    },
+    {
+      "name": "SYSCFG_ETR_SRC_TIM1_GPIO",
+      "value": "0x00000000",
+      "desc": "TIM1 ETR 源: GPIO",
+      "group": "TIM1 ETR 源",
+      "file": "py32f0xx_hal.h",
+      "src": "#define SYSCFG_ETR_SRC_TIM1_GPIO               0x00000000"
+    },
+    {
+      "name": "SYSCFG_ETR_SRC_TIM1_COMP1",
+      "value": "SYSCFG_CFGR2_ETR_SRC_TIM1_0",
+      "desc": "TIM1 ETR 源: COMP1",
+      "group": "TIM1 ETR 源",
+      "file": "py32f0xx_hal.h",
+      "src": "#define SYSCFG_ETR_SRC_TIM1_COMP1              SYSCFG_CFGR2_ETR_SRC_TIM1_0"
+    },
+    {
+      "name": "SYSCFG_ETR_SRC_TIM1_COMP2",
+      "value": "SYSCFG_CFGR2_ETR_SRC_TIM1_1",
+      "desc": "TIM1 ETR 源: COMP2",
+      "group": "TIM1 ETR 源",
+      "file": "py32f0xx_hal.h",
+      "src": "#define SYSCFG_ETR_SRC_TIM1_COMP2              SYSCFG_CFGR2_ETR_SRC_TIM1_1"
+    },
+    {
+      "name": "SYSCFG_ETR_SRC_TIM1_ADC",
+      "value": "(SYSCFG_CFGR2_ETR_SRC_TIM1_1 | SYSCFG_CFGR2_ETR_SRC_TIM1_0)",
+      "desc": "TIM1 ETR 源: ADC",
+      "group": "TIM1 ETR 源",
+      "file": "py32f0xx_hal.h",
+      "src": "#define SYSCFG_ETR_SRC_TIM1_ADC                (SYSCFG_CFGR2_ETR_SRC_TIM1_1 | SYSCFG_CFGR2_ETR_SRC_TIM1_0)"
+    }
+  ]
+}

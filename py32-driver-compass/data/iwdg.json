@@ -1,0 +1,565 @@
+{
+  "module": "IWDG 独立看门狗",
+  "moduleId": "iwdg",
+  "intro": "独立看门狗: 由 LSI 低速时钟驱动, 主时钟失效时仍保持工作; 一旦启动 LSI 被强制开启, 计数器从重装载值开始递减, 减到 0 时产生复位, 正常运行期间须周期性刷新。实现于 VDD 域, 在 STOP/STANDBY 模式下仍有效。含 HAL 库(py32f002b_hal_iwdg.c/.h)与 LL 库(py32f002b_ll_iwdg.h)。",
+  "files": [
+    "py32f002b_hal_iwdg.c",
+    "py32f002b_hal_iwdg.h",
+    "py32f002b_ll_iwdg.h"
+  ],
+  "hal": [
+    {
+      "name": "HAL_IWDG_Init",
+      "sig": "HAL_StatusTypeDef HAL_IWDG_Init(IWDG_HandleTypeDef *hiwdg)",
+      "brief": "按 IWDG_InitTypeDef 中的参数初始化并启动独立看门狗; 退出函数前会刷新看门狗以获得正确的时间基准。",
+      "params": [
+        {
+          "name": "hiwdg",
+          "type": "IWDG_HandleTypeDef *",
+          "desc": "指向 IWDG_HandleTypeDef 结构体的指针, 含指定 IWDG 模块的配置信息(Instance 与 Init)"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 句柄为空; HAL_TIMEOUT 等待寄存器更新标志超时"
+      },
+      "notes": [
+        "启动时向 KR 写使能键值, 强制开启 LSI 时钟并开始递减计数。",
+        "对 PR/RLR 寄存器的写访问需先向 KR 写入 0x5555 使能。"
+      ],
+      "file": "py32f002b_hal_iwdg.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_IWDG_Init(IWDG_HandleTypeDef *hiwdg)\r\n{\r\n  uint32_t tickstart;\r\n\r\n  /* Check the IWDG handle allocation */\r\n  if (hiwdg == NULL)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_IWDG_ALL_INSTANCE(hiwdg->Instance));\r\n  assert_param(IS_IWDG_PRESCALER(hiwdg->Init.Prescaler));\r\n  assert_param(IS_IWDG_RELOAD(hiwdg->Init.Reload));\r\n\r\n  /* Enable IWDG. LSI requires ready */\r\n  __HAL_IWDG_START(hiwdg);\r\n\r\n  /* Enable write access to IWDG_PR and IWDG_RLR registers by writing 0x5555 in KR */\r\n  IWDG_ENABLE_WRITE_ACCESS(hiwdg);\r\n\r\n  /* Write to IWDG registers the Prescaler & Reload values to work with */\r\n  hiwdg->Instance->PR = hiwdg->Init.Prescaler;\r\n  hiwdg->Instance->RLR = hiwdg->Init.Reload;\r\n\r\n  /* Check pending flag, if previous update not done, return timeout */\r\n  tickstart = HAL_GetTick();\r\n\r\n  /* Wait for register to be updated */\r\n  while (hiwdg->Instance->SR != RESET)\r\n  {\r\n    if ((HAL_GetTick() - tickstart) > HAL_IWDG_DEFAULT_TIMEOUT)\r\n    {\r\n      return HAL_TIMEOUT;\r\n    }\r\n  }\r\n  /* Reload IWDG counter with value defined in the reload register */\r\n  __HAL_IWDG_RELOAD_COUNTER(hiwdg);\r\n\r\n  /* Return function status */\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_IWDG_Refresh",
+      "sig": "HAL_StatusTypeDef HAL_IWDG_Refresh(IWDG_HandleTypeDef *hiwdg)",
+      "brief": "刷新独立看门狗: 将重装载寄存器中的值装入计数器, 防止看门狗复位。",
+      "params": [
+        {
+          "name": "hiwdg",
+          "type": "IWDG_HandleTypeDef *",
+          "desc": "指向 IWDG_HandleTypeDef 结构体的指针, 含指定 IWDG 模块的配置信息"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 刷新成功"
+      },
+      "file": "py32f002b_hal_iwdg.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_IWDG_Refresh(IWDG_HandleTypeDef *hiwdg)\r\n{\r\n  /* Reload IWDG counter with value defined in the reload register */\r\n  __HAL_IWDG_RELOAD_COUNTER(hiwdg);\r\n\r\n  /* Return function status */\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "__HAL_IWDG_START",
+      "sig": "#define __HAL_IWDG_START(__HANDLE__)                WRITE_REG((__HANDLE__)->Instance->KR, IWDG_KEY_ENABLE)",
+      "brief": "宏: 使能 IWDG 外设(向 KR 寄存器写入使能键值 0xCCCC, 启动看门狗)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "IWDG handle(IWDG_HandleTypeDef 指针)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_iwdg.h",
+      "kind": "macro",
+      "src": "#define __HAL_IWDG_START(__HANDLE__)                WRITE_REG((__HANDLE__)->Instance->KR, IWDG_KEY_ENABLE)"
+    },
+    {
+      "name": "__HAL_IWDG_RELOAD_COUNTER",
+      "sig": "#define __HAL_IWDG_RELOAD_COUNTER(__HANDLE__)       WRITE_REG((__HANDLE__)->Instance->KR, IWDG_KEY_RELOAD)",
+      "brief": "宏: 用重装载寄存器中的值刷新 IWDG 计数器(同时禁止对 PR/RLR 寄存器的写访问)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "IWDG handle(IWDG_HandleTypeDef 指针)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_iwdg.h",
+      "kind": "macro",
+      "src": "#define __HAL_IWDG_RELOAD_COUNTER(__HANDLE__)       WRITE_REG((__HANDLE__)->Instance->KR, IWDG_KEY_RELOAD)"
+    }
+  ],
+  "ll": [
+    {
+      "name": "LL_IWDG_Enable",
+      "sig": "void LL_IWDG_Enable(IWDG_TypeDef *IWDGx)",
+      "brief": "启动独立看门狗(除非选择了硬件看门狗选项)。",
+      "params": [
+        {
+          "name": "IWDGx",
+          "type": "IWDG_TypeDef *",
+          "desc": "IWDG 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_iwdg.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_IWDG_Enable(IWDG_TypeDef *IWDGx)\r\n{\r\n  WRITE_REG(IWDGx->KR, LL_IWDG_KEY_ENABLE);\r\n}"
+    },
+    {
+      "name": "LL_IWDG_ReloadCounter",
+      "sig": "void LL_IWDG_ReloadCounter(IWDG_TypeDef *IWDGx)",
+      "brief": "用重装载寄存器中的值刷新 IWDG 计数器。",
+      "params": [
+        {
+          "name": "IWDGx",
+          "type": "IWDG_TypeDef *",
+          "desc": "IWDG 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_iwdg.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_IWDG_ReloadCounter(IWDG_TypeDef *IWDGx)\r\n{\r\n  WRITE_REG(IWDGx->KR, LL_IWDG_KEY_RELOAD);\r\n}"
+    },
+    {
+      "name": "LL_IWDG_EnableWriteAccess",
+      "sig": "void LL_IWDG_EnableWriteAccess(IWDG_TypeDef *IWDGx)",
+      "brief": "使能对 IWDG_PR、IWDG_RLR 寄存器的写访问。",
+      "params": [
+        {
+          "name": "IWDGx",
+          "type": "IWDG_TypeDef *",
+          "desc": "IWDG 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_iwdg.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_IWDG_EnableWriteAccess(IWDG_TypeDef *IWDGx)\r\n{\r\n  WRITE_REG(IWDGx->KR, LL_IWDG_KEY_WR_ACCESS_ENABLE);\r\n}"
+    },
+    {
+      "name": "LL_IWDG_DisableWriteAccess",
+      "sig": "void LL_IWDG_DisableWriteAccess(IWDG_TypeDef *IWDGx)",
+      "brief": "禁止对 IWDG_PR、IWDG_RLR 寄存器的写访问。",
+      "params": [
+        {
+          "name": "IWDGx",
+          "type": "IWDG_TypeDef *",
+          "desc": "IWDG 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_iwdg.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_IWDG_DisableWriteAccess(IWDG_TypeDef *IWDGx)\r\n{\r\n  WRITE_REG(IWDGx->KR, LL_IWDG_KEY_WR_ACCESS_DISABLE);\r\n}"
+    },
+    {
+      "name": "LL_IWDG_SetPrescaler",
+      "sig": "void LL_IWDG_SetPrescaler(IWDG_TypeDef *IWDGx, uint32_t Prescaler)",
+      "brief": "选择 IWDG 的预分频。",
+      "params": [
+        {
+          "name": "IWDGx",
+          "type": "IWDG_TypeDef *",
+          "desc": "IWDG 实例指针"
+        },
+        {
+          "name": "Prescaler",
+          "type": "uint32_t",
+          "desc": "预分频, 可取 LL_IWDG_PRESCALER_4 / _8 / _16 / _32 / _64 / _128 / _256"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_iwdg.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_IWDG_SetPrescaler(IWDG_TypeDef *IWDGx, uint32_t Prescaler)\r\n{\r\n  WRITE_REG(IWDGx->PR, IWDG_PR_PR & Prescaler);\r\n}"
+    },
+    {
+      "name": "LL_IWDG_GetPrescaler",
+      "sig": "uint32_t LL_IWDG_GetPrescaler(IWDG_TypeDef *IWDGx)",
+      "brief": "读取 IWDG 当前选择的预分频。",
+      "params": [
+        {
+          "name": "IWDGx",
+          "type": "IWDG_TypeDef *",
+          "desc": "IWDG 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "预分频值, 对应 LL_IWDG_PRESCALER_*"
+      },
+      "file": "py32f002b_ll_iwdg.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_IWDG_GetPrescaler(IWDG_TypeDef *IWDGx)\r\n{\r\n  return (uint32_t)(READ_REG(IWDGx->PR));\r\n}"
+    },
+    {
+      "name": "LL_IWDG_SetReloadCounter",
+      "sig": "void LL_IWDG_SetReloadCounter(IWDG_TypeDef *IWDGx, uint32_t Counter)",
+      "brief": "设置 IWDG 递减计数器的重装载值。",
+      "params": [
+        {
+          "name": "IWDGx",
+          "type": "IWDG_TypeDef *",
+          "desc": "IWDG 实例指针"
+        },
+        {
+          "name": "Counter",
+          "type": "uint32_t",
+          "desc": "重装载值, 范围 0 ~ 0x0FFF"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_iwdg.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_IWDG_SetReloadCounter(IWDG_TypeDef *IWDGx, uint32_t Counter)\r\n{\r\n  WRITE_REG(IWDGx->RLR, IWDG_RLR_RL & Counter);\r\n}"
+    },
+    {
+      "name": "LL_IWDG_GetReloadCounter",
+      "sig": "uint32_t LL_IWDG_GetReloadCounter(IWDG_TypeDef *IWDGx)",
+      "brief": "读取 IWDG 递减计数器的重装载值。",
+      "params": [
+        {
+          "name": "IWDGx",
+          "type": "IWDG_TypeDef *",
+          "desc": "IWDG 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "重装载值, 范围 0 ~ 0x0FFF"
+      },
+      "file": "py32f002b_ll_iwdg.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_IWDG_GetReloadCounter(IWDG_TypeDef *IWDGx)\r\n{\r\n  return (uint32_t)(READ_REG(IWDGx->RLR));\r\n}"
+    },
+    {
+      "name": "LL_IWDG_IsActiveFlag_PVU",
+      "sig": "uint32_t LL_IWDG_IsActiveFlag_PVU(IWDG_TypeDef *IWDGx)",
+      "brief": "查询预分频值更新标志(PVU)是否置位。",
+      "params": [
+        {
+          "name": "IWDGx",
+          "type": "IWDG_TypeDef *",
+          "desc": "IWDG 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_iwdg.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_IWDG_IsActiveFlag_PVU(IWDG_TypeDef *IWDGx)\r\n{\r\n  return (READ_BIT(IWDGx->SR, IWDG_SR_PVU) == (IWDG_SR_PVU));\r\n}"
+    },
+    {
+      "name": "LL_IWDG_IsActiveFlag_RVU",
+      "sig": "uint32_t LL_IWDG_IsActiveFlag_RVU(IWDG_TypeDef *IWDGx)",
+      "brief": "查询重装载值更新标志(RVU)是否置位。",
+      "params": [
+        {
+          "name": "IWDGx",
+          "type": "IWDG_TypeDef *",
+          "desc": "IWDG 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_iwdg.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_IWDG_IsActiveFlag_RVU(IWDG_TypeDef *IWDGx)\r\n{\r\n  return (READ_BIT(IWDGx->SR, IWDG_SR_RVU) == (IWDG_SR_RVU));\r\n}"
+    },
+    {
+      "name": "LL_IWDG_IsReady",
+      "sig": "uint32_t LL_IWDG_IsReady(IWDG_TypeDef *IWDGx)",
+      "brief": "查询预分频与重装载更新标志(PVU/RVU)是否全部清零(寄存器更新完成)。",
+      "params": [
+        {
+          "name": "IWDGx",
+          "type": "IWDG_TypeDef *",
+          "desc": "IWDG 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "全部清零返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_iwdg.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_IWDG_IsReady(IWDG_TypeDef *IWDGx)\r\n{\r\n  return (READ_BIT(IWDGx->SR, IWDG_SR_PVU | IWDG_SR_RVU) == 0U);\r\n}"
+    },
+    {
+      "name": "LL_IWDG_WriteReg",
+      "sig": "#define LL_IWDG_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG(__INSTANCE__->__REG__, (__VALUE__))",
+      "brief": "宏: 向 IWDG 的指定寄存器写入值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "IWDG 实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要写入的寄存器名"
+        },
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "要写入寄存器的值"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_ll_iwdg.h",
+      "kind": "macro",
+      "src": "#define LL_IWDG_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG(__INSTANCE__->__REG__, (__VALUE__))"
+    },
+    {
+      "name": "LL_IWDG_ReadReg",
+      "sig": "#define LL_IWDG_ReadReg(__INSTANCE__, __REG__) READ_REG(__INSTANCE__->__REG__)",
+      "brief": "宏: 读取 IWDG 指定寄存器的值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "IWDG 实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要读取的寄存器名"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "寄存器值"
+      },
+      "file": "py32f002b_ll_iwdg.h",
+      "kind": "macro",
+      "src": "#define LL_IWDG_ReadReg(__INSTANCE__, __REG__) READ_REG(__INSTANCE__->__REG__)"
+    }
+  ],
+  "types": [
+    {
+      "name": "IWDG_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t Prescaler; uint32_t Reload; } IWDG_InitTypeDef;",
+      "desc": "IWDG 初始化配置结构体, 作为 HAL_IWDG_Init() 的参数。",
+      "members": [
+        {
+          "name": "Prescaler",
+          "type": "uint32_t",
+          "desc": "IWDG 预分频, 可取 IWDG_PRESCALER_4 .. IWDG_PRESCALER_256"
+        },
+        {
+          "name": "Reload",
+          "type": "uint32_t",
+          "desc": "递减计数器重装载值, 范围 0 ~ 0x0FFF"
+        }
+      ],
+      "file": "py32f002b_hal_iwdg.h"
+    },
+    {
+      "name": "IWDG_HandleTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { IWDG_TypeDef *Instance; IWDG_InitTypeDef Init; } IWDG_HandleTypeDef;",
+      "desc": "IWDG 句柄结构体, 保存外设实例指针与初始化参数, 供 HAL_IWDG_Init() / HAL_IWDG_Refresh() 使用。",
+      "members": [
+        {
+          "name": "Instance",
+          "type": "IWDG_TypeDef *",
+          "desc": "寄存器基地址(IWDG 外设指针)"
+        },
+        {
+          "name": "Init",
+          "type": "IWDG_InitTypeDef",
+          "desc": "IWDG 所需参数(预分频与重装载值)"
+        }
+      ],
+      "file": "py32f002b_hal_iwdg.h"
+    },
+    {
+      "name": "IWDG_TypeDef",
+      "kind": "periph",
+      "def": "typedef struct { __IO uint32_t KR; __IO uint32_t PR; __IO uint32_t RLR; __IO uint32_t SR; } IWDG_TypeDef;",
+      "desc": "IWDG 外设寄存器结构体。实例: IWDG。",
+      "members": [
+        {
+          "name": "KR",
+          "type": "__IO uint32_t",
+          "desc": "键寄存器: 写 0xCCCC 使能、0xAAAA 重装载、0x5555 使能写访问"
+        },
+        {
+          "name": "PR",
+          "type": "__IO uint32_t",
+          "desc": "预分频寄存器(PR[2:0], 分频 4/8/16/32/64/128/256)"
+        },
+        {
+          "name": "RLR",
+          "type": "__IO uint32_t",
+          "desc": "重装载寄存器(RL[11:0], 计数器重装载值)"
+        },
+        {
+          "name": "SR",
+          "type": "__IO uint32_t",
+          "desc": "状态寄存器: PVU(预分频值更新)与 RVU(重装载值更新)标志"
+        }
+      ],
+      "file": "py32f002xx5.h"
+    }
+  ],
+  "consts": [
+    {
+      "name": "IWDG_PRESCALER_4",
+      "value": "0x00000000U",
+      "desc": "IWDG 预分频 4",
+      "group": "IWDG 预分频",
+      "file": "py32f002b_hal_iwdg.h",
+      "src": "#define IWDG_PRESCALER_4                0x00000000U                   /*!< IWDG prescaler set to 4   */"
+    },
+    {
+      "name": "IWDG_PRESCALER_8",
+      "value": "IWDG_PR_PR_0",
+      "desc": "IWDG 预分频 8",
+      "group": "IWDG 预分频",
+      "file": "py32f002b_hal_iwdg.h",
+      "src": "#define IWDG_PRESCALER_8                IWDG_PR_PR_0                  /*!< IWDG prescaler set to 8   */"
+    },
+    {
+      "name": "IWDG_PRESCALER_16",
+      "value": "IWDG_PR_PR_1",
+      "desc": "IWDG 预分频 16",
+      "group": "IWDG 预分频",
+      "file": "py32f002b_hal_iwdg.h",
+      "src": "#define IWDG_PRESCALER_16               IWDG_PR_PR_1                  /*!< IWDG prescaler set to 16  */"
+    },
+    {
+      "name": "IWDG_PRESCALER_32",
+      "value": "(IWDG_PR_PR_1 | IWDG_PR_PR_0)",
+      "desc": "IWDG 预分频 32",
+      "group": "IWDG 预分频",
+      "file": "py32f002b_hal_iwdg.h",
+      "src": "#define IWDG_PRESCALER_32               (IWDG_PR_PR_1 | IWDG_PR_PR_0) /*!< IWDG prescaler set to 32  */"
+    },
+    {
+      "name": "IWDG_PRESCALER_64",
+      "value": "IWDG_PR_PR_2",
+      "desc": "IWDG 预分频 64",
+      "group": "IWDG 预分频",
+      "file": "py32f002b_hal_iwdg.h",
+      "src": "#define IWDG_PRESCALER_64               IWDG_PR_PR_2                  /*!< IWDG prescaler set to 64  */"
+    },
+    {
+      "name": "IWDG_PRESCALER_128",
+      "value": "(IWDG_PR_PR_2 | IWDG_PR_PR_0)",
+      "desc": "IWDG 预分频 128",
+      "group": "IWDG 预分频",
+      "file": "py32f002b_hal_iwdg.h",
+      "src": "#define IWDG_PRESCALER_128              (IWDG_PR_PR_2 | IWDG_PR_PR_0) /*!< IWDG prescaler set to 128 */"
+    },
+    {
+      "name": "IWDG_PRESCALER_256",
+      "value": "(IWDG_PR_PR_2 | IWDG_PR_PR_1)",
+      "desc": "IWDG 预分频 256",
+      "group": "IWDG 预分频",
+      "file": "py32f002b_hal_iwdg.h",
+      "src": "#define IWDG_PRESCALER_256              (IWDG_PR_PR_2 | IWDG_PR_PR_1) /*!< IWDG prescaler set to 256 */"
+    },
+    {
+      "name": "LL_IWDG_SR_PVU",
+      "value": "IWDG_SR_PVU",
+      "desc": "看门狗预分频值更新标志",
+      "group": "LL_IWDG 标志",
+      "file": "py32f002b_ll_iwdg.h",
+      "src": "#define LL_IWDG_SR_PVU                     IWDG_SR_PVU                           /*!< Watchdog prescaler value update */"
+    },
+    {
+      "name": "LL_IWDG_SR_RVU",
+      "value": "IWDG_SR_RVU",
+      "desc": "看门狗计数器重装载值更新标志",
+      "group": "LL_IWDG 标志",
+      "file": "py32f002b_ll_iwdg.h",
+      "src": "#define LL_IWDG_SR_RVU                     IWDG_SR_RVU                           /*!< Watchdog counter reload value update */"
+    },
+    {
+      "name": "LL_IWDG_PRESCALER_4",
+      "value": "0x00000000U",
+      "desc": "4 分频",
+      "group": "LL_IWDG 预分频",
+      "file": "py32f002b_ll_iwdg.h",
+      "src": "#define LL_IWDG_PRESCALER_4                0x00000000U                                          /*!< Divider by 4   */"
+    },
+    {
+      "name": "LL_IWDG_PRESCALER_8",
+      "value": "(IWDG_PR_PR_0)",
+      "desc": "8 分频",
+      "group": "LL_IWDG 预分频",
+      "file": "py32f002b_ll_iwdg.h",
+      "src": "#define LL_IWDG_PRESCALER_8                (                              IWDG_PR_PR_0)         /*!< Divider by 8   */"
+    },
+    {
+      "name": "LL_IWDG_PRESCALER_16",
+      "value": "(IWDG_PR_PR_1)",
+      "desc": "16 分频",
+      "group": "LL_IWDG 预分频",
+      "file": "py32f002b_ll_iwdg.h",
+      "src": "#define LL_IWDG_PRESCALER_16               (               IWDG_PR_PR_1               )         /*!< Divider by 16  */"
+    },
+    {
+      "name": "LL_IWDG_PRESCALER_32",
+      "value": "(IWDG_PR_PR_1 | IWDG_PR_PR_0)",
+      "desc": "32 分频",
+      "group": "LL_IWDG 预分频",
+      "file": "py32f002b_ll_iwdg.h",
+      "src": "#define LL_IWDG_PRESCALER_32               (               IWDG_PR_PR_1 | IWDG_PR_PR_0)         /*!< Divider by 32  */"
+    },
+    {
+      "name": "LL_IWDG_PRESCALER_64",
+      "value": "(IWDG_PR_PR_2)",
+      "desc": "64 分频",
+      "group": "LL_IWDG 预分频",
+      "file": "py32f002b_ll_iwdg.h",
+      "src": "#define LL_IWDG_PRESCALER_64               (IWDG_PR_PR_2                              )         /*!< Divider by 64  */"
+    },
+    {
+      "name": "LL_IWDG_PRESCALER_128",
+      "value": "(IWDG_PR_PR_2 | IWDG_PR_PR_0)",
+      "desc": "128 分频",
+      "group": "LL_IWDG 预分频",
+      "file": "py32f002b_ll_iwdg.h",
+      "src": "#define LL_IWDG_PRESCALER_128              (IWDG_PR_PR_2 |                IWDG_PR_PR_0)         /*!< Divider by 128 */"
+    },
+    {
+      "name": "LL_IWDG_PRESCALER_256",
+      "value": "(IWDG_PR_PR_2 | IWDG_PR_PR_1)",
+      "desc": "256 分频",
+      "group": "LL_IWDG 预分频",
+      "file": "py32f002b_ll_iwdg.h",
+      "src": "#define LL_IWDG_PRESCALER_256              (IWDG_PR_PR_2 | IWDG_PR_PR_1               )         /*!< Divider by 256 */"
+    }
+  ]
+}

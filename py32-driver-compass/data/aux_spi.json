@@ -1,0 +1,458 @@
+{
+  "module": "SPI",
+  "moduleId": "spi",
+  "hal": [
+    {
+      "name": "SPI_1LINE_RX",
+      "sig": "#define SPI_1LINE_RX(__HANDLE__)  CLEAR_BIT((__HANDLE__)->Instance->CR1, SPI_CR1_BIDIOE)",
+      "brief": "清除 CR1 寄存器 BIDIOE 位, 将 SPI 配置为单线只接收模式。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "SPI 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define SPI_1LINE_RX(__HANDLE__)  CLEAR_BIT((__HANDLE__)->Instance->CR1, SPI_CR1_BIDIOE)"
+    },
+    {
+      "name": "SPI_1LINE_TX",
+      "sig": "#define SPI_1LINE_TX(__HANDLE__)  SET_BIT((__HANDLE__)->Instance->CR1, SPI_CR1_BIDIOE)",
+      "brief": "置位 CR1 寄存器 BIDIOE 位, 将 SPI 配置为单线只发送模式。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "SPI 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define SPI_1LINE_TX(__HANDLE__)  SET_BIT((__HANDLE__)->Instance->CR1, SPI_CR1_BIDIOE)"
+    },
+    {
+      "name": "IS_SPI_BAUDRATE_PRESCALER",
+      "sig": "#define IS_SPI_BAUDRATE_PRESCALER(__PRESCALER__) (((__PRESCALER__) == SPI_BAUDRATEPRESCALER_2)   || \\\n                                                  ((__PRESCALER__) == SPI_BAUDRATEPRESCALER_4)   || \\\n                                                  ((__PRESCALER__) == SPI_BAUDRATEPRESCALER_8)   || \\\n                                                  ((__PRESCALER__) == SPI_BAUDRATEPRESCALER_16)  || \\\n                                                  ((__PRESCALER__) == SPI_BAUDRATEPRESCALER_32)  || \\\n                                                  ((__PRESCALER__) == SPI_BAUDRATEPRESCALER_64)  || \\\n                                                  ((__PRESCALER__) == SPI_BAUDRATEPRESCALER_128) || \\\n                                                  ((__PRESCALER__) == SPI_BAUDRATEPRESCALER_256))",
+      "brief": "校验 HAL 层波特率预分频参数是否为 2 至 256 八个合法取值之一。",
+      "params": [
+        {
+          "name": "__PRESCALER__",
+          "type": "宏参数",
+          "desc": "波特率预分频参数, 取 SPI_BAUDRATEPRESCALER_2 / _4 / _8 / _16 / _32 / _64 / _128 / _256"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define IS_SPI_BAUDRATE_PRESCALER(__PRESCALER__) (((__PRESCALER__) == SPI_BAUDRATEPRESCALER_2)   || \\\n                                                  ((__PRESCALER__) == SPI_BAUDRATEPRESCALER_4)   || \\\n                                                  ((__PRESCALER__) == SPI_BAUDRATEPRESCALER_8)   || \\\n                                                  ((__PRESCALER__) == SPI_BAUDRATEPRESCALER_16)  || \\\n                                                  ((__PRESCALER__) == SPI_BAUDRATEPRESCALER_32)  || \\\n                                                  ((__PRESCALER__) == SPI_BAUDRATEPRESCALER_64)  || \\\n                                                  ((__PRESCALER__) == SPI_BAUDRATEPRESCALER_128) || \\\n                                                  ((__PRESCALER__) == SPI_BAUDRATEPRESCALER_256))"
+    },
+    {
+      "name": "IS_SPI_CPHA",
+      "sig": "#define IS_SPI_CPHA(__CPHA__)      (((__CPHA__) == SPI_PHASE_1EDGE) || \\\n                                    ((__CPHA__) == SPI_PHASE_2EDGE))",
+      "brief": "校验 HAL 层时钟相位(CPHA)参数是否为第 1 边沿或第 2 边沿采样。",
+      "params": [
+        {
+          "name": "__CPHA__",
+          "type": "宏参数",
+          "desc": "时钟相位参数, 取 SPI_PHASE_1EDGE / SPI_PHASE_2EDGE"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define IS_SPI_CPHA(__CPHA__)      (((__CPHA__) == SPI_PHASE_1EDGE) || \\\n                                    ((__CPHA__) == SPI_PHASE_2EDGE))"
+    },
+    {
+      "name": "IS_SPI_CPOL",
+      "sig": "#define IS_SPI_CPOL(__CPOL__)      (((__CPOL__) == SPI_POLARITY_LOW) || \\\n                                    ((__CPOL__) == SPI_POLARITY_HIGH))",
+      "brief": "校验 HAL 层时钟极性(CPOL)参数是否为低电平空闲或高电平空闲。",
+      "params": [
+        {
+          "name": "__CPOL__",
+          "type": "宏参数",
+          "desc": "时钟极性参数, 取 SPI_POLARITY_LOW / SPI_POLARITY_HIGH"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define IS_SPI_CPOL(__CPOL__)      (((__CPOL__) == SPI_POLARITY_LOW) || \\\n                                    ((__CPOL__) == SPI_POLARITY_HIGH))"
+    },
+    {
+      "name": "IS_SPI_DATASIZE",
+      "sig": "#define IS_SPI_DATASIZE(__DATASIZE__) (((__DATASIZE__) == SPI_DATASIZE_16BIT) || \\\n                                      ((__DATASIZE__) == SPI_DATASIZE_8BIT))",
+      "brief": "校验 HAL 层数据宽度参数是否为 8 位或 16 位。",
+      "params": [
+        {
+          "name": "__DATASIZE__",
+          "type": "宏参数",
+          "desc": "数据宽度参数, 取 SPI_DATASIZE_8BIT / SPI_DATASIZE_16BIT"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define IS_SPI_DATASIZE(__DATASIZE__) (((__DATASIZE__) == SPI_DATASIZE_16BIT) || \\\n                                      ((__DATASIZE__) == SPI_DATASIZE_8BIT))"
+    },
+    {
+      "name": "IS_SPI_DIRECTION",
+      "sig": "#define IS_SPI_DIRECTION(__MODE__) (((__MODE__) == SPI_DIRECTION_2LINES)        || \\\n                                    ((__MODE__) == SPI_DIRECTION_2LINES_RXONLY) || \\\n                                    ((__MODE__) == SPI_DIRECTION_1LINE))",
+      "brief": "校验 HAL 层传输方向参数是否为双线全双工、双线只接收或单线半双工。",
+      "params": [
+        {
+          "name": "__MODE__",
+          "type": "宏参数",
+          "desc": "传输方向参数, 取 SPI_DIRECTION_2LINES / SPI_DIRECTION_2LINES_RXONLY / SPI_DIRECTION_1LINE"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define IS_SPI_DIRECTION(__MODE__) (((__MODE__) == SPI_DIRECTION_2LINES)        || \\\n                                    ((__MODE__) == SPI_DIRECTION_2LINES_RXONLY) || \\\n                                    ((__MODE__) == SPI_DIRECTION_1LINE))"
+    },
+    {
+      "name": "IS_SPI_DIRECTION_2LINES",
+      "sig": "#define IS_SPI_DIRECTION_2LINES(__MODE__) ((__MODE__) == SPI_DIRECTION_2LINES)",
+      "brief": "校验传输方向参数是否为双线全双工模式。",
+      "params": [
+        {
+          "name": "__MODE__",
+          "type": "宏参数",
+          "desc": "传输方向参数, 应取 SPI_DIRECTION_2LINES"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define IS_SPI_DIRECTION_2LINES(__MODE__) ((__MODE__) == SPI_DIRECTION_2LINES)"
+    },
+    {
+      "name": "IS_SPI_DIRECTION_2LINES_OR_1LINE",
+      "sig": "#define IS_SPI_DIRECTION_2LINES_OR_1LINE(__MODE__) (((__MODE__) == SPI_DIRECTION_2LINES) || \\\n                                                    ((__MODE__) == SPI_DIRECTION_1LINE))",
+      "brief": "校验传输方向参数是否为双线全双工或单线半双工模式。",
+      "params": [
+        {
+          "name": "__MODE__",
+          "type": "宏参数",
+          "desc": "传输方向参数, 取 SPI_DIRECTION_2LINES / SPI_DIRECTION_1LINE"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define IS_SPI_DIRECTION_2LINES_OR_1LINE(__MODE__) (((__MODE__) == SPI_DIRECTION_2LINES) || \\\n                                                    ((__MODE__) == SPI_DIRECTION_1LINE))"
+    },
+    {
+      "name": "IS_SPI_FIRST_BIT",
+      "sig": "#define IS_SPI_FIRST_BIT(__BIT__)  (((__BIT__) == SPI_FIRSTBIT_MSB) || \\\n                                    ((__BIT__) == SPI_FIRSTBIT_LSB))",
+      "brief": "校验 HAL 层位序参数是否为 MSB 优先或 LSB 优先。",
+      "params": [
+        {
+          "name": "__BIT__",
+          "type": "宏参数",
+          "desc": "位序参数, 取 SPI_FIRSTBIT_MSB / SPI_FIRSTBIT_LSB"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define IS_SPI_FIRST_BIT(__BIT__)  (((__BIT__) == SPI_FIRSTBIT_MSB) || \\\n                                    ((__BIT__) == SPI_FIRSTBIT_LSB))"
+    },
+    {
+      "name": "IS_SPI_MODE",
+      "sig": "#define IS_SPI_MODE(__MODE__)      (((__MODE__) == SPI_MODE_SLAVE)   || \\\n                                    ((__MODE__) == SPI_MODE_MASTER))",
+      "brief": "校验 HAL 层工作模式参数是否为主模式或从模式。",
+      "params": [
+        {
+          "name": "__MODE__",
+          "type": "宏参数",
+          "desc": "工作模式参数, 取 SPI_MODE_SLAVE / SPI_MODE_MASTER"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define IS_SPI_MODE(__MODE__)      (((__MODE__) == SPI_MODE_SLAVE)   || \\\n                                    ((__MODE__) == SPI_MODE_MASTER))"
+    },
+    {
+      "name": "IS_SPI_NSS",
+      "sig": "#define IS_SPI_NSS(__NSS__)        (((__NSS__) == SPI_NSS_SOFT)       || \\\n                                    ((__NSS__) == SPI_NSS_HARD_INPUT) || \\\n                                    ((__NSS__) == SPI_NSS_HARD_OUTPUT))",
+      "brief": "校验 HAL 层 NSS 控制参数是否为软件 NSS、硬件输入或硬件输出。",
+      "params": [
+        {
+          "name": "__NSS__",
+          "type": "宏参数",
+          "desc": "NSS 控制参数, 取 SPI_NSS_SOFT / SPI_NSS_HARD_INPUT / SPI_NSS_HARD_OUTPUT"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define IS_SPI_NSS(__NSS__)        (((__NSS__) == SPI_NSS_SOFT)       || \\\n                                    ((__NSS__) == SPI_NSS_HARD_INPUT) || \\\n                                    ((__NSS__) == SPI_NSS_HARD_OUTPUT))"
+    },
+    {
+      "name": "SPI_CHECK_FLAG",
+      "sig": "#define SPI_CHECK_FLAG(__SR__, __FLAG__) ((((__SR__) & ((__FLAG__) & SPI_FLAG_MASK)) == \\\n                                          ((__FLAG__) & SPI_FLAG_MASK)) ? SET : RESET)",
+      "brief": "检查 SR 状态寄存器中指定标志位是否置位(先与 SPI_FLAG_MASK 掩码), 置位返回 SET。",
+      "params": [
+        {
+          "name": "__SR__",
+          "type": "宏参数",
+          "desc": "SPI 状态寄存器(SR)当前值"
+        },
+        {
+          "name": "__FLAG__",
+          "type": "宏参数",
+          "desc": "要检查的标志位"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位返回 SET, 否则返回 RESET"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define SPI_CHECK_FLAG(__SR__, __FLAG__) ((((__SR__) & ((__FLAG__) & SPI_FLAG_MASK)) == \\\n                                          ((__FLAG__) & SPI_FLAG_MASK)) ? SET : RESET)"
+    },
+    {
+      "name": "SPI_CHECK_IT_SOURCE",
+      "sig": "#define SPI_CHECK_IT_SOURCE(__CR2__, __INTERRUPT__) ((((__CR2__) & (__INTERRUPT__)) == \\\n                                                     (__INTERRUPT__)) ? SET : RESET)",
+      "brief": "检查 CR2 控制寄存器中指定中断使能位是否置位, 置位返回 SET。",
+      "params": [
+        {
+          "name": "__CR2__",
+          "type": "宏参数",
+          "desc": "SPI 控制寄存器 2(CR2)当前值"
+        },
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "要检查的中断源使能位"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "中断源已使能返回 SET, 否则返回 RESET"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define SPI_CHECK_IT_SOURCE(__CR2__, __INTERRUPT__) ((((__CR2__) & (__INTERRUPT__)) == \\\n                                                     (__INTERRUPT__)) ? SET : RESET)"
+    }
+  ],
+  "ll": [
+    {
+      "name": "IS_LL_SPI_BAUDRATE",
+      "sig": "#define IS_LL_SPI_BAUDRATE(__VALUE__) (((__VALUE__) == LL_SPI_BAUDRATEPRESCALER_DIV2)      \\\n                                       || ((__VALUE__) == LL_SPI_BAUDRATEPRESCALER_DIV4)   \\\n                                       || ((__VALUE__) == LL_SPI_BAUDRATEPRESCALER_DIV8)   \\\n                                       || ((__VALUE__) == LL_SPI_BAUDRATEPRESCALER_DIV16)  \\\n                                       || ((__VALUE__) == LL_SPI_BAUDRATEPRESCALER_DIV32)  \\\n                                       || ((__VALUE__) == LL_SPI_BAUDRATEPRESCALER_DIV64)  \\\n                                       || ((__VALUE__) == LL_SPI_BAUDRATEPRESCALER_DIV128) \\\n                                       || ((__VALUE__) == LL_SPI_BAUDRATEPRESCALER_DIV256))",
+      "brief": "校验 LL 层波特率预分频参数是否为 DIV2 至 DIV256 八个合法取值之一。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "波特率预分频参数, 取 LL_SPI_BAUDRATEPRESCALER_DIV2 / DIV4 / DIV8 / DIV16 / DIV32 / DIV64 / DIV128 / DIV256"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_spi.c",
+      "kind": "macro",
+      "src": "#define IS_LL_SPI_BAUDRATE(__VALUE__) (((__VALUE__) == LL_SPI_BAUDRATEPRESCALER_DIV2)      \\\r\n                                       || ((__VALUE__) == LL_SPI_BAUDRATEPRESCALER_DIV4)   \\\r\n                                       || ((__VALUE__) == LL_SPI_BAUDRATEPRESCALER_DIV8)   \\\r\n                                       || ((__VALUE__) == LL_SPI_BAUDRATEPRESCALER_DIV16)  \\\r\n                                       || ((__VALUE__) == LL_SPI_BAUDRATEPRESCALER_DIV32)  \\\r\n                                       || ((__VALUE__) == LL_SPI_BAUDRATEPRESCALER_DIV64)  \\\r\n                                       || ((__VALUE__) == LL_SPI_BAUDRATEPRESCALER_DIV128) \\\r\n                                       || ((__VALUE__) == LL_SPI_BAUDRATEPRESCALER_DIV256))"
+    },
+    {
+      "name": "IS_LL_SPI_BITORDER",
+      "sig": "#define IS_LL_SPI_BITORDER(__VALUE__) (((__VALUE__) == LL_SPI_LSB_FIRST) \\\n                                       || ((__VALUE__) == LL_SPI_MSB_FIRST))",
+      "brief": "校验 LL 层位序参数是否为 LSB 优先或 MSB 优先。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "位序参数, 取 LL_SPI_LSB_FIRST / LL_SPI_MSB_FIRST"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_spi.c",
+      "kind": "macro",
+      "src": "#define IS_LL_SPI_BITORDER(__VALUE__) (((__VALUE__) == LL_SPI_LSB_FIRST) \\\r\n                                       || ((__VALUE__) == LL_SPI_MSB_FIRST))"
+    },
+    {
+      "name": "IS_LL_SPI_DATAWIDTH",
+      "sig": "#define IS_LL_SPI_DATAWIDTH(__VALUE__) (((__VALUE__) == LL_SPI_DATAWIDTH_8BIT)  \\\n                                        || ((__VALUE__) == LL_SPI_DATAWIDTH_16BIT))",
+      "brief": "校验 LL 层数据宽度参数是否为 8 位或 16 位。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "数据宽度参数, 取 LL_SPI_DATAWIDTH_8BIT / LL_SPI_DATAWIDTH_16BIT"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_spi.c",
+      "kind": "macro",
+      "src": "#define IS_LL_SPI_DATAWIDTH(__VALUE__) (((__VALUE__) == LL_SPI_DATAWIDTH_8BIT)  \\\r\n                                        || ((__VALUE__) == LL_SPI_DATAWIDTH_16BIT))"
+    },
+    {
+      "name": "IS_LL_SPI_MODE",
+      "sig": "#define IS_LL_SPI_MODE(__VALUE__) (((__VALUE__) == LL_SPI_MODE_MASTER) \\\n                                   || ((__VALUE__) == LL_SPI_MODE_SLAVE))",
+      "brief": "校验 LL 层工作模式参数是否为主模式或从模式。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "工作模式参数, 取 LL_SPI_MODE_MASTER / LL_SPI_MODE_SLAVE"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_spi.c",
+      "kind": "macro",
+      "src": "#define IS_LL_SPI_MODE(__VALUE__) (((__VALUE__) == LL_SPI_MODE_MASTER) \\\r\n                                   || ((__VALUE__) == LL_SPI_MODE_SLAVE))"
+    },
+    {
+      "name": "IS_LL_SPI_NSS",
+      "sig": "#define IS_LL_SPI_NSS(__VALUE__) (((__VALUE__) == LL_SPI_NSS_SOFT)          \\\n                                  || ((__VALUE__) == LL_SPI_NSS_HARD_INPUT) \\\n                                  || ((__VALUE__) == LL_SPI_NSS_HARD_OUTPUT))",
+      "brief": "校验 LL 层 NSS 控制参数是否为软件 NSS、硬件输入或硬件输出。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "NSS 控制参数, 取 LL_SPI_NSS_SOFT / LL_SPI_NSS_HARD_INPUT / LL_SPI_NSS_HARD_OUTPUT"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_spi.c",
+      "kind": "macro",
+      "src": "#define IS_LL_SPI_NSS(__VALUE__) (((__VALUE__) == LL_SPI_NSS_SOFT)          \\\r\n                                  || ((__VALUE__) == LL_SPI_NSS_HARD_INPUT) \\\r\n                                  || ((__VALUE__) == LL_SPI_NSS_HARD_OUTPUT))"
+    },
+    {
+      "name": "IS_LL_SPI_PHASE",
+      "sig": "#define IS_LL_SPI_PHASE(__VALUE__) (((__VALUE__) == LL_SPI_PHASE_1EDGE) \\\n                                    || ((__VALUE__) == LL_SPI_PHASE_2EDGE))",
+      "brief": "校验 LL 层时钟相位(CPHA)参数是否为第 1 边沿或第 2 边沿采样。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "时钟相位参数, 取 LL_SPI_PHASE_1EDGE / LL_SPI_PHASE_2EDGE"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_spi.c",
+      "kind": "macro",
+      "src": "#define IS_LL_SPI_PHASE(__VALUE__) (((__VALUE__) == LL_SPI_PHASE_1EDGE) \\\r\n                                    || ((__VALUE__) == LL_SPI_PHASE_2EDGE))"
+    },
+    {
+      "name": "IS_LL_SPI_POLARITY",
+      "sig": "#define IS_LL_SPI_POLARITY(__VALUE__) (((__VALUE__) == LL_SPI_POLARITY_LOW) \\\n                                       || ((__VALUE__) == LL_SPI_POLARITY_HIGH))",
+      "brief": "校验 LL 层时钟极性(CPOL)参数是否为低电平空闲或高电平空闲。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "时钟极性参数, 取 LL_SPI_POLARITY_LOW / LL_SPI_POLARITY_HIGH"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_spi.c",
+      "kind": "macro",
+      "src": "#define IS_LL_SPI_POLARITY(__VALUE__) (((__VALUE__) == LL_SPI_POLARITY_LOW) \\\r\n                                       || ((__VALUE__) == LL_SPI_POLARITY_HIGH))"
+    },
+    {
+      "name": "IS_LL_SPI_TRANSFER_DIRECTION",
+      "sig": "#define IS_LL_SPI_TRANSFER_DIRECTION(__VALUE__) (((__VALUE__) == LL_SPI_FULL_DUPLEX)       \\\n                                                 || ((__VALUE__) == LL_SPI_SIMPLEX_RX)     \\\n                                                 || ((__VALUE__) == LL_SPI_HALF_DUPLEX_RX) \\\n                                                 || ((__VALUE__) == LL_SPI_HALF_DUPLEX_TX))",
+      "brief": "校验 LL 层传输方向参数是否为全双工、单工接收、半双工接收或半双工发送。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "传输方向参数, 取 LL_SPI_FULL_DUPLEX / LL_SPI_SIMPLEX_RX / LL_SPI_HALF_DUPLEX_RX / LL_SPI_HALF_DUPLEX_TX"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_spi.c",
+      "kind": "macro",
+      "src": "#define IS_LL_SPI_TRANSFER_DIRECTION(__VALUE__) (((__VALUE__) == LL_SPI_FULL_DUPLEX)       \\\r\n                                                 || ((__VALUE__) == LL_SPI_SIMPLEX_RX)     \\\r\n                                                 || ((__VALUE__) == LL_SPI_HALF_DUPLEX_RX) \\\r\n                                                 || ((__VALUE__) == LL_SPI_HALF_DUPLEX_TX))"
+    }
+  ],
+  "types": [],
+  "consts": []
+}

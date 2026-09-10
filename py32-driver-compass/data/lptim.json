@@ -1,0 +1,1813 @@
+{
+  "module": "LPTIM 低功耗定时器",
+  "moduleId": "lptim",
+  "intro": "低功耗定时器(LPTIM): 可在低功耗模式下运行的 16 位定时器, 支持单次(Set once)与连续(Set continue)两种计数模式、自动重载匹配中断、读后复位与计数器复位。含 HAL 库(py32f002b_hal_lptim.c/.h)与 LL 库(py32f002b_ll_lptim.h/.c)。注意: 本芯片 LPTIM 无比较(CMP)寄存器, 驱动仅提供单次/连续两种启动模式。",
+  "files": [
+    "py32f002b_hal_lptim.c",
+    "py32f002b_hal_lptim.h",
+    "py32f002b_ll_lptim.h",
+    "py32f002b_ll_lptim.c",
+    "py32f002xx5.h"
+  ],
+  "hal": [
+    {
+      "name": "HAL_LPTIM_Init",
+      "sig": "HAL_StatusTypeDef HAL_LPTIM_Init(LPTIM_HandleTypeDef *hlptim)",
+      "brief": "根据 LPTIM_InitTypeDef 中的参数初始化 LPTIM(配置 CFGR 的预分频与更新模式)并初始化关联的句柄。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 句柄为空或参数非法"
+      },
+      "notes": [
+        "首次调用且句柄状态为 RESET 时会初始化锁资源并调用 HAL_LPTIM_MspInit() 完成底层硬件(GPIO/时钟/NVIC)初始化。"
+      ],
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_LPTIM_Init(LPTIM_HandleTypeDef *hlptim)\r\n{\r\n  uint32_t tmpcfgr;\r\n\r\n  /* Check the LPTIM handle allocation */\r\n  if(hlptim == NULL)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_LPTIM_INSTANCE(hlptim->Instance));\r\n\r\n  assert_param(IS_LPTIM_CLOCK_PRESCALER(hlptim->Init.Prescaler));\r\n\r\n  if(hlptim->State == HAL_LPTIM_STATE_RESET)\r\n  {\r\n    /* Allocate lock resource and initialize it */\r\n    hlptim->Lock = HAL_UNLOCKED;\r\n\r\n#if (USE_HAL_LPTIM_REGISTER_CALLBACKS == 1)\r\n    /* Reset interrupt callbacks to legacy weak callbacks */\r\n    LPTIM_ResetCallback(hlptim);\r\n\r\n    if(hlptim->MspInitCallback == NULL)\r\n    {\r\n      hlptim->MspInitCallback = HAL_LPTIM_MspInit;\r\n    }\r\n\r\n    /* Init the low level hardware : GPIO, CLOCK, NVIC */\r\n    hlptim->MspInitCallback(hlptim);\r\n#else\r\n    /* Init the low level hardware : GPIO, CLOCK, NVIC */\r\n    HAL_LPTIM_MspInit(hlptim);\r\n#endif /* USE_HAL_LPTIM_REGISTER_CALLBACKS */\r\n  }\r\n\r\n  /* Change the LPTIM state */\r\n  hlptim->State = HAL_LPTIM_STATE_BUSY;\r\n\r\n  /* Get the LPTIMx CFGR value */\r\n  tmpcfgr = hlptim->Instance->CFGR;\r\n\r\n  /* Clear PRESC, PRELOAD  */\r\n  tmpcfgr &= (uint32_t)(~(LPTIM_CFGR_PRELOAD | LPTIM_CFGR_PRESC));\r\n\r\n  /* Set initialization parameters */\r\n  tmpcfgr |= (hlptim->Init.Prescaler|hlptim->Init.UpdateMode);\r\n\r\n  /* Write to LPTIMx CFGR */\r\n  hlptim->Instance->CFGR = tmpcfgr;\r\n\r\n  /* Change the LPTIM state */\r\n  hlptim->State = HAL_LPTIM_STATE_READY;\r\n\r\n  /* Return function status */\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_DeInit",
+      "sig": "HAL_StatusTypeDef HAL_LPTIM_DeInit(LPTIM_HandleTypeDef *hlptim)",
+      "brief": "反初始化 LPTIM 外设: 禁止外设并调用 HAL_LPTIM_MspDeInit() 释放底层资源, 句柄状态恢复为 RESET。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 句柄为空"
+      },
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_LPTIM_DeInit(LPTIM_HandleTypeDef *hlptim)\r\n{\r\n  /* Check the LPTIM handle allocation */\r\n  if(hlptim == NULL)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Change the LPTIM state */\r\n  hlptim->State = HAL_LPTIM_STATE_BUSY;\r\n\r\n  /* Disable the LPTIM Peripheral Clock */\r\n  __HAL_LPTIM_DISABLE(hlptim);\r\n\r\n#if (USE_HAL_LPTIM_REGISTER_CALLBACKS == 1)\r\n  if(hlptim->MspDeInitCallback == NULL)\r\n  {\r\n    hlptim->MspDeInitCallback = HAL_LPTIM_MspDeInit;\r\n  }\r\n\r\n  /* DeInit the low level hardware: CLOCK, NVIC.*/\r\n  hlptim->MspDeInitCallback(hlptim);\r\n#else\r\n  /* DeInit the low level hardware: CLOCK, NVIC.*/\r\n  HAL_LPTIM_MspDeInit(hlptim);\r\n#endif /* USE_HAL_LPTIM_REGISTER_CALLBACKS */\r\n\r\n  /* Change the LPTIM state */\r\n  hlptim->State = HAL_LPTIM_STATE_RESET;\r\n\r\n  /* Release Lock */\r\n  __HAL_UNLOCK(hlptim);\r\n\r\n  /* Return function status */\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_MspInit",
+      "sig": "void HAL_LPTIM_MspInit(LPTIM_HandleTypeDef *hlptim)",
+      "brief": "初始化 LPTIM 底层硬件(GPIO、时钟、NVIC)的弱定义空函数, 由 HAL_LPTIM_Init() 自动调用, 用户应在应用文件中重写。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "__weak void HAL_LPTIM_MspInit(LPTIM_HandleTypeDef *hlptim)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hlptim);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_LPTIM_MspInit could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_MspDeInit",
+      "sig": "void HAL_LPTIM_MspDeInit(LPTIM_HandleTypeDef *hlptim)",
+      "brief": "反初始化 LPTIM 底层硬件(GPIO、时钟、NVIC)的弱定义空函数, 由 HAL_LPTIM_DeInit() 自动调用, 用户应在应用文件中重写。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "__weak void HAL_LPTIM_MspDeInit(LPTIM_HandleTypeDef *hlptim)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hlptim);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_LPTIM_MspDeInit could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_SetOnce_Start",
+      "sig": "HAL_StatusTypeDef HAL_LPTIM_SetOnce_Start(LPTIM_HandleTypeDef *hlptim, uint32_t Period)",
+      "brief": "以单次(Set once)模式启动 LPTIM: 使能外设、将周期值写入自动重载寄存器并置位单次启动位。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        },
+        {
+          "name": "Period",
+          "type": "uint32_t",
+          "desc": "自动重载值(周期), 范围 0x0000~0xFFFF"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 参数非法"
+      },
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_LPTIM_SetOnce_Start(LPTIM_HandleTypeDef *hlptim, uint32_t Period)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_LPTIM_INSTANCE(hlptim->Instance));\r\n  assert_param(IS_LPTIM_PERIOD(Period));\r\n\r\n  /* Set the LPTIM state */\r\n  hlptim->State= HAL_LPTIM_STATE_BUSY;\r\n\r\n  /* Enable the Peripheral */\r\n  __HAL_LPTIM_ENABLE(hlptim);\r\n\r\n  /* Load the period value in the autoreload register */\r\n  __HAL_LPTIM_AUTORELOAD_SET(hlptim, Period);\r\n\r\n  /* Start timer in single mode */\r\n  __HAL_LPTIM_START_SINGLE(hlptim);\r\n\r\n  /* Change the TIM state*/\r\n  hlptim->State= HAL_LPTIM_STATE_READY;\r\n\r\n  /* Return function status */\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_SetOnce_Stop",
+      "sig": "HAL_StatusTypeDef HAL_LPTIM_SetOnce_Stop(LPTIM_HandleTypeDef *hlptim)",
+      "brief": "停止单次模式的 LPTIM(禁止外设)。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功"
+      },
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_LPTIM_SetOnce_Stop(LPTIM_HandleTypeDef *hlptim)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_LPTIM_INSTANCE(hlptim->Instance));\r\n\r\n  /* Set the LPTIM state */\r\n  hlptim->State= HAL_LPTIM_STATE_BUSY;\r\n\r\n  /* Disable the Peripheral */\r\n  __HAL_LPTIM_DISABLE(hlptim);\r\n\r\n  /* Change the TIM state*/\r\n  hlptim->State= HAL_LPTIM_STATE_READY;\r\n\r\n  /* Return function status */\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_SetOnce_Start_IT",
+      "sig": "HAL_StatusTypeDef HAL_LPTIM_SetOnce_Start_IT(LPTIM_HandleTypeDef *hlptim, uint32_t Period)",
+      "brief": "以单次模式启动 LPTIM 并使能自动重载匹配中断, 匹配发生后由 HAL_LPTIM_IRQHandler() 调用回调。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        },
+        {
+          "name": "Period",
+          "type": "uint32_t",
+          "desc": "自动重载值(周期), 范围 0x0000~0xFFFF"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 参数非法"
+      },
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_LPTIM_SetOnce_Start_IT(LPTIM_HandleTypeDef *hlptim, uint32_t Period)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_LPTIM_INSTANCE(hlptim->Instance));\r\n  assert_param(IS_LPTIM_PERIOD(Period));\r\n\r\n  /* Set the LPTIM state */\r\n  hlptim->State= HAL_LPTIM_STATE_BUSY;\r\n\r\n  /* Enable Autoreload match interrupt */\r\n  __HAL_LPTIM_ENABLE_IT(hlptim, LPTIM_IT_ARRM);\r\n\r\n  /* Enable the Peripheral */\r\n  __HAL_LPTIM_ENABLE(hlptim);\r\n\r\n  /* Load the period value in the autoreload register */\r\n  __HAL_LPTIM_AUTORELOAD_SET(hlptim, Period);\r\n\r\n  /* Start timer in single mode */\r\n  __HAL_LPTIM_START_SINGLE(hlptim);\r\n\r\n  /* Change the TIM state*/\r\n  hlptim->State= HAL_LPTIM_STATE_READY;\r\n\r\n  /* Return function status */\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_SetOnce_Stop_IT",
+      "sig": "HAL_StatusTypeDef HAL_LPTIM_SetOnce_Stop_IT(LPTIM_HandleTypeDef *hlptim)",
+      "brief": "停止单次模式的 LPTIM 并禁止自动重载匹配中断。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功"
+      },
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_LPTIM_SetOnce_Stop_IT(LPTIM_HandleTypeDef *hlptim)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_LPTIM_INSTANCE(hlptim->Instance));\r\n\r\n  /* Set the LPTIM state */\r\n  hlptim->State= HAL_LPTIM_STATE_BUSY;\r\n\r\n  /* Disable the Peripheral */\r\n  __HAL_LPTIM_DISABLE(hlptim);\r\n\r\n  /* Disable Autoreload match interrupt */\r\n  __HAL_LPTIM_DISABLE_IT(hlptim, LPTIM_IT_ARRM);\r\n\r\n  /* Change the TIM state*/\r\n  hlptim->State= HAL_LPTIM_STATE_READY;\r\n\r\n  /* Return function status */\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_SetContinue_Start",
+      "sig": "HAL_StatusTypeDef HAL_LPTIM_SetContinue_Start(LPTIM_HandleTypeDef *hlptim, uint32_t Period)",
+      "brief": "以连续(Set continue)模式启动 LPTIM: 使能外设、将周期值写入自动重载寄存器并置位连续启动位。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        },
+        {
+          "name": "Period",
+          "type": "uint32_t",
+          "desc": "自动重载值(周期), 范围 0x0000~0xFFFF"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 参数非法"
+      },
+      "notes": [
+        "此函数仅在芯片定义 LPTIM_CR_CNTSTRT 位时编译, 本芯片支持。"
+      ],
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_LPTIM_SetContinue_Start(LPTIM_HandleTypeDef *hlptim, uint32_t Period)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_LPTIM_INSTANCE(hlptim->Instance));\r\n  assert_param(IS_LPTIM_PERIOD(Period));\r\n\r\n  /* Set the LPTIM state */\r\n  hlptim->State= HAL_LPTIM_STATE_BUSY;\r\n\r\n  /* Enable the Peripheral */\r\n  __HAL_LPTIM_ENABLE(hlptim);\r\n\r\n  /* Load the period value in the autoreload register */\r\n  __HAL_LPTIM_AUTORELOAD_SET(hlptim, Period);\r\n\r\n  /* Start timer in continue mode */\r\n  __HAL_LPTIM_START_CONTINUE(hlptim);\r\n\r\n  /* Change the TIM state*/\r\n  hlptim->State= HAL_LPTIM_STATE_READY;\r\n\r\n  /* Return function status */\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_SetContinue_Stop",
+      "sig": "HAL_StatusTypeDef HAL_LPTIM_SetContinue_Stop(LPTIM_HandleTypeDef *hlptim)",
+      "brief": "停止连续模式的 LPTIM(禁止外设)。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功"
+      },
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_LPTIM_SetContinue_Stop(LPTIM_HandleTypeDef *hlptim)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_LPTIM_INSTANCE(hlptim->Instance));\r\n\r\n  /* Set the LPTIM state */\r\n  hlptim->State= HAL_LPTIM_STATE_BUSY;\r\n\r\n  /* Disable the Peripheral */\r\n  __HAL_LPTIM_DISABLE(hlptim);\r\n\r\n  /* Change the TIM state*/\r\n  hlptim->State= HAL_LPTIM_STATE_READY;\r\n\r\n  /* Return function status */\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_SetContinue_Start_IT",
+      "sig": "HAL_StatusTypeDef HAL_LPTIM_SetContinue_Start_IT(LPTIM_HandleTypeDef *hlptim, uint32_t Period)",
+      "brief": "以连续模式启动 LPTIM 并使能自动重载匹配中断, 每次匹配后由中断处理函数调用回调。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        },
+        {
+          "name": "Period",
+          "type": "uint32_t",
+          "desc": "自动重载值(周期), 范围 0x0000~0xFFFF"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 参数非法"
+      },
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_LPTIM_SetContinue_Start_IT(LPTIM_HandleTypeDef *hlptim, uint32_t Period)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_LPTIM_INSTANCE(hlptim->Instance));\r\n  assert_param(IS_LPTIM_PERIOD(Period));\r\n\r\n  /* Set the LPTIM state */\r\n  hlptim->State= HAL_LPTIM_STATE_BUSY;\r\n\r\n  /* Enable Autoreload match interrupt */\r\n  __HAL_LPTIM_ENABLE_IT(hlptim, LPTIM_IT_ARRM);\r\n\r\n  /* Enable the Peripheral */\r\n  __HAL_LPTIM_ENABLE(hlptim);\r\n\r\n  /* Load the period value in the autoreload register */\r\n  __HAL_LPTIM_AUTORELOAD_SET(hlptim, Period);\r\n\r\n  /* Start timer in continue mode */\r\n  __HAL_LPTIM_START_CONTINUE(hlptim);\r\n\r\n  /* Change the TIM state*/\r\n  hlptim->State= HAL_LPTIM_STATE_READY;\r\n\r\n  /* Return function status */\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_SetContinue_Stop_IT",
+      "sig": "HAL_StatusTypeDef HAL_LPTIM_SetContinue_Stop_IT(LPTIM_HandleTypeDef *hlptim)",
+      "brief": "停止连续模式的 LPTIM 并禁止自动重载匹配中断。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功"
+      },
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_LPTIM_SetContinue_Stop_IT(LPTIM_HandleTypeDef *hlptim)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_LPTIM_INSTANCE(hlptim->Instance));\r\n\r\n  /* Set the LPTIM state */\r\n  hlptim->State= HAL_LPTIM_STATE_BUSY;\r\n\r\n  /* Disable the Peripheral */\r\n  __HAL_LPTIM_DISABLE(hlptim);\r\n\r\n  /* Disable Autoreload match interrupt */\r\n  __HAL_LPTIM_DISABLE_IT(hlptim, LPTIM_IT_ARRM);\r\n\r\n  /* Change the TIM state*/\r\n  hlptim->State= HAL_LPTIM_STATE_READY;\r\n\r\n  /* Return function status */\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_ReadCounter",
+      "sig": "uint32_t HAL_LPTIM_ReadCounter(LPTIM_HandleTypeDef *hlptim)",
+      "brief": "返回当前计数器值(CNT 寄存器)。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "计数器当前值"
+      },
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "uint32_t HAL_LPTIM_ReadCounter(LPTIM_HandleTypeDef *hlptim)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_LPTIM_INSTANCE(hlptim->Instance));\r\n\r\n  return (hlptim->Instance->CNT);\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_ReadAutoReload",
+      "sig": "uint32_t HAL_LPTIM_ReadAutoReload(LPTIM_HandleTypeDef *hlptim)",
+      "brief": "返回当前自动重载(周期)值(ARR 寄存器)。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "自动重载值"
+      },
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "uint32_t HAL_LPTIM_ReadAutoReload(LPTIM_HandleTypeDef *hlptim)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_LPTIM_INSTANCE(hlptim->Instance));\r\n\r\n  return (hlptim->Instance->ARR);\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_ResetCounter",
+      "sig": "uint32_t HAL_LPTIM_ResetCounter(LPTIM_HandleTypeDef *hlptim)",
+      "brief": "同步复位计数器: 置位 CR 的 COUNTRST 位(硬件自动清除)。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "HAL_OK 复位启动成功; HAL_ERROR 计数器已处于复位状态"
+      },
+      "notes": [
+        "源文件注释写 @retval None, 但实现实际返回 HAL_OK / HAL_ERROR。"
+      ],
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "uint32_t HAL_LPTIM_ResetCounter(LPTIM_HandleTypeDef *hlptim)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_LPTIM_INSTANCE(hlptim->Instance));\r\n\r\n  if(READ_BIT(hlptim->Instance->CR, LPTIM_CR_COUNTRST) == 0)\r\n  {\r\n    SET_BIT(hlptim->Instance->CR, LPTIM_CR_COUNTRST);\r\n  }\r\n  else\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_IRQHandler",
+      "sig": "void HAL_LPTIM_IRQHandler(LPTIM_HandleTypeDef *hlptim)",
+      "brief": "LPTIM 中断服务处理函数: 检查自动重载匹配与自动重载更新完成两个中断标志, 清除标志并调用对应回调。应在 LPTIM 的 IRQHandler 中调用。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "void HAL_LPTIM_IRQHandler(LPTIM_HandleTypeDef *hlptim)\r\n{\r\n  /* Autoreload match interrupt */\r\n  if(__HAL_LPTIM_GET_FLAG(hlptim, LPTIM_FLAG_ARRM) != RESET)\r\n  {\r\n    if(__HAL_LPTIM_GET_IT_SOURCE(hlptim, LPTIM_IT_ARRM) != RESET)\r\n    {\r\n      /* Clear Autoreload match flag */\r\n      __HAL_LPTIM_CLEAR_FLAG(hlptim, LPTIM_FLAG_ARRM);\r\n\r\n      /* Autoreload match Callback */\r\n#if (USE_HAL_LPTIM_REGISTER_CALLBACKS == 1)\r\n      hlptim->AutoReloadMatchCallback(hlptim);\r\n#else\r\n      HAL_LPTIM_AutoReloadMatchCallback(hlptim);\r\n#endif /* USE_HAL_LPTIM_REGISTER_CALLBACKS */\r\n    }\r\n  }\r\n  /* Autoreload Update completed interrupt */\r\n  if(__HAL_LPTIM_GET_FLAG(hlptim, LPTIM_FLAG_ARROK) != RESET)\r\n  {\r\n    if(__HAL_LPTIM_GET_IT_SOURCE(hlptim, LPTIM_IT_ARROK) != RESET)\r\n    {\r\n      /* Clear Autoreload Update completed flag */\r\n      __HAL_LPTIM_CLEAR_FLAG(hlptim, LPTIM_FLAG_ARROK);\r\n\r\n      /* Autoreload Update completed Callback */\r\n#if (USE_HAL_LPTIM_REGISTER_CALLBACKS == 1)\r\n      hlptim->HAL_LPTIM_AutoReloadUpdateCompletedCallback(hlptim);\r\n#else\r\n      HAL_LPTIM_AutoReloadUpdateCompletedCallback(hlptim);\r\n#endif /* USE_HAL_LPTIM_REGISTER_CALLBACKS */\r\n    }\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_AutoReloadMatchCallback",
+      "sig": "void HAL_LPTIM_AutoReloadMatchCallback(LPTIM_HandleTypeDef *hlptim)",
+      "brief": "自动重载匹配回调(弱定义空函数), 由 HAL_LPTIM_IRQHandler() 在中断模式下调用, 用户应在应用文件中重写。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "不要修改库里的弱定义, 应在用户文件中重新实现同名函数。"
+      ],
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "__weak void HAL_LPTIM_AutoReloadMatchCallback(LPTIM_HandleTypeDef *hlptim)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hlptim);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_LPTIM_AutoReloadMatchCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_AutoReloadUpdateCompletedCallback",
+      "sig": "void HAL_LPTIM_AutoReloadUpdateCompletedCallback(LPTIM_HandleTypeDef *hlptim)",
+      "brief": "自动重载寄存器更新完成回调(弱定义空函数), 由 HAL_LPTIM_IRQHandler() 调用, 用户可在应用文件中重写。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "不要修改库里的弱定义, 应在用户文件中重新实现同名函数。"
+      ],
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "__weak void HAL_LPTIM_AutoReloadUpdateCompletedCallback(LPTIM_HandleTypeDef *hlptim)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hlptim);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_LPTIM_AutoReloadUpdateCompletedCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_RegisterCallback",
+      "sig": "HAL_StatusTypeDef HAL_LPTIM_RegisterCallback(LPTIM_HandleTypeDef *hlptim, HAL_LPTIM_CallbackIDTypeDef CallbackID, pLPTIM_CallbackTypeDef pCallback)",
+      "brief": "注册用户回调以替代弱默认回调。需定义 USE_HAL_LPTIM_REGISTER_CALLBACKS = 1。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        },
+        {
+          "name": "CallbackID",
+          "type": "HAL_LPTIM_CallbackIDTypeDef",
+          "desc": "回调 ID: HAL_LPTIM_MSPINIT_CB_ID / HAL_LPTIM_MSPDEINIT_CB_ID / HAL_LPTIM_AUTORELOAD_MATCH_CB_ID"
+        },
+        {
+          "name": "pCallback",
+          "type": "pLPTIM_CallbackTypeDef",
+          "desc": "指向用户回调函数的指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 回调指针为空、句柄状态不允许或 ID 无效"
+      },
+      "notes": [
+        "除 MspInit/MspDeInit 外, 回调只能在句柄状态为 READY 时注册; MspInit/MspDeInit 在 READY 或 RESET 状态均可注册。"
+      ],
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_LPTIM_RegisterCallback(LPTIM_HandleTypeDef *       hlptim,\r\n    HAL_LPTIM_CallbackIDTypeDef CallbackID,\r\n    pLPTIM_CallbackTypeDef      pCallback)\r\n{\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  if(pCallback == NULL)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Process locked */\r\n  __HAL_LOCK(hlptim);\r\n\r\n  if(hlptim->State == HAL_LPTIM_STATE_READY)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_LPTIM_MSPINIT_CB_ID :\r\n      hlptim->MspInitCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_LPTIM_MSPDEINIT_CB_ID :\r\n      hlptim->MspDeInitCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_LPTIM_AUTORELOAD_MATCH_CB_ID :\r\n      hlptim->AutoReloadMatchCallback = pCallback;\r\n      break;\r\n\r\n    default :\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else if(hlptim->State == HAL_LPTIM_STATE_RESET)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_LPTIM_MSPINIT_CB_ID :\r\n      hlptim->MspInitCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_LPTIM_MSPDEINIT_CB_ID :\r\n      hlptim->MspDeInitCallback = pCallback;\r\n      break;\r\n\r\n    default :\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else\r\n  {\r\n    /* Return error status */\r\n    status =  HAL_ERROR;\r\n  }\r\n\r\n  /* Release Lock */\r\n  __HAL_UNLOCK(hlptim);\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_UnRegisterCallback",
+      "sig": "HAL_StatusTypeDef HAL_LPTIM_UnRegisterCallback(LPTIM_HandleTypeDef *hlptim, HAL_LPTIM_CallbackIDTypeDef CallbackID)",
+      "brief": "注销已注册的回调, 使其恢复为弱默认回调。需定义 USE_HAL_LPTIM_REGISTER_CALLBACKS = 1。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        },
+        {
+          "name": "CallbackID",
+          "type": "HAL_LPTIM_CallbackIDTypeDef",
+          "desc": "回调 ID: HAL_LPTIM_MSPINIT_CB_ID / HAL_LPTIM_MSPDEINIT_CB_ID / HAL_LPTIM_AUTORELOAD_MATCH_CB_ID"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 句柄状态不允许或 ID 无效"
+      },
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_LPTIM_UnRegisterCallback(LPTIM_HandleTypeDef *       hlptim,\r\n    HAL_LPTIM_CallbackIDTypeDef CallbackID)\r\n{\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  /* Process locked */\r\n  __HAL_LOCK(hlptim);\r\n\r\n  if(hlptim->State == HAL_LPTIM_STATE_READY)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_LPTIM_MSPINIT_CB_ID :\r\n      hlptim->MspInitCallback = HAL_LPTIM_MspInit;                          /* Legacy weak MspInit Callback */\r\n      break;\r\n\r\n    case HAL_LPTIM_MSPDEINIT_CB_ID :\r\n      hlptim->MspDeInitCallback = HAL_LPTIM_MspDeInit;                       /* Legacy weak Msp DeInit Callback */\r\n      break;\r\n\r\n    case HAL_LPTIM_AUTORELOAD_MATCH_CB_ID :\r\n      hlptim->AutoReloadMatchCallback = HAL_LPTIM_AutoReloadMatchCallback;   /* Legacy weak IC Msp DeInit Callback */\r\n      break;\r\n\r\n    default :\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else if(hlptim->State == HAL_LPTIM_STATE_RESET)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_LPTIM_MSPINIT_CB_ID :\r\n      hlptim->MspInitCallback = HAL_LPTIM_MspInit;                           /* Legacy weak MspInit Callback */\r\n      break;\r\n\r\n    case HAL_LPTIM_MSPDEINIT_CB_ID :\r\n      hlptim->MspDeInitCallback = HAL_LPTIM_MspDeInit;                        /* Legacy weak Msp DeInit Callback */\r\n      break;\r\n\r\n    default :\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else\r\n  {\r\n    /* Return error status */\r\n    status =  HAL_ERROR;\r\n  }\r\n\r\n  /* Release Lock */\r\n  __HAL_UNLOCK(hlptim);\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_LPTIM_GetState",
+      "sig": "HAL_LPTIM_StateTypeDef HAL_LPTIM_GetState(LPTIM_HandleTypeDef *hlptim)",
+      "brief": "返回 LPTIM 句柄的当前运行状态。",
+      "params": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_LPTIM_StateTypeDef",
+        "desc": "句柄状态: HAL_LPTIM_STATE_RESET / READY / BUSY / TIMEOUT / ERROR"
+      },
+      "file": "py32f002b_hal_lptim.c",
+      "kind": "function",
+      "src": "HAL_LPTIM_StateTypeDef HAL_LPTIM_GetState(LPTIM_HandleTypeDef *hlptim)\r\n{\r\n  /* Return LPTIM handle state */\r\n  return hlptim->State;\r\n}"
+    },
+    {
+      "name": "__HAL_LPTIM_RESET_HANDLE_STATE",
+      "sig": "#define __HAL_LPTIM_RESET_HANDLE_STATE(__HANDLE__) do {                                                        \\\r\n                                                      (__HANDLE__)->State             = HAL_LPTIM_STATE_RESET; \\\r\n                                                      (__HANDLE__)->MspInitCallback   = NULL;                  \\\r\n                                                      (__HANDLE__)->MspDeInitCallback = NULL;                  \\\r\n                                                     } while(0)",
+      "brief": "宏: 将 LPTIM 句柄状态复位为 HAL_LPTIM_STATE_RESET(定义 USE_HAL_LPTIM_REGISTER_CALLBACKS 时同时清空 Msp 回调指针)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "LPTIM 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_lptim.h",
+      "kind": "macro",
+      "src": "#define __HAL_LPTIM_RESET_HANDLE_STATE(__HANDLE__) do {                                                        \\\r\n                                                      (__HANDLE__)->State             = HAL_LPTIM_STATE_RESET; \\\r\n                                                      (__HANDLE__)->MspInitCallback   = NULL;                  \\\r\n                                                      (__HANDLE__)->MspDeInitCallback = NULL;                  \\\r\n                                                     } while(0)"
+    },
+    {
+      "name": "__HAL_LPTIM_ENABLE",
+      "sig": "#define __HAL_LPTIM_ENABLE(__HANDLE__)   ((__HANDLE__)->Instance->CR |=  (LPTIM_CR_ENABLE))",
+      "brief": "宏: 使能 LPTIM 外设(置位 CR 的 ENABLE 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "LPTIM 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_lptim.h",
+      "kind": "macro",
+      "src": "#define __HAL_LPTIM_ENABLE(__HANDLE__)   ((__HANDLE__)->Instance->CR |=  (LPTIM_CR_ENABLE))"
+    },
+    {
+      "name": "__HAL_LPTIM_DISABLE",
+      "sig": "#define __HAL_LPTIM_DISABLE(__HANDLE__)  ((__HANDLE__)->Instance->CR &=  ~(LPTIM_CR_ENABLE))",
+      "brief": "宏: 禁止 LPTIM 外设(清除 CR 的 ENABLE 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "LPTIM 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_lptim.h",
+      "kind": "macro",
+      "src": "#define __HAL_LPTIM_DISABLE(__HANDLE__)  ((__HANDLE__)->Instance->CR &=  ~(LPTIM_CR_ENABLE))"
+    },
+    {
+      "name": "__HAL_LPTIM_START_SINGLE",
+      "sig": "#define __HAL_LPTIM_START_SINGLE(__HANDLE__)      ((__HANDLE__)->Instance->CR |=  LPTIM_CR_SNGSTRT)",
+      "brief": "宏: 以单次模式启动 LPTIM(置位 CR 的 SNGSTRT 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "LPTIM 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_lptim.h",
+      "kind": "macro",
+      "src": "#define __HAL_LPTIM_START_SINGLE(__HANDLE__)      ((__HANDLE__)->Instance->CR |=  LPTIM_CR_SNGSTRT)"
+    },
+    {
+      "name": "__HAL_LPTIM_START_CONTINUE",
+      "sig": "#define __HAL_LPTIM_START_CONTINUE(__HANDLE__)      ((__HANDLE__)->Instance->CR |=  LPTIM_CR_CNTSTRT)",
+      "brief": "宏: 以连续模式启动 LPTIM(置位 CR 的 CNTSTRT 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "LPTIM 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "notes": [
+        "该宏仅在芯片定义 LPTIM_CR_CNTSTRT 位时编译。"
+      ],
+      "file": "py32f002b_hal_lptim.h",
+      "kind": "macro",
+      "src": "#define __HAL_LPTIM_START_CONTINUE(__HANDLE__)      ((__HANDLE__)->Instance->CR |=  LPTIM_CR_CNTSTRT)"
+    },
+    {
+      "name": "__HAL_LPTIM_RESET_COUNTER_AFTERREAD",
+      "sig": "#define __HAL_LPTIM_RESET_COUNTER_AFTERREAD(__HANDLE__)      ((__HANDLE__)->Instance->CR |=  LPTIM_CR_RSTARE)",
+      "brief": "宏: 使能读后复位(置位 CR 的 RSTARE 位), 之后每次读 CNT 寄存器都会异步复位计数器内容。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "LPTIM 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_lptim.h",
+      "kind": "macro",
+      "src": "#define __HAL_LPTIM_RESET_COUNTER_AFTERREAD(__HANDLE__)      ((__HANDLE__)->Instance->CR |=  LPTIM_CR_RSTARE)"
+    },
+    {
+      "name": "__HAL_LPTIM_AUTORELOAD_SET",
+      "sig": "#define __HAL_LPTIM_AUTORELOAD_SET(__HANDLE__ , __VALUE__)  ((__HANDLE__)->Instance->ARR =  (__VALUE__))",
+      "brief": "宏: 将指定值写入自动重载寄存器 ARR。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "LPTIM 句柄"
+        },
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "要写入的自动重载值"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_lptim.h",
+      "kind": "macro",
+      "src": "#define __HAL_LPTIM_AUTORELOAD_SET(__HANDLE__ , __VALUE__)  ((__HANDLE__)->Instance->ARR =  (__VALUE__))"
+    },
+    {
+      "name": "__HAL_LPTIM_GET_FLAG",
+      "sig": "#define __HAL_LPTIM_GET_FLAG(__HANDLE__, __FLAG__)          (((__HANDLE__)->Instance->ISR &(__FLAG__)) == (__FLAG__))",
+      "brief": "宏: 查询指定 LPTIM 标志是否置位(读 ISR 寄存器)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "LPTIM 句柄"
+        },
+        {
+          "name": "__FLAG__",
+          "type": "宏参数",
+          "desc": "标志: LPTIM_FLAG_ARRM / LPTIM_FLAG_ARROK"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志状态: SET 或 RESET"
+      },
+      "file": "py32f002b_hal_lptim.h",
+      "kind": "macro",
+      "src": "#define __HAL_LPTIM_GET_FLAG(__HANDLE__, __FLAG__)          (((__HANDLE__)->Instance->ISR &(__FLAG__)) == (__FLAG__))"
+    },
+    {
+      "name": "__HAL_LPTIM_CLEAR_FLAG",
+      "sig": "#define __HAL_LPTIM_CLEAR_FLAG(__HANDLE__, __FLAG__)        ((__HANDLE__)->Instance->ICR  = (__FLAG__))",
+      "brief": "宏: 清除指定 LPTIM 标志(写 ICR 寄存器)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "LPTIM 句柄"
+        },
+        {
+          "name": "__FLAG__",
+          "type": "宏参数",
+          "desc": "标志: LPTIM_FLAG_ARRM / LPTIM_FLAG_ARROK"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_lptim.h",
+      "kind": "macro",
+      "src": "#define __HAL_LPTIM_CLEAR_FLAG(__HANDLE__, __FLAG__)        ((__HANDLE__)->Instance->ICR  = (__FLAG__))"
+    },
+    {
+      "name": "__HAL_LPTIM_ENABLE_IT",
+      "sig": "#define __HAL_LPTIM_ENABLE_IT(__HANDLE__, __INTERRUPT__)    ((__HANDLE__)->Instance->IER  |= (__INTERRUPT__))",
+      "brief": "宏: 使能指定 LPTIM 中断(写 IER 寄存器)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "LPTIM 句柄"
+        },
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "中断: LPTIM_IT_ARRM / LPTIM_IT_ARROK"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_lptim.h",
+      "kind": "macro",
+      "src": "#define __HAL_LPTIM_ENABLE_IT(__HANDLE__, __INTERRUPT__)    ((__HANDLE__)->Instance->IER  |= (__INTERRUPT__))"
+    },
+    {
+      "name": "__HAL_LPTIM_DISABLE_IT",
+      "sig": "#define __HAL_LPTIM_DISABLE_IT(__HANDLE__, __INTERRUPT__)   ((__HANDLE__)->Instance->IER  &= (~(__INTERRUPT__)))",
+      "brief": "宏: 禁止指定 LPTIM 中断(写 IER 寄存器)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "LPTIM 句柄"
+        },
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "中断: LPTIM_IT_ARRM / LPTIM_IT_ARROK"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_lptim.h",
+      "kind": "macro",
+      "src": "#define __HAL_LPTIM_DISABLE_IT(__HANDLE__, __INTERRUPT__)   ((__HANDLE__)->Instance->IER  &= (~(__INTERRUPT__)))"
+    },
+    {
+      "name": "__HAL_LPTIM_GET_IT_SOURCE",
+      "sig": "#define __HAL_LPTIM_GET_IT_SOURCE(__HANDLE__, __INTERRUPT__) ((((__HANDLE__)->Instance->IER & (__INTERRUPT__)) == (__INTERRUPT__)) ? SET : RESET)",
+      "brief": "宏: 查询指定 LPTIM 中断源是否已使能。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "LPTIM 句柄"
+        },
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "中断: LPTIM_IT_ARRM / LPTIM_IT_ARROK"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "中断使能状态: SET 或 RESET"
+      },
+      "file": "py32f002b_hal_lptim.h",
+      "kind": "macro",
+      "src": "#define __HAL_LPTIM_GET_IT_SOURCE(__HANDLE__, __INTERRUPT__) ((((__HANDLE__)->Instance->IER & (__INTERRUPT__)) == (__INTERRUPT__)) ? SET : RESET)"
+    }
+  ],
+  "ll": [
+    {
+      "name": "LL_LPTIM_Enable",
+      "sig": "void LL_LPTIM_Enable(LPTIM_TypeDef *LPTIMx)",
+      "brief": "使能 LPTIM 实例(置位 CR 的 ENABLE 位)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "置位 ENABLE 位后需等待两个计数器时钟周期, LPTIM 实例才真正使能。"
+      ],
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPTIM_Enable(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  SET_BIT(LPTIMx->CR, LPTIM_CR_ENABLE);\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_Disable",
+      "sig": "void LL_LPTIM_Disable(LPTIM_TypeDef *LPTIMx)",
+      "brief": "禁止 LPTIM 实例(清除 CR 的 ENABLE 位)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPTIM_Disable(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  CLEAR_BIT(LPTIMx->CR, LPTIM_CR_ENABLE);\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_IsEnabled",
+      "sig": "uint32_t LL_LPTIM_IsEnabled(LPTIM_TypeDef *LPTIMx)",
+      "brief": "查询 LPTIM 实例是否使能。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_LPTIM_IsEnabled(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  return (((READ_BIT(LPTIMx->CR, LPTIM_CR_ENABLE) == LPTIM_CR_ENABLE) ? 1UL : 0UL));\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_StartCounter",
+      "sig": "void LL_LPTIM_StartCounter(LPTIM_TypeDef *LPTIMx, uint32_t OperatingMode)",
+      "brief": "以指定模式启动 LPTIM 计数器(写 CR 的 SNGSTRT / CNTSTRT 位)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        },
+        {
+          "name": "OperatingMode",
+          "type": "uint32_t",
+          "desc": "工作模式: LL_LPTIM_OPERATING_MODE_ONESHOT(单次) / LL_LPTIM_OPERATING_MODE_CONTINUOUS(连续)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "启动计数器前必须先用 LL_LPTIM_Enable() 使能 LPTIM 实例。"
+      ],
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPTIM_StartCounter(LPTIM_TypeDef *LPTIMx, uint32_t OperatingMode)\r\n{\r\n  MODIFY_REG(LPTIMx->CR, LPTIM_CR_SNGSTRT | LPTIM_CR_CNTSTRT, OperatingMode);\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_EnableResetAfterRead",
+      "sig": "void LL_LPTIM_EnableResetAfterRead(LPTIM_TypeDef *LPTIMx)",
+      "brief": "使能读后复位(置位 CR 的 RSTARE 位): 之后每次读 CNT 寄存器都会异步复位其内容。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPTIM_EnableResetAfterRead(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  SET_BIT(LPTIMx->CR, LPTIM_CR_RSTARE);\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_DisableResetAfterRead",
+      "sig": "void LL_LPTIM_DisableResetAfterRead(LPTIM_TypeDef *LPTIMx)",
+      "brief": "禁止读后复位(清除 CR 的 RSTARE 位)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPTIM_DisableResetAfterRead(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  CLEAR_BIT(LPTIMx->CR, LPTIM_CR_RSTARE);\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_IsEnabledResetAfterRead",
+      "sig": "uint32_t LL_LPTIM_IsEnabledResetAfterRead(LPTIM_TypeDef *LPTIMx)",
+      "brief": "查询读后复位功能是否使能。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_LPTIM_IsEnabledResetAfterRead(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  return (((READ_BIT(LPTIMx->CR, LPTIM_CR_RSTARE) == LPTIM_CR_RSTARE) ? 1UL : 0UL));\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_ResetCounter",
+      "sig": "void LL_LPTIM_ResetCounter(LPTIM_TypeDef *LPTIMx)",
+      "brief": "同步复位计数器(置位 CR 的 COUNTRST 位, 由硬件自动清除)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "该复位是同步的, 需经 3 个 LPTIM 内核时钟周期的同步延时后才生效(LPTIM 内核时钟可能与 APB 时钟不同)。"
+      ],
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPTIM_ResetCounter(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  SET_BIT(LPTIMx->CR, LPTIM_CR_COUNTRST);\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_SetUpdateMode",
+      "sig": "void LL_LPTIM_SetUpdateMode(LPTIM_TypeDef *LPTIMx, uint32_t UpdateMode)",
+      "brief": "设置寄存器更新模式(使能/禁止寄存器预装载, 写 CFGR 的 PRELOAD 位)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        },
+        {
+          "name": "UpdateMode",
+          "type": "uint32_t",
+          "desc": "更新模式: LL_LPTIM_UPDATE_MODE_IMMEDIATE(立即) / LL_LPTIM_UPDATE_MODE_ENDOFPERIOD(当前周期结束)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "此函数必须在 LPTIM 实例禁止时调用。"
+      ],
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPTIM_SetUpdateMode(LPTIM_TypeDef *LPTIMx, uint32_t UpdateMode)\r\n{\r\n  MODIFY_REG(LPTIMx->CFGR, LPTIM_CFGR_PRELOAD, UpdateMode);\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_GetUpdateMode",
+      "sig": "uint32_t LL_LPTIM_GetUpdateMode(LPTIM_TypeDef *LPTIMx)",
+      "brief": "读取当前寄存器更新模式。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "更新模式, 对应 LL_LPTIM_UPDATE_MODE_*"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_LPTIM_GetUpdateMode(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  return (uint32_t)(READ_BIT(LPTIMx->CFGR, LPTIM_CFGR_PRELOAD));\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_SetAutoReload",
+      "sig": "void LL_LPTIM_SetAutoReload(LPTIM_TypeDef *LPTIMx, uint32_t AutoReload)",
+      "brief": "设置自动重载值(写 ARR 寄存器)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        },
+        {
+          "name": "AutoReload",
+          "type": "uint32_t",
+          "desc": "自动重载值, 范围 0x0000~0xFFFF"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "ARR 寄存器内容只能在 LPTIM 使能时修改。",
+        "连续两次写 ARR 前必须等待前一次写完成(ARROK 标志置位), 否则结果不可预期。"
+      ],
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPTIM_SetAutoReload(LPTIM_TypeDef *LPTIMx, uint32_t AutoReload)\r\n{\r\n  MODIFY_REG(LPTIMx->ARR, LPTIM_ARR_ARR, AutoReload);\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_GetAutoReload",
+      "sig": "uint32_t LL_LPTIM_GetAutoReload(LPTIM_TypeDef *LPTIMx)",
+      "brief": "读取当前自动重载值(ARR 寄存器)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "自动重载值, 范围 0x0000~0xFFFF"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_LPTIM_GetAutoReload(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  return (uint32_t)(READ_BIT(LPTIMx->ARR, LPTIM_ARR_ARR));\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_GetCounter",
+      "sig": "uint32_t LL_LPTIM_GetCounter(LPTIM_TypeDef *LPTIMx)",
+      "brief": "读取当前计数值(CNT 寄存器)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "计数值"
+      },
+      "notes": [
+        "LPTIM 使用异步时钟运行时, 读 CNT 可能返回不可靠的值, 此时应连续读两次并确认两次结果一致。"
+      ],
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_LPTIM_GetCounter(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  return (uint32_t)(READ_BIT(LPTIMx->CNT, LPTIM_CNT_CNT));\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_SetPrescaler",
+      "sig": "void LL_LPTIM_SetPrescaler(LPTIM_TypeDef *LPTIMx, uint32_t Prescaler)",
+      "brief": "设置时钟预分频系数(写 CFGR 的 PRESC 位段)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        },
+        {
+          "name": "Prescaler",
+          "type": "uint32_t",
+          "desc": "预分频系数: LL_LPTIM_PRESCALER_DIV1 .. DIV128"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "此函数必须在 LPTIM 实例禁止时调用。",
+        "当 LPTIM 由内部时钟驱动且计数器由外部输入 1 的边沿更新时, 内部时钟不得预分频。"
+      ],
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPTIM_SetPrescaler(LPTIM_TypeDef *LPTIMx, uint32_t Prescaler)\r\n{\r\n  MODIFY_REG(LPTIMx->CFGR, LPTIM_CFGR_PRESC, Prescaler);\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_GetPrescaler",
+      "sig": "uint32_t LL_LPTIM_GetPrescaler(LPTIM_TypeDef *LPTIMx)",
+      "brief": "读取当前预分频系数(CFGR 的 PRESC 位段)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "预分频系数, 对应 LL_LPTIM_PRESCALER_DIV*"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_LPTIM_GetPrescaler(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  return (uint32_t)(READ_BIT(LPTIMx->CFGR, LPTIM_CFGR_PRESC));\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_ClearFLAG_ARRM",
+      "sig": "void LL_LPTIM_ClearFLAG_ARRM(LPTIM_TypeDef *LPTIMx)",
+      "brief": "清除自动重载匹配标志(写 ICR 的 ARRMCF 位)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPTIM_ClearFLAG_ARRM(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  SET_BIT(LPTIMx->ICR, LPTIM_ICR_ARRMCF);\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_ClearFLAG_ARROK",
+      "sig": "void LL_LPTIM_ClearFLAG_ARROK(LPTIM_TypeDef *LPTIMx)",
+      "brief": "清除自动重载寄存器更新完成标志(写 ICR 的 ARROKCF 位)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPTIM_ClearFLAG_ARROK(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  SET_BIT(LPTIMx->ICR, LPTIM_ICR_ARROKCF);\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_IsActiveFlag_ARRM",
+      "sig": "uint32_t LL_LPTIM_IsActiveFlag_ARRM(LPTIM_TypeDef *LPTIMx)",
+      "brief": "查询自动重载匹配是否已发生(读 ISR 的 ARRM 位)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_LPTIM_IsActiveFlag_ARRM(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  return (((READ_BIT(LPTIMx->ISR, LPTIM_ISR_ARRM) == LPTIM_ISR_ARRM) ? 1UL : 0UL));\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_IsActiveFlag_ARROK",
+      "sig": "uint32_t LL_LPTIM_IsActiveFlag_ARROK(LPTIM_TypeDef *LPTIMx)",
+      "brief": "查询自动重载寄存器更新是否完成(读 ISR 的 ARROK 位)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_LPTIM_IsActiveFlag_ARROK(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  return (((READ_BIT(LPTIMx->ISR, LPTIM_ISR_ARROK) == LPTIM_ISR_ARROK) ? 1UL : 0UL));\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_EnableIT_ARRM",
+      "sig": "void LL_LPTIM_EnableIT_ARRM(LPTIM_TypeDef *LPTIMx)",
+      "brief": "使能自动重载匹配中断(置位 IER 的 ARRMIE 位)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPTIM_EnableIT_ARRM(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  SET_BIT(LPTIMx->IER, LPTIM_IER_ARRMIE);\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_DisableIT_ARRM",
+      "sig": "void LL_LPTIM_DisableIT_ARRM(LPTIM_TypeDef *LPTIMx)",
+      "brief": "禁止自动重载匹配中断(清除 IER 的 ARRMIE 位)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPTIM_DisableIT_ARRM(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  CLEAR_BIT(LPTIMx->IER, LPTIM_IER_ARRMIE);\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_IsEnabledIT_ARRM",
+      "sig": "uint32_t LL_LPTIM_IsEnabledIT_ARRM(LPTIM_TypeDef *LPTIMx)",
+      "brief": "查询自动重载匹配中断是否使能。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_LPTIM_IsEnabledIT_ARRM(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  return (((READ_BIT(LPTIMx->IER, LPTIM_IER_ARRMIE) == LPTIM_IER_ARRMIE) ? 1UL : 0UL));\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_EnableIT_ARROK",
+      "sig": "void LL_LPTIM_EnableIT_ARROK(LPTIM_TypeDef *LPTIMx)",
+      "brief": "使能自动重载寄存器更新完成中断(置位 IER 的 ARROKIE 位)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPTIM_EnableIT_ARROK(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  SET_BIT(LPTIMx->IER, LPTIM_IER_ARROKIE);\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_DisableIT_ARROK",
+      "sig": "void LL_LPTIM_DisableIT_ARROK(LPTIM_TypeDef *LPTIMx)",
+      "brief": "禁止自动重载寄存器更新完成中断(清除 IER 的 ARROKIE 位)。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPTIM_DisableIT_ARROK(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  CLEAR_BIT(LPTIMx->IER, LPTIM_IER_ARROKIE);\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_IsEnabledIT_ARROK",
+      "sig": "uint32_t LL_LPTIM_IsEnabledIT_ARROK(LPTIM_TypeDef *LPTIMx)",
+      "brief": "查询自动重载寄存器更新完成中断是否使能。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_LPTIM_IsEnabledIT_ARROK(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  return (((READ_BIT(LPTIMx->IER, LPTIM_IER_ARROKIE) == LPTIM_IER_ARROKIE) ? 1UL : 0UL));\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_DeInit",
+      "sig": "ErrorStatus LL_LPTIM_DeInit(LPTIM_TypeDef *LPTIMx)",
+      "brief": "将 LPTIMx 各寄存器恢复为复位值(对实例执行外设强制复位并释放复位)。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 成功; ERROR 实例非法"
+      },
+      "file": "py32f002b_ll_lptim.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_LPTIM_DeInit(LPTIM_TypeDef *LPTIMx)\r\n{\r\n  ErrorStatus result = SUCCESS;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_LPTIM_INSTANCE(LPTIMx));\r\n  \r\n  if (LPTIMx == LPTIM)\r\n  {\r\n    LL_APB1_GRP1_ForceReset(LL_APB1_GRP1_PERIPH_LPTIM1);\r\n    LL_APB1_GRP1_ReleaseReset(LL_APB1_GRP1_PERIPH_LPTIM1);\r\n  }\r\n  else\r\n  {\r\n    result = ERROR;\r\n  }\r\n\r\n  return result;\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_StructInit",
+      "sig": "void LL_LPTIM_StructInit(LL_LPTIM_InitTypeDef *LPTIM_InitStruct)",
+      "brief": "将 LL_LPTIM_InitTypeDef 结构体各成员填充为默认值(预分频 DIV1、立即更新), 供 LL_LPTIM_Init() 使用。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "LPTIM_InitStruct",
+          "type": "LL_LPTIM_InitTypeDef *",
+          "desc": "指向要填充的结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_lptim.c",
+      "kind": "function",
+      "src": "void LL_LPTIM_StructInit(LL_LPTIM_InitTypeDef *LPTIM_InitStruct)\r\n{\r\n  /* Set the default configuration */\r\n  LPTIM_InitStruct->Prescaler   = LL_LPTIM_PRESCALER_DIV1;\r\n  LPTIM_InitStruct->UpdateMode  = LL_LPTIM_UPDATE_MODE_IMMEDIATE;\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_Init",
+      "sig": "ErrorStatus LL_LPTIM_Init(LPTIM_TypeDef *LPTIMx, LL_LPTIM_InitTypeDef *LPTIM_InitStruct)",
+      "brief": "按指定参数配置 LPTIMx 的预分频与更新模式(写 CFGR)。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "LPTIMx",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 实例指针"
+        },
+        {
+          "name": "LPTIM_InitStruct",
+          "type": "LL_LPTIM_InitTypeDef *",
+          "desc": "指向配置结构体的指针, 含 Prescaler / UpdateMode"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 成功; ERROR 实例使能中或参数非法"
+      },
+      "notes": [
+        "LL_LPTIM_Init() 只能在 LPTIM 实例禁止时调用, 可用 LL_LPTIM_Disable() 先禁止。"
+      ],
+      "file": "py32f002b_ll_lptim.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_LPTIM_Init(LPTIM_TypeDef *LPTIMx, LL_LPTIM_InitTypeDef *LPTIM_InitStruct)\r\n{\r\n  ErrorStatus result = SUCCESS;\r\n  /* Check the parameters */\r\n  assert_param(IS_LPTIM_INSTANCE(LPTIMx));\r\n  assert_param(IS_LL_LPTIM_CLOCK_PRESCALER(LPTIM_InitStruct->Prescaler));\r\n  assert_param(IS_LL_LPTIM_UPDATA_MODE(LPTIM_InitStruct->UpdateMode));\r\n  /* The LPTIMx_CFGR register must only be modified when the LPTIM is disabled\r\n     (ENABLE bit is reset to 0).\r\n  */\r\n  if (LL_LPTIM_IsEnabled(LPTIMx) == 1UL)\r\n  {\r\n    result = ERROR;\r\n  }\r\n  else\r\n  {\r\n    /* Set PRESC bitfield according to Prescaler value */\r\n    MODIFY_REG(LPTIMx->CFGR,\r\n                (LPTIM_CFGR_PRESC | LPTIM_CFGR_PRELOAD),\r\n                 LPTIM_InitStruct->Prescaler |\r\n                 LPTIM_InitStruct->UpdateMode);\r\n  }\r\n  return result;\r\n}"
+    },
+    {
+      "name": "LL_LPTIM_WriteReg",
+      "sig": "#define LL_LPTIM_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG((__INSTANCE__)->__REG__, (__VALUE__))",
+      "brief": "宏: 向 LPTIM 指定寄存器写入值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "LPTIM 实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要写入的寄存器"
+        },
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "要写入寄存器的值"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "macro",
+      "src": "#define LL_LPTIM_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG((__INSTANCE__)->__REG__, (__VALUE__))"
+    },
+    {
+      "name": "LL_LPTIM_ReadReg",
+      "sig": "#define LL_LPTIM_ReadReg(__INSTANCE__, __REG__) READ_REG((__INSTANCE__)->__REG__)",
+      "brief": "宏: 读取 LPTIM 指定寄存器值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "LPTIM 实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要读取的寄存器"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "寄存器值"
+      },
+      "file": "py32f002b_ll_lptim.h",
+      "kind": "macro",
+      "src": "#define LL_LPTIM_ReadReg(__INSTANCE__, __REG__) READ_REG((__INSTANCE__)->__REG__)"
+    }
+  ],
+  "types": [
+    {
+      "name": "LPTIM_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t Prescaler; uint32_t UpdateMode; } LPTIM_InitTypeDef;",
+      "desc": "LPTIM 初始化配置结构体, 作为 HAL_LPTIM_Init() 的参数。",
+      "members": [
+        {
+          "name": "Prescaler",
+          "type": "uint32_t",
+          "desc": "计数器时钟预分频, 可取 LPTIM_PRESCALER_DIV1 .. DIV128"
+        },
+        {
+          "name": "UpdateMode",
+          "type": "uint32_t",
+          "desc": "更新模式: LPTIM_UPDATE_IMMEDIATE(立即更新) / LPTIM_UPDATE_ENDOFPERIOD(当前周期结束更新)"
+        }
+      ],
+      "file": "py32f002b_hal_lptim.h"
+    },
+    {
+      "name": "HAL_LPTIM_StateTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_LPTIM_STATE_RESET = 0x00U, HAL_LPTIM_STATE_READY = 0x01U, HAL_LPTIM_STATE_BUSY = 0x02U, HAL_LPTIM_STATE_TIMEOUT = 0x03U, HAL_LPTIM_STATE_ERROR = 0x04U } HAL_LPTIM_StateTypeDef;",
+      "desc": "HAL LPTIM 状态枚举, 描述句柄当前状态, 由 HAL_LPTIM_GetState() 返回。",
+      "members": [
+        {
+          "name": "HAL_LPTIM_STATE_RESET",
+          "value": "0x00U",
+          "desc": "外设未初始化或已禁止"
+        },
+        {
+          "name": "HAL_LPTIM_STATE_READY",
+          "value": "0x01U",
+          "desc": "外设已初始化, 可正常使用"
+        },
+        {
+          "name": "HAL_LPTIM_STATE_BUSY",
+          "value": "0x02U",
+          "desc": "内部处理正在进行"
+        },
+        {
+          "name": "HAL_LPTIM_STATE_TIMEOUT",
+          "value": "0x03U",
+          "desc": "超时状态"
+        },
+        {
+          "name": "HAL_LPTIM_STATE_ERROR",
+          "value": "0x04U",
+          "desc": "内部处理出错"
+        }
+      ],
+      "file": "py32f002b_hal_lptim.h"
+    },
+    {
+      "name": "LPTIM_HandleTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { LPTIM_TypeDef *Instance; LPTIM_InitTypeDef Init; HAL_LockTypeDef Lock; __IO HAL_LPTIM_StateTypeDef State; void (*MspInitCallback)(struct __LPTIM_HandleTypeDef *); void (*MspDeInitCallback)(struct __LPTIM_HandleTypeDef *); void (*AutoReloadMatchCallback)(struct __LPTIM_HandleTypeDef *); } LPTIM_HandleTypeDef;",
+      "desc": "LPTIM 句柄结构体, 所有 HAL_LPTIM_* 函数的参数。回调函数指针成员仅在定义 USE_HAL_LPTIM_REGISTER_CALLBACKS = 1 时存在。",
+      "members": [
+        {
+          "name": "Instance",
+          "type": "LPTIM_TypeDef *",
+          "desc": "LPTIM 寄存器基地址(LPTIM1)"
+        },
+        {
+          "name": "Init",
+          "type": "LPTIM_InitTypeDef",
+          "desc": "LPTIM 初始化参数(预分频/更新模式)"
+        },
+        {
+          "name": "Lock",
+          "type": "HAL_LockTypeDef",
+          "desc": "LPTIM 锁定对象"
+        },
+        {
+          "name": "State",
+          "type": "HAL_LPTIM_StateTypeDef",
+          "desc": "LPTIM 外设状态"
+        },
+        {
+          "name": "MspInitCallback",
+          "type": "函数指针",
+          "desc": "LPTIM 底层 Msp 初始化回调(USE_HAL_LPTIM_REGISTER_CALLBACKS=1 时存在)"
+        },
+        {
+          "name": "MspDeInitCallback",
+          "type": "函数指针",
+          "desc": "LPTIM 底层 Msp 反初始化回调(USE_HAL_LPTIM_REGISTER_CALLBACKS=1 时存在)"
+        },
+        {
+          "name": "AutoReloadMatchCallback",
+          "type": "函数指针",
+          "desc": "自动重载匹配回调(USE_HAL_LPTIM_REGISTER_CALLBACKS=1 时存在)"
+        }
+      ],
+      "file": "py32f002b_hal_lptim.h"
+    },
+    {
+      "name": "HAL_LPTIM_CallbackIDTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_LPTIM_MSPINIT_CB_ID = 0x00U, HAL_LPTIM_MSPDEINIT_CB_ID = 0x01U, HAL_LPTIM_AUTORELOAD_MATCH_CB_ID = 0x03U } HAL_LPTIM_CallbackIDTypeDef;",
+      "desc": "HAL LPTIM 回调 ID 枚举, 用于 HAL_LPTIM_RegisterCallback() / HAL_LPTIM_UnRegisterCallback()(需定义 USE_HAL_LPTIM_REGISTER_CALLBACKS = 1)。",
+      "members": [
+        {
+          "name": "HAL_LPTIM_MSPINIT_CB_ID",
+          "value": "0x00U",
+          "desc": "LPTIM 底层 Msp 初始化回调 ID"
+        },
+        {
+          "name": "HAL_LPTIM_MSPDEINIT_CB_ID",
+          "value": "0x01U",
+          "desc": "LPTIM 底层 Msp 反初始化回调 ID"
+        },
+        {
+          "name": "HAL_LPTIM_AUTORELOAD_MATCH_CB_ID",
+          "value": "0x03U",
+          "desc": "自动重载匹配回调 ID"
+        }
+      ],
+      "file": "py32f002b_hal_lptim.h"
+    },
+    {
+      "name": "LL_LPTIM_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t Prescaler; uint32_t UpdateMode; } LL_LPTIM_InitTypeDef;",
+      "desc": "LL 库 LPTIM 初始化结构体, 作为 LL_LPTIM_Init() 的参数(需定义 USE_FULL_LL_DRIVER)。",
+      "members": [
+        {
+          "name": "Prescaler",
+          "type": "uint32_t",
+          "desc": "预分频系数, 可取 LL_LPTIM_PRESCALER_DIV1 .. DIV128, 之后可用 LL_LPTIM_SetPrescaler() 修改"
+        },
+        {
+          "name": "UpdateMode",
+          "type": "uint32_t",
+          "desc": "更新模式, 可取 LL_LPTIM_UPDATE_MODE_*, 之后可用 LL_LPTIM_SetUpdateMode() 修改"
+        }
+      ],
+      "file": "py32f002b_ll_lptim.h"
+    },
+    {
+      "name": "LPTIM_TypeDef",
+      "kind": "periph",
+      "def": "typedef struct { __IO uint32_t ISR; __IO uint32_t ICR; __IO uint32_t IER; __IO uint32_t CFGR; __IO uint32_t CR; __IO uint32_t ARR; __IO uint32_t CNT; } LPTIM_TypeDef;",
+      "desc": "LPTIM 外设寄存器结构体。实例: LPTIM1(兼容别名 LPTIM)。本芯片 LPTIM 无比较(CMP)寄存器。",
+      "members": [
+        {
+          "name": "ISR",
+          "type": "__IO uint32_t",
+          "desc": "中断与状态寄存器(偏移 0x00): ARRM 自动重载匹配、ARROK 自动重载更新完成"
+        },
+        {
+          "name": "ICR",
+          "type": "__IO uint32_t",
+          "desc": "中断清除寄存器(偏移 0x04): 写 1 清除对应标志"
+        },
+        {
+          "name": "IER",
+          "type": "__IO uint32_t",
+          "desc": "中断使能寄存器(偏移 0x08): ARRMIE / ARROKIE"
+        },
+        {
+          "name": "CFGR",
+          "type": "__IO uint32_t",
+          "desc": "配置寄存器(偏移 0x0C): PRESC 预分频、PRELOAD 预装载(更新模式)"
+        },
+        {
+          "name": "CR",
+          "type": "__IO uint32_t",
+          "desc": "控制寄存器(偏移 0x10): ENABLE / SNGSTRT / CNTSTRT / COUNTRST / RSTARE"
+        },
+        {
+          "name": "ARR",
+          "type": "__IO uint32_t",
+          "desc": "自动重载寄存器(偏移 0x18), 16 位有效"
+        },
+        {
+          "name": "CNT",
+          "type": "__IO uint32_t",
+          "desc": "计数器寄存器(偏移 0x1C), 16 位有效"
+        }
+      ],
+      "file": "py32f002xx5.h"
+    },
+    {
+      "name": "pLPTIM_CallbackTypeDef",
+      "kind": "typedef",
+      "def": "typedef void (*pLPTIM_CallbackTypeDef)(LPTIM_HandleTypeDef *hlptim);",
+      "desc": "LPTIM 回调函数指针类型(用于 HAL_LPTIM_RegisterCallback)。",
+      "members": [
+        {
+          "name": "hlptim",
+          "type": "LPTIM_HandleTypeDef *",
+          "desc": "LPTIM 句柄"
+        }
+      ],
+      "file": "py32f002b_hal_lptim.h"
+    }
+  ],
+  "consts": [
+    {
+      "name": "LPTIM_PRESCALER_DIV1",
+      "value": "0x00000000U",
+      "desc": "预分频系数 1",
+      "group": "时钟预分频",
+      "file": "py32f002b_hal_lptim.h",
+      "src": "#define LPTIM_PRESCALER_DIV1                    0x00000000U"
+    },
+    {
+      "name": "LPTIM_PRESCALER_DIV2",
+      "value": "LPTIM_CFGR_PRESC_0",
+      "desc": "预分频系数 2",
+      "group": "时钟预分频",
+      "file": "py32f002b_hal_lptim.h",
+      "src": "#define LPTIM_PRESCALER_DIV2                    LPTIM_CFGR_PRESC_0"
+    },
+    {
+      "name": "LPTIM_PRESCALER_DIV4",
+      "value": "LPTIM_CFGR_PRESC_1",
+      "desc": "预分频系数 4",
+      "group": "时钟预分频",
+      "file": "py32f002b_hal_lptim.h",
+      "src": "#define LPTIM_PRESCALER_DIV4                    LPTIM_CFGR_PRESC_1"
+    },
+    {
+      "name": "LPTIM_PRESCALER_DIV8",
+      "value": "(LPTIM_CFGR_PRESC_0 | LPTIM_CFGR_PRESC_1)",
+      "desc": "预分频系数 8",
+      "group": "时钟预分频",
+      "file": "py32f002b_hal_lptim.h",
+      "src": "#define LPTIM_PRESCALER_DIV8                    (LPTIM_CFGR_PRESC_0 | LPTIM_CFGR_PRESC_1)"
+    },
+    {
+      "name": "LPTIM_PRESCALER_DIV16",
+      "value": "LPTIM_CFGR_PRESC_2",
+      "desc": "预分频系数 16",
+      "group": "时钟预分频",
+      "file": "py32f002b_hal_lptim.h",
+      "src": "#define LPTIM_PRESCALER_DIV16                   LPTIM_CFGR_PRESC_2"
+    },
+    {
+      "name": "LPTIM_PRESCALER_DIV32",
+      "value": "(LPTIM_CFGR_PRESC_0 | LPTIM_CFGR_PRESC_2)",
+      "desc": "预分频系数 32",
+      "group": "时钟预分频",
+      "file": "py32f002b_hal_lptim.h",
+      "src": "#define LPTIM_PRESCALER_DIV32                   (LPTIM_CFGR_PRESC_0 | LPTIM_CFGR_PRESC_2)"
+    },
+    {
+      "name": "LPTIM_PRESCALER_DIV64",
+      "value": "(LPTIM_CFGR_PRESC_1 | LPTIM_CFGR_PRESC_2)",
+      "desc": "预分频系数 64",
+      "group": "时钟预分频",
+      "file": "py32f002b_hal_lptim.h",
+      "src": "#define LPTIM_PRESCALER_DIV64                   (LPTIM_CFGR_PRESC_1 | LPTIM_CFGR_PRESC_2)"
+    },
+    {
+      "name": "LPTIM_PRESCALER_DIV128",
+      "value": "LPTIM_CFGR_PRESC",
+      "desc": "预分频系数 128",
+      "group": "时钟预分频",
+      "file": "py32f002b_hal_lptim.h",
+      "src": "#define LPTIM_PRESCALER_DIV128                  LPTIM_CFGR_PRESC"
+    },
+    {
+      "name": "LPTIM_UPDATE_IMMEDIATE",
+      "value": "0x00000000U",
+      "desc": "立即更新: 每次 APB 总线写访问后寄存器即更新",
+      "group": "更新模式",
+      "file": "py32f002b_hal_lptim.h",
+      "src": "#define LPTIM_UPDATE_IMMEDIATE                  0x00000000U"
+    },
+    {
+      "name": "LPTIM_UPDATE_ENDOFPERIOD",
+      "value": "LPTIM_CFGR_PRELOAD",
+      "desc": "周期结束更新: 使能预装载, 寄存器在当前 LPTIM 周期结束时更新",
+      "group": "更新模式",
+      "file": "py32f002b_hal_lptim.h",
+      "src": "#define LPTIM_UPDATE_ENDOFPERIOD                LPTIM_CFGR_PRELOAD"
+    },
+    {
+      "name": "LPTIM_FLAG_ARRM",
+      "value": "LPTIM_ISR_ARRM",
+      "desc": "自动重载匹配标志",
+      "group": "标志位",
+      "file": "py32f002b_hal_lptim.h",
+      "src": "#define LPTIM_FLAG_ARRM                          LPTIM_ISR_ARRM"
+    },
+    {
+      "name": "LPTIM_FLAG_ARROK",
+      "value": "LPTIM_ISR_ARROK",
+      "desc": "自动重载寄存器更新完成标志",
+      "group": "标志位",
+      "file": "py32f002b_hal_lptim.h",
+      "src": "#define LPTIM_FLAG_ARROK                         LPTIM_ISR_ARROK"
+    },
+    {
+      "name": "LPTIM_IT_ARRM",
+      "value": "LPTIM_IER_ARRMIE",
+      "desc": "自动重载匹配中断",
+      "group": "中断",
+      "file": "py32f002b_hal_lptim.h",
+      "src": "#define LPTIM_IT_ARRM                            LPTIM_IER_ARRMIE"
+    },
+    {
+      "name": "LPTIM_IT_ARROK",
+      "value": "LPTIM_IER_ARROKIE",
+      "desc": "自动重载寄存器更新完成中断",
+      "group": "中断",
+      "file": "py32f002b_hal_lptim.h",
+      "src": "#define LPTIM_IT_ARROK                           LPTIM_IER_ARROKIE"
+    },
+    {
+      "name": "LL_LPTIM_ISR_ARRM",
+      "value": "LPTIM_ISR_ARRM",
+      "desc": "自动重载匹配标志(配合 LL_LPTIM_ReadReg 使用)",
+      "group": "LL 标志位",
+      "file": "py32f002b_ll_lptim.h",
+      "src": "#define LL_LPTIM_ISR_ARRM                     LPTIM_ISR_ARRM     /*!< Autoreload match */"
+    },
+    {
+      "name": "LL_LPTIM_ISR_ARROK",
+      "value": "LPTIM_ISR_ARROK",
+      "desc": "自动重载寄存器更新完成标志(配合 LL_LPTIM_ReadReg 使用)",
+      "group": "LL 标志位",
+      "file": "py32f002b_ll_lptim.h",
+      "src": "#define LL_LPTIM_ISR_ARROK                    LPTIM_ISR_ARROK    /*!< Auto reload register update OK */"
+    },
+    {
+      "name": "LL_LPTIM_IER_ARRMIE",
+      "value": "LPTIM_IER_ARRMIE",
+      "desc": "自动重载匹配中断使能位(配合 LL_LPTIM_ReadReg/WriteReg 使用)",
+      "group": "LL 中断",
+      "file": "py32f002b_ll_lptim.h",
+      "src": "#define LL_LPTIM_IER_ARRMIE                   LPTIM_IER_ARRMIE     /*!< Autoreload match */"
+    },
+    {
+      "name": "LL_LPTIM_IER_ARROKIE",
+      "value": "LPTIM_IER_ARROKIE",
+      "desc": "自动重载寄存器更新完成中断使能位(配合 LL_LPTIM_ReadReg/WriteReg 使用)",
+      "group": "LL 中断",
+      "file": "py32f002b_ll_lptim.h",
+      "src": "#define LL_LPTIM_IER_ARROKIE                  LPTIM_IER_ARROKIE    /*!< Auto reload register update OK interrupt enable */"
+    },
+    {
+      "name": "LL_LPTIM_OPERATING_MODE_ONESHOT",
+      "value": "LPTIM_CR_SNGSTRT",
+      "desc": "单次模式: LPTIM 以单次模式启动",
+      "group": "LL 工作模式",
+      "file": "py32f002b_ll_lptim.h",
+      "src": "#define LL_LPTIM_OPERATING_MODE_ONESHOT       LPTIM_CR_SNGSTRT /*!<LP Tilmer starts in single mode*/"
+    },
+    {
+      "name": "LL_LPTIM_OPERATING_MODE_CONTINUOUS",
+      "value": "LPTIM_CR_CNTSTRT",
+      "desc": "连续模式: LPTIM 以连续模式启动",
+      "group": "LL 工作模式",
+      "file": "py32f002b_ll_lptim.h",
+      "src": "#define LL_LPTIM_OPERATING_MODE_CONTINUOUS    LPTIM_CR_CNTSTRT /*!<LP Timer starts in continuous mode*/"
+    },
+    {
+      "name": "LL_LPTIM_UPDATE_MODE_IMMEDIATE",
+      "value": "0x00000000U",
+      "desc": "立即更新: 禁止预装载, 每次 APB 总线写访问后寄存器即更新",
+      "group": "LL 更新模式",
+      "file": "py32f002b_ll_lptim.h",
+      "src": "#define LL_LPTIM_UPDATE_MODE_IMMEDIATE        0x00000000U        /*!<Preload is disabled: registers are updated after each APB bus write access*/"
+    },
+    {
+      "name": "LL_LPTIM_UPDATE_MODE_ENDOFPERIOD",
+      "value": "LPTIM_CFGR_PRELOAD",
+      "desc": "周期结束更新: 使能预装载, 寄存器在当前 LPTIM 周期结束时更新",
+      "group": "LL 更新模式",
+      "file": "py32f002b_ll_lptim.h",
+      "src": "#define LL_LPTIM_UPDATE_MODE_ENDOFPERIOD      LPTIM_CFGR_PRELOAD /*!<preload is enabled: registers are updated at the end of the current LPTIM period*/"
+    },
+    {
+      "name": "LL_LPTIM_PRESCALER_DIV1",
+      "value": "0x00000000U",
+      "desc": "预分频系数 1",
+      "group": "LL 预分频",
+      "file": "py32f002b_ll_lptim.h",
+      "src": "#define LL_LPTIM_PRESCALER_DIV1               0x00000000U                               /*!<Prescaler division factor is set to 1*/"
+    },
+    {
+      "name": "LL_LPTIM_PRESCALER_DIV2",
+      "value": "LPTIM_CFGR_PRESC_0",
+      "desc": "预分频系数 2",
+      "group": "LL 预分频",
+      "file": "py32f002b_ll_lptim.h",
+      "src": "#define LL_LPTIM_PRESCALER_DIV2               LPTIM_CFGR_PRESC_0                        /*!<Prescaler division factor is set to 2*/"
+    },
+    {
+      "name": "LL_LPTIM_PRESCALER_DIV4",
+      "value": "LPTIM_CFGR_PRESC_1",
+      "desc": "预分频系数 4",
+      "group": "LL 预分频",
+      "file": "py32f002b_ll_lptim.h",
+      "src": "#define LL_LPTIM_PRESCALER_DIV4               LPTIM_CFGR_PRESC_1                        /*!<Prescaler division factor is set to 4*/"
+    },
+    {
+      "name": "LL_LPTIM_PRESCALER_DIV8",
+      "value": "(LPTIM_CFGR_PRESC_1 | LPTIM_CFGR_PRESC_0)",
+      "desc": "预分频系数 8",
+      "group": "LL 预分频",
+      "file": "py32f002b_ll_lptim.h",
+      "src": "#define LL_LPTIM_PRESCALER_DIV8               (LPTIM_CFGR_PRESC_1 | LPTIM_CFGR_PRESC_0) /*!<Prescaler division factor is set to 8*/"
+    },
+    {
+      "name": "LL_LPTIM_PRESCALER_DIV16",
+      "value": "LPTIM_CFGR_PRESC_2",
+      "desc": "预分频系数 16",
+      "group": "LL 预分频",
+      "file": "py32f002b_ll_lptim.h",
+      "src": "#define LL_LPTIM_PRESCALER_DIV16              LPTIM_CFGR_PRESC_2                        /*!<Prescaler division factor is set to 16*/"
+    },
+    {
+      "name": "LL_LPTIM_PRESCALER_DIV32",
+      "value": "(LPTIM_CFGR_PRESC_2 | LPTIM_CFGR_PRESC_0)",
+      "desc": "预分频系数 32",
+      "group": "LL 预分频",
+      "file": "py32f002b_ll_lptim.h",
+      "src": "#define LL_LPTIM_PRESCALER_DIV32              (LPTIM_CFGR_PRESC_2 | LPTIM_CFGR_PRESC_0) /*!<Prescaler division factor is set to 32*/"
+    },
+    {
+      "name": "LL_LPTIM_PRESCALER_DIV64",
+      "value": "(LPTIM_CFGR_PRESC_2 | LPTIM_CFGR_PRESC_1)",
+      "desc": "预分频系数 64",
+      "group": "LL 预分频",
+      "file": "py32f002b_ll_lptim.h",
+      "src": "#define LL_LPTIM_PRESCALER_DIV64              (LPTIM_CFGR_PRESC_2 | LPTIM_CFGR_PRESC_1) /*!<Prescaler division factor is set to 64*/"
+    },
+    {
+      "name": "LL_LPTIM_PRESCALER_DIV128",
+      "value": "LPTIM_CFGR_PRESC",
+      "desc": "预分频系数 128",
+      "group": "LL 预分频",
+      "file": "py32f002b_ll_lptim.h",
+      "src": "#define LL_LPTIM_PRESCALER_DIV128             LPTIM_CFGR_PRESC                          /*!<Prescaler division factor is set to 128*/"
+    }
+  ]
+}

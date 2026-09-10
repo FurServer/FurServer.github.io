@@ -1,0 +1,57 @@
+{
+  "module": "USART",
+  "moduleId": "usart",
+  "hal": [],
+  "ll": [
+    {
+      "name": "__LL_USART_DIV_SAMPLING16",
+      "sig": "#define __LL_USART_DIV_SAMPLING16(__PERIPHCLK__, __BAUDRATE__)            (((__LL_USART_DIVMANT_SAMPLING16((__PERIPHCLK__), (__BAUDRATE__)) << 4) + \\\n                                                                           (__LL_USART_DIVFRAQ_SAMPLING16((__PERIPHCLK__), (__BAUDRATE__)) & 0xF0)) + \\\n                                                                           (__LL_USART_DIVFRAQ_SAMPLING16((__PERIPHCLK__), (__BAUDRATE__)) & 0x0F))",
+      "brief": "按 16 倍过采样计算 USARTDIV 值: 尾数左移 4 位加上小数部分, 供 BRR 寄存器填充。",
+      "params": [
+        {
+          "name": "__PERIPHCLK__",
+          "type": "宏参数",
+          "desc": "USART 外设时钟频率"
+        },
+        {
+          "name": "__BAUDRATE__",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "USARTDIV 值(OverSampling_16 时 BRR 填充值)"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "macro",
+      "src": "#define __LL_USART_DIV_SAMPLING16(__PERIPHCLK__, __BAUDRATE__)            (((__LL_USART_DIVMANT_SAMPLING16((__PERIPHCLK__), (__BAUDRATE__)) << 4) + \\\r\n                                                                           (__LL_USART_DIVFRAQ_SAMPLING16((__PERIPHCLK__), (__BAUDRATE__)) & 0xF0)) + \\\r\n                                                                           (__LL_USART_DIVFRAQ_SAMPLING16((__PERIPHCLK__), (__BAUDRATE__)) & 0x0F))"
+    },
+    {
+      "name": "__LL_USART_DIV_SAMPLING8",
+      "sig": "#define __LL_USART_DIV_SAMPLING8(__PERIPHCLK__, __BAUDRATE__)             (((__LL_USART_DIVMANT_SAMPLING8((__PERIPHCLK__), (__BAUDRATE__)) << 4) + \\\n                                                                           ((__LL_USART_DIVFRAQ_SAMPLING8((__PERIPHCLK__), (__BAUDRATE__)) & 0xF8) << 1)) + \\\n                                                                           (__LL_USART_DIVFRAQ_SAMPLING8((__PERIPHCLK__), (__BAUDRATE__)) & 0x07))",
+      "brief": "按 8 倍过采样计算 USARTDIV 值: 尾数左移 4 位加上小数部分(含溢出进位), 供 BRR 寄存器填充。",
+      "params": [
+        {
+          "name": "__PERIPHCLK__",
+          "type": "宏参数",
+          "desc": "USART 外设时钟频率"
+        },
+        {
+          "name": "__BAUDRATE__",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "USARTDIV 值(OverSampling_8 时 BRR 填充值)"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "macro",
+      "src": "#define __LL_USART_DIV_SAMPLING8(__PERIPHCLK__, __BAUDRATE__)             (((__LL_USART_DIVMANT_SAMPLING8((__PERIPHCLK__), (__BAUDRATE__)) << 4) + \\\r\n                                                                           ((__LL_USART_DIVFRAQ_SAMPLING8((__PERIPHCLK__), (__BAUDRATE__)) & 0xF8) << 1)) + \\\r\n                                                                           (__LL_USART_DIVFRAQ_SAMPLING8((__PERIPHCLK__), (__BAUDRATE__)) & 0x07))"
+    }
+  ],
+  "types": [],
+  "consts": []
+}

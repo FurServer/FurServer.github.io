@@ -1,0 +1,457 @@
+{
+  "consts": [
+    {
+      "name": "ADC_BASE",
+      "value": "(APBPERIPH_BASE + 0x00012708UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define ADC_BASE              (APBPERIPH_BASE + 0x00012708UL)"
+    },
+    {
+      "name": "ADC1",
+      "value": "((ADC_TypeDef *) ADC1_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002xx5.h",
+      "src": "#define ADC1                ((ADC_TypeDef *) ADC1_BASE)"
+    },
+    {
+      "name": "ADC1_BASE",
+      "value": "(APBPERIPH_BASE + 0x00012400UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define ADC1_BASE             (APBPERIPH_BASE + 0x00012400UL)"
+    },
+    {
+      "name": "AHBPERIPH_BASE",
+      "value": "(PERIPH_BASE + 0x00020000UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define AHBPERIPH_BASE        (PERIPH_BASE + 0x00020000UL)"
+    },
+    {
+      "name": "APBPERIPH_BASE",
+      "value": "(PERIPH_BASE)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define APBPERIPH_BASE        (PERIPH_BASE)"
+    },
+    {
+      "name": "COMP1",
+      "value": "((COMP_TypeDef *) COMP1_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002bx5.h",
+      "src": "#define COMP1               ((COMP_TypeDef *) COMP1_BASE)"
+    },
+    {
+      "name": "COMP2",
+      "value": "((COMP_TypeDef *) COMP2_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002bx5.h",
+      "src": "#define COMP2               ((COMP_TypeDef *) COMP2_BASE)"
+    },
+    {
+      "name": "CRC",
+      "value": "((CRC_TypeDef *) CRC_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002xx5.h",
+      "src": "#define CRC                 ((CRC_TypeDef *) CRC_BASE)"
+    },
+    {
+      "name": "CRC_BASE",
+      "value": "(AHBPERIPH_BASE + 0x00003000UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define CRC_BASE              (AHBPERIPH_BASE + 0x00003000UL)"
+    },
+    {
+      "name": "DBGMCU",
+      "value": "((DBGMCU_TypeDef *) DBGMCU_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002xx5.h",
+      "src": "#define DBGMCU              ((DBGMCU_TypeDef *) DBGMCU_BASE)"
+    },
+    {
+      "name": "DBGMCU_BASE",
+      "value": "(APBPERIPH_BASE + 0x00015800UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define DBGMCU_BASE           (APBPERIPH_BASE + 0x00015800UL)"
+    },
+    {
+      "name": "EXTI",
+      "value": "((EXTI_TypeDef *) EXTI_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002xx5.h",
+      "src": "#define EXTI                ((EXTI_TypeDef *) EXTI_BASE)"
+    },
+    {
+      "name": "EXTI_BASE",
+      "value": "(AHBPERIPH_BASE + 0x00001800UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define EXTI_BASE             (AHBPERIPH_BASE + 0x00001800UL)"
+    },
+    {
+      "name": "FLASH",
+      "value": "((FLASH_TypeDef *) FLASH_R_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002xx5.h",
+      "src": "#define FLASH               ((FLASH_TypeDef *) FLASH_R_BASE)"
+    },
+    {
+      "name": "FLASH_BASE",
+      "value": "(0x08000000UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define FLASH_BASE            (0x08000000UL)  /*!< FLASH base address */"
+    },
+    {
+      "name": "FLASH_R_BASE",
+      "value": "(AHBPERIPH_BASE + 0x00002000UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define FLASH_R_BASE          (AHBPERIPH_BASE + 0x00002000UL) /*!< FLASH registers base address */"
+    },
+    {
+      "name": "FLASHSIZE_BASE",
+      "value": "(0x1FFF01FCUL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define FLASHSIZE_BASE        (0x1FFF01FCUL)                  /*!< FLASH Size register base address */"
+    },
+    {
+      "name": "GPIOA",
+      "value": "((GPIO_TypeDef *) GPIOA_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002xx5.h",
+      "src": "#define GPIOA               ((GPIO_TypeDef *) GPIOA_BASE)"
+    },
+    {
+      "name": "GPIOA_BASE",
+      "value": "(IOPORT_BASE + 0x00000000UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define GPIOA_BASE            (IOPORT_BASE + 0x00000000UL)"
+    },
+    {
+      "name": "GPIOB",
+      "value": "((GPIO_TypeDef *) GPIOB_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002xx5.h",
+      "src": "#define GPIOB               ((GPIO_TypeDef *) GPIOB_BASE)"
+    },
+    {
+      "name": "GPIOB_BASE",
+      "value": "(IOPORT_BASE + 0x00000400UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define GPIOB_BASE            (IOPORT_BASE + 0x00000400UL)"
+    },
+    {
+      "name": "GPIOC",
+      "value": "((GPIO_TypeDef *) GPIOC_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002xx5.h",
+      "src": "#define GPIOC               ((GPIO_TypeDef *) GPIOC_BASE)"
+    },
+    {
+      "name": "GPIOC_BASE",
+      "value": "(IOPORT_BASE + 0x00000800UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define GPIOC_BASE            (IOPORT_BASE + 0x00000800UL)"
+    },
+    {
+      "name": "I2C_BASE",
+      "value": "(APBPERIPH_BASE + 0x00005400UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define I2C_BASE              (APBPERIPH_BASE + 0x00005400UL)"
+    },
+    {
+      "name": "I2C1",
+      "value": "((I2C_TypeDef *) I2C_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002xx5.h",
+      "src": "#define I2C1                ((I2C_TypeDef *) I2C_BASE)"
+    },
+    {
+      "name": "IOPORT_BASE",
+      "value": "(0x50000000UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define IOPORT_BASE           (0x50000000UL)  /*!< IOPORT base address */"
+    },
+    {
+      "name": "IWDG",
+      "value": "((IWDG_TypeDef *) IWDG_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002xx5.h",
+      "src": "#define IWDG                ((IWDG_TypeDef *) IWDG_BASE)"
+    },
+    {
+      "name": "IWDG_BASE",
+      "value": "(APBPERIPH_BASE + 0x00003000UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define IWDG_BASE             (APBPERIPH_BASE + 0x00003000UL)"
+    },
+    {
+      "name": "LPTIM_BASE",
+      "value": "(APBPERIPH_BASE + 0x00007C00UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define LPTIM_BASE            (APBPERIPH_BASE + 0x00007C00UL)"
+    },
+    {
+      "name": "LPTIM1",
+      "value": "((LPTIM_TypeDef *) LPTIM_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002xx5.h",
+      "src": "#define LPTIM1              ((LPTIM_TypeDef *) LPTIM_BASE)"
+    },
+    {
+      "name": "NVIC",
+      "value": "((NVIC_Type      *)     NVIC_BASE     )",
+      "desc": "内核外设结构体实例指针",
+      "group": "内核实例",
+      "file": "core_cm0plus.h",
+      "src": "#define NVIC                ((NVIC_Type      *)     NVIC_BASE     )   /*!< NVIC configuration struct */"
+    },
+    {
+      "name": "NVIC_BASE",
+      "value": "(SCS_BASE +  0x0100UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "core_cm0plus.h",
+      "src": "#define NVIC_BASE           (SCS_BASE +  0x0100UL)                    /*!< NVIC Base Address */"
+    },
+    {
+      "name": "OB_BASE",
+      "value": "(0x1FFF0080UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define OB_BASE               (0x1FFF0080UL)                  /*!< FLASH Option Bytes base address */"
+    },
+    {
+      "name": "OTP_BASE",
+      "value": "(0x1FFF0280UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define OTP_BASE              (0x1FFF0280UL)"
+    },
+    {
+      "name": "PERIPH_BASE",
+      "value": "(0x40000000UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define PERIPH_BASE           (0x40000000UL)  /*!< Peripheral base address */"
+    },
+    {
+      "name": "PWR",
+      "value": "((PWR_TypeDef *) PWR_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002xx5.h",
+      "src": "#define PWR                 ((PWR_TypeDef *) PWR_BASE)"
+    },
+    {
+      "name": "PWR_BASE",
+      "value": "(APBPERIPH_BASE + 0x00007000UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define PWR_BASE              (APBPERIPH_BASE + 0x00007000UL)"
+    },
+    {
+      "name": "RCC",
+      "value": "((RCC_TypeDef *) RCC_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002xx5.h",
+      "src": "#define RCC                 ((RCC_TypeDef *) RCC_BASE)"
+    },
+    {
+      "name": "RCC_BASE",
+      "value": "(AHBPERIPH_BASE + 0x00001000UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define RCC_BASE              (AHBPERIPH_BASE + 0x00001000UL)"
+    },
+    {
+      "name": "SCB",
+      "value": "((SCB_Type       *)     SCB_BASE      )",
+      "desc": "内核外设结构体实例指针",
+      "group": "内核实例",
+      "file": "core_cm0plus.h",
+      "src": "#define SCB                 ((SCB_Type       *)     SCB_BASE      )   /*!< SCB configuration struct */"
+    },
+    {
+      "name": "SCB_BASE",
+      "value": "(SCS_BASE +  0x0D00UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "core_cm0plus.h",
+      "src": "#define SCB_BASE            (SCS_BASE +  0x0D00UL)                    /*!< System Control Block Base Address */"
+    },
+    {
+      "name": "SCS_BASE",
+      "value": "(0xE000E000UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "core_cm0plus.h",
+      "src": "#define SCS_BASE            (0xE000E000UL)                            /*!< System Control Space Base Address */"
+    },
+    {
+      "name": "SPI1",
+      "value": "((SPI_TypeDef *) SPI1_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002xx5.h",
+      "src": "#define SPI1                ((SPI_TypeDef *) SPI1_BASE)"
+    },
+    {
+      "name": "SPI1_BASE",
+      "value": "(APBPERIPH_BASE + 0x00013000UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define SPI1_BASE             (APBPERIPH_BASE + 0x00013000UL)"
+    },
+    {
+      "name": "SRAM_BASE",
+      "value": "(0x20000000UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define SRAM_BASE             (0x20000000UL)  /*!< SRAM base address */"
+    },
+    {
+      "name": "SYSCFG",
+      "value": "((SYSCFG_TypeDef *) SYSCFG_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002xx5.h",
+      "src": "#define SYSCFG              ((SYSCFG_TypeDef *) SYSCFG_BASE)"
+    },
+    {
+      "name": "SYSCFG_BASE",
+      "value": "(APBPERIPH_BASE + 0x00010000UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define SYSCFG_BASE           (APBPERIPH_BASE + 0x00010000UL)"
+    },
+    {
+      "name": "SysTick",
+      "value": "((SysTick_Type   *)     SysTick_BASE  )",
+      "desc": "内核外设结构体实例指针",
+      "group": "内核实例",
+      "file": "core_cm0plus.h",
+      "src": "#define SysTick             ((SysTick_Type   *)     SysTick_BASE  )   /*!< SysTick configuration struct */"
+    },
+    {
+      "name": "SysTick_BASE",
+      "value": "(SCS_BASE +  0x0010UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "core_cm0plus.h",
+      "src": "#define SysTick_BASE        (SCS_BASE +  0x0010UL)                    /*!< SysTick Base Address */"
+    },
+    {
+      "name": "TIM1",
+      "value": "((TIM_TypeDef *) TIM1_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002xx5.h",
+      "src": "#define TIM1                ((TIM_TypeDef *) TIM1_BASE)"
+    },
+    {
+      "name": "TIM1_BASE",
+      "value": "(APBPERIPH_BASE + 0x00012C00UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define TIM1_BASE             (APBPERIPH_BASE + 0x00012C00UL)"
+    },
+    {
+      "name": "TIM14",
+      "value": "((TIM_TypeDef *) TIM14_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002xx5.h",
+      "src": "#define TIM14               ((TIM_TypeDef *) TIM14_BASE)"
+    },
+    {
+      "name": "TIM14_BASE",
+      "value": "(APBPERIPH_BASE + 0x00002000UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define TIM14_BASE            (APBPERIPH_BASE + 0x00002000UL)"
+    },
+    {
+      "name": "UID_BASE",
+      "value": "(0x1FFF0000UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define UID_BASE              (0x1FFF0000UL)                  /*!< Unique device ID register base address */"
+    },
+    {
+      "name": "USART1",
+      "value": "((USART_TypeDef *) USART1_BASE)",
+      "desc": "外设寄存器结构体实例指针",
+      "group": "外设实例",
+      "file": "py32f002xx5.h",
+      "src": "#define USART1              ((USART_TypeDef *) USART1_BASE)"
+    },
+    {
+      "name": "USART1_BASE",
+      "value": "(APBPERIPH_BASE + 0x00013800UL)",
+      "desc": "地址常量",
+      "group": "基地址",
+      "file": "py32f002xx5.h",
+      "src": "#define USART1_BASE           (APBPERIPH_BASE + 0x00013800UL)"
+    }
+  ],
+  "ll": [],
+  "hal": [],
+  "moduleId": "cortex",
+  "module": "CORTEX 内核控制",
+  "types": []
+}

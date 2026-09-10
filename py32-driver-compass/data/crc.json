@@ -1,0 +1,523 @@
+{
+  "module": "CRC",
+  "moduleId": "crc",
+  "intro": "循环冗余校验(CRC)计算单元: 以硬件方式计算 32 位 CRC 校验值, 支持累加计算(接续上次结果)与独立计算(以初值重新开始), 另含独立数据寄存器(IDR)可作临时存储。含 HAL 库(py32f002b_hal_crc.c/.h)与 LL 库(py32f002b_ll_crc.c/.h)。",
+  "files": [
+    "py32f002b_hal_crc.c",
+    "py32f002b_hal_crc.h",
+    "py32f002b_ll_crc.c",
+    "py32f002b_ll_crc.h"
+  ],
+  "hal": [
+    {
+      "name": "HAL_CRC_Init",
+      "sig": "HAL_StatusTypeDef HAL_CRC_Init(CRC_HandleTypeDef *hcrc)",
+      "brief": "根据 CRC_HandleTypeDef 句柄初始化 CRC 外设并创建关联句柄。",
+      "params": [
+        {
+          "name": "hcrc",
+          "type": "CRC_HandleTypeDef *",
+          "desc": "CRC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 句柄为空或实例非法"
+      },
+      "notes": [
+        "首次初始化(句柄 State 为 RESET)时会调用 HAL_CRC_MspInit() 初始化底层硬件(如使能 CRC 时钟)。"
+      ],
+      "file": "py32f002b_hal_crc.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_CRC_Init(CRC_HandleTypeDef *hcrc)\r\n{\r\n  /* Check the CRC handle allocation */\r\n  if (hcrc == NULL)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_CRC_ALL_INSTANCE(hcrc->Instance));\r\n\r\n  if (hcrc->State == HAL_CRC_STATE_RESET)\r\n  {\r\n    /* Allocate lock resource and initialize it */\r\n    hcrc->Lock = HAL_UNLOCKED;\r\n    /* Init the low level hardware */\r\n    HAL_CRC_MspInit(hcrc);\r\n  }\r\n\r\n  /* Change CRC peripheral state */\r\n  hcrc->State = HAL_CRC_STATE_READY;\r\n\r\n  /* Return function status */\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_CRC_DeInit",
+      "sig": "HAL_StatusTypeDef HAL_CRC_DeInit(CRC_HandleTypeDef *hcrc)",
+      "brief": "反初始化 CRC 外设: 复位 CRC 计算单元、清零 IDR 寄存器并调用 HAL_CRC_MspDeInit()。",
+      "params": [
+        {
+          "name": "hcrc",
+          "type": "CRC_HandleTypeDef *",
+          "desc": "CRC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 句柄为空; HAL_BUSY 外设正忙"
+      },
+      "file": "py32f002b_hal_crc.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_CRC_DeInit(CRC_HandleTypeDef *hcrc)\r\n{\r\n  /* Check the CRC handle allocation */\r\n  if (hcrc == NULL)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_CRC_ALL_INSTANCE(hcrc->Instance));\r\n\r\n  /* Check the CRC peripheral state */\r\n  if (hcrc->State == HAL_CRC_STATE_BUSY)\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n\r\n  /* Change CRC peripheral state */\r\n  hcrc->State = HAL_CRC_STATE_BUSY;\r\n\r\n  /* Reset CRC calculation unit */\r\n  __HAL_CRC_DR_RESET(hcrc);\r\n\r\n  /* Reset IDR register content */\r\n  CLEAR_BIT(hcrc->Instance->IDR, CRC_IDR_IDR);\r\n\r\n  /* DeInit the low level hardware */\r\n  HAL_CRC_MspDeInit(hcrc);\r\n\r\n  /* Change CRC peripheral state */\r\n  hcrc->State = HAL_CRC_STATE_RESET;\r\n\r\n  /* Process unlocked */\r\n  __HAL_UNLOCK(hcrc);\r\n\r\n  /* Return function status */\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_CRC_MspInit",
+      "sig": "void HAL_CRC_MspInit(CRC_HandleTypeDef *hcrc)",
+      "brief": "CRC 底层硬件初始化回调(弱定义空函数), 由 HAL_CRC_Init() 调用。",
+      "params": [
+        {
+          "name": "hcrc",
+          "type": "CRC_HandleTypeDef *",
+          "desc": "CRC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件中重写同名函数(典型实现为使能 CRC 时钟)。"
+      ],
+      "file": "py32f002b_hal_crc.c",
+      "kind": "function",
+      "src": "__weak void HAL_CRC_MspInit(CRC_HandleTypeDef *hcrc)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hcrc);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_CRC_MspInit can be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_CRC_MspDeInit",
+      "sig": "void HAL_CRC_MspDeInit(CRC_HandleTypeDef *hcrc)",
+      "brief": "CRC 底层硬件反初始化回调(弱定义空函数), 由 HAL_CRC_DeInit() 调用。",
+      "params": [
+        {
+          "name": "hcrc",
+          "type": "CRC_HandleTypeDef *",
+          "desc": "CRC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件中重写同名函数。"
+      ],
+      "file": "py32f002b_hal_crc.c",
+      "kind": "function",
+      "src": "__weak void HAL_CRC_MspDeInit(CRC_HandleTypeDef *hcrc)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hcrc);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_CRC_MspDeInit can be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_CRC_Accumulate",
+      "sig": "uint32_t HAL_CRC_Accumulate(CRC_HandleTypeDef *hcrc, uint32_t pBuffer[], uint32_t BufferLength)",
+      "brief": "计算输入数据缓冲区的 32 位 CRC 值, 以上一次计算得到的 CRC 值作为初值(累加模式)。",
+      "params": [
+        {
+          "name": "hcrc",
+          "type": "CRC_HandleTypeDef *",
+          "desc": "CRC 句柄指针"
+        },
+        {
+          "name": "pBuffer",
+          "type": "uint32_t[]",
+          "desc": "指向输入数据缓冲区的指针"
+        },
+        {
+          "name": "BufferLength",
+          "type": "uint32_t",
+          "desc": "输入缓冲区长度(以 uint32_t 字数为单位)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "计算得到的 CRC 值(CRC 短于 32 位时有效位在低 LSB 侧)"
+      },
+      "file": "py32f002b_hal_crc.c",
+      "kind": "function",
+      "src": "uint32_t HAL_CRC_Accumulate(CRC_HandleTypeDef *hcrc, uint32_t pBuffer[], uint32_t BufferLength)\r\n{\r\n  uint32_t index;      /* CRC input data buffer index */\r\n  uint32_t temp = 0U;  /* CRC output (read from hcrc->Instance->DR register) */\r\n\r\n  /* Change CRC peripheral state */\r\n  hcrc->State = HAL_CRC_STATE_BUSY;\r\n\r\n  /* Enter Data to the CRC calculator */\r\n  for (index = 0U; index < BufferLength; index++)\r\n  {\r\n    hcrc->Instance->DR = pBuffer[index];\r\n  }\r\n  temp = hcrc->Instance->DR;\r\n\r\n  /* Change CRC peripheral state */\r\n  hcrc->State = HAL_CRC_STATE_READY;\r\n\r\n  /* Return the CRC computed value */\r\n  return temp;\r\n}"
+    },
+    {
+      "name": "HAL_CRC_Calculate",
+      "sig": "uint32_t HAL_CRC_Calculate(CRC_HandleTypeDef *hcrc, uint32_t pBuffer[], uint32_t BufferLength)",
+      "brief": "计算输入数据缓冲区的 32 位 CRC 值: 先复位计算单元(以初始化值重新开始), 再逐字送入数据计算。",
+      "params": [
+        {
+          "name": "hcrc",
+          "type": "CRC_HandleTypeDef *",
+          "desc": "CRC 句柄指针"
+        },
+        {
+          "name": "pBuffer",
+          "type": "uint32_t[]",
+          "desc": "指向输入数据缓冲区的指针"
+        },
+        {
+          "name": "BufferLength",
+          "type": "uint32_t",
+          "desc": "输入缓冲区长度(以 uint32_t 字数为单位)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "计算得到的 CRC 值(CRC 短于 32 位时有效位在低 LSB 侧)"
+      },
+      "file": "py32f002b_hal_crc.c",
+      "kind": "function",
+      "src": "uint32_t HAL_CRC_Calculate(CRC_HandleTypeDef *hcrc, uint32_t pBuffer[], uint32_t BufferLength)\r\n{\r\n  uint32_t index;      /* CRC input data buffer index */\r\n  uint32_t temp = 0U;  /* CRC output (read from hcrc->Instance->DR register) */\r\n\r\n  /* Change CRC peripheral state */\r\n  hcrc->State = HAL_CRC_STATE_BUSY;\r\n\r\n  /* Reset CRC Calculation Unit (hcrc->Instance->INIT is\r\n  *  written in hcrc->Instance->DR) */\r\n  __HAL_CRC_DR_RESET(hcrc);\r\n\r\n  /* Enter 32-bit input data to the CRC calculator */\r\n  for (index = 0U; index < BufferLength; index++)\r\n  {\r\n    hcrc->Instance->DR = pBuffer[index];\r\n  }\r\n  temp = hcrc->Instance->DR;\r\n\r\n  /* Change CRC peripheral state */\r\n  hcrc->State = HAL_CRC_STATE_READY;\r\n\r\n  /* Return the CRC computed value */\r\n  return temp;\r\n}"
+    },
+    {
+      "name": "HAL_CRC_GetState",
+      "sig": "HAL_CRC_StateTypeDef HAL_CRC_GetState(CRC_HandleTypeDef *hcrc)",
+      "brief": "返回 CRC 句柄当前状态。",
+      "params": [
+        {
+          "name": "hcrc",
+          "type": "CRC_HandleTypeDef *",
+          "desc": "CRC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_CRC_StateTypeDef",
+        "desc": "句柄状态: HAL_CRC_STATE_RESET / READY / BUSY / TIMEOUT / ERROR"
+      },
+      "file": "py32f002b_hal_crc.c",
+      "kind": "function",
+      "src": "HAL_CRC_StateTypeDef HAL_CRC_GetState(CRC_HandleTypeDef *hcrc)\r\n{\r\n  /* Return CRC handle state */\r\n  return hcrc->State;\r\n}"
+    },
+    {
+      "name": "__HAL_CRC_RESET_HANDLE_STATE",
+      "sig": "#define __HAL_CRC_RESET_HANDLE_STATE(__HANDLE__) ((__HANDLE__)->State = HAL_CRC_STATE_RESET)",
+      "brief": "宏: 将 CRC 句柄状态复位为 HAL_CRC_STATE_RESET。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "CRC 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_crc.h",
+      "kind": "macro",
+      "src": "#define __HAL_CRC_RESET_HANDLE_STATE(__HANDLE__) ((__HANDLE__)->State = HAL_CRC_STATE_RESET)"
+    },
+    {
+      "name": "__HAL_CRC_DR_RESET",
+      "sig": "#define __HAL_CRC_DR_RESET(__HANDLE__) ((__HANDLE__)->Instance->CR |= CRC_CR_RESET)",
+      "brief": "宏: 复位 CRC 计算单元(置位 CR 的 RESET 位, 将初始化值写入 DR)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "CRC 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_crc.h",
+      "kind": "macro",
+      "src": "#define __HAL_CRC_DR_RESET(__HANDLE__) ((__HANDLE__)->Instance->CR |= CRC_CR_RESET)"
+    },
+    {
+      "name": "__HAL_CRC_SET_IDR",
+      "sig": "#define __HAL_CRC_SET_IDR(__HANDLE__, __VALUE__) (WRITE_REG((__HANDLE__)->Instance->IDR, (__VALUE__)))",
+      "brief": "宏: 向独立数据寄存器(IDR)写入一个值。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "CRC 句柄"
+        },
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "要写入 IDR 的值(允许位宽见参考手册)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_crc.h",
+      "kind": "macro",
+      "src": "#define __HAL_CRC_SET_IDR(__HANDLE__, __VALUE__) (WRITE_REG((__HANDLE__)->Instance->IDR, (__VALUE__)))"
+    },
+    {
+      "name": "__HAL_CRC_GET_IDR",
+      "sig": "#define __HAL_CRC_GET_IDR(__HANDLE__) (((__HANDLE__)->Instance->IDR) & CRC_IDR_IDR)",
+      "brief": "宏: 读取独立数据寄存器(IDR)中保存的值。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "CRC 句柄"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "IDR 寄存器的值"
+      },
+      "file": "py32f002b_hal_crc.h",
+      "kind": "macro",
+      "src": "#define __HAL_CRC_GET_IDR(__HANDLE__) (((__HANDLE__)->Instance->IDR) & CRC_IDR_IDR)"
+    }
+  ],
+  "ll": [
+    {
+      "name": "LL_CRC_WriteReg",
+      "sig": "#define LL_CRC_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG(__INSTANCE__->__REG__, __VALUE__)",
+      "brief": "宏: 向 CRC 寄存器写入一个值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "CRC 实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要写入的寄存器"
+        },
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "要写入的值"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_ll_crc.h",
+      "kind": "macro",
+      "src": "#define LL_CRC_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG(__INSTANCE__->__REG__, __VALUE__)"
+    },
+    {
+      "name": "LL_CRC_ReadReg",
+      "sig": "#define LL_CRC_ReadReg(__INSTANCE__, __REG__) READ_REG(__INSTANCE__->__REG__)",
+      "brief": "宏: 读取 CRC 寄存器的值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "CRC 实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要读取的寄存器"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "寄存器值"
+      },
+      "file": "py32f002b_ll_crc.h",
+      "kind": "macro",
+      "src": "#define LL_CRC_ReadReg(__INSTANCE__, __REG__) READ_REG(__INSTANCE__->__REG__)"
+    },
+    {
+      "name": "LL_CRC_ResetCRCCalculationUnit",
+      "sig": "void LL_CRC_ResetCRCCalculationUnit(CRC_TypeDef *CRCx)",
+      "brief": "复位 CRC 计算单元(置位 CR 的 RESET 位)。",
+      "params": [
+        {
+          "name": "CRCx",
+          "type": "CRC_TypeDef *",
+          "desc": "CRC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_crc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_CRC_ResetCRCCalculationUnit(CRC_TypeDef *CRCx)\r\n{\r\n  SET_BIT(CRCx->CR, CRC_CR_RESET);\r\n}"
+    },
+    {
+      "name": "LL_CRC_FeedData32",
+      "sig": "void LL_CRC_FeedData32(CRC_TypeDef *CRCx, uint32_t InData)",
+      "brief": "向 CRC 计算单元送入一个 32 位数据(写入 DR 寄存器)。",
+      "params": [
+        {
+          "name": "CRCx",
+          "type": "CRC_TypeDef *",
+          "desc": "CRC 实例指针"
+        },
+        {
+          "name": "InData",
+          "type": "uint32_t",
+          "desc": "送入计算器的数据, 0 ~ 0xFFFFFFFF"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_crc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_CRC_FeedData32(CRC_TypeDef *CRCx, uint32_t InData)\r\n{\r\n  WRITE_REG(CRCx->DR, InData);\r\n}"
+    },
+    {
+      "name": "LL_CRC_ReadData32",
+      "sig": "uint32_t LL_CRC_ReadData32(CRC_TypeDef *CRCx)",
+      "brief": "读取当前 CRC 计算结果(32 位, 来自 DR 寄存器)。",
+      "params": [
+        {
+          "name": "CRCx",
+          "type": "CRC_TypeDef *",
+          "desc": "CRC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "当前 CRC 计算结果"
+      },
+      "file": "py32f002b_ll_crc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_CRC_ReadData32(CRC_TypeDef *CRCx)\r\n{\r\n  return (uint32_t)(READ_REG(CRCx->DR));\r\n}"
+    },
+    {
+      "name": "LL_CRC_Read_IDR",
+      "sig": "uint32_t LL_CRC_Read_IDR(CRC_TypeDef *CRCx)",
+      "brief": "读取独立数据寄存器(IDR)中保存的数据。",
+      "params": [
+        {
+          "name": "CRCx",
+          "type": "CRC_TypeDef *",
+          "desc": "CRC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "IDR 中保存的值(通用 8 位数据寄存器)"
+      },
+      "notes": [
+        "IDR 寄存器不影响 CRC 计算, 可作 1 字节临时存储。"
+      ],
+      "file": "py32f002b_ll_crc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_CRC_Read_IDR(CRC_TypeDef *CRCx)\r\n{\r\n  return (uint32_t)(READ_REG(CRCx->IDR));\r\n}"
+    },
+    {
+      "name": "LL_CRC_Write_IDR",
+      "sig": "void LL_CRC_Write_IDR(CRC_TypeDef *CRCx, uint32_t InData)",
+      "brief": "向独立数据寄存器(IDR)写入一个字节数据。",
+      "params": [
+        {
+          "name": "CRCx",
+          "type": "CRC_TypeDef *",
+          "desc": "CRC 实例指针"
+        },
+        {
+          "name": "InData",
+          "type": "uint32_t",
+          "desc": "要存入 IDR 的值, 0 ~ 0xFF"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_crc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_CRC_Write_IDR(CRC_TypeDef *CRCx, uint32_t InData)\r\n{\r\n  *((uint8_t __IO *)(&CRCx->IDR)) = (uint8_t) InData;\r\n}"
+    },
+    {
+      "name": "LL_CRC_DeInit",
+      "sig": "ErrorStatus LL_CRC_DeInit(CRC_TypeDef *CRCx)",
+      "brief": "反初始化 CRC 寄存器(恢复默认值): 复位计算单元并清零 IDR。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "CRCx",
+          "type": "CRC_TypeDef *",
+          "desc": "CRC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 反初始化成功; ERROR 失败(实例非 CRC)"
+      },
+      "file": "py32f002b_ll_crc.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_CRC_DeInit(CRC_TypeDef *CRCx)\r\n{\r\n  ErrorStatus status = SUCCESS;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_CRC_ALL_INSTANCE(CRCx));\r\n\r\n  if (CRCx == CRC)\r\n  {\r\n\r\n    /* Reset the CRC calculation unit */\r\n    LL_CRC_ResetCRCCalculationUnit(CRCx);\r\n\r\n    /* Reset IDR register */\r\n    LL_CRC_Write_IDR(CRCx, 0x00U);\r\n  }\r\n  else\r\n  {\r\n    status = ERROR;\r\n  }\r\n\r\n  return (status);\r\n}"
+    }
+  ],
+  "types": [
+    {
+      "name": "HAL_CRC_StateTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_CRC_STATE_RESET = 0x00U, HAL_CRC_STATE_READY = 0x01U, HAL_CRC_STATE_BUSY = 0x02U, HAL_CRC_STATE_TIMEOUT = 0x03U, HAL_CRC_STATE_ERROR = 0x04U } HAL_CRC_StateTypeDef;",
+      "desc": "CRC HAL 句柄状态枚举, 由 HAL_CRC_GetState() 返回。",
+      "members": [
+        {
+          "name": "HAL_CRC_STATE_RESET",
+          "value": "0x00U",
+          "desc": "未初始化或已禁用"
+        },
+        {
+          "name": "HAL_CRC_STATE_READY",
+          "value": "0x01U",
+          "desc": "已初始化, 可正常使用"
+        },
+        {
+          "name": "HAL_CRC_STATE_BUSY",
+          "value": "0x02U",
+          "desc": "内部处理正在进行"
+        },
+        {
+          "name": "HAL_CRC_STATE_TIMEOUT",
+          "value": "0x03U",
+          "desc": "超时状态"
+        },
+        {
+          "name": "HAL_CRC_STATE_ERROR",
+          "value": "0x04U",
+          "desc": "错误状态"
+        }
+      ],
+      "file": "py32f002b_hal_crc.h"
+    },
+    {
+      "name": "CRC_HandleTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { CRC_TypeDef *Instance; HAL_LockTypeDef Lock; __IO HAL_CRC_StateTypeDef State; } CRC_HandleTypeDef;",
+      "desc": "CRC 句柄结构体, 作为 HAL_CRC_* 各函数的参数。",
+      "members": [
+        {
+          "name": "Instance",
+          "type": "CRC_TypeDef *",
+          "desc": "CRC 寄存器基地址"
+        },
+        {
+          "name": "Lock",
+          "type": "HAL_LockTypeDef",
+          "desc": "CRC 锁定对象"
+        },
+        {
+          "name": "State",
+          "type": "__IO HAL_CRC_StateTypeDef",
+          "desc": "CRC 通信状态"
+        }
+      ],
+      "file": "py32f002b_hal_crc.h"
+    },
+    {
+      "name": "CRC_TypeDef",
+      "kind": "periph",
+      "def": "typedef struct { __IO uint32_t DR; __IO uint32_t IDR; __IO uint32_t CR; } CRC_TypeDef;",
+      "desc": "CRC 外设寄存器结构体。实例: CRC。",
+      "members": [
+        {
+          "name": "DR",
+          "type": "__IO uint32_t",
+          "desc": "CRC 数据寄存器(写入输入数据, 读出计算结果), 偏移 0x00"
+        },
+        {
+          "name": "IDR",
+          "type": "__IO uint32_t",
+          "desc": "独立数据寄存器(不参与计算, 可作 8 位临时存储), 偏移 0x04"
+        },
+        {
+          "name": "CR",
+          "type": "__IO uint32_t",
+          "desc": "控制寄存器(含 RESET 位, 写 1 复位计算单元), 偏移 0x08"
+        }
+      ],
+      "file": "py32f002xx5.h"
+    }
+  ],
+  "consts": []
+}

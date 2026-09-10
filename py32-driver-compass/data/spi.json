@@ -1,0 +1,2896 @@
+{
+  "module": "SPI",
+  "moduleId": "spi",
+  "intro": "串行外设接口: 支持主/从模式、2 线全双工/2 线仅接收/1 线半双工通信、8/16 位数据宽度、时钟极性/相位、NSS 管理与波特率预分频配置。HAL 库提供阻塞与中断方式的发送/接收/收发/中止控制及回调; LL 库提供寄存器级操作函数与初始化结构体。",
+  "files": [
+    "py32f002b_hal_spi.c",
+    "py32f002b_hal_spi.h",
+    "py32f002b_ll_spi.c",
+    "py32f002b_ll_spi.h",
+    "py32f002xx5.h"
+  ],
+  "hal": [
+    {
+      "name": "HAL_SPI_Init",
+      "sig": "HAL_StatusTypeDef HAL_SPI_Init(SPI_HandleTypeDef *hspi)",
+      "brief": "根据 SPI_InitTypeDef 中的参数初始化 SPI 外设, 并初始化关联的句柄。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体, 含 SPI 模块配置信息"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 句柄为空或参数无效"
+      },
+      "notes": [
+        "首次初始化(句柄 State 为 RESET)时自动调用 HAL_SPI_MspInit() 完成底层 GPIO/时钟/中断配置。",
+        "从机模式下波特率预分频不适用, 被强制为 SPI_BAUDRATEPRESCALER_2。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_SPI_Init(SPI_HandleTypeDef *hspi)\n{\n  /* Check the SPI handle allocation */\n  if (hspi == NULL)\n  {\n    return HAL_ERROR;\n  }\n\n  /* Check the parameters */\n  assert_param(IS_SPI_ALL_INSTANCE(hspi->Instance));\n  assert_param(IS_SPI_MODE(hspi->Init.Mode));\n  assert_param(IS_SPI_DIRECTION(hspi->Init.Direction));\n  assert_param(IS_SPI_DATASIZE(hspi->Init.DataSize));\n  assert_param(IS_SPI_NSS(hspi->Init.NSS));\n  assert_param(IS_SPI_BAUDRATE_PRESCALER(hspi->Init.BaudRatePrescaler));\n  assert_param(IS_SPI_FIRST_BIT(hspi->Init.FirstBit));\n  assert_param(IS_SPI_CPOL(hspi->Init.CLKPolarity));\n  assert_param(IS_SPI_CPHA(hspi->Init.CLKPhase));\n\n  if (hspi->Init.Mode == SPI_MODE_MASTER)\n  {\n    assert_param(IS_SPI_BAUDRATE_PRESCALER(hspi->Init.BaudRatePrescaler));\n  }\n  else\n  {\n    /* Baudrate prescaler not use in Motoraola Slave mode. force to default value */\n    hspi->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;\n  }\n\n  if (hspi->State == HAL_SPI_STATE_RESET)\n  {\n    /* Allocate lock resource and initialize it */\n    hspi->Lock = HAL_UNLOCKED;\n\n#if (USE_HAL_SPI_REGISTER_CALLBACKS == 1U)\n    /* Init the SPI Callback settings */\n    hspi->TxCpltCallback       = HAL_SPI_TxCpltCallback;       /* Legacy weak TxCpltCallback       */\n    hspi->RxCpltCallback       = HAL_SPI_RxCpltCallback;       /* Legacy weak RxCpltCallback       */\n    hspi->TxRxCpltCallback     = HAL_SPI_TxRxCpltCallback;     /* Legacy weak TxRxCpltCallback     */\n    hspi->TxHalfCpltCallback   = HAL_SPI_TxHalfCpltCallback;   /* Legacy weak TxHalfCpltCallback   */\n    hspi->RxHalfCpltCallback   = HAL_SPI_RxHalfCpltCallback;   /* Legacy weak RxHalfCpltCallback   */\n    hspi->TxRxHalfCpltCallback = HAL_SPI_TxRxHalfCpltCallback; /* Legacy weak TxRxHalfCpltCallback */\n    hspi->ErrorCallback        = HAL_SPI_ErrorCallback;        /* Legacy weak ErrorCallback        */\n    hspi->AbortCpltCallback    = HAL_SPI_AbortCpltCallback;    /* Legacy weak AbortCpltCallback    */\n\n    if (hspi->MspInitCallback == NULL)\n    {\n      hspi->MspInitCallback = HAL_SPI_MspInit; /* Legacy weak MspInit  */\n    }\n\n    /* Init the low level hardware : GPIO, CLOCK, NVIC... */\n    hspi->MspInitCallback(hspi);\n#else\n    /* Init the low level hardware : GPIO, CLOCK, NVIC... */\n    HAL_SPI_MspInit(hspi);\n#endif /* USE_HAL_SPI_REGISTER_CALLBACKS */\n  }\n\n  hspi->State = HAL_SPI_STATE_BUSY;\n\n  /* Disable the selected SPI peripheral */\n  __HAL_SPI_DISABLE(hspi);\n\n  /*----------------------- SPIx CR1 & CR2 Configuration ---------------------*/\n  /* Configure : SPI Mode, Communication Mode, Clock polarity and phase, NSS management,\n  Communication speed, First bit */\n  WRITE_REG(hspi->Instance->CR1, ((hspi->Init.Mode & (SPI_CR1_MSTR | SPI_CR1_SSI)) |\n                                  (hspi->Init.Direction & (SPI_CR1_RXONLY | SPI_CR1_BIDIMODE)) |\n                                  (hspi->Init.CLKPolarity & SPI_CR1_CPOL) |\n                                  (hspi->Init.CLKPhase & SPI_CR1_CPHA) |\n                                  (hspi->Init.NSS & SPI_CR1_SSM) |\n                                  (hspi->Init.BaudRatePrescaler & SPI_CR1_BR_Msk) |\n                                  (hspi->Init.DataSize & SPI_CR1_DFF_Msk) |\n                                  (hspi->Init.FirstBit  & SPI_CR1_LSBFIRST)));\n\n  /* Configure : NSS management */\n  WRITE_REG(hspi->Instance->CR2, ((hspi->Init.NSS >> 16U) & SPI_CR2_SSOE));\n\n#if defined(SPI_I2SCFGR_I2SMOD)\n  /* Activate the SPI mode (Make sure that I2SMOD bit in I2SCFGR register is reset) */\n  CLEAR_BIT(hspi->Instance->I2SCFGR, SPI_I2SCFGR_I2SMOD);\n#endif /* SPI_I2SCFGR_I2SMOD */\n\n  hspi->ErrorCode = HAL_SPI_ERROR_NONE;\n  hspi->State     = HAL_SPI_STATE_READY;\n\n  return HAL_OK;\n}"
+    },
+    {
+      "name": "HAL_SPI_DeInit",
+      "sig": "HAL_StatusTypeDef HAL_SPI_DeInit(SPI_HandleTypeDef *hspi)",
+      "brief": "反初始化 SPI 外设: 禁止 SPI 并恢复句柄默认状态, 调用 HAL_SPI_MspDeInit() 释放底层资源。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体, 含 SPI 模块配置信息"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 句柄为空"
+      },
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_SPI_DeInit(SPI_HandleTypeDef *hspi)\n{\n  /* Check the SPI handle allocation */\n  if (hspi == NULL)\n  {\n    return HAL_ERROR;\n  }\n\n  /* Check SPI Instance parameter */\n  assert_param(IS_SPI_ALL_INSTANCE(hspi->Instance));\n\n  hspi->State = HAL_SPI_STATE_BUSY;\n\n  /* Disable the SPI Peripheral Clock */\n  __HAL_SPI_DISABLE(hspi);\n\n#if (USE_HAL_SPI_REGISTER_CALLBACKS == 1U)\n  if (hspi->MspDeInitCallback == NULL)\n  {\n    hspi->MspDeInitCallback = HAL_SPI_MspDeInit; /* Legacy weak MspDeInit  */\n  }\n\n  /* DeInit the low level hardware: GPIO, CLOCK, NVIC... */\n  hspi->MspDeInitCallback(hspi);\n#else\n  /* DeInit the low level hardware: GPIO, CLOCK, NVIC... */\n  HAL_SPI_MspDeInit(hspi);\n#endif /* USE_HAL_SPI_REGISTER_CALLBACKS */\n\n  hspi->ErrorCode = HAL_SPI_ERROR_NONE;\n  hspi->State = HAL_SPI_STATE_RESET;\n\n  /* Release Lock */\n  __HAL_UNLOCK(hspi);\n\n  return HAL_OK;\n}"
+    },
+    {
+      "name": "HAL_SPI_MspInit",
+      "sig": "void HAL_SPI_MspInit(SPI_HandleTypeDef *hspi)",
+      "brief": "初始化 SPI 底层硬件资源(GPIO、时钟、NVIC 等)的弱定义空函数, 由 HAL_SPI_Init() 调用, 需在用户文件中实现。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写; 不要修改库内默认实现。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "__weak void HAL_SPI_MspInit(SPI_HandleTypeDef *hspi)\n{\n  /* Prevent unused argument(s) compilation warning */\n  UNUSED(hspi);\n\n  /* NOTE : This function should not be modified, when the callback is needed,\n            the HAL_SPI_MspInit should be implemented in the user file\n   */\n}"
+    },
+    {
+      "name": "HAL_SPI_MspDeInit",
+      "sig": "void HAL_SPI_MspDeInit(SPI_HandleTypeDef *hspi)",
+      "brief": "反初始化 SPI 底层硬件资源的弱定义空函数, 由 HAL_SPI_DeInit() 调用, 需在用户文件中实现。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写; 不要修改库内默认实现。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "__weak void HAL_SPI_MspDeInit(SPI_HandleTypeDef *hspi)\n{\n  /* Prevent unused argument(s) compilation warning */\n  UNUSED(hspi);\n\n  /* NOTE : This function should not be modified, when the callback is needed,\n            the HAL_SPI_MspDeInit should be implemented in the user file\n   */\n}"
+    },
+    {
+      "name": "HAL_SPI_RegisterCallback",
+      "sig": "HAL_StatusTypeDef HAL_SPI_RegisterCallback(SPI_HandleTypeDef *hspi, HAL_SPI_CallbackIDTypeDef CallbackID, pSPI_CallbackTypeDef pCallback)",
+      "brief": "注册用户 SPI 回调函数, 取代对应的弱定义回调。需编译宏 USE_HAL_SPI_REGISTER_CALLBACKS = 1。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        },
+        {
+          "name": "CallbackID",
+          "type": "HAL_SPI_CallbackIDTypeDef",
+          "desc": "要注册的回调 ID: HAL_SPI_*_CB_ID"
+        },
+        {
+          "name": "pCallback",
+          "type": "pSPI_CallbackTypeDef",
+          "desc": "用户回调函数指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 回调为空/ID 无效或当前状态不允许注册"
+      },
+      "notes": [
+        "通常在 HAL_SPI_STATE_READY 状态注册; MspInit/MspDeInit 回调在 READY 或 RESET 状态均可注册。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_SPI_RegisterCallback(SPI_HandleTypeDef *hspi, HAL_SPI_CallbackIDTypeDef CallbackID,\n                                           pSPI_CallbackTypeDef pCallback)\n{\n  HAL_StatusTypeDef status = HAL_OK;\n\n  if (pCallback == NULL)\n  {\n    /* Update the error code */\n    hspi->ErrorCode |= HAL_SPI_ERROR_INVALID_CALLBACK;\n\n    return HAL_ERROR;\n  }\n  /* Process locked */\n  __HAL_LOCK(hspi);\n\n  if (HAL_SPI_STATE_READY == hspi->State)\n  {\n    switch (CallbackID)\n    {\n      case HAL_SPI_TX_COMPLETE_CB_ID :\n        hspi->TxCpltCallback = pCallback;\n        break;\n\n      case HAL_SPI_RX_COMPLETE_CB_ID :\n        hspi->RxCpltCallback = pCallback;\n        break;\n\n      case HAL_SPI_TX_RX_COMPLETE_CB_ID :\n        hspi->TxRxCpltCallback = pCallback;\n        break;\n\n      case HAL_SPI_TX_HALF_COMPLETE_CB_ID :\n        hspi->TxHalfCpltCallback = pCallback;\n        break;\n\n      case HAL_SPI_RX_HALF_COMPLETE_CB_ID :\n        hspi->RxHalfCpltCallback = pCallback;\n        break;\n\n      case HAL_SPI_TX_RX_HALF_COMPLETE_CB_ID :\n        hspi->TxRxHalfCpltCallback = pCallback;\n        break;\n\n      case HAL_SPI_ERROR_CB_ID :\n        hspi->ErrorCallback = pCallback;\n        break;\n\n      case HAL_SPI_ABORT_CB_ID :\n        hspi->AbortCpltCallback = pCallback;\n        break;\n\n      case HAL_SPI_MSPINIT_CB_ID :\n        hspi->MspInitCallback = pCallback;\n        break;\n\n      case HAL_SPI_MSPDEINIT_CB_ID :\n        hspi->MspDeInitCallback = pCallback;\n        break;\n\n      default :\n        /* Update the error code */\n        SET_BIT(hspi->ErrorCode, HAL_SPI_ERROR_INVALID_CALLBACK);\n\n        /* Return error status */\n        status =  HAL_ERROR;\n        break;\n    }\n  }\n  else if (HAL_SPI_STATE_RESET == hspi->State)\n  {\n    switch (CallbackID)\n    {\n      case HAL_SPI_MSPINIT_CB_ID :\n        hspi->MspInitCallback = pCallback;\n        break;\n\n      case HAL_SPI_MSPDEINIT_CB_ID :\n        hspi->MspDeInitCallback = pCallback;\n        break;\n\n      default :\n        /* Update the error code */\n        SET_BIT(hspi->ErrorCode, HAL_SPI_ERROR_INVALID_CALLBACK);\n\n        /* Return error status */\n        status =  HAL_ERROR;\n        break;\n    }\n  }\n  else\n  {\n    /* Update the error code */\n    SET_BIT(hspi->ErrorCode, HAL_SPI_ERROR_INVALID_CALLBACK);\n\n    /* Return error status */\n    status =  HAL_ERROR;\n  }\n\n  /* Release Lock */\n  __HAL_UNLOCK(hspi);\n  return status;\n}"
+    },
+    {
+      "name": "HAL_SPI_UnRegisterCallback",
+      "sig": "HAL_StatusTypeDef HAL_SPI_UnRegisterCallback(SPI_HandleTypeDef *hspi, HAL_SPI_CallbackIDTypeDef CallbackID)",
+      "brief": "注销用户 SPI 回调, 恢复为对应的弱定义回调。需编译宏 USE_HAL_SPI_REGISTER_CALLBACKS = 1。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        },
+        {
+          "name": "CallbackID",
+          "type": "HAL_SPI_CallbackIDTypeDef",
+          "desc": "要注销的回调 ID: HAL_SPI_*_CB_ID"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR ID 无效或当前状态不允许注销"
+      },
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_SPI_UnRegisterCallback(SPI_HandleTypeDef *hspi, HAL_SPI_CallbackIDTypeDef CallbackID)\n{\n  HAL_StatusTypeDef status = HAL_OK;\n\n  /* Process locked */\n  __HAL_LOCK(hspi);\n\n  if (HAL_SPI_STATE_READY == hspi->State)\n  {\n    switch (CallbackID)\n    {\n      case HAL_SPI_TX_COMPLETE_CB_ID :\n        hspi->TxCpltCallback = HAL_SPI_TxCpltCallback;             /* Legacy weak TxCpltCallback       */\n        break;\n\n      case HAL_SPI_RX_COMPLETE_CB_ID :\n        hspi->RxCpltCallback = HAL_SPI_RxCpltCallback;             /* Legacy weak RxCpltCallback       */\n        break;\n\n      case HAL_SPI_TX_RX_COMPLETE_CB_ID :\n        hspi->TxRxCpltCallback = HAL_SPI_TxRxCpltCallback;         /* Legacy weak TxRxCpltCallback     */\n        break;\n\n      case HAL_SPI_TX_HALF_COMPLETE_CB_ID :\n        hspi->TxHalfCpltCallback = HAL_SPI_TxHalfCpltCallback;     /* Legacy weak TxHalfCpltCallback   */\n        break;\n\n      case HAL_SPI_RX_HALF_COMPLETE_CB_ID :\n        hspi->RxHalfCpltCallback = HAL_SPI_RxHalfCpltCallback;     /* Legacy weak RxHalfCpltCallback   */\n        break;\n\n      case HAL_SPI_TX_RX_HALF_COMPLETE_CB_ID :\n        hspi->TxRxHalfCpltCallback = HAL_SPI_TxRxHalfCpltCallback; /* Legacy weak TxRxHalfCpltCallback */\n        break;\n\n      case HAL_SPI_ERROR_CB_ID :\n        hspi->ErrorCallback = HAL_SPI_ErrorCallback;               /* Legacy weak ErrorCallback        */\n        break;\n\n      case HAL_SPI_ABORT_CB_ID :\n        hspi->AbortCpltCallback = HAL_SPI_AbortCpltCallback;       /* Legacy weak AbortCpltCallback    */\n        break;\n\n      case HAL_SPI_MSPINIT_CB_ID :\n        hspi->MspInitCallback = HAL_SPI_MspInit;                   /* Legacy weak MspInit              */\n        break;\n\n      case HAL_SPI_MSPDEINIT_CB_ID :\n        hspi->MspDeInitCallback = HAL_SPI_MspDeInit;               /* Legacy weak MspDeInit            */\n        break;\n\n      default :\n        /* Update the error code */\n        SET_BIT(hspi->ErrorCode, HAL_SPI_ERROR_INVALID_CALLBACK);\n\n        /* Return error status */\n        status =  HAL_ERROR;\n        break;\n    }\n  }\n  else if (HAL_SPI_STATE_RESET == hspi->State)\n  {\n    switch (CallbackID)\n    {\n      case HAL_SPI_MSPINIT_CB_ID :\n        hspi->MspInitCallback = HAL_SPI_MspInit;                   /* Legacy weak MspInit              */\n        break;\n\n      case HAL_SPI_MSPDEINIT_CB_ID :\n        hspi->MspDeInitCallback = HAL_SPI_MspDeInit;               /* Legacy weak MspDeInit            */\n        break;\n\n      default :\n        /* Update the error code */\n        SET_BIT(hspi->ErrorCode, HAL_SPI_ERROR_INVALID_CALLBACK);\n\n        /* Return error status */\n        status =  HAL_ERROR;\n        break;\n    }\n  }\n  else\n  {\n    /* Update the error code */\n    SET_BIT(hspi->ErrorCode, HAL_SPI_ERROR_INVALID_CALLBACK);\n\n    /* Return error status */\n    status =  HAL_ERROR;\n  }\n\n  /* Release Lock */\n  __HAL_UNLOCK(hspi);\n  return status;\n}"
+    },
+    {
+      "name": "HAL_SPI_Transmit",
+      "sig": "HAL_StatusTypeDef HAL_SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t *pData, uint16_t Size, uint32_t Timeout)",
+      "brief": "阻塞模式发送指定数量的数据。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向待发送数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要发送的数据量"
+        },
+        {
+          "name": "Timeout",
+          "type": "uint32_t",
+          "desc": "超时时长, HAL_MAX_DELAY 表示无限等待"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 参数错误或标志错误; HAL_TIMEOUT 超时"
+      },
+      "notes": [
+        "仅支持 2 线全双工或 1 线模式; 2 线模式下接收数据未读取时自动清除溢出标志。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t *pData, uint16_t Size, uint32_t Timeout)\n{\n  uint32_t tickstart;\n  HAL_StatusTypeDef errorcode = HAL_OK;\n  uint16_t initial_TxXferCount;\n\n  /* Check Direction parameter */\n  assert_param(IS_SPI_DIRECTION_2LINES_OR_1LINE(hspi->Init.Direction));\n\n  /* Process Locked */\n  __HAL_LOCK(hspi);\n\n  /* Init tickstart for timeout management*/\n  tickstart = HAL_GetTick();\n  initial_TxXferCount = Size;\n\n  if (hspi->State != HAL_SPI_STATE_READY)\n  {\n    errorcode = HAL_BUSY;\n    goto error;\n  }\n\n  if ((pData == NULL) || (Size == 0U))\n  {\n    errorcode = HAL_ERROR;\n    goto error;\n  }\n\n  /* Disable SPI peripheral */\n  __HAL_SPI_DISABLE(hspi);\n\n  /* Set the transaction information */\n  hspi->State       = HAL_SPI_STATE_BUSY_TX;\n  hspi->ErrorCode   = HAL_SPI_ERROR_NONE;\n  hspi->pTxBuffPtr  = (uint8_t *)pData;\n  hspi->TxXferSize  = Size;\n  hspi->TxXferCount = Size;\n\n  /*Init field not used in handle to zero */\n  hspi->pRxBuffPtr  = (uint8_t *)NULL;\n  hspi->RxXferSize  = 0U;\n  hspi->RxXferCount = 0U;\n  hspi->TxISR       = NULL;\n  hspi->RxISR       = NULL;\n\n  /* Configure communication direction : 1Line */\n  if (hspi->Init.Direction == SPI_DIRECTION_1LINE)\n  {\n    /* Disable SPI Peripheral before set 1Line direction (BIDIOE bit) */\n    __HAL_SPI_DISABLE(hspi);\n    SPI_1LINE_TX(hspi);\n  }\n\n  /* Check if the SPI is already enabled */\n  if ((hspi->Instance->CR1 & SPI_CR1_SPE) != SPI_CR1_SPE)\n  {\n    /* Enable SPI peripheral */\n    __HAL_SPI_ENABLE(hspi);\n  }\n\n  /* Transmit data in 16 Bit mode */\n  if (hspi->Init.DataSize > SPI_DATASIZE_8BIT)\n  {\n    if ((hspi->Init.Mode == SPI_MODE_SLAVE) || (initial_TxXferCount == 0x01U))\n    {\n      hspi->Instance->DR = *((uint16_t *)hspi->pTxBuffPtr);\n      hspi->pTxBuffPtr += sizeof(uint16_t);\n      hspi->TxXferCount--;\n    }\n    /* Transmit data in 16 Bit mode */\n    while (hspi->TxXferCount > 0U)\n    {\n      /* Wait until TXE flag is set to send data */\n      if (__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_TXE))\n      {\n        hspi->Instance->DR = *((uint16_t *)hspi->pTxBuffPtr);\n        hspi->pTxBuffPtr += sizeof(uint16_t);\n        hspi->TxXferCount--;\n      }\n      else\n      {\n        /* Timeout management */\n        if ((((HAL_GetTick() - tickstart) >=  Timeout) && (Timeout != HAL_MAX_DELAY)) || (Timeout == 0U))\n        {\n          errorcode = HAL_TIMEOUT;\n          goto error;\n        }\n      }\n    }\n  }\n  /* Transmit data in 8 Bit mode */\n  else\n  {\n    if ((hspi->Init.Mode == SPI_MODE_SLAVE) || (initial_TxXferCount == 0x01U))\n    {\n      *((__IO uint8_t *)&hspi->Instance->DR) = (*hspi->pTxBuffPtr);\n      hspi->pTxBuffPtr += sizeof(uint8_t);\n      hspi->TxXferCount--;\n    }\n    while (hspi->TxXferCount > 0U)\n    {\n      /* Wait until TXE flag is set to send data */\n      if (__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_TXE))\n      {\n        *((__IO uint8_t *)&hspi->Instance->DR) = (*hspi->pTxBuffPtr);\n        hspi->pTxBuffPtr += sizeof(uint8_t);\n        hspi->TxXferCount--;\n      }\n      else\n      {\n        /* Timeout management */\n        if ((((HAL_GetTick() - tickstart) >=  Timeout) && (Timeout != HAL_MAX_DELAY)) || (Timeout == 0U))\n        {\n          errorcode = HAL_TIMEOUT;\n          goto error;\n        }\n      }\n    }\n  }\n\n  /* Check the end of the transaction */\n  if (SPI_EndRxTxTransaction(hspi, Timeout, tickstart) != HAL_OK)\n  {\n    hspi->ErrorCode = HAL_SPI_ERROR_FLAG;\n  }\n\n  /* Clear overrun flag in 2 Lines communication mode because received is not read */\n  if (hspi->Init.Direction == SPI_DIRECTION_2LINES)\n  {\n    __HAL_SPI_CLEAR_OVRFLAG(hspi);\n  }\n\n  if (hspi->ErrorCode != HAL_SPI_ERROR_NONE)\n  {\n    errorcode = HAL_ERROR;\n  }\n\nerror:\n  hspi->State = HAL_SPI_STATE_READY;\n  /* Process Unlocked */\n  __HAL_UNLOCK(hspi);\n  return errorcode;\n}"
+    },
+    {
+      "name": "HAL_SPI_Receive",
+      "sig": "HAL_StatusTypeDef HAL_SPI_Receive(SPI_HandleTypeDef *hspi, uint8_t *pData, uint16_t Size, uint32_t Timeout)",
+      "brief": "阻塞模式接收指定数量的数据。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向接收数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要接收的数据量"
+        },
+        {
+          "name": "Timeout",
+          "type": "uint32_t",
+          "desc": "超时时长, HAL_MAX_DELAY 表示无限等待"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 参数错误或标志错误; HAL_TIMEOUT 超时"
+      },
+      "notes": [
+        "主模式 2 线全双工接收时内部调用 HAL_SPI_TransmitReceive() 发送空数据以产生时钟。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_SPI_Receive(SPI_HandleTypeDef *hspi, uint8_t *pData, uint16_t Size, uint32_t Timeout)\n{\n  uint32_t tickstart;\n  HAL_StatusTypeDef errorcode = HAL_OK;\n\n  if ((hspi->Init.Mode == SPI_MODE_MASTER) && (hspi->Init.Direction == SPI_DIRECTION_2LINES))\n  {\n    hspi->State = HAL_SPI_STATE_BUSY_RX;\n    /* Call transmit-receive function to send Dummy data on Tx line and generate clock on CLK line */\n    return HAL_SPI_TransmitReceive(hspi, pData, pData, Size, Timeout);\n  }\n\n  /* Process Locked */\n  __HAL_LOCK(hspi);\n\n  /* Init tickstart for timeout management*/\n  tickstart = HAL_GetTick();\n\n  if (hspi->State != HAL_SPI_STATE_READY)\n  {\n    errorcode = HAL_BUSY;\n    goto error;\n  }\n\n  if ((pData == NULL) || (Size == 0U))\n  {\n    errorcode = HAL_ERROR;\n    goto error;\n  }\n\n  /* Disable SPI peripheral */\n  __HAL_SPI_DISABLE(hspi);\n\n  /* Set the transaction information */\n  hspi->State       = HAL_SPI_STATE_BUSY_RX;\n  hspi->ErrorCode   = HAL_SPI_ERROR_NONE;\n  hspi->pRxBuffPtr  = (uint8_t *)pData;\n  hspi->RxXferSize  = Size;\n  hspi->RxXferCount = Size;\n\n  /*Init field not used in handle to zero */\n  hspi->pTxBuffPtr  = (uint8_t *)NULL;\n  hspi->TxXferSize  = 0U;\n  hspi->TxXferCount = 0U;\n  hspi->RxISR       = NULL;\n  hspi->TxISR       = NULL;\n\n  /* Configure communication direction: 1Line */\n  if (hspi->Init.Direction == SPI_DIRECTION_1LINE)\n  {\n    /* Disable SPI Peripheral before set 1Line direction (BIDIOE bit) */\n    __HAL_SPI_DISABLE(hspi);\n    SPI_1LINE_RX(hspi);\n  }\n\n  /* Check if the SPI is already enabled */\n  if ((hspi->Instance->CR1 & SPI_CR1_SPE) != SPI_CR1_SPE)\n  {\n    /* Enable SPI peripheral */\n    __HAL_SPI_ENABLE(hspi);\n  }\n\n  /* Receive data in 8 Bit mode */\n  if (hspi->Init.DataSize <= SPI_DATASIZE_8BIT)\n  {\n    /* Transfer loop */\n    while (hspi->RxXferCount > 0U)\n    {\n      /* Check the RXNE flag */\n      if (__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_RXNE))\n      {\n        /* read the received data */\n        (* (uint8_t *)hspi->pRxBuffPtr) = *(__IO uint8_t *)&hspi->Instance->DR;\n        hspi->pRxBuffPtr += sizeof(uint8_t);\n        hspi->RxXferCount--;\n      }\n      else\n      {\n        /* Timeout management */\n        if ((((HAL_GetTick() - tickstart) >=  Timeout) && (Timeout != HAL_MAX_DELAY)) || (Timeout == 0U))\n        {\n          errorcode = HAL_TIMEOUT;\n          goto error;\n        }\n      }\n    }\n  }\n  else\n  {\n    /* Transfer loop */\n    while (hspi->RxXferCount > 0U)\n    {\n      /* Check the RXNE flag */\n      if (__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_RXNE))\n      {\n        *((uint16_t *)hspi->pRxBuffPtr) = (uint16_t)hspi->Instance->DR;\n        hspi->pRxBuffPtr += sizeof(uint16_t);\n        hspi->RxXferCount--;\n      }\n      else\n      {\n        /* Timeout management */\n        if ((((HAL_GetTick() - tickstart) >=  Timeout) && (Timeout != HAL_MAX_DELAY)) || (Timeout == 0U))\n        {\n          errorcode = HAL_TIMEOUT;\n          goto error;\n        }\n      }\n    }\n  }\n\n  /* Check the end of the transaction */\n  if (SPI_EndRxTransaction(hspi, Timeout, tickstart) != HAL_OK)\n  {\n    hspi->ErrorCode = HAL_SPI_ERROR_FLAG;\n  }\n\n  if (hspi->ErrorCode != HAL_SPI_ERROR_NONE)\n  {\n    errorcode = HAL_ERROR;\n  }\n\nerror :\n  hspi->State = HAL_SPI_STATE_READY;\n  __HAL_UNLOCK(hspi);\n  return errorcode;\n}"
+    },
+    {
+      "name": "HAL_SPI_TransmitReceive",
+      "sig": "HAL_StatusTypeDef HAL_SPI_TransmitReceive(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint8_t *pRxData, uint16_t Size, uint32_t Timeout)",
+      "brief": "阻塞模式同时发送并接收指定数量的数据(全双工)。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        },
+        {
+          "name": "pTxData",
+          "type": "uint8_t *",
+          "desc": "指向发送数据缓冲区的指针"
+        },
+        {
+          "name": "pRxData",
+          "type": "uint8_t *",
+          "desc": "指向接收数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要发送和接收的数据量"
+        },
+        {
+          "name": "Timeout",
+          "type": "uint32_t",
+          "desc": "超时时长, HAL_MAX_DELAY 表示无限等待"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 参数错误或标志错误; HAL_TIMEOUT 超时"
+      },
+      "notes": [
+        "仅支持 2 线全双工模式。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_SPI_TransmitReceive(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint8_t *pRxData, uint16_t Size,\n                                          uint32_t Timeout)\n{\n  uint16_t             initial_TxXferCount;\n  uint32_t             tmp_mode;\n  HAL_SPI_StateTypeDef tmp_state;\n  uint32_t             tickstart;\n\n  /* Variable used to alternate Rx and Tx during transfer */\n  uint32_t             txallowed = 1U;\n  HAL_StatusTypeDef    errorcode = HAL_OK;\n\n  /* Check Direction parameter */\n  assert_param(IS_SPI_DIRECTION_2LINES(hspi->Init.Direction));\n\n  /* Process Locked */\n  __HAL_LOCK(hspi);\n\n  /* Init tickstart for timeout management*/\n  tickstart = HAL_GetTick();\n\n  /* Init temporary variables */\n  tmp_state           = hspi->State;\n  tmp_mode            = hspi->Init.Mode;\n  initial_TxXferCount = Size;\n\n  if (!((tmp_state == HAL_SPI_STATE_READY) || \\\n        ((tmp_mode == SPI_MODE_MASTER) && (hspi->Init.Direction == SPI_DIRECTION_2LINES) && (tmp_state == HAL_SPI_STATE_BUSY_RX))))\n  {\n    errorcode = HAL_BUSY;\n    goto error;\n  }\n\n  if ((pTxData == NULL) || (pRxData == NULL) || (Size == 0U))\n  {\n    errorcode = HAL_ERROR;\n    goto error;\n  }\n\n  /* Don't overwrite in case of HAL_SPI_STATE_BUSY_RX */\n  if (hspi->State != HAL_SPI_STATE_BUSY_RX)\n  {\n    hspi->State = HAL_SPI_STATE_BUSY_TX_RX;\n  }\n\n  /* Disable SPI peripheral */\n  __HAL_SPI_DISABLE(hspi);\n\n  /* Set the transaction information */\n  hspi->ErrorCode   = HAL_SPI_ERROR_NONE;\n  hspi->pRxBuffPtr  = (uint8_t *)pRxData;\n  hspi->RxXferCount = Size;\n  hspi->RxXferSize  = Size;\n  hspi->pTxBuffPtr  = (uint8_t *)pTxData;\n  hspi->TxXferCount = Size;\n  hspi->TxXferSize  = Size;\n\n  /*Init field not used in handle to zero */\n  hspi->RxISR       = NULL;\n  hspi->TxISR       = NULL;\n\n  /* Check if the SPI is already enabled */\n  if ((hspi->Instance->CR1 & SPI_CR1_SPE) != SPI_CR1_SPE)\n  {\n    /* Enable SPI peripheral */\n    __HAL_SPI_ENABLE(hspi);\n  }\n\n  /* Transmit and Receive data in 16 Bit mode */\n  if (hspi->Init.DataSize > SPI_DATASIZE_8BIT)\n  {\n    if ((hspi->Init.Mode == SPI_MODE_SLAVE) || (initial_TxXferCount == 0x01U))\n    {\n      hspi->Instance->DR = *((uint16_t *)hspi->pTxBuffPtr);\n      hspi->pTxBuffPtr += sizeof(uint16_t);\n      hspi->TxXferCount--;\n    }\n    while ((hspi->TxXferCount > 0U) || (hspi->RxXferCount > 0U))\n    {\n      /* Check TXE flag */\n      if ((__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_TXE)) && (hspi->TxXferCount > 0U) && (txallowed == 1U))\n      {\n        hspi->Instance->DR = *((uint16_t *)hspi->pTxBuffPtr);\n        hspi->pTxBuffPtr += sizeof(uint16_t);\n        hspi->TxXferCount--;\n        /* Next Data is a reception (Rx). Tx not allowed */\n        txallowed = 0U;\n      }\n\n      /* Check RXNE flag */\n      if ((__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_RXNE)) && (hspi->RxXferCount > 0U))\n      {\n        *((uint16_t *)hspi->pRxBuffPtr) = (uint16_t)hspi->Instance->DR;\n        hspi->pRxBuffPtr += sizeof(uint16_t);\n        hspi->RxXferCount--;\n        /* Next Data is a Transmission (Tx). Tx is allowed */\n        txallowed = 1U;\n      }\n      if (((HAL_GetTick() - tickstart) >=  Timeout) && (Timeout != HAL_MAX_DELAY))\n      {\n        errorcode = HAL_TIMEOUT;\n        goto error;\n      }\n    }\n  }\n  /* Transmit and Receive data in 8 Bit mode */\n  else\n  {\n    if ((hspi->Init.Mode == SPI_MODE_SLAVE) || (initial_TxXferCount == 0x01U))\n    {\n      *((__IO uint8_t *)&hspi->Instance->DR) = (*hspi->pTxBuffPtr);\n      hspi->pTxBuffPtr += sizeof(uint8_t);\n      hspi->TxXferCount--;\n    }\n    while ((hspi->TxXferCount > 0U) || (hspi->RxXferCount > 0U))\n    {\n      /* Check TXE flag */\n      if ((__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_TXE)) && (hspi->TxXferCount > 0U) && (txallowed == 1U))\n      {\n        *(__IO uint8_t *)&hspi->Instance->DR = (*hspi->pTxBuffPtr);\n        hspi->pTxBuffPtr++;\n        hspi->TxXferCount--;\n        /* Next Data is a reception (Rx). Tx not allowed */\n        txallowed = 0U;\n      }\n\n      /* Wait until RXNE flag is reset */\n      if ((__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_RXNE)) && (hspi->RxXferCount > 0U))\n      {\n        (*(uint8_t *)hspi->pRxBuffPtr) = *(__IO uint8_t *)&hspi->Instance->DR;\n        hspi->pRxBuffPtr++;\n        hspi->RxXferCount--;\n        /* Next Data is a Transmission (Tx). Tx is allowed */\n        txallowed = 1U;\n      }\n      if ((((HAL_GetTick() - tickstart) >=  Timeout) && ((Timeout != HAL_MAX_DELAY))) || (Timeout == 0U))\n      {\n        errorcode = HAL_TIMEOUT;\n        goto error;\n      }\n    }\n  }\n\n  /* Check the end of the transaction */\n  if (SPI_EndRxTxTransaction(hspi, Timeout, tickstart) != HAL_OK)\n  {\n    errorcode = HAL_ERROR;\n    hspi->ErrorCode = HAL_SPI_ERROR_FLAG;\n  }\n\nerror :\n  hspi->State = HAL_SPI_STATE_READY;\n  __HAL_UNLOCK(hspi);\n  return errorcode;\n}"
+    },
+    {
+      "name": "HAL_SPI_Transmit_IT",
+      "sig": "HAL_StatusTypeDef HAL_SPI_Transmit_IT(SPI_HandleTypeDef *hspi, uint8_t *pData, uint16_t Size)",
+      "brief": "中断方式(非阻塞)发送指定数量的数据, 传输完成后由中断流程调用 HAL_SPI_TxCpltCallback() 回调。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向待发送数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要发送的数据量"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 参数错误"
+      },
+      "notes": [
+        "内部使能 TXE 与 ERR 中断。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_SPI_Transmit_IT(SPI_HandleTypeDef *hspi, uint8_t *pData, uint16_t Size)\n{\n  HAL_StatusTypeDef errorcode = HAL_OK;\n\n  /* Check Direction parameter */\n  assert_param(IS_SPI_DIRECTION_2LINES_OR_1LINE(hspi->Init.Direction));\n\n  /* Process Locked */\n  __HAL_LOCK(hspi);\n\n  if ((pData == NULL) || (Size == 0U))\n  {\n    errorcode = HAL_ERROR;\n    goto error;\n  }\n\n  if (hspi->State != HAL_SPI_STATE_READY)\n  {\n    errorcode = HAL_BUSY;\n    goto error;\n  }\n\n  /* Disable SPI peripheral */\n  __HAL_SPI_DISABLE(hspi);\n\n  /* Set the transaction information */\n  hspi->State       = HAL_SPI_STATE_BUSY_TX;\n  hspi->ErrorCode   = HAL_SPI_ERROR_NONE;\n  hspi->pTxBuffPtr  = (uint8_t *)pData;\n  hspi->TxXferSize  = Size;\n  hspi->TxXferCount = Size;\n\n  /* Init field not used in handle to zero */\n  hspi->pRxBuffPtr  = (uint8_t *)NULL;\n  hspi->RxXferSize  = 0U;\n  hspi->RxXferCount = 0U;\n  hspi->RxISR       = NULL;\n\n  /* Set the function for IT treatment */\n  if (hspi->Init.DataSize > SPI_DATASIZE_8BIT)\n  {\n    hspi->TxISR = SPI_TxISR_16BIT;\n  }\n  else\n  {\n    hspi->TxISR = SPI_TxISR_8BIT;\n  }\n\n  /* Configure communication direction : 1Line */\n  if (hspi->Init.Direction == SPI_DIRECTION_1LINE)\n  {\n    /* Disable SPI Peripheral before set 1Line direction (BIDIOE bit) */\n    __HAL_SPI_DISABLE(hspi);\n    SPI_1LINE_TX(hspi);\n  }\n\n  /* Enable TXE and ERR interrupt */\n  __HAL_SPI_ENABLE_IT(hspi, (SPI_IT_TXE | SPI_IT_ERR));\n\n\n  /* Check if the SPI is already enabled */\n  if ((hspi->Instance->CR1 & SPI_CR1_SPE) != SPI_CR1_SPE)\n  {\n    /* Enable SPI peripheral */\n    __HAL_SPI_ENABLE(hspi);\n  }\n\nerror :\n  __HAL_UNLOCK(hspi);\n  return errorcode;\n}"
+    },
+    {
+      "name": "HAL_SPI_Receive_IT",
+      "sig": "HAL_StatusTypeDef HAL_SPI_Receive_IT(SPI_HandleTypeDef *hspi, uint8_t *pData, uint16_t Size)",
+      "brief": "中断方式(非阻塞)接收指定数量的数据, 接收完成后由中断流程调用 HAL_SPI_RxCpltCallback() 回调。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向接收数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要接收的数据量"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 参数错误"
+      },
+      "notes": [
+        "主模式 2 线全双工接收时内部调用 HAL_SPI_TransmitReceive_IT()。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_SPI_Receive_IT(SPI_HandleTypeDef *hspi, uint8_t *pData, uint16_t Size)\n{\n  HAL_StatusTypeDef errorcode = HAL_OK;\n\n  if ((hspi->Init.Direction == SPI_DIRECTION_2LINES) && (hspi->Init.Mode == SPI_MODE_MASTER))\n  {\n    hspi->State = HAL_SPI_STATE_BUSY_RX;\n    /* Call transmit-receive function to send Dummy data on Tx line and generate clock on CLK line */\n    return HAL_SPI_TransmitReceive_IT(hspi, pData, pData, Size);\n  }\n\n  /* Process Locked */\n  __HAL_LOCK(hspi);\n\n  if (hspi->State != HAL_SPI_STATE_READY)\n  {\n    errorcode = HAL_BUSY;\n    goto error;\n  }\n\n  if ((pData == NULL) || (Size == 0U))\n  {\n    errorcode = HAL_ERROR;\n    goto error;\n  }\n\n  /* Disable SPI peripheral */\n  __HAL_SPI_DISABLE(hspi);\n\n  /* Set the transaction information */\n  hspi->State       = HAL_SPI_STATE_BUSY_RX;\n  hspi->ErrorCode   = HAL_SPI_ERROR_NONE;\n  hspi->pRxBuffPtr  = (uint8_t *)pData;\n  hspi->RxXferSize  = Size;\n  hspi->RxXferCount = Size;\n\n  /* Init field not used in handle to zero */\n  hspi->pTxBuffPtr  = (uint8_t *)NULL;\n  hspi->TxXferSize  = 0U;\n  hspi->TxXferCount = 0U;\n  hspi->TxISR       = NULL;\n\n  /* Check the data size to adapt Rx threshold and the set the function for IT treatment */\n  if (hspi->Init.DataSize > SPI_DATASIZE_8BIT)\n  {\n    hspi->RxISR = SPI_RxISR_16BIT;\n  }\n  else\n  {\n    hspi->RxISR = SPI_RxISR_8BIT;\n  }\n\n  /* Configure communication direction : 1Line */\n  if (hspi->Init.Direction == SPI_DIRECTION_1LINE)\n  {\n    /* Disable SPI Peripheral before set 1Line direction (BIDIOE bit) */\n    __HAL_SPI_DISABLE(hspi);\n    SPI_1LINE_RX(hspi);\n  }\n\n  /* Enable TXE and ERR interrupt */\n  __HAL_SPI_ENABLE_IT(hspi, (SPI_IT_RXNE | SPI_IT_ERR));\n\n  /* Note : The SPI must be enabled after unlocking current process\n            to avoid the risk of SPI interrupt handle execution before current\n            process unlock */\n\n  /* Check if the SPI is already enabled */\n  if ((hspi->Instance->CR1 & SPI_CR1_SPE) != SPI_CR1_SPE)\n  {\n    /* Enable SPI peripheral */\n    __HAL_SPI_ENABLE(hspi);\n  }\n\nerror :\n  /* Process Unlocked */\n  __HAL_UNLOCK(hspi);\n  return errorcode;\n}"
+    },
+    {
+      "name": "HAL_SPI_TransmitReceive_IT",
+      "sig": "HAL_StatusTypeDef HAL_SPI_TransmitReceive_IT(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint8_t *pRxData, uint16_t Size)",
+      "brief": "中断方式(非阻塞)同时发送并接收数据, 完成后由中断流程调用 HAL_SPI_TxRxCpltCallback() 回调。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        },
+        {
+          "name": "pTxData",
+          "type": "uint8_t *",
+          "desc": "指向发送数据缓冲区的指针"
+        },
+        {
+          "name": "pRxData",
+          "type": "uint8_t *",
+          "desc": "指向接收数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要发送和接收的数据量"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 参数错误"
+      },
+      "notes": [
+        "仅支持 2 线全双工模式; 内部使能 TXE、RXNE 与 ERR 中断。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_SPI_TransmitReceive_IT(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint8_t *pRxData, uint16_t Size)\n{\n  uint32_t             tmp_mode;\n  HAL_SPI_StateTypeDef tmp_state;\n  HAL_StatusTypeDef    errorcode = HAL_OK;\n\n  /* Check Direction parameter */\n  assert_param(IS_SPI_DIRECTION_2LINES(hspi->Init.Direction));\n\n  /* Process locked */\n  __HAL_LOCK(hspi);\n\n  /* Init temporary variables */\n  tmp_state           = hspi->State;\n  tmp_mode            = hspi->Init.Mode;\n\n  if (!((tmp_state == HAL_SPI_STATE_READY) || \\\n        ((tmp_mode == SPI_MODE_MASTER) && (hspi->Init.Direction == SPI_DIRECTION_2LINES) && (tmp_state == HAL_SPI_STATE_BUSY_RX))))\n  {\n    errorcode = HAL_BUSY;\n    goto error;\n  }\n\n  if ((pTxData == NULL) || (pRxData == NULL) || (Size == 0U))\n  {\n    errorcode = HAL_ERROR;\n    goto error;\n  }\n\n  /* Don't overwrite in case of HAL_SPI_STATE_BUSY_RX */\n  if (hspi->State != HAL_SPI_STATE_BUSY_RX)\n  {\n    hspi->State = HAL_SPI_STATE_BUSY_TX_RX;\n  }\n\n  /* Disable SPI peripheral */\n  __HAL_SPI_DISABLE(hspi);\n\n  /* Set the transaction information */\n  hspi->ErrorCode   = HAL_SPI_ERROR_NONE;\n  hspi->pTxBuffPtr  = (uint8_t *)pTxData;\n  hspi->TxXferSize  = Size;\n  hspi->TxXferCount = Size;\n  hspi->pRxBuffPtr  = (uint8_t *)pRxData;\n  hspi->RxXferSize  = Size;\n  hspi->RxXferCount = Size;\n\n  /* Set the function for IT treatment */\n  if (hspi->Init.DataSize > SPI_DATASIZE_8BIT)\n  {\n    hspi->RxISR     = SPI_2linesRxISR_16BIT;\n    hspi->TxISR     = SPI_2linesTxISR_16BIT;\n  }\n  else\n  {\n    hspi->RxISR     = SPI_2linesRxISR_8BIT;\n    hspi->TxISR     = SPI_2linesTxISR_8BIT;\n  }\n\n  /* Enable TXE, RXNE and ERR interrupt */\n  __HAL_SPI_ENABLE_IT(hspi, (SPI_IT_TXE | SPI_IT_RXNE | SPI_IT_ERR));\n\n  /* Check if the SPI is already enabled */\n  if ((hspi->Instance->CR1 & SPI_CR1_SPE) != SPI_CR1_SPE)\n  {\n    /* Enable SPI peripheral */\n    __HAL_SPI_ENABLE(hspi);\n  }\n\nerror :\n  /* Process Unlocked */\n  __HAL_UNLOCK(hspi);\n  return errorcode;\n}"
+    },
+    {
+      "name": "HAL_SPI_Abort",
+      "sig": "HAL_StatusTypeDef HAL_SPI_Abort(SPI_HandleTypeDef *hspi)",
+      "brief": "阻塞模式中止正在进行的传输。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 中止完成; HAL_ERROR 中止过程出错(错误码 HAL_SPI_ERROR_ABORT)"
+      },
+      "notes": [
+        "流程: 禁止 SPI 相关中断(按传输方向)、将句柄状态置为 READY; 退出函数时中止即视为完成。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_SPI_Abort(SPI_HandleTypeDef *hspi)\n{\n  HAL_StatusTypeDef errorcode;\n  __IO uint32_t count;\n  __IO uint32_t resetcount;\n\n  /* Initialized local variable  */\n  errorcode = HAL_OK;\n  resetcount = SPI_DEFAULT_TIMEOUT * (SystemCoreClock / 24U / 1000U);\n  count = resetcount;\n\n  /* Clear ERRIE interrupt to avoid error interrupts generation during Abort procedure */\n  CLEAR_BIT(hspi->Instance->CR2, SPI_CR2_ERRIE);\n\n  /* Disable TXEIE, RXNEIE and ERRIE(mode fault event, overrun error) interrupts */\n  if (HAL_IS_BIT_SET(hspi->Instance->CR2, SPI_CR2_TXEIE))\n  {\n    hspi->TxISR = SPI_AbortTx_ISR;\n    /* Wait HAL_SPI_STATE_ABORT state */\n    do\n    {\n      if (count == 0U)\n      {\n        SET_BIT(hspi->ErrorCode, HAL_SPI_ERROR_ABORT);\n        break;\n      }\n      count--;\n    } while (hspi->State != HAL_SPI_STATE_ABORT);\n    /* Reset Timeout Counter */\n    count = resetcount;\n  }\n\n  if (HAL_IS_BIT_SET(hspi->Instance->CR2, SPI_CR2_RXNEIE))\n  {\n    hspi->RxISR = SPI_AbortRx_ISR;\n    /* Wait HAL_SPI_STATE_ABORT state */\n    do\n    {\n      if (count == 0U)\n      {\n        SET_BIT(hspi->ErrorCode, HAL_SPI_ERROR_ABORT);\n        break;\n      }\n      count--;\n    } while (hspi->State != HAL_SPI_STATE_ABORT);\n    /* Reset Timeout Counter */\n    count = resetcount;\n  }\n\n  /* Reset Tx and Rx transfer counters */\n  hspi->RxXferCount = 0U;\n  hspi->TxXferCount = 0U;\n\n  /* Check error during Abort procedure */\n  if (hspi->ErrorCode == HAL_SPI_ERROR_ABORT)\n  {\n    /* return HAL_Error in case of error during Abort procedure */\n    errorcode = HAL_ERROR;\n  }\n  else\n  {\n    /* Reset errorCode */\n    hspi->ErrorCode = HAL_SPI_ERROR_NONE;\n  }\n\n  /* Clear the Error flags in the SR register */\n  __HAL_SPI_CLEAR_OVRFLAG(hspi);\n  __HAL_SPI_CLEAR_FREFLAG(hspi);\n\n  /* Restore hspi->state to ready */\n  hspi->State = HAL_SPI_STATE_READY;\n\n  return errorcode;\n}"
+    },
+    {
+      "name": "HAL_SPI_Abort_IT",
+      "sig": "HAL_StatusTypeDef HAL_SPI_Abort_IT(SPI_HandleTypeDef *hspi)",
+      "brief": "中断模式中止正在进行的传输(可用于中断方式启动的任何 Tx/Rx 传输), 中止完成后调用 HAL_SPI_AbortCpltCallback() 回调。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 中止完成; HAL_ERROR 中止过程出错"
+      },
+      "notes": [
+        "中断方式执行: 只有用户中止完成回调执行后, 中止才视为完成。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_SPI_Abort_IT(SPI_HandleTypeDef *hspi)\n{\n  HAL_StatusTypeDef errorcode;\n  uint32_t abortcplt ;\n  __IO uint32_t count;\n  __IO uint32_t resetcount;\n\n  /* Initialized local variable  */\n  errorcode = HAL_OK;\n  abortcplt = 1U;\n  resetcount = SPI_DEFAULT_TIMEOUT * (SystemCoreClock / 24U / 1000U);\n  count = resetcount;\n\n  /* Clear ERRIE interrupt to avoid error interrupts generation during Abort procedure */\n  CLEAR_BIT(hspi->Instance->CR2, SPI_CR2_ERRIE);\n\n  /* Change Rx and Tx Irq Handler to Disable TXEIE, RXNEIE and ERRIE interrupts */\n  if (HAL_IS_BIT_SET(hspi->Instance->CR2, SPI_CR2_TXEIE))\n  {\n    hspi->TxISR = SPI_AbortTx_ISR;\n    /* Wait HAL_SPI_STATE_ABORT state */\n    do\n    {\n      if (count == 0U)\n      {\n        SET_BIT(hspi->ErrorCode, HAL_SPI_ERROR_ABORT);\n        break;\n      }\n      count--;\n    } while (hspi->State != HAL_SPI_STATE_ABORT);\n    /* Reset Timeout Counter */\n    count = resetcount;\n  }\n\n  if (HAL_IS_BIT_SET(hspi->Instance->CR2, SPI_CR2_RXNEIE))\n  {\n    hspi->RxISR = SPI_AbortRx_ISR;\n    /* Wait HAL_SPI_STATE_ABORT state */\n    do\n    {\n      if (count == 0U)\n      {\n        SET_BIT(hspi->ErrorCode, HAL_SPI_ERROR_ABORT);\n        break;\n      }\n      count--;\n    } while (hspi->State != HAL_SPI_STATE_ABORT);\n    /* Reset Timeout Counter */\n    count = resetcount;\n  }\n\n  if (abortcplt == 1U)\n  {\n    /* Reset Tx and Rx transfer counters */\n    hspi->RxXferCount = 0U;\n    hspi->TxXferCount = 0U;\n\n    /* Check error during Abort procedure */\n    if (hspi->ErrorCode == HAL_SPI_ERROR_ABORT)\n    {\n      /* return HAL_Error in case of error during Abort procedure */\n      errorcode = HAL_ERROR;\n    }\n    else\n    {\n      /* Reset errorCode */\n      hspi->ErrorCode = HAL_SPI_ERROR_NONE;\n    }\n\n    /* Clear the Error flags in the SR register */\n    __HAL_SPI_CLEAR_OVRFLAG(hspi);\n    __HAL_SPI_CLEAR_FREFLAG(hspi);\n\n    /* Restore hspi->State to Ready */\n    hspi->State = HAL_SPI_STATE_READY;\n\n    /* call directly user Abort complete callback */\n#if (USE_HAL_SPI_REGISTER_CALLBACKS == 1U)\n    hspi->AbortCpltCallback(hspi);\n#else\n    HAL_SPI_AbortCpltCallback(hspi);\n#endif /* USE_HAL_SPI_REGISTER_CALLBACKS */\n  }\n\n  return errorcode;\n}"
+    },
+    {
+      "name": "HAL_SPI_IRQHandler",
+      "sig": "void HAL_SPI_IRQHandler(SPI_HandleTypeDef *hspi)",
+      "brief": "SPI 中断服务处理函数: 根据 CR2 中断使能位与 SR 标志将中断分发到 Rx/Tx ISR 或错误处理流程。应在 SPI 的 IRQHandler 中调用。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "void HAL_SPI_IRQHandler(SPI_HandleTypeDef *hspi)\n{\n  uint32_t itsource = hspi->Instance->CR2;\n  uint32_t itflag   = hspi->Instance->SR;\n\n  /* SPI in mode Receiver ----------------------------------------------------*/\n  if ((SPI_CHECK_FLAG(itflag, SPI_FLAG_OVR) == RESET) &&\n      (SPI_CHECK_FLAG(itflag, SPI_FLAG_RXNE) != RESET) && (SPI_CHECK_IT_SOURCE(itsource, SPI_IT_RXNE) != RESET))\n  {\n    hspi->RxISR(hspi);\n    return;\n  }\n\n  /* SPI in mode Transmitter -------------------------------------------------*/\n  if ((SPI_CHECK_FLAG(itflag, SPI_FLAG_TXE) != RESET) && (SPI_CHECK_IT_SOURCE(itsource, SPI_IT_TXE) != RESET))\n  {\n    hspi->TxISR(hspi);\n    return;\n  }\n\n  /* SPI in Error Treatment --------------------------------------------------*/\n  if (((SPI_CHECK_FLAG(itflag, SPI_FLAG_MODF) != RESET) || (SPI_CHECK_FLAG(itflag, SPI_FLAG_OVR) != RESET)) && \n       (SPI_CHECK_IT_SOURCE(itsource, SPI_IT_ERR) != RESET))\n  {\n    /* SPI Overrun error interrupt occurred ----------------------------------*/\n    if (SPI_CHECK_FLAG(itflag, SPI_FLAG_OVR) != RESET)\n    {\n      if (hspi->State != HAL_SPI_STATE_BUSY_TX)\n      {\n        SET_BIT(hspi->ErrorCode, HAL_SPI_ERROR_OVR);\n        __HAL_SPI_CLEAR_OVRFLAG(hspi);\n      }\n      else\n      {\n        __HAL_SPI_CLEAR_OVRFLAG(hspi);\n        return;\n      }\n    }\n\n    /* SPI Mode Fault error interrupt occurred -------------------------------*/\n    if (SPI_CHECK_FLAG(itflag, SPI_FLAG_MODF) != RESET)\n    {\n      SET_BIT(hspi->ErrorCode, HAL_SPI_ERROR_MODF);\n      __HAL_SPI_CLEAR_MODFFLAG(hspi);\n    }\n\n    /* SPI Frame error interrupt occurred ------------------------------------*/\n\n    if (hspi->ErrorCode != HAL_SPI_ERROR_NONE)\n    {\n      /* Disable all interrupts */\n      __HAL_SPI_DISABLE_IT(hspi, SPI_IT_RXNE | SPI_IT_TXE | SPI_IT_ERR);\n\n      hspi->State = HAL_SPI_STATE_READY;\n\n      /* Call user error callback */\n#if (USE_HAL_SPI_REGISTER_CALLBACKS == 1U)\n      hspi->ErrorCallback(hspi);\n#else\n      HAL_SPI_ErrorCallback(hspi);\n#endif /* USE_HAL_SPI_REGISTER_CALLBACKS */\n    }\n    return;\n  }\n}"
+    },
+    {
+      "name": "HAL_SPI_TxCpltCallback",
+      "sig": "void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)",
+      "brief": "SPI 发送完成回调(弱定义空函数), 由中断方式发送流程在完成时调用, 用户在应用中重写。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写; 不要修改库内默认实现。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "__weak void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)\n{\n  /* Prevent unused argument(s) compilation warning */\n  UNUSED(hspi);\n\n  /* NOTE : This function should not be modified, when the callback is needed,\n            the HAL_SPI_TxCpltCallback should be implemented in the user file\n   */\n}"
+    },
+    {
+      "name": "HAL_SPI_RxCpltCallback",
+      "sig": "void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)",
+      "brief": "SPI 接收完成回调(弱定义空函数), 由中断方式接收流程在完成时调用, 用户在应用中重写。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "__weak void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)\n{\n  /* Prevent unused argument(s) compilation warning */\n  UNUSED(hspi);\n\n  /* NOTE : This function should not be modified, when the callback is needed,\n            the HAL_SPI_RxCpltCallback should be implemented in the user file\n   */\n}"
+    },
+    {
+      "name": "HAL_SPI_TxRxCpltCallback",
+      "sig": "void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)",
+      "brief": "SPI 发送与接收完成回调(弱定义空函数), 由中断方式收发流程在完成时调用, 用户在应用中重写。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "__weak void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)\n{\n  /* Prevent unused argument(s) compilation warning */\n  UNUSED(hspi);\n\n  /* NOTE : This function should not be modified, when the callback is needed,\n            the HAL_SPI_TxRxCpltCallback should be implemented in the user file\n   */\n}"
+    },
+    {
+      "name": "HAL_SPI_TxHalfCpltCallback",
+      "sig": "void HAL_SPI_TxHalfCpltCallback(SPI_HandleTypeDef *hspi)",
+      "brief": "SPI 发送半传输完成回调(弱定义空函数), 用户在应用中重写。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "__weak void HAL_SPI_TxHalfCpltCallback(SPI_HandleTypeDef *hspi)\n{\n  /* Prevent unused argument(s) compilation warning */\n  UNUSED(hspi);\n\n  /* NOTE : This function should not be modified, when the callback is needed,\n            the HAL_SPI_TxHalfCpltCallback should be implemented in the user file\n   */\n}"
+    },
+    {
+      "name": "HAL_SPI_RxHalfCpltCallback",
+      "sig": "void HAL_SPI_RxHalfCpltCallback(SPI_HandleTypeDef *hspi)",
+      "brief": "SPI 接收半传输完成回调(弱定义空函数), 用户在应用中重写。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "__weak void HAL_SPI_RxHalfCpltCallback(SPI_HandleTypeDef *hspi)\n{\n  /* Prevent unused argument(s) compilation warning */\n  UNUSED(hspi);\n\n  /* NOTE : This function should not be modified, when the callback is needed,\n            the HAL_SPI_RxHalfCpltCallback() should be implemented in the user file\n   */\n}"
+    },
+    {
+      "name": "HAL_SPI_TxRxHalfCpltCallback",
+      "sig": "void HAL_SPI_TxRxHalfCpltCallback(SPI_HandleTypeDef *hspi)",
+      "brief": "SPI 发送与接收半传输完成回调(弱定义空函数), 用户在应用中重写。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "__weak void HAL_SPI_TxRxHalfCpltCallback(SPI_HandleTypeDef *hspi)\n{\n  /* Prevent unused argument(s) compilation warning */\n  UNUSED(hspi);\n\n  /* NOTE : This function should not be modified, when the callback is needed,\n            the HAL_SPI_TxRxHalfCpltCallback() should be implemented in the user file\n   */\n}"
+    },
+    {
+      "name": "HAL_SPI_ErrorCallback",
+      "sig": "void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)",
+      "brief": "SPI 通信错误回调(弱定义空函数), 检测到错误时由中断流程调用, 用户在应用中重写。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写; 句柄中的 ErrorCode 由 SPI 流程更新, 可用 HAL_SPI_GetError() 查询。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "__weak void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)\n{\n  /* Prevent unused argument(s) compilation warning */\n  UNUSED(hspi);\n\n  /* NOTE : This function should not be modified, when the callback is needed,\n            the HAL_SPI_ErrorCallback should be implemented in the user file\n   */\n  /* NOTE : The ErrorCode parameter in the hspi handle is updated by the SPI processes\n            and user can use HAL_SPI_GetError() API to check the latest error occurred\n   */\n}"
+    },
+    {
+      "name": "HAL_SPI_AbortCpltCallback",
+      "sig": "void HAL_SPI_AbortCpltCallback(SPI_HandleTypeDef *hspi)",
+      "brief": "SPI 中止完成回调(弱定义空函数), HAL_SPI_Abort_IT() 中止完成后调用, 用户在应用中重写。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "__weak void HAL_SPI_AbortCpltCallback(SPI_HandleTypeDef *hspi)\n{\n  /* Prevent unused argument(s) compilation warning */\n  UNUSED(hspi);\n\n  /* NOTE : This function should not be modified, when the callback is needed,\n            the HAL_SPI_AbortCpltCallback can be implemented in the user file.\n   */\n}"
+    },
+    {
+      "name": "HAL_SPI_GetState",
+      "sig": "HAL_SPI_StateTypeDef HAL_SPI_GetState(SPI_HandleTypeDef *hspi)",
+      "brief": "返回 SPI 句柄当前状态, 用于运行时检查外设状态。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "HAL_SPI_StateTypeDef",
+        "desc": "SPI 状态: HAL_SPI_STATE_*"
+      },
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "HAL_SPI_StateTypeDef HAL_SPI_GetState(SPI_HandleTypeDef *hspi)\n{\n  /* Return SPI handle state */\n  return hspi->State;\n}"
+    },
+    {
+      "name": "HAL_SPI_GetError",
+      "sig": "uint32_t HAL_SPI_GetError(SPI_HandleTypeDef *hspi)",
+      "brief": "返回 SPI 通信过程中产生的错误码(位图格式)。",
+      "params": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "指向 SPI 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "错误码, 对应 HAL_SPI_ERROR_* 的组合"
+      },
+      "file": "py32f002b_hal_spi.c",
+      "kind": "function",
+      "src": "uint32_t HAL_SPI_GetError(SPI_HandleTypeDef *hspi)\n{\n  /* Return SPI ErrorCode */\n  return hspi->ErrorCode;\n}"
+    },
+    {
+      "name": "__HAL_SPI_RESET_HANDLE_STATE",
+      "sig": "#define __HAL_SPI_RESET_HANDLE_STATE(__HANDLE__)                do{                                                  \\\n                                                                    (__HANDLE__)->State = HAL_SPI_STATE_RESET;       \\\n                                                                    (__HANDLE__)->MspInitCallback = NULL;            \\\n                                                                    (__HANDLE__)->MspDeInitCallback = NULL;          \\\n                                                                  } while(0)",
+      "brief": "宏: 将 SPI 句柄状态复位为 HAL_SPI_STATE_RESET。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "SPI 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "notes": [
+        "启用 USE_HAL_SPI_REGISTER_CALLBACKS 时还同时清空 MspInit/MspDeInit 回调指针。"
+      ],
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define __HAL_SPI_RESET_HANDLE_STATE(__HANDLE__)                do{                                                  \\\n                                                                    (__HANDLE__)->State = HAL_SPI_STATE_RESET;       \\\n                                                                    (__HANDLE__)->MspInitCallback = NULL;            \\\n                                                                    (__HANDLE__)->MspDeInitCallback = NULL;          \\\n                                                                  } while(0)"
+    },
+    {
+      "name": "__HAL_SPI_ENABLE_IT",
+      "sig": "#define __HAL_SPI_ENABLE_IT(__HANDLE__, __INTERRUPT__)   SET_BIT((__HANDLE__)->Instance->CR2, (__INTERRUPT__))",
+      "brief": "宏: 使能指定的 SPI 中断源。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "SPI 句柄"
+        },
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "中断源: SPI_IT_TXE / SPI_IT_RXNE / SPI_IT_ERR, 可组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define __HAL_SPI_ENABLE_IT(__HANDLE__, __INTERRUPT__)   SET_BIT((__HANDLE__)->Instance->CR2, (__INTERRUPT__))"
+    },
+    {
+      "name": "__HAL_SPI_DISABLE_IT",
+      "sig": "#define __HAL_SPI_DISABLE_IT(__HANDLE__, __INTERRUPT__)  CLEAR_BIT((__HANDLE__)->Instance->CR2, (__INTERRUPT__))",
+      "brief": "宏: 禁止指定的 SPI 中断源。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "SPI 句柄"
+        },
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "中断源: SPI_IT_TXE / SPI_IT_RXNE / SPI_IT_ERR, 可组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define __HAL_SPI_DISABLE_IT(__HANDLE__, __INTERRUPT__)  CLEAR_BIT((__HANDLE__)->Instance->CR2, (__INTERRUPT__))"
+    },
+    {
+      "name": "__HAL_SPI_GET_IT_SOURCE",
+      "sig": "#define __HAL_SPI_GET_IT_SOURCE(__HANDLE__, __INTERRUPT__) ((((__HANDLE__)->Instance->CR2\\\n                                                              & (__INTERRUPT__)) == (__INTERRUPT__)) ? SET : RESET)",
+      "brief": "宏: 查询指定的 SPI 中断源是否已使能。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "SPI 句柄"
+        },
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "中断源: SPI_IT_TXE / SPI_IT_RXNE / SPI_IT_ERR"
+        }
+      ],
+      "retval": {
+        "type": "FlagStatus",
+        "desc": "已使能返回 SET, 否则 RESET"
+      },
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define __HAL_SPI_GET_IT_SOURCE(__HANDLE__, __INTERRUPT__) ((((__HANDLE__)->Instance->CR2\\\n                                                              & (__INTERRUPT__)) == (__INTERRUPT__)) ? SET : RESET)"
+    },
+    {
+      "name": "__HAL_SPI_GET_FLAG",
+      "sig": "#define __HAL_SPI_GET_FLAG(__HANDLE__, __FLAG__) ((((__HANDLE__)->Instance->SR) & (__FLAG__)) == (__FLAG__))",
+      "brief": "宏: 查询指定的 SPI 状态标志是否置位。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "SPI 句柄"
+        },
+        {
+          "name": "__FLAG__",
+          "type": "宏参数",
+          "desc": "标志: SPI_FLAG_RXNE / TXE / MODF / OVR / BSY / FTLVL / FRLVL"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 TRUE(1), 否则 FALSE(0)"
+      },
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define __HAL_SPI_GET_FLAG(__HANDLE__, __FLAG__) ((((__HANDLE__)->Instance->SR) & (__FLAG__)) == (__FLAG__))"
+    },
+    {
+      "name": "__HAL_SPI_CLEAR_MODFFLAG",
+      "sig": "#define __HAL_SPI_CLEAR_MODFFLAG(__HANDLE__)             \\\n  do{                                                    \\\n    __IO uint32_t tmpreg_modf = 0x00U;                   \\\n    tmpreg_modf = (__HANDLE__)->Instance->SR;            \\\n    CLEAR_BIT((__HANDLE__)->Instance->CR1, SPI_CR1_SPE); \\\n    UNUSED(tmpreg_modf);                                 \\\n  } while(0U)",
+      "brief": "宏: 清除 SPI 模式错误(MODF)挂起标志。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "SPI 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "notes": [
+        "清除方式: 读 SR 寄存器后清除 CR1 的 SPE 位。"
+      ],
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define __HAL_SPI_CLEAR_MODFFLAG(__HANDLE__)             \\\n  do{                                                    \\\n    __IO uint32_t tmpreg_modf = 0x00U;                   \\\n    tmpreg_modf = (__HANDLE__)->Instance->SR;            \\\n    CLEAR_BIT((__HANDLE__)->Instance->CR1, SPI_CR1_SPE); \\\n    UNUSED(tmpreg_modf);                                 \\\n  } while(0U)"
+    },
+    {
+      "name": "__HAL_SPI_CLEAR_OVRFLAG",
+      "sig": "#define __HAL_SPI_CLEAR_OVRFLAG(__HANDLE__)        \\\n  do{                                              \\\n    __IO uint32_t tmpreg_ovr = 0x00U;              \\\n    tmpreg_ovr = (__HANDLE__)->Instance->DR;       \\\n    tmpreg_ovr = (__HANDLE__)->Instance->SR;       \\\n    UNUSED(tmpreg_ovr);                            \\\n  } while(0U)",
+      "brief": "宏: 清除 SPI 溢出(OVR)挂起标志。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "SPI 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "notes": [
+        "清除方式: 依次读 DR 与 SR 寄存器。"
+      ],
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define __HAL_SPI_CLEAR_OVRFLAG(__HANDLE__)        \\\n  do{                                              \\\n    __IO uint32_t tmpreg_ovr = 0x00U;              \\\n    tmpreg_ovr = (__HANDLE__)->Instance->DR;       \\\n    tmpreg_ovr = (__HANDLE__)->Instance->SR;       \\\n    UNUSED(tmpreg_ovr);                            \\\n  } while(0U)"
+    },
+    {
+      "name": "__HAL_SPI_CLEAR_FREFLAG",
+      "sig": "#define __HAL_SPI_CLEAR_FREFLAG(__HANDLE__)        \\\n  do{                                              \\\n    __IO uint32_t tmpreg_fre = 0x00U;              \\\n    tmpreg_fre = (__HANDLE__)->Instance->SR;       \\\n    UNUSED(tmpreg_fre);                            \\\n  }while(0U)",
+      "brief": "宏: 清除 SPI 帧格式错误(FRE)挂起标志。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "SPI 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "notes": [
+        "清除方式: 读 SR 寄存器。"
+      ],
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define __HAL_SPI_CLEAR_FREFLAG(__HANDLE__)        \\\n  do{                                              \\\n    __IO uint32_t tmpreg_fre = 0x00U;              \\\n    tmpreg_fre = (__HANDLE__)->Instance->SR;       \\\n    UNUSED(tmpreg_fre);                            \\\n  }while(0U)"
+    },
+    {
+      "name": "__HAL_SPI_ENABLE",
+      "sig": "#define __HAL_SPI_ENABLE(__HANDLE__)  SET_BIT((__HANDLE__)->Instance->CR1, SPI_CR1_SPE)",
+      "brief": "宏: 使能 SPI 外设(置位 CR1 的 SPE 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "SPI 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define __HAL_SPI_ENABLE(__HANDLE__)  SET_BIT((__HANDLE__)->Instance->CR1, SPI_CR1_SPE)"
+    },
+    {
+      "name": "__HAL_SPI_DISABLE",
+      "sig": "#define __HAL_SPI_DISABLE(__HANDLE__) CLEAR_BIT((__HANDLE__)->Instance->CR1, SPI_CR1_SPE)",
+      "brief": "宏: 禁止 SPI 外设(清除 CR1 的 SPE 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "SPI 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_spi.h",
+      "kind": "macro",
+      "src": "#define __HAL_SPI_DISABLE(__HANDLE__) CLEAR_BIT((__HANDLE__)->Instance->CR1, SPI_CR1_SPE)"
+    }
+  ],
+  "ll": [
+    {
+      "name": "LL_SPI_Enable",
+      "sig": "void LL_SPI_Enable(SPI_TypeDef *SPIx)",
+      "brief": "使能 SPI 外设(置位 CR1 的 SPE 位)。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_Enable(SPI_TypeDef *SPIx)\r\n{\r\n  SET_BIT(SPIx->CR1, SPI_CR1_SPE);\r\n}"
+    },
+    {
+      "name": "LL_SPI_Disable",
+      "sig": "void LL_SPI_Disable(SPI_TypeDef *SPIx)",
+      "brief": "禁止 SPI 外设(清除 CR1 的 SPE 位)。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "禁止 SPI 时应遵循参考手册中描述的操作流程。"
+      ],
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_Disable(SPI_TypeDef *SPIx)\r\n{\r\n  CLEAR_BIT(SPIx->CR1, SPI_CR1_SPE);\r\n}"
+    },
+    {
+      "name": "LL_SPI_IsEnabled",
+      "sig": "uint32_t LL_SPI_IsEnabled(SPI_TypeDef *SPIx)",
+      "brief": "查询 SPI 外设是否已使能。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_IsEnabled(SPI_TypeDef *SPIx)\r\n{\r\n  return ((READ_BIT(SPIx->CR1, SPI_CR1_SPE) == (SPI_CR1_SPE)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_SPI_SetMode",
+      "sig": "void LL_SPI_SetMode(SPI_TypeDef *SPIx, uint32_t Mode)",
+      "brief": "设置 SPI 为主模式或从模式。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        },
+        {
+          "name": "Mode",
+          "type": "uint32_t",
+          "desc": "模式: LL_SPI_MODE_MASTER / LL_SPI_MODE_SLAVE"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "通信进行中不应修改此位。"
+      ],
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_SetMode(SPI_TypeDef *SPIx, uint32_t Mode)\r\n{\r\n  MODIFY_REG(SPIx->CR1, SPI_CR1_MSTR | SPI_CR1_SSI, Mode);\r\n}"
+    },
+    {
+      "name": "LL_SPI_GetMode",
+      "sig": "uint32_t LL_SPI_GetMode(SPI_TypeDef *SPIx)",
+      "brief": "获取 SPI 工作模式(主/从)。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_SPI_MODE_MASTER 或 LL_SPI_MODE_SLAVE"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_GetMode(SPI_TypeDef *SPIx)\r\n{\r\n  return (uint32_t)(READ_BIT(SPIx->CR1, SPI_CR1_MSTR | SPI_CR1_SSI));\r\n}"
+    },
+    {
+      "name": "LL_SPI_SetClockPhase",
+      "sig": "void LL_SPI_SetClockPhase(SPI_TypeDef *SPIx, uint32_t ClockPhase)",
+      "brief": "设置 SPI 时钟相位(数据采样的时钟沿)。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        },
+        {
+          "name": "ClockPhase",
+          "type": "uint32_t",
+          "desc": "相位: LL_SPI_PHASE_1EDGE / LL_SPI_PHASE_2EDGE"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "通信进行中不应修改此位。"
+      ],
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_SetClockPhase(SPI_TypeDef *SPIx, uint32_t ClockPhase)\r\n{\r\n  MODIFY_REG(SPIx->CR1, SPI_CR1_CPHA, ClockPhase);\r\n}"
+    },
+    {
+      "name": "LL_SPI_GetClockPhase",
+      "sig": "uint32_t LL_SPI_GetClockPhase(SPI_TypeDef *SPIx)",
+      "brief": "获取 SPI 时钟相位。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_SPI_PHASE_1EDGE 或 LL_SPI_PHASE_2EDGE"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_GetClockPhase(SPI_TypeDef *SPIx)\r\n{\r\n  return (uint32_t)(READ_BIT(SPIx->CR1, SPI_CR1_CPHA));\r\n}"
+    },
+    {
+      "name": "LL_SPI_SetClockPolarity",
+      "sig": "void LL_SPI_SetClockPolarity(SPI_TypeDef *SPIx, uint32_t ClockPolarity)",
+      "brief": "设置 SPI 时钟极性(空闲时的时钟电平)。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        },
+        {
+          "name": "ClockPolarity",
+          "type": "uint32_t",
+          "desc": "极性: LL_SPI_POLARITY_LOW / LL_SPI_POLARITY_HIGH"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "通信进行中不应修改此位。"
+      ],
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_SetClockPolarity(SPI_TypeDef *SPIx, uint32_t ClockPolarity)\r\n{\r\n  MODIFY_REG(SPIx->CR1, SPI_CR1_CPOL, ClockPolarity);\r\n}"
+    },
+    {
+      "name": "LL_SPI_GetClockPolarity",
+      "sig": "uint32_t LL_SPI_GetClockPolarity(SPI_TypeDef *SPIx)",
+      "brief": "获取 SPI 时钟极性。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_SPI_POLARITY_LOW 或 LL_SPI_POLARITY_HIGH"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_GetClockPolarity(SPI_TypeDef *SPIx)\r\n{\r\n  return (uint32_t)(READ_BIT(SPIx->CR1, SPI_CR1_CPOL));\r\n}"
+    },
+    {
+      "name": "LL_SPI_SetBaudRatePrescaler",
+      "sig": "void LL_SPI_SetBaudRatePrescaler(SPI_TypeDef *SPIx, uint32_t BaudRate)",
+      "brief": "设置 SPI 波特率预分频(SCK = fPCLK / 预分频值)。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        },
+        {
+          "name": "BaudRate",
+          "type": "uint32_t",
+          "desc": "预分频: LL_SPI_BAUDRATEPRESCALER_DIV2 .. DIV256"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "通信进行中不应修改此位; 波特率仅主模式有效。"
+      ],
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_SetBaudRatePrescaler(SPI_TypeDef *SPIx, uint32_t BaudRate)\r\n{\r\n  MODIFY_REG(SPIx->CR1, SPI_CR1_BR, BaudRate);\r\n}"
+    },
+    {
+      "name": "LL_SPI_GetBaudRatePrescaler",
+      "sig": "uint32_t LL_SPI_GetBaudRatePrescaler(SPI_TypeDef *SPIx)",
+      "brief": "获取 SPI 波特率预分频值。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "预分频值, 对应 LL_SPI_BAUDRATEPRESCALER_DIV*"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_GetBaudRatePrescaler(SPI_TypeDef *SPIx)\r\n{\r\n  return (uint32_t)(READ_BIT(SPIx->CR1, SPI_CR1_BR));\r\n}"
+    },
+    {
+      "name": "LL_SPI_SetTransferBitOrder",
+      "sig": "void LL_SPI_SetTransferBitOrder(SPI_TypeDef *SPIx, uint32_t BitOrder)",
+      "brief": "设置 SPI 数据传输位序(MSB 先发或 LSB 先发)。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        },
+        {
+          "name": "BitOrder",
+          "type": "uint32_t",
+          "desc": "位序: LL_SPI_MSB_FIRST / LL_SPI_LSB_FIRST"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "通信进行中不应修改此位。"
+      ],
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_SetTransferBitOrder(SPI_TypeDef *SPIx, uint32_t BitOrder)\r\n{\r\n  MODIFY_REG(SPIx->CR1, SPI_CR1_LSBFIRST, BitOrder);\r\n}"
+    },
+    {
+      "name": "LL_SPI_GetTransferBitOrder",
+      "sig": "uint32_t LL_SPI_GetTransferBitOrder(SPI_TypeDef *SPIx)",
+      "brief": "获取 SPI 数据传输位序。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_SPI_MSB_FIRST 或 LL_SPI_LSB_FIRST"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_GetTransferBitOrder(SPI_TypeDef *SPIx)\r\n{\r\n  return (uint32_t)(READ_BIT(SPIx->CR1, SPI_CR1_LSBFIRST));\r\n}"
+    },
+    {
+      "name": "LL_SPI_SetTransferDirection",
+      "sig": "void LL_SPI_SetTransferDirection(SPI_TypeDef *SPIx, uint32_t TransferDirection)",
+      "brief": "设置 SPI 传输方向模式(全双工/单工接收/半双工)。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        },
+        {
+          "name": "TransferDirection",
+          "type": "uint32_t",
+          "desc": "方向: LL_SPI_FULL_DUPLEX / LL_SPI_SIMPLEX_RX / LL_SPI_HALF_DUPLEX_RX / LL_SPI_HALF_DUPLEX_TX"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "半双工模式默认接收方向; 主模式使用 MOSI 引脚, 从模式使用 MISO 引脚。"
+      ],
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_SetTransferDirection(SPI_TypeDef *SPIx, uint32_t TransferDirection)\r\n{\r\n  MODIFY_REG(SPIx->CR1, SPI_CR1_RXONLY | SPI_CR1_BIDIMODE | SPI_CR1_BIDIOE, TransferDirection);\r\n}"
+    },
+    {
+      "name": "LL_SPI_GetTransferDirection",
+      "sig": "uint32_t LL_SPI_GetTransferDirection(SPI_TypeDef *SPIx)",
+      "brief": "获取 SPI 传输方向模式。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "方向值, 对应 LL_SPI_*_DUPLEX"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_GetTransferDirection(SPI_TypeDef *SPIx)\r\n{\r\n  return (uint32_t)(READ_BIT(SPIx->CR1, SPI_CR1_RXONLY | SPI_CR1_BIDIMODE | SPI_CR1_BIDIOE));\r\n}"
+    },
+    {
+      "name": "LL_SPI_SetDataWidth",
+      "sig": "void LL_SPI_SetDataWidth(SPI_TypeDef *SPIx, uint32_t DataWidth)",
+      "brief": "设置 SPI 帧数据宽度(8 位或 16 位)。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        },
+        {
+          "name": "DataWidth",
+          "type": "uint32_t",
+          "desc": "数据宽度: LL_SPI_DATAWIDTH_8BIT / LL_SPI_DATAWIDTH_16BIT"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_SetDataWidth(SPI_TypeDef *SPIx, uint32_t DataWidth)\r\n{\r\n  MODIFY_REG(SPIx->CR1, SPI_CR1_DFF, DataWidth);\r\n}"
+    },
+    {
+      "name": "LL_SPI_GetDataWidth",
+      "sig": "uint32_t LL_SPI_GetDataWidth(SPI_TypeDef *SPIx)",
+      "brief": "获取 SPI 帧数据宽度。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_SPI_DATAWIDTH_8BIT 或 LL_SPI_DATAWIDTH_16BIT"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_GetDataWidth(SPI_TypeDef *SPIx)\r\n{\r\n  return (uint32_t)(READ_BIT(SPIx->CR1, SPI_CR1_DFF));\r\n}"
+    },
+    {
+      "name": "LL_SPI_ClearTxFifo",
+      "sig": "void LL_SPI_ClearTxFifo(SPI_TypeDef *SPIx)",
+      "brief": "清除发送 FIFO(置位 CR2 的 CLRTXFIFO 位)。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_ClearTxFifo(SPI_TypeDef *SPIx)\r\n{\r\n  SET_BIT(SPIx->CR2, SPI_CR2_CLRTXFIFO);\r\n}"
+    },
+    {
+      "name": "LL_SPI_SetNSSMode",
+      "sig": "void LL_SPI_SetNSSMode(SPI_TypeDef *SPIx, uint32_t NSS)",
+      "brief": "设置 NSS 从选择管理方式(软件/硬件输入/硬件输出)。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        },
+        {
+          "name": "NSS",
+          "type": "uint32_t",
+          "desc": "NSS 方式: LL_SPI_NSS_SOFT / LL_SPI_NSS_HARD_INPUT / LL_SPI_NSS_HARD_OUTPUT"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_SetNSSMode(SPI_TypeDef *SPIx, uint32_t NSS)\r\n{\r\n  MODIFY_REG(SPIx->CR1, SPI_CR1_SSM,  NSS);\r\n  MODIFY_REG(SPIx->CR2, SPI_CR2_SSOE, ((uint32_t)(NSS >> 16U)));\r\n}"
+    },
+    {
+      "name": "LL_SPI_GetNSSMode",
+      "sig": "uint32_t LL_SPI_GetNSSMode(SPI_TypeDef *SPIx)",
+      "brief": "获取 NSS 从选择管理方式。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "NSS 方式, 对应 LL_SPI_NSS_*"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_GetNSSMode(SPI_TypeDef *SPIx)\r\n{\r\n  uint32_t Ssm  = (READ_BIT(SPIx->CR1, SPI_CR1_SSM));\r\n  uint32_t Ssoe = (READ_BIT(SPIx->CR2,  SPI_CR2_SSOE) << 16U);\r\n  return (Ssm | Ssoe);\r\n}"
+    },
+    {
+      "name": "LL_SPI_IsActiveFlag_RXNE",
+      "sig": "uint32_t LL_SPI_IsActiveFlag_RXNE(SPI_TypeDef *SPIx)",
+      "brief": "查询接收缓冲区非空(RXNE)标志是否置位。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_IsActiveFlag_RXNE(SPI_TypeDef *SPIx)\r\n{\r\n  return ((READ_BIT(SPIx->SR, SPI_SR_RXNE) == (SPI_SR_RXNE)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_SPI_IsActiveFlag_TXE",
+      "sig": "uint32_t LL_SPI_IsActiveFlag_TXE(SPI_TypeDef *SPIx)",
+      "brief": "查询发送缓冲区空(TXE)标志是否置位。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_IsActiveFlag_TXE(SPI_TypeDef *SPIx)\r\n{\r\n  return ((READ_BIT(SPIx->SR, SPI_SR_TXE) == (SPI_SR_TXE)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_SPI_IsActiveFlag_MODF",
+      "sig": "uint32_t LL_SPI_IsActiveFlag_MODF(SPI_TypeDef *SPIx)",
+      "brief": "查询模式错误(MODF)标志是否置位。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_IsActiveFlag_MODF(SPI_TypeDef *SPIx)\r\n{\r\n  return ((READ_BIT(SPIx->SR, SPI_SR_MODF) == (SPI_SR_MODF)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_SPI_IsActiveFlag_OVR",
+      "sig": "uint32_t LL_SPI_IsActiveFlag_OVR(SPI_TypeDef *SPIx)",
+      "brief": "查询溢出(OVR)错误标志是否置位。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_IsActiveFlag_OVR(SPI_TypeDef *SPIx)\r\n{\r\n  return ((READ_BIT(SPIx->SR, SPI_SR_OVR) == (SPI_SR_OVR)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_SPI_IsActiveFlag_BSY",
+      "sig": "uint32_t LL_SPI_IsActiveFlag_BSY(SPI_TypeDef *SPIx)",
+      "brief": "查询忙(BSY)标志是否置位。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "notes": [
+        "BSY 在 SPI 被正确禁止、主模式检测到模式错误、主模式发完数据且无新数据、从模式两次传输之间至少一个时钟周期为 0 时清除。"
+      ],
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_IsActiveFlag_BSY(SPI_TypeDef *SPIx)\r\n{\r\n  return ((READ_BIT(SPIx->SR, SPI_SR_BSY) == (SPI_SR_BSY)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_SPI_GetRxFIFOLevel",
+      "sig": "uint32_t LL_SPI_GetRxFIFOLevel(SPI_TypeDef *SPIx)",
+      "brief": "获取接收 FIFO 电平。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_SPI_RX_FIFO_EMPTY 或 LL_SPI_RX_FIFO_FULL"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_GetRxFIFOLevel(SPI_TypeDef *SPIx)\r\n{\r\n  return (uint32_t)(READ_BIT(SPIx->SR, SPI_SR_FRLVL));\r\n}"
+    },
+    {
+      "name": "LL_SPI_GetTxFIFOLevel",
+      "sig": "uint32_t LL_SPI_GetTxFIFOLevel(SPI_TypeDef *SPIx)",
+      "brief": "获取发送 FIFO 电平。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_SPI_TX_FIFO_EMPTY 或 LL_SPI_TX_FIFO_FULL"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_GetTxFIFOLevel(SPI_TypeDef *SPIx)\r\n{\r\n  return (uint32_t)(READ_BIT(SPIx->SR, SPI_SR_FTLVL));\r\n}"
+    },
+    {
+      "name": "LL_SPI_ClearFlag_MODF",
+      "sig": "void LL_SPI_ClearFlag_MODF(SPI_TypeDef *SPIx)",
+      "brief": "清除模式错误(MODF)标志。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "清除方式: 读 SR 寄存器后对 CR1 寄存器写操作(清除 SPE 位)。"
+      ],
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_ClearFlag_MODF(SPI_TypeDef *SPIx)\r\n{\r\n  __IO uint32_t tmpreg_sr;\r\n  tmpreg_sr = SPIx->SR;\r\n  (void) tmpreg_sr;\r\n  CLEAR_BIT(SPIx->CR1, SPI_CR1_SPE);\r\n}"
+    },
+    {
+      "name": "LL_SPI_ClearFlag_OVR",
+      "sig": "void LL_SPI_ClearFlag_OVR(SPI_TypeDef *SPIx)",
+      "brief": "清除溢出(OVR)错误标志。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "清除方式: 读 DR 寄存器后再读 SR 寄存器。"
+      ],
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_ClearFlag_OVR(SPI_TypeDef *SPIx)\r\n{\r\n  __IO uint32_t tmpreg;\r\n  tmpreg = SPIx->DR;\r\n  (void) tmpreg;\r\n  tmpreg = SPIx->SR;\r\n  (void) tmpreg;\r\n}"
+    },
+    {
+      "name": "LL_SPI_EnableIT_ERR",
+      "sig": "void LL_SPI_EnableIT_ERR(SPI_TypeDef *SPIx)",
+      "brief": "使能 SPI 错误中断。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "错误条件包括 OVR、MODF 等。"
+      ],
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_EnableIT_ERR(SPI_TypeDef *SPIx)\r\n{\r\n  SET_BIT(SPIx->CR2, SPI_CR2_ERRIE);\r\n}"
+    },
+    {
+      "name": "LL_SPI_EnableIT_RXNE",
+      "sig": "void LL_SPI_EnableIT_RXNE(SPI_TypeDef *SPIx)",
+      "brief": "使能接收缓冲区非空(RXNE)中断。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_EnableIT_RXNE(SPI_TypeDef *SPIx)\r\n{\r\n  SET_BIT(SPIx->CR2, SPI_CR2_RXNEIE);\r\n}"
+    },
+    {
+      "name": "LL_SPI_EnableIT_TXE",
+      "sig": "void LL_SPI_EnableIT_TXE(SPI_TypeDef *SPIx)",
+      "brief": "使能发送缓冲区空(TXE)中断。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_EnableIT_TXE(SPI_TypeDef *SPIx)\r\n{\r\n  SET_BIT(SPIx->CR2, SPI_CR2_TXEIE);\r\n}"
+    },
+    {
+      "name": "LL_SPI_DisableIT_ERR",
+      "sig": "void LL_SPI_DisableIT_ERR(SPI_TypeDef *SPIx)",
+      "brief": "禁止 SPI 错误中断。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_DisableIT_ERR(SPI_TypeDef *SPIx)\r\n{\r\n  CLEAR_BIT(SPIx->CR2, SPI_CR2_ERRIE);\r\n}"
+    },
+    {
+      "name": "LL_SPI_DisableIT_RXNE",
+      "sig": "void LL_SPI_DisableIT_RXNE(SPI_TypeDef *SPIx)",
+      "brief": "禁止接收缓冲区非空(RXNE)中断。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_DisableIT_RXNE(SPI_TypeDef *SPIx)\r\n{\r\n  CLEAR_BIT(SPIx->CR2, SPI_CR2_RXNEIE);\r\n}"
+    },
+    {
+      "name": "LL_SPI_DisableIT_TXE",
+      "sig": "void LL_SPI_DisableIT_TXE(SPI_TypeDef *SPIx)",
+      "brief": "禁止发送缓冲区空(TXE)中断。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_DisableIT_TXE(SPI_TypeDef *SPIx)\r\n{\r\n  CLEAR_BIT(SPIx->CR2, SPI_CR2_TXEIE);\r\n}"
+    },
+    {
+      "name": "LL_SPI_IsEnabledIT_ERR",
+      "sig": "uint32_t LL_SPI_IsEnabledIT_ERR(SPI_TypeDef *SPIx)",
+      "brief": "查询错误中断是否已使能。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_IsEnabledIT_ERR(SPI_TypeDef *SPIx)\r\n{\r\n  return ((READ_BIT(SPIx->CR2, SPI_CR2_ERRIE) == (SPI_CR2_ERRIE)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_SPI_IsEnabledIT_RXNE",
+      "sig": "uint32_t LL_SPI_IsEnabledIT_RXNE(SPI_TypeDef *SPIx)",
+      "brief": "查询接收缓冲区非空(RXNE)中断是否已使能。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_IsEnabledIT_RXNE(SPI_TypeDef *SPIx)\r\n{\r\n  return ((READ_BIT(SPIx->CR2, SPI_CR2_RXNEIE) == (SPI_CR2_RXNEIE)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_SPI_IsEnabledIT_TXE",
+      "sig": "uint32_t LL_SPI_IsEnabledIT_TXE(SPI_TypeDef *SPIx)",
+      "brief": "查询发送缓冲区空(TXE)中断是否已使能。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SPI_IsEnabledIT_TXE(SPI_TypeDef *SPIx)\r\n{\r\n  return ((READ_BIT(SPIx->CR2, SPI_CR2_TXEIE) == (SPI_CR2_TXEIE)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_SPI_ReceiveData8",
+      "sig": "uint8_t LL_SPI_ReceiveData8(SPI_TypeDef *SPIx)",
+      "brief": "从数据寄存器读取 8 位接收数据。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint8_t",
+        "desc": "接收数据(0x00 ~ 0xFF)"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint8_t LL_SPI_ReceiveData8(SPI_TypeDef *SPIx)\r\n{\r\n  return (*((__IO uint8_t *)&SPIx->DR));\r\n}"
+    },
+    {
+      "name": "LL_SPI_ReceiveData16",
+      "sig": "uint16_t LL_SPI_ReceiveData16(SPI_TypeDef *SPIx)",
+      "brief": "从数据寄存器读取 16 位接收数据。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint16_t",
+        "desc": "接收数据(0x0000 ~ 0xFFFF)"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint16_t LL_SPI_ReceiveData16(SPI_TypeDef *SPIx)\r\n{\r\n  return (uint16_t)(READ_REG(SPIx->DR));\r\n}"
+    },
+    {
+      "name": "LL_SPI_TransmitData8",
+      "sig": "void LL_SPI_TransmitData8(SPI_TypeDef *SPIx, uint8_t TxData)",
+      "brief": "向数据寄存器写入 8 位待发送数据。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        },
+        {
+          "name": "TxData",
+          "type": "uint8_t",
+          "desc": "待发送数据(0x00 ~ 0xFF)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_TransmitData8(SPI_TypeDef *SPIx, uint8_t TxData)\r\n{\r\n#if defined (__GNUC__)\r\n  __IO uint8_t *spidr = ((__IO uint8_t *)&SPIx->DR);\r\n  *spidr = TxData;\r\n#else\r\n  *((__IO uint8_t *)&SPIx->DR) = TxData;\r\n#endif /* __GNUC__ */\r\n}"
+    },
+    {
+      "name": "LL_SPI_TransmitData16",
+      "sig": "void LL_SPI_TransmitData16(SPI_TypeDef *SPIx, uint16_t TxData)",
+      "brief": "向数据寄存器写入 16 位待发送数据。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        },
+        {
+          "name": "TxData",
+          "type": "uint16_t",
+          "desc": "待发送数据(0x0000 ~ 0xFFFF)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SPI_TransmitData16(SPI_TypeDef *SPIx, uint16_t TxData)\r\n{\r\n#if defined (__GNUC__)\r\n  __IO uint16_t *spidr = ((__IO uint16_t *)&SPIx->DR);\r\n  *spidr = TxData;\r\n#else\r\n  SPIx->DR = TxData;\r\n#endif /* __GNUC__ */\r\n}"
+    },
+    {
+      "name": "LL_SPI_WriteReg",
+      "sig": "#define LL_SPI_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG(__INSTANCE__->__REG__, (__VALUE__))",
+      "brief": "宏: 向 SPI 寄存器写入值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "SPI 实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要写入的寄存器"
+        },
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "要写入寄存器的值"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "macro",
+      "src": "#define LL_SPI_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG(__INSTANCE__->__REG__, (__VALUE__))"
+    },
+    {
+      "name": "LL_SPI_ReadReg",
+      "sig": "#define LL_SPI_ReadReg(__INSTANCE__, __REG__) READ_REG(__INSTANCE__->__REG__)",
+      "brief": "宏: 读取 SPI 寄存器值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "SPI 实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要读取的寄存器"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "寄存器值"
+      },
+      "file": "py32f002b_ll_spi.h",
+      "kind": "macro",
+      "src": "#define LL_SPI_ReadReg(__INSTANCE__, __REG__) READ_REG(__INSTANCE__->__REG__)"
+    },
+    {
+      "name": "LL_SPI_DeInit",
+      "sig": "ErrorStatus LL_SPI_DeInit(SPI_TypeDef *SPIx)",
+      "brief": "将 SPI 寄存器恢复为复位默认值(通过强制复位并释放 SPI 时钟)。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 成功; ERROR 失败"
+      },
+      "file": "py32f002b_ll_spi.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_SPI_DeInit(SPI_TypeDef *SPIx)\r\n{\r\n  ErrorStatus status = ERROR;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_SPI_ALL_INSTANCE(SPIx));\r\n\r\n  if (SPIx == SPI1)\r\n  {\r\n    /* Force reset of SPI clock */\r\n    LL_APB1_GRP2_ForceReset(LL_APB1_GRP2_PERIPH_SPI1);\r\n\r\n    /* Release reset of SPI clock */\r\n    LL_APB1_GRP2_ReleaseReset(LL_APB1_GRP2_PERIPH_SPI1);\r\n\r\n    status = SUCCESS;\r\n  }\r\n  return status;\r\n}"
+    },
+    {
+      "name": "LL_SPI_Init",
+      "sig": "ErrorStatus LL_SPI_Init(SPI_TypeDef *SPIx, LL_SPI_InitTypeDef *SPI_InitStruct)",
+      "brief": "根据 LL_SPI_InitTypeDef 结构体中的参数初始化 SPI 寄存器。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "SPIx",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 实例指针"
+        },
+        {
+          "name": "SPI_InitStruct",
+          "type": "LL_SPI_InitTypeDef *",
+          "desc": "指向配置结构体的指针, 含 TransferDirection/Mode/DataWidth/ClockPolarity/ClockPhase/NSS/BaudRate/BitOrder"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 成功; ERROR 失败(SPI 未处于禁止状态)"
+      },
+      "notes": [
+        "部分配置位只能在 SPI 禁止(SPE=0)状态下写入, 调用本函数前应确保 SPI 已禁止。"
+      ],
+      "file": "py32f002b_ll_spi.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_SPI_Init(SPI_TypeDef *SPIx, LL_SPI_InitTypeDef *SPI_InitStruct)\r\n{\r\n  ErrorStatus status = ERROR;\r\n\r\n  /* Check the SPI Instance SPIx*/\r\n  assert_param(IS_SPI_ALL_INSTANCE(SPIx));\r\n\r\n  /* Check the SPI parameters from SPI_InitStruct*/\r\n  assert_param(IS_LL_SPI_TRANSFER_DIRECTION(SPI_InitStruct->TransferDirection));\r\n  assert_param(IS_LL_SPI_MODE(SPI_InitStruct->Mode));\r\n  assert_param(IS_LL_SPI_DATAWIDTH(SPI_InitStruct->DataWidth));\r\n  assert_param(IS_LL_SPI_POLARITY(SPI_InitStruct->ClockPolarity));\r\n  assert_param(IS_LL_SPI_PHASE(SPI_InitStruct->ClockPhase));\r\n  assert_param(IS_LL_SPI_NSS(SPI_InitStruct->NSS));\r\n  assert_param(IS_LL_SPI_BAUDRATE(SPI_InitStruct->BaudRate));\r\n  assert_param(IS_LL_SPI_BITORDER(SPI_InitStruct->BitOrder));\r\n\r\n  if (LL_SPI_IsEnabled(SPIx) == 0x00000000U)\r\n  {\r\n    /*---------------------------- SPIx CR1 Configuration ------------------------\r\n     * Configure SPIx CR1 with parameters:\r\n     * - TransferDirection:  SPI_CR1_BIDIMODE, SPI_CR1_BIDIOE and SPI_CR1_RXONLY bits\r\n     * - Master/Slave Mode:  SPI_CR1_MSTR bit\r\n     * - ClockPolarity:      SPI_CR1_CPOL bit\r\n     * - ClockPhase:         SPI_CR1_CPHA bit\r\n     * - NSS management:     SPI_CR1_SSM bit\r\n     * - BaudRate prescaler: SPI_CR1_BR[2:0] bits\r\n     * - BitOrder:           SPI_CR1_LSBFIRST bit\r\n     * - DataWidth:          SPI_CR1_DFF bit\r\n     */\r\n    MODIFY_REG(SPIx->CR1,\r\n               SPI_CR1_CLEAR_MASK,\r\n               SPI_InitStruct->TransferDirection | SPI_InitStruct->Mode |\r\n               SPI_InitStruct->ClockPolarity | SPI_InitStruct->ClockPhase |\r\n               (SPI_InitStruct->NSS & SPI_CR1_SSM) | SPI_InitStruct->BaudRate |\r\n               SPI_InitStruct->BitOrder | SPI_InitStruct->DataWidth);\r\n\r\n    /*---------------------------- SPIx CR2 Configuration ------------------------\r\n     * Configure SPIx CR2 with parameters:\r\n     * - NSS management:     SSOE bit\r\n     */\r\n    MODIFY_REG(SPIx->CR2, SPI_CR2_SSOE, ((SPI_InitStruct->NSS >> 16U) & SPI_CR2_SSOE));\r\n\r\n    status = SUCCESS;\r\n  }\r\n  return status;\r\n}"
+    },
+    {
+      "name": "LL_SPI_StructInit",
+      "sig": "void LL_SPI_StructInit(LL_SPI_InitTypeDef *SPI_InitStruct)",
+      "brief": "将 LL_SPI_InitTypeDef 结构体各成员填充为默认值, 供 LL_SPI_Init() 使用。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "SPI_InitStruct",
+          "type": "LL_SPI_InitTypeDef *",
+          "desc": "指向要填充的结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_spi.c",
+      "kind": "function",
+      "src": "void LL_SPI_StructInit(LL_SPI_InitTypeDef *SPI_InitStruct)\r\n{\r\n  /* Set SPI_InitStruct fields to default values */\r\n  SPI_InitStruct->TransferDirection = LL_SPI_FULL_DUPLEX;\r\n  SPI_InitStruct->Mode              = LL_SPI_MODE_SLAVE;\r\n  SPI_InitStruct->DataWidth         = LL_SPI_DATAWIDTH_8BIT;\r\n  SPI_InitStruct->ClockPolarity     = LL_SPI_POLARITY_LOW;\r\n  SPI_InitStruct->ClockPhase        = LL_SPI_PHASE_1EDGE;\r\n  SPI_InitStruct->NSS               = LL_SPI_NSS_HARD_INPUT;\r\n  SPI_InitStruct->BaudRate          = LL_SPI_BAUDRATEPRESCALER_DIV2;\r\n  SPI_InitStruct->BitOrder          = LL_SPI_MSB_FIRST;\r\n}"
+    }
+  ],
+  "types": [
+    {
+      "name": "SPI_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t Mode; uint32_t Direction; uint32_t DataSize; uint32_t CLKPolarity; uint32_t CLKPhase; uint32_t NSS; uint32_t BaudRatePrescaler; uint32_t FirstBit; } SPI_InitTypeDef;",
+      "desc": "SPI 初始化配置结构体, 作为 HAL_SPI_Init() 的参数。",
+      "members": [
+        {
+          "name": "Mode",
+          "type": "uint32_t",
+          "desc": "工作模式, 可取 SPI_MODE_MASTER / SPI_MODE_SLAVE"
+        },
+        {
+          "name": "Direction",
+          "type": "uint32_t",
+          "desc": "通信方向, 可取 SPI_DIRECTION_2LINES / 2LINES_RXONLY / 1LINE"
+        },
+        {
+          "name": "DataSize",
+          "type": "uint32_t",
+          "desc": "数据宽度, 可取 SPI_DATASIZE_8BIT / SPI_DATASIZE_16BIT"
+        },
+        {
+          "name": "CLKPolarity",
+          "type": "uint32_t",
+          "desc": "时钟极性, 可取 SPI_POLARITY_LOW / SPI_POLARITY_HIGH"
+        },
+        {
+          "name": "CLKPhase",
+          "type": "uint32_t",
+          "desc": "时钟相位, 可取 SPI_PHASE_1EDGE / SPI_PHASE_2EDGE"
+        },
+        {
+          "name": "NSS",
+          "type": "uint32_t",
+          "desc": "NSS 管理方式, 可取 SPI_NSS_SOFT / SPI_NSS_HARD_INPUT / SPI_NSS_HARD_OUTPUT"
+        },
+        {
+          "name": "BaudRatePrescaler",
+          "type": "uint32_t",
+          "desc": "波特率预分频, 可取 SPI_BAUDRATEPRESCALER_2 .. _256(仅主模式有效)"
+        },
+        {
+          "name": "FirstBit",
+          "type": "uint32_t",
+          "desc": "位序, 可取 SPI_FIRSTBIT_MSB / SPI_FIRSTBIT_LSB"
+        }
+      ],
+      "file": "py32f002b_hal_spi.h"
+    },
+    {
+      "name": "HAL_SPI_StateTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_SPI_STATE_RESET = 0x00U, HAL_SPI_STATE_READY = 0x01U, HAL_SPI_STATE_BUSY = 0x02U, HAL_SPI_STATE_BUSY_TX = 0x03U, HAL_SPI_STATE_BUSY_RX = 0x04U, HAL_SPI_STATE_BUSY_TX_RX = 0x05U, HAL_SPI_STATE_ERROR = 0x06U, HAL_SPI_STATE_ABORT = 0x07U } HAL_SPI_StateTypeDef;",
+      "desc": "SPI 句柄状态枚举, 由 HAL_SPI_GetState() 返回。",
+      "members": [
+        {
+          "name": "HAL_SPI_STATE_RESET",
+          "value": "0x00U",
+          "desc": "外设未初始化"
+        },
+        {
+          "name": "HAL_SPI_STATE_READY",
+          "value": "0x01U",
+          "desc": "外设已初始化, 可进行传输"
+        },
+        {
+          "name": "HAL_SPI_STATE_BUSY",
+          "value": "0x02U",
+          "desc": "内部流程进行中"
+        },
+        {
+          "name": "HAL_SPI_STATE_BUSY_TX",
+          "value": "0x03U",
+          "desc": "发送流程进行中"
+        },
+        {
+          "name": "HAL_SPI_STATE_BUSY_RX",
+          "value": "0x04U",
+          "desc": "接收流程进行中"
+        },
+        {
+          "name": "HAL_SPI_STATE_BUSY_TX_RX",
+          "value": "0x05U",
+          "desc": "发送与接收流程同时进行中"
+        },
+        {
+          "name": "HAL_SPI_STATE_ERROR",
+          "value": "0x06U",
+          "desc": "SPI 错误状态"
+        },
+        {
+          "name": "HAL_SPI_STATE_ABORT",
+          "value": "0x07U",
+          "desc": "SPI 中止进行中"
+        }
+      ],
+      "file": "py32f002b_hal_spi.h"
+    },
+    {
+      "name": "SPI_HandleTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { SPI_TypeDef *Instance; SPI_InitTypeDef Init; uint8_t *pTxBuffPtr; uint16_t TxXferSize; __IO uint16_t TxXferCount; uint8_t *pRxBuffPtr; uint16_t RxXferSize; __IO uint16_t RxXferCount; void (*RxISR)(struct __SPI_HandleTypeDef *hspi); void (*TxISR)(struct __SPI_HandleTypeDef *hspi); HAL_LockTypeDef Lock; __IO HAL_SPI_StateTypeDef State; __IO uint32_t ErrorCode; } SPI_HandleTypeDef;",
+      "desc": "SPI 句柄结构体, 所有 HAL SPI 函数的参数; 启用 USE_HAL_SPI_REGISTER_CALLBACKS 时还包含 10 个回调函数指针成员。",
+      "members": [
+        {
+          "name": "Instance",
+          "type": "SPI_TypeDef *",
+          "desc": "SPI 寄存器基地址, 本芯片为 SPI1"
+        },
+        {
+          "name": "Init",
+          "type": "SPI_InitTypeDef",
+          "desc": "SPI 通信参数配置"
+        },
+        {
+          "name": "pTxBuffPtr",
+          "type": "uint8_t *",
+          "desc": "指向发送数据缓冲区的指针"
+        },
+        {
+          "name": "TxXferSize",
+          "type": "uint16_t",
+          "desc": "发送传输大小"
+        },
+        {
+          "name": "TxXferCount",
+          "type": "__IO uint16_t",
+          "desc": "发送传输计数器"
+        },
+        {
+          "name": "pRxBuffPtr",
+          "type": "uint8_t *",
+          "desc": "指向接收数据缓冲区的指针"
+        },
+        {
+          "name": "RxXferSize",
+          "type": "uint16_t",
+          "desc": "接收传输大小"
+        },
+        {
+          "name": "RxXferCount",
+          "type": "__IO uint16_t",
+          "desc": "接收传输计数器"
+        },
+        {
+          "name": "RxISR",
+          "type": "void (*)(SPI_HandleTypeDef *)",
+          "desc": "接收中断服务函数指针"
+        },
+        {
+          "name": "TxISR",
+          "type": "void (*)(SPI_HandleTypeDef *)",
+          "desc": "发送中断服务函数指针"
+        },
+        {
+          "name": "Lock",
+          "type": "HAL_LockTypeDef",
+          "desc": "锁定对象"
+        },
+        {
+          "name": "State",
+          "type": "__IO HAL_SPI_StateTypeDef",
+          "desc": "SPI 通信状态"
+        },
+        {
+          "name": "ErrorCode",
+          "type": "__IO uint32_t",
+          "desc": "SPI 错误码"
+        }
+      ],
+      "file": "py32f002b_hal_spi.h"
+    },
+    {
+      "name": "HAL_SPI_CallbackIDTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_SPI_TX_COMPLETE_CB_ID = 0x00U, HAL_SPI_RX_COMPLETE_CB_ID = 0x01U, HAL_SPI_TX_RX_COMPLETE_CB_ID = 0x02U, HAL_SPI_TX_HALF_COMPLETE_CB_ID = 0x03U, HAL_SPI_RX_HALF_COMPLETE_CB_ID = 0x04U, HAL_SPI_TX_RX_HALF_COMPLETE_CB_ID = 0x05U, HAL_SPI_ERROR_CB_ID = 0x06U, HAL_SPI_ABORT_CB_ID = 0x07U, HAL_SPI_MSPINIT_CB_ID = 0x08U, HAL_SPI_MSPDEINIT_CB_ID = 0x09U } HAL_SPI_CallbackIDTypeDef;",
+      "desc": "SPI 回调 ID 枚举, 供 HAL_SPI_RegisterCallback() / HAL_SPI_UnRegisterCallback() 使用(需 USE_HAL_SPI_REGISTER_CALLBACKS = 1)。",
+      "members": [
+        {
+          "name": "HAL_SPI_TX_COMPLETE_CB_ID",
+          "value": "0x00U",
+          "desc": "发送完成回调 ID"
+        },
+        {
+          "name": "HAL_SPI_RX_COMPLETE_CB_ID",
+          "value": "0x01U",
+          "desc": "接收完成回调 ID"
+        },
+        {
+          "name": "HAL_SPI_TX_RX_COMPLETE_CB_ID",
+          "value": "0x02U",
+          "desc": "收发完成回调 ID"
+        },
+        {
+          "name": "HAL_SPI_TX_HALF_COMPLETE_CB_ID",
+          "value": "0x03U",
+          "desc": "发送半传输完成回调 ID"
+        },
+        {
+          "name": "HAL_SPI_RX_HALF_COMPLETE_CB_ID",
+          "value": "0x04U",
+          "desc": "接收半传输完成回调 ID"
+        },
+        {
+          "name": "HAL_SPI_TX_RX_HALF_COMPLETE_CB_ID",
+          "value": "0x05U",
+          "desc": "收发半传输完成回调 ID"
+        },
+        {
+          "name": "HAL_SPI_ERROR_CB_ID",
+          "value": "0x06U",
+          "desc": "错误回调 ID"
+        },
+        {
+          "name": "HAL_SPI_ABORT_CB_ID",
+          "value": "0x07U",
+          "desc": "中止完成回调 ID"
+        },
+        {
+          "name": "HAL_SPI_MSPINIT_CB_ID",
+          "value": "0x08U",
+          "desc": "MspInit 回调 ID"
+        },
+        {
+          "name": "HAL_SPI_MSPDEINIT_CB_ID",
+          "value": "0x09U",
+          "desc": "MspDeInit 回调 ID"
+        }
+      ],
+      "file": "py32f002b_hal_spi.h"
+    },
+    {
+      "name": "LL_SPI_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t TransferDirection; uint32_t Mode; uint32_t DataWidth; uint32_t ClockPolarity; uint32_t ClockPhase; uint32_t NSS; uint32_t BaudRate; uint32_t BitOrder; } LL_SPI_InitTypeDef;",
+      "desc": "LL 库 SPI 初始化配置结构体, 作为 LL_SPI_Init() 的参数(需定义 USE_FULL_LL_DRIVER)。",
+      "members": [
+        {
+          "name": "TransferDirection",
+          "type": "uint32_t",
+          "desc": "传输方向, 可取 LL_SPI_FULL_DUPLEX / SIMPLEX_RX / HALF_DUPLEX_RX / HALF_DUPLEX_TX"
+        },
+        {
+          "name": "Mode",
+          "type": "uint32_t",
+          "desc": "工作模式, 可取 LL_SPI_MODE_MASTER / LL_SPI_MODE_SLAVE"
+        },
+        {
+          "name": "DataWidth",
+          "type": "uint32_t",
+          "desc": "数据宽度, 可取 LL_SPI_DATAWIDTH_8BIT / LL_SPI_DATAWIDTH_16BIT"
+        },
+        {
+          "name": "ClockPolarity",
+          "type": "uint32_t",
+          "desc": "时钟极性, 可取 LL_SPI_POLARITY_LOW / LL_SPI_POLARITY_HIGH"
+        },
+        {
+          "name": "ClockPhase",
+          "type": "uint32_t",
+          "desc": "时钟相位, 可取 LL_SPI_PHASE_1EDGE / LL_SPI_PHASE_2EDGE"
+        },
+        {
+          "name": "NSS",
+          "type": "uint32_t",
+          "desc": "NSS 管理方式, 可取 LL_SPI_NSS_SOFT / HARD_INPUT / HARD_OUTPUT"
+        },
+        {
+          "name": "BaudRate",
+          "type": "uint32_t",
+          "desc": "波特率预分频, 可取 LL_SPI_BAUDRATEPRESCALER_DIV2 .. DIV256(仅主模式有效)"
+        },
+        {
+          "name": "BitOrder",
+          "type": "uint32_t",
+          "desc": "位序, 可取 LL_SPI_MSB_FIRST / LL_SPI_LSB_FIRST"
+        }
+      ],
+      "file": "py32f002b_ll_spi.h"
+    },
+    {
+      "name": "SPI_TypeDef",
+      "kind": "periph",
+      "def": "typedef struct { __IO uint32_t CR1; __IO uint32_t CR2; __IO uint32_t SR; __IO uint32_t DR; } SPI_TypeDef;",
+      "desc": "SPI 外设寄存器结构体。实例: SPI1。",
+      "members": [
+        {
+          "name": "CR1",
+          "type": "__IO uint32_t",
+          "desc": "SPI 控制寄存器 1(SPE/MSTR/CPOL/CPHA/BR/LSBFIRST/SSI/SSM/RXONLY/DFF/BIDIMODE/BIDIOE 等), 偏移 0x00"
+        },
+        {
+          "name": "CR2",
+          "type": "__IO uint32_t",
+          "desc": "SPI 控制寄存器 2(RXNEIE/TXEIE/ERRIE/SSOE/CLRTXFIFO 等), 偏移 0x04"
+        },
+        {
+          "name": "SR",
+          "type": "__IO uint32_t",
+          "desc": "SPI 状态寄存器(RXNE/TXE/BSY/MODF/OVR/FTLVL/FRLVL 等), 偏移 0x08"
+        },
+        {
+          "name": "DR",
+          "type": "__IO uint32_t",
+          "desc": "SPI 数据寄存器, 偏移 0x0C"
+        }
+      ],
+      "file": "py32f002xx5.h"
+    },
+    {
+      "name": "pSPI_CallbackTypeDef",
+      "kind": "typedef",
+      "def": "typedef void (*pSPI_CallbackTypeDef)(SPI_HandleTypeDef *hspi);",
+      "desc": "SPI 回调函数指针类型(用于 HAL_SPI_RegisterCallback)。",
+      "members": [
+        {
+          "name": "hspi",
+          "type": "SPI_HandleTypeDef *",
+          "desc": "SPI 句柄"
+        }
+      ],
+      "file": "py32f002b_hal_spi.h"
+    }
+  ],
+  "consts": [
+    {
+      "name": "HAL_SPI_ERROR_NONE",
+      "value": "(0x00000000U)",
+      "desc": "无错误",
+      "group": "SPI 错误码",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define HAL_SPI_ERROR_NONE              (0x00000000U)   /*!< No error                               */"
+    },
+    {
+      "name": "HAL_SPI_ERROR_MODF",
+      "value": "(0x00000001U)",
+      "desc": "模式错误(MODF)",
+      "group": "SPI 错误码",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define HAL_SPI_ERROR_MODF              (0x00000001U)   /*!< MODF error                             */"
+    },
+    {
+      "name": "HAL_SPI_ERROR_OVR",
+      "value": "(0x00000004U)",
+      "desc": "溢出错误(OVR)",
+      "group": "SPI 错误码",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define HAL_SPI_ERROR_OVR               (0x00000004U)   /*!< OVR error                              */"
+    },
+    {
+      "name": "HAL_SPI_ERROR_FRE",
+      "value": "(0x00000008U)",
+      "desc": "帧格式错误(FRE)",
+      "group": "SPI 错误码",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define HAL_SPI_ERROR_FRE               (0x00000008U)   /*!< FRE error                              */"
+    },
+    {
+      "name": "HAL_SPI_ERROR_FLAG",
+      "value": "(0x00000020U)",
+      "desc": "RXNE/TXE/BSY/FTLVL/FRLVL 标志错误",
+      "group": "SPI 错误码",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define HAL_SPI_ERROR_FLAG              (0x00000020U)   /*!< Error on RXNE/TXE/BSY/FTLVL/FRLVL Flag */"
+    },
+    {
+      "name": "HAL_SPI_ERROR_ABORT",
+      "value": "(0x00000040U)",
+      "desc": "SPI 中止过程中出错",
+      "group": "SPI 错误码",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define HAL_SPI_ERROR_ABORT             (0x00000040U)   /*!< Error during SPI Abort procedure       */"
+    },
+    {
+      "name": "HAL_SPI_ERROR_INVALID_CALLBACK",
+      "value": "(0x00000080U)",
+      "desc": "无效回调错误(需 USE_HAL_SPI_REGISTER_CALLBACKS = 1)",
+      "group": "SPI 错误码",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define HAL_SPI_ERROR_INVALID_CALLBACK  (0x00000080U)   /*!< Invalid Callback error                 */"
+    },
+    {
+      "name": "SPI_MODE_SLAVE",
+      "value": "(0x00000000U)",
+      "desc": "从模式",
+      "group": "SPI 模式",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_MODE_SLAVE                  (0x00000000U)"
+    },
+    {
+      "name": "SPI_MODE_MASTER",
+      "value": "(SPI_CR1_MSTR | SPI_CR1_SSI)",
+      "desc": "主模式",
+      "group": "SPI 模式",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_MODE_MASTER                 (SPI_CR1_MSTR | SPI_CR1_SSI)"
+    },
+    {
+      "name": "SPI_DIRECTION_2LINES",
+      "value": "(0x00000000U)",
+      "desc": "2 线模式: 全双工或单工仅发送",
+      "group": "SPI 通信方向",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_DIRECTION_2LINES            (0x00000000U)     /* Full-duplex communication or Simplex communication Transmit-only mode */"
+    },
+    {
+      "name": "SPI_DIRECTION_2LINES_RXONLY",
+      "value": "SPI_CR1_RXONLY",
+      "desc": "2 线模式: 仅接收(单工)",
+      "group": "SPI 通信方向",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_DIRECTION_2LINES_RXONLY     SPI_CR1_RXONLY    /* Simplex communication Receive-only mode */"
+    },
+    {
+      "name": "SPI_DIRECTION_1LINE",
+      "value": "SPI_CR1_BIDIMODE",
+      "desc": "1 线模式: 半双工",
+      "group": "SPI 通信方向",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_DIRECTION_1LINE             SPI_CR1_BIDIMODE  /* Half-duplex communication mode */"
+    },
+    {
+      "name": "SPI_DATASIZE_8BIT",
+      "value": "(0x00000700U)",
+      "desc": "8 位数据宽度",
+      "group": "SPI 数据宽度",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_DATASIZE_8BIT               (0x00000700U)"
+    },
+    {
+      "name": "SPI_DATASIZE_16BIT",
+      "value": "(0x00000F00U)",
+      "desc": "16 位数据宽度",
+      "group": "SPI 数据宽度",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_DATASIZE_16BIT              (0x00000F00U)"
+    },
+    {
+      "name": "SPI_POLARITY_LOW",
+      "value": "(0x00000000U)",
+      "desc": "时钟空闲为低电平",
+      "group": "SPI 时钟极性",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_POLARITY_LOW                (0x00000000U)"
+    },
+    {
+      "name": "SPI_POLARITY_HIGH",
+      "value": "SPI_CR1_CPOL",
+      "desc": "时钟空闲为高电平",
+      "group": "SPI 时钟极性",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_POLARITY_HIGH               SPI_CR1_CPOL"
+    },
+    {
+      "name": "SPI_PHASE_1EDGE",
+      "value": "(0x00000000U)",
+      "desc": "第一个时钟沿采样数据",
+      "group": "SPI 时钟相位",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_PHASE_1EDGE                 (0x00000000U)"
+    },
+    {
+      "name": "SPI_PHASE_2EDGE",
+      "value": "SPI_CR1_CPHA",
+      "desc": "第二个时钟沿采样数据",
+      "group": "SPI 时钟相位",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_PHASE_2EDGE                 SPI_CR1_CPHA"
+    },
+    {
+      "name": "SPI_NSS_SOFT",
+      "value": "SPI_CR1_SSM",
+      "desc": "软件管理 NSS(用 SSI 位)",
+      "group": "SPI 从选择管理",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_NSS_SOFT                    SPI_CR1_SSM"
+    },
+    {
+      "name": "SPI_NSS_HARD_INPUT",
+      "value": "(0x00000000U)",
+      "desc": "硬件 NSS 输入",
+      "group": "SPI 从选择管理",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_NSS_HARD_INPUT              (0x00000000U)"
+    },
+    {
+      "name": "SPI_NSS_HARD_OUTPUT",
+      "value": "(SPI_CR2_SSOE << 16U)",
+      "desc": "硬件 NSS 输出",
+      "group": "SPI 从选择管理",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_NSS_HARD_OUTPUT             (SPI_CR2_SSOE << 16U)"
+    },
+    {
+      "name": "SPI_BAUDRATEPRESCALER_2",
+      "value": "(0x00000000U)",
+      "desc": "波特率预分频 2",
+      "group": "SPI 波特率预分频",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_BAUDRATEPRESCALER_2         (0x00000000U)"
+    },
+    {
+      "name": "SPI_BAUDRATEPRESCALER_4",
+      "value": "(SPI_CR1_BR_0)",
+      "desc": "波特率预分频 4",
+      "group": "SPI 波特率预分频",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_BAUDRATEPRESCALER_4         (SPI_CR1_BR_0)"
+    },
+    {
+      "name": "SPI_BAUDRATEPRESCALER_8",
+      "value": "(SPI_CR1_BR_1)",
+      "desc": "波特率预分频 8",
+      "group": "SPI 波特率预分频",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_BAUDRATEPRESCALER_8         (SPI_CR1_BR_1)"
+    },
+    {
+      "name": "SPI_BAUDRATEPRESCALER_16",
+      "value": "(SPI_CR1_BR_1 | SPI_CR1_BR_0)",
+      "desc": "波特率预分频 16",
+      "group": "SPI 波特率预分频",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_BAUDRATEPRESCALER_16        (SPI_CR1_BR_1 | SPI_CR1_BR_0)"
+    },
+    {
+      "name": "SPI_BAUDRATEPRESCALER_32",
+      "value": "(SPI_CR1_BR_2)",
+      "desc": "波特率预分频 32",
+      "group": "SPI 波特率预分频",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_BAUDRATEPRESCALER_32        (SPI_CR1_BR_2)"
+    },
+    {
+      "name": "SPI_BAUDRATEPRESCALER_64",
+      "value": "(SPI_CR1_BR_2 | SPI_CR1_BR_0)",
+      "desc": "波特率预分频 64",
+      "group": "SPI 波特率预分频",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_BAUDRATEPRESCALER_64        (SPI_CR1_BR_2 | SPI_CR1_BR_0)"
+    },
+    {
+      "name": "SPI_BAUDRATEPRESCALER_128",
+      "value": "(SPI_CR1_BR_2 | SPI_CR1_BR_1)",
+      "desc": "波特率预分频 128",
+      "group": "SPI 波特率预分频",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_BAUDRATEPRESCALER_128       (SPI_CR1_BR_2 | SPI_CR1_BR_1)"
+    },
+    {
+      "name": "SPI_BAUDRATEPRESCALER_256",
+      "value": "(SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0)",
+      "desc": "波特率预分频 256",
+      "group": "SPI 波特率预分频",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_BAUDRATEPRESCALER_256       (SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0)"
+    },
+    {
+      "name": "SPI_FIRSTBIT_MSB",
+      "value": "(0x00000000U)",
+      "desc": "MSB 先发送",
+      "group": "SPI 位序",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_FIRSTBIT_MSB                (0x00000000U)"
+    },
+    {
+      "name": "SPI_FIRSTBIT_LSB",
+      "value": "SPI_CR1_LSBFIRST",
+      "desc": "LSB 先发送",
+      "group": "SPI 位序",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_FIRSTBIT_LSB                SPI_CR1_LSBFIRST"
+    },
+    {
+      "name": "SPI_IT_TXE",
+      "value": "SPI_CR2_TXEIE",
+      "desc": "发送缓冲区空中断使能",
+      "group": "SPI 中断源",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_IT_TXE                      SPI_CR2_TXEIE"
+    },
+    {
+      "name": "SPI_IT_RXNE",
+      "value": "SPI_CR2_RXNEIE",
+      "desc": "接收缓冲区非空中断使能",
+      "group": "SPI 中断源",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_IT_RXNE                     SPI_CR2_RXNEIE"
+    },
+    {
+      "name": "SPI_IT_ERR",
+      "value": "SPI_CR2_ERRIE",
+      "desc": "错误中断使能",
+      "group": "SPI 中断源",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_IT_ERR                      SPI_CR2_ERRIE"
+    },
+    {
+      "name": "SPI_FLAG_RXNE",
+      "value": "SPI_SR_RXNE",
+      "desc": "接收缓冲区非空标志",
+      "group": "SPI 状态标志",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_FLAG_RXNE                   SPI_SR_RXNE   /* SPI status flag: Rx buffer not empty flag       */"
+    },
+    {
+      "name": "SPI_FLAG_TXE",
+      "value": "SPI_SR_TXE",
+      "desc": "发送缓冲区空标志",
+      "group": "SPI 状态标志",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_FLAG_TXE                    SPI_SR_TXE    /* SPI status flag: Tx buffer empty flag           */"
+    },
+    {
+      "name": "SPI_FLAG_BSY",
+      "value": "SPI_SR_BSY",
+      "desc": "忙标志",
+      "group": "SPI 状态标志",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_FLAG_BSY                    SPI_SR_BSY    /* SPI status flag: Busy flag                      */"
+    },
+    {
+      "name": "SPI_FLAG_MODF",
+      "value": "SPI_SR_MODF",
+      "desc": "模式错误标志",
+      "group": "SPI 状态标志",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_FLAG_MODF                   SPI_SR_MODF   /* SPI Error flag: Mode fault flag                 */"
+    },
+    {
+      "name": "SPI_FLAG_OVR",
+      "value": "SPI_SR_OVR",
+      "desc": "溢出错误标志",
+      "group": "SPI 状态标志",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_FLAG_OVR                    SPI_SR_OVR    /* SPI Error flag: Overrun flag                    */"
+    },
+    {
+      "name": "SPI_FLAG_FTLVL",
+      "value": "SPI_SR_FTLVL",
+      "desc": "发送 FIFO 电平标志",
+      "group": "SPI 状态标志",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_FLAG_FTLVL                  SPI_SR_FTLVL  /* SPI fifo transmission level                     */"
+    },
+    {
+      "name": "SPI_FLAG_FRLVL",
+      "value": "SPI_SR_FRLVL",
+      "desc": "接收 FIFO 电平标志",
+      "group": "SPI 状态标志",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_FLAG_FRLVL                  SPI_SR_FRLVL  /* SPI fifo reception level                        */"
+    },
+    {
+      "name": "SPI_FLAG_MASK",
+      "value": "(SPI_SR_RXNE | SPI_SR_TXE | SPI_SR_BSY | SPI_SR_MODF | SPI_SR_OVR | SPI_SR_FTLVL | SPI_SR_FRLVL)",
+      "desc": "SPI 状态标志掩码(用于标志检查)",
+      "group": "SPI 状态标志",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_FLAG_MASK                   (SPI_SR_RXNE | SPI_SR_TXE | SPI_SR_BSY \\\n                                         | SPI_SR_MODF | SPI_SR_OVR | SPI_SR_FTLVL | SPI_SR_FRLVL)"
+    },
+    {
+      "name": "SPI_FTLVL_EMPTY",
+      "value": "(0x00000000U)",
+      "desc": "发送 FIFO 空",
+      "group": "SPI 发送 FIFO 状态",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_FTLVL_EMPTY                 (0x00000000U)"
+    },
+    {
+      "name": "SPI_FTLVL_QUARTER_FULL",
+      "value": "(0x00000800U)",
+      "desc": "发送 FIFO 1/4 满",
+      "group": "SPI 发送 FIFO 状态",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_FTLVL_QUARTER_FULL          (0x00000800U)"
+    },
+    {
+      "name": "SPI_FTLVL_HALF_FULL",
+      "value": "(0x00001000U)",
+      "desc": "发送 FIFO 半满",
+      "group": "SPI 发送 FIFO 状态",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_FTLVL_HALF_FULL             (0x00001000U)"
+    },
+    {
+      "name": "SPI_FTLVL_FULL",
+      "value": "(0x00001800U)",
+      "desc": "发送 FIFO 满",
+      "group": "SPI 发送 FIFO 状态",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_FTLVL_FULL                  (0x00001800U)"
+    },
+    {
+      "name": "SPI_FRLVL_EMPTY",
+      "value": "(0x00000000U)",
+      "desc": "接收 FIFO 空",
+      "group": "SPI 接收 FIFO 状态",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_FRLVL_EMPTY                 (0x00000000U)"
+    },
+    {
+      "name": "SPI_FRLVL_QUARTER_FULL",
+      "value": "(0x00000200U)",
+      "desc": "接收 FIFO 1/4 满",
+      "group": "SPI 接收 FIFO 状态",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_FRLVL_QUARTER_FULL          (0x00000200U)"
+    },
+    {
+      "name": "SPI_FRLVL_HALF_FULL",
+      "value": "(0x00000400U)",
+      "desc": "接收 FIFO 半满",
+      "group": "SPI 接收 FIFO 状态",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_FRLVL_HALF_FULL             (0x00000400U)"
+    },
+    {
+      "name": "SPI_FRLVL_FULL",
+      "value": "(0x00000600U)",
+      "desc": "接收 FIFO 满",
+      "group": "SPI 接收 FIFO 状态",
+      "file": "py32f002b_hal_spi.h",
+      "src": "#define SPI_FRLVL_FULL                  (0x00000600U)"
+    },
+    {
+      "name": "LL_SPI_SR_RXNE",
+      "value": "SPI_SR_RXNE",
+      "desc": "接收缓冲区非空标志",
+      "group": "LL SPI 状态标志",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_SR_RXNE                     SPI_SR_RXNE               /*!< Rx buffer not empty flag         */"
+    },
+    {
+      "name": "LL_SPI_SR_TXE",
+      "value": "SPI_SR_TXE",
+      "desc": "发送缓冲区空标志",
+      "group": "LL SPI 状态标志",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_SR_TXE                      SPI_SR_TXE                /*!< Tx buffer empty flag             */"
+    },
+    {
+      "name": "LL_SPI_SR_BSY",
+      "value": "SPI_SR_BSY",
+      "desc": "忙标志",
+      "group": "LL SPI 状态标志",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_SR_BSY                      SPI_SR_BSY                /*!< Busy flag                        */"
+    },
+    {
+      "name": "LL_SPI_SR_MODF",
+      "value": "SPI_SR_MODF",
+      "desc": "模式错误标志",
+      "group": "LL SPI 状态标志",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_SR_MODF                     SPI_SR_MODF               /*!< Mode fault flag                  */"
+    },
+    {
+      "name": "LL_SPI_SR_OVR",
+      "value": "SPI_SR_OVR",
+      "desc": "溢出标志",
+      "group": "LL SPI 状态标志",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_SR_OVR                      SPI_SR_OVR                /*!< Overrun flag                     */"
+    },
+    {
+      "name": "LL_SPI_CR2_RXNEIE",
+      "value": "SPI_CR2_RXNEIE",
+      "desc": "接收缓冲区非空中断使能",
+      "group": "LL SPI 中断使能位",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_CR2_RXNEIE                  SPI_CR2_RXNEIE            /*!< Rx buffer not empty interrupt enable */"
+    },
+    {
+      "name": "LL_SPI_CR2_TXEIE",
+      "value": "SPI_CR2_TXEIE",
+      "desc": "发送缓冲区空中断使能",
+      "group": "LL SPI 中断使能位",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_CR2_TXEIE                   SPI_CR2_TXEIE             /*!< Tx buffer empty interrupt enable     */"
+    },
+    {
+      "name": "LL_SPI_CR2_ERRIE",
+      "value": "SPI_CR2_ERRIE",
+      "desc": "错误中断使能",
+      "group": "LL SPI 中断使能位",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_CR2_ERRIE                   SPI_CR2_ERRIE             /*!< Error interrupt enable               */"
+    },
+    {
+      "name": "LL_SPI_MODE_MASTER",
+      "value": "(SPI_CR1_MSTR | SPI_CR1_SSI)",
+      "desc": "主模式配置",
+      "group": "LL SPI 模式",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_MODE_MASTER                 (SPI_CR1_MSTR | SPI_CR1_SSI)    /*!< Master configuration  */"
+    },
+    {
+      "name": "LL_SPI_MODE_SLAVE",
+      "value": "0x00000000U",
+      "desc": "从模式配置",
+      "group": "LL SPI 模式",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_MODE_SLAVE                  0x00000000U                     /*!< Slave configuration   */"
+    },
+    {
+      "name": "LL_SPI_PHASE_1EDGE",
+      "value": "0x00000000U",
+      "desc": "第一个时钟沿为首次数据采样沿",
+      "group": "LL SPI 时钟相位",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_PHASE_1EDGE                 0x00000000U               /*!< First clock transition is the first data capture edge  */"
+    },
+    {
+      "name": "LL_SPI_PHASE_2EDGE",
+      "value": "(SPI_CR1_CPHA)",
+      "desc": "第二个时钟沿为首次数据采样沿",
+      "group": "LL SPI 时钟相位",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_PHASE_2EDGE                 (SPI_CR1_CPHA)            /*!< Second clock transition is the first data capture edge */"
+    },
+    {
+      "name": "LL_SPI_POLARITY_LOW",
+      "value": "0x00000000U",
+      "desc": "空闲时时钟为低",
+      "group": "LL SPI 时钟极性",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_POLARITY_LOW                0x00000000U               /*!< Clock to 0 when idle */"
+    },
+    {
+      "name": "LL_SPI_POLARITY_HIGH",
+      "value": "(SPI_CR1_CPOL)",
+      "desc": "空闲时时钟为高",
+      "group": "LL SPI 时钟极性",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_POLARITY_HIGH               (SPI_CR1_CPOL)            /*!< Clock to 1 when idle */"
+    },
+    {
+      "name": "LL_SPI_BAUDRATEPRESCALER_DIV2",
+      "value": "0x00000000U",
+      "desc": "波特率 = fPCLK/2",
+      "group": "LL SPI 波特率预分频",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_BAUDRATEPRESCALER_DIV2      0x00000000U                                    /*!< BaudRate control equal to fPCLK/2   */"
+    },
+    {
+      "name": "LL_SPI_BAUDRATEPRESCALER_DIV4",
+      "value": "(SPI_CR1_BR_0)",
+      "desc": "波特率 = fPCLK/4",
+      "group": "LL SPI 波特率预分频",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_BAUDRATEPRESCALER_DIV4      (SPI_CR1_BR_0)                                 /*!< BaudRate control equal to fPCLK/4   */"
+    },
+    {
+      "name": "LL_SPI_BAUDRATEPRESCALER_DIV8",
+      "value": "(SPI_CR1_BR_1)",
+      "desc": "波特率 = fPCLK/8",
+      "group": "LL SPI 波特率预分频",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_BAUDRATEPRESCALER_DIV8      (SPI_CR1_BR_1)                                 /*!< BaudRate control equal to fPCLK/8   */"
+    },
+    {
+      "name": "LL_SPI_BAUDRATEPRESCALER_DIV16",
+      "value": "(SPI_CR1_BR_1 | SPI_CR1_BR_0)",
+      "desc": "波特率 = fPCLK/16",
+      "group": "LL SPI 波特率预分频",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_BAUDRATEPRESCALER_DIV16     (SPI_CR1_BR_1 | SPI_CR1_BR_0)                  /*!< BaudRate control equal to fPCLK/16  */"
+    },
+    {
+      "name": "LL_SPI_BAUDRATEPRESCALER_DIV32",
+      "value": "(SPI_CR1_BR_2)",
+      "desc": "波特率 = fPCLK/32",
+      "group": "LL SPI 波特率预分频",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_BAUDRATEPRESCALER_DIV32     (SPI_CR1_BR_2)                                 /*!< BaudRate control equal to fPCLK/32  */"
+    },
+    {
+      "name": "LL_SPI_BAUDRATEPRESCALER_DIV64",
+      "value": "(SPI_CR1_BR_2 | SPI_CR1_BR_0)",
+      "desc": "波特率 = fPCLK/64",
+      "group": "LL SPI 波特率预分频",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_BAUDRATEPRESCALER_DIV64     (SPI_CR1_BR_2 | SPI_CR1_BR_0)                  /*!< BaudRate control equal to fPCLK/64  */"
+    },
+    {
+      "name": "LL_SPI_BAUDRATEPRESCALER_DIV128",
+      "value": "(SPI_CR1_BR_2 | SPI_CR1_BR_1)",
+      "desc": "波特率 = fPCLK/128",
+      "group": "LL SPI 波特率预分频",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_BAUDRATEPRESCALER_DIV128    (SPI_CR1_BR_2 | SPI_CR1_BR_1)                  /*!< BaudRate control equal to fPCLK/128 */"
+    },
+    {
+      "name": "LL_SPI_BAUDRATEPRESCALER_DIV256",
+      "value": "(SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0)",
+      "desc": "波特率 = fPCLK/256",
+      "group": "LL SPI 波特率预分频",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_BAUDRATEPRESCALER_DIV256    (SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0)   /*!< BaudRate control equal to fPCLK/256 */"
+    },
+    {
+      "name": "LL_SPI_LSB_FIRST",
+      "value": "(SPI_CR1_LSBFIRST)",
+      "desc": "LSB 先发送/接收",
+      "group": "LL SPI 位序",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_LSB_FIRST                   (SPI_CR1_LSBFIRST)        /*!< Data is transmitted/received with the LSB first */"
+    },
+    {
+      "name": "LL_SPI_MSB_FIRST",
+      "value": "0x00000000U",
+      "desc": "MSB 先发送/接收",
+      "group": "LL SPI 位序",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_MSB_FIRST                   0x00000000U               /*!< Data is transmitted/received with the MSB first */"
+    },
+    {
+      "name": "LL_SPI_FULL_DUPLEX",
+      "value": "0x00000000U",
+      "desc": "全双工或单工仅发送模式",
+      "group": "LL SPI 传输方向",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_FULL_DUPLEX                 0x00000000U                          /*!< Full-duplex communication or Simplex communication Transmit-only mode */"
+    },
+    {
+      "name": "LL_SPI_SIMPLEX_RX",
+      "value": "(SPI_CR1_RXONLY)",
+      "desc": "单工仅接收模式",
+      "group": "LL SPI 传输方向",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_SIMPLEX_RX                  (SPI_CR1_RXONLY)                     /*!< Simplex communication Receive-only mode */"
+    },
+    {
+      "name": "LL_SPI_HALF_DUPLEX_RX",
+      "value": "(SPI_CR1_BIDIMODE)",
+      "desc": "半双工接收模式",
+      "group": "LL SPI 传输方向",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_HALF_DUPLEX_RX              (SPI_CR1_BIDIMODE)                   /*!< Half-duplex communication Rx mode */"
+    },
+    {
+      "name": "LL_SPI_HALF_DUPLEX_TX",
+      "value": "(SPI_CR1_BIDIMODE | SPI_CR1_BIDIOE)",
+      "desc": "半双工发送模式",
+      "group": "LL SPI 传输方向",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_HALF_DUPLEX_TX              (SPI_CR1_BIDIMODE | SPI_CR1_BIDIOE)  /*!< Half-duplex communication Tx mode */"
+    },
+    {
+      "name": "LL_SPI_NSS_SOFT",
+      "value": "(SPI_CR1_SSM)",
+      "desc": "软件管理 NSS(NSS 引脚空闲)",
+      "group": "LL SPI 从选择管理",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_NSS_SOFT                    (SPI_CR1_SSM)                     /*!< NSS managed internally. NSS pin not used and free              */"
+    },
+    {
+      "name": "LL_SPI_NSS_HARD_INPUT",
+      "value": "0x00000000U",
+      "desc": "硬件 NSS 输入(仅主模式)",
+      "group": "LL SPI 从选择管理",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_NSS_HARD_INPUT              0x00000000U                       /*!< NSS pin used in Input. Only used in Master mode                */"
+    },
+    {
+      "name": "LL_SPI_NSS_HARD_OUTPUT",
+      "value": "(((uint32_t)SPI_CR2_SSOE << 16U))",
+      "desc": "硬件 NSS 输出(从模式片选)",
+      "group": "LL SPI 从选择管理",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_NSS_HARD_OUTPUT             (((uint32_t)SPI_CR2_SSOE << 16U)) /*!< NSS pin used in Output. Only used in Slave mode as chip select */"
+    },
+    {
+      "name": "LL_SPI_DATAWIDTH_8BIT",
+      "value": "0x0",
+      "desc": "8 位数据宽度",
+      "group": "LL SPI 数据宽度",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_DATAWIDTH_8BIT               0x0              /*!< Data length for SPI transfer:  8 bits */"
+    },
+    {
+      "name": "LL_SPI_DATAWIDTH_16BIT",
+      "value": "(SPI_CR1_DFF)",
+      "desc": "16 位数据宽度",
+      "group": "LL SPI 数据宽度",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_DATAWIDTH_16BIT             (SPI_CR1_DFF)     /*!< Data length for SPI transfer: 16 bits */"
+    },
+    {
+      "name": "LL_SPI_RX_FIFO_EMPTY",
+      "value": "0x00000000U",
+      "desc": "接收 FIFO 空",
+      "group": "LL SPI 接收 FIFO 状态",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_RX_FIFO_EMPTY               0x00000000U                       /*!< FIFO reception empty */"
+    },
+    {
+      "name": "LL_SPI_RX_FIFO_FULL",
+      "value": "(SPI_SR_FRLVL)",
+      "desc": "接收 FIFO 满",
+      "group": "LL SPI 接收 FIFO 状态",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_RX_FIFO_FULL                (SPI_SR_FRLVL)                    /*!< FIFO reception full  */"
+    },
+    {
+      "name": "LL_SPI_TX_FIFO_EMPTY",
+      "value": "0x00000000U",
+      "desc": "发送 FIFO 空",
+      "group": "LL SPI 发送 FIFO 状态",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_TX_FIFO_EMPTY               0x00000000U                       /*!< FIFO transmission empty */"
+    },
+    {
+      "name": "LL_SPI_TX_FIFO_FULL",
+      "value": "(SPI_SR_FTLVL)",
+      "desc": "发送 FIFO 满",
+      "group": "LL SPI 发送 FIFO 状态",
+      "file": "py32f002b_ll_spi.h",
+      "src": "#define LL_SPI_TX_FIFO_FULL                (SPI_SR_FTLVL)                    /*!< FIFO transmission full  */"
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "module": "IWDG",
+  "moduleId": "iwdg",
+  "hal": [
+    {
+      "name": "IWDG_ENABLE_WRITE_ACCESS",
+      "sig": "#define IWDG_ENABLE_WRITE_ACCESS(__HANDLE__)  WRITE_REG((__HANDLE__)->Instance->KR, IWDG_KEY_WRITE_ACCESS_ENABLE)",
+      "brief": "向 KR 寄存器写入 IWDG_KEY_WRITE_ACCESS_ENABLE 键值, 使能对 IWDG_PR 与 IWDG_RLR 寄存器的写访问。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "IWDG 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_iwdg.h",
+      "kind": "macro",
+      "src": "#define IWDG_ENABLE_WRITE_ACCESS(__HANDLE__)  WRITE_REG((__HANDLE__)->Instance->KR, IWDG_KEY_WRITE_ACCESS_ENABLE)"
+    },
+    {
+      "name": "IS_IWDG_PRESCALER",
+      "sig": "#define IS_IWDG_PRESCALER(__PRESCALER__)      (((__PRESCALER__) == IWDG_PRESCALER_4)  || \\\n                                               ((__PRESCALER__) == IWDG_PRESCALER_8)  || \\\n                                               ((__PRESCALER__) == IWDG_PRESCALER_16) || \\\n                                               ((__PRESCALER__) == IWDG_PRESCALER_32) || \\\n                                               ((__PRESCALER__) == IWDG_PRESCALER_64) || \\\n                                               ((__PRESCALER__) == IWDG_PRESCALER_128)|| \\\n                                               ((__PRESCALER__) == IWDG_PRESCALER_256))",
+      "brief": "校验 IWDG 预分频系数是否为 4/8/16/32/64/128/256 之一",
+      "params": [
+        {
+          "name": "__PRESCALER__",
+          "type": "宏参数",
+          "desc": "待校验的预分频值(IWDG_PRESCALER_*)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_iwdg.h",
+      "kind": "macro",
+      "src": "#define IS_IWDG_PRESCALER(__PRESCALER__)      (((__PRESCALER__) == IWDG_PRESCALER_4)  || \\\r\n                                               ((__PRESCALER__) == IWDG_PRESCALER_8)  || \\\r\n                                               ((__PRESCALER__) == IWDG_PRESCALER_16) || \\\r\n                                               ((__PRESCALER__) == IWDG_PRESCALER_32) || \\\r\n                                               ((__PRESCALER__) == IWDG_PRESCALER_64) || \\\r\n                                               ((__PRESCALER__) == IWDG_PRESCALER_128)|| \\\r\n                                               ((__PRESCALER__) == IWDG_PRESCALER_256))"
+    },
+    {
+      "name": "IS_IWDG_RELOAD",
+      "sig": "#define IS_IWDG_RELOAD(__RELOAD__)            ((__RELOAD__) <= IWDG_RLR_RL)",
+      "brief": "校验 IWDG 重载值不超过 IWDG_RLR_RL 掩码(12 位, 最大 0xFFF)",
+      "params": [
+        {
+          "name": "__RELOAD__",
+          "type": "宏参数",
+          "desc": "待校验的重载计数值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_iwdg.h",
+      "kind": "macro",
+      "src": "#define IS_IWDG_RELOAD(__RELOAD__)            ((__RELOAD__) <= IWDG_RLR_RL)"
+    },
+    {
+      "name": "IWDG_DISABLE_WRITE_ACCESS",
+      "sig": "#define IWDG_DISABLE_WRITE_ACCESS(__HANDLE__) WRITE_REG((__HANDLE__)->Instance->KR, IWDG_KEY_WRITE_ACCESS_DISABLE)",
+      "brief": "向密钥寄存器 KR 写入 IWDG_KEY_WRITE_ACCESS_DISABLE, 关闭 IWDG 寄存器的写访问(恢复写保护, 防止误写预分频/重载寄存器)",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "IWDG 句柄(IWDG_HandleTypeDef 指针, 取 Instance->KR 写入)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "与使能写访问(写入 IWDG_KEY_WRITE_ACCESS_ENABLE, 0x5555)成对使用; 初始化完成前必须先写 0x5555 解除写保护"
+      ],
+      "file": "py32f002b_hal_iwdg.h",
+      "kind": "macro",
+      "src": "#define IWDG_DISABLE_WRITE_ACCESS(__HANDLE__) WRITE_REG((__HANDLE__)->Instance->KR, IWDG_KEY_WRITE_ACCESS_DISABLE)"
+    }
+  ],
+  "ll": [],
+  "types": [],
+  "consts": []
+}

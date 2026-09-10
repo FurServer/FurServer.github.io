@@ -1,0 +1,444 @@
+{
+  "module": "FLASH",
+  "moduleId": "flash",
+  "hal": [
+    {
+      "name": "IS_FLASH_BANK",
+      "sig": "#define IS_FLASH_BANK(__BANK__)                        ((__BANK__) == 0x00UL)",
+      "brief": "校验 Flash 块(BANK)编号是否为 0(PY32F002B 仅含单一块, 即块 0)。",
+      "params": [
+        {
+          "name": "__BANK__",
+          "type": "宏参数",
+          "desc": "待校验的 Flash 块编号"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_FLASH_BANK(__BANK__)                        ((__BANK__) == 0x00UL)"
+    },
+    {
+      "name": "IS_FLASH_FAST_PROGRAM_ADDRESS",
+      "sig": "#define IS_FLASH_FAST_PROGRAM_ADDRESS(__ADDRESS__)     (((__ADDRESS__) >= (FLASH_BASE)) && ((__ADDRESS__) <= (FLASH_BASE + FLASH_SIZE - 256UL)))",
+      "brief": "校验快速编程目标地址是否落在主 Flash 有效范围内(FLASH_BASE 至 FLASH_BASE + FLASH_SIZE - 256)。",
+      "params": [
+        {
+          "name": "__ADDRESS__",
+          "type": "宏参数",
+          "desc": "待校验的快速编程目标地址"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_FLASH_FAST_PROGRAM_ADDRESS(__ADDRESS__)     (((__ADDRESS__) >= (FLASH_BASE)) && ((__ADDRESS__) <= (FLASH_BASE + FLASH_SIZE - 256UL)))"
+    },
+    {
+      "name": "IS_FLASH_LATENCY",
+      "sig": "#define IS_FLASH_LATENCY(__LATENCY__)                  (((__LATENCY__) == FLASH_LATENCY_0) || \\\n                                                        ((__LATENCY__) == FLASH_LATENCY_1))",
+      "brief": "校验 Flash 读取等待周期数是否为 FLASH_LATENCY_0 或 FLASH_LATENCY_1。",
+      "params": [
+        {
+          "name": "__LATENCY__",
+          "type": "宏参数",
+          "desc": "待校验的 Flash 等待周期配置"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_FLASH_LATENCY(__LATENCY__)                  (((__LATENCY__) == FLASH_LATENCY_0) || \\\r\n                                                        ((__LATENCY__) == FLASH_LATENCY_1))"
+    },
+    {
+      "name": "IS_FLASH_MAIN_MEM_ADDRESS",
+      "sig": "#define IS_FLASH_MAIN_MEM_ADDRESS(__ADDRESS__)         (((__ADDRESS__) >= (FLASH_BASE)) && ((__ADDRESS__) <= (FLASH_BASE + FLASH_SIZE - 1UL)))",
+      "brief": "校验地址是否落在主存储器完整范围内(FLASH_BASE 至 FLASH_BASE + FLASH_SIZE - 1)。",
+      "params": [
+        {
+          "name": "__ADDRESS__",
+          "type": "宏参数",
+          "desc": "待校验的地址"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_FLASH_MAIN_MEM_ADDRESS(__ADDRESS__)         (((__ADDRESS__) >= (FLASH_BASE)) && ((__ADDRESS__) <= (FLASH_BASE + FLASH_SIZE - 1UL)))"
+    },
+    {
+      "name": "IS_FLASH_NB_PAGES",
+      "sig": "#define IS_FLASH_NB_PAGES(__ADDRESS__, __VALUE__)      (((__ADDRESS__) >= (FLASH_BASE)) && ((__ADDRESS__ + (__VALUE__*FLASH_PAGE_SIZE) - 1) <= (FLASH_BASE + FLASH_SIZE - 1UL)))",
+      "brief": "校验从起始地址起连续 __VALUE__ 页(按 FLASH_PAGE_SIZE 计算)的地址区间是否完全落在主 Flash 范围内。",
+      "params": [
+        {
+          "name": "__ADDRESS__",
+          "type": "宏参数",
+          "desc": "待校验区间的起始地址"
+        },
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "连续页数"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_FLASH_NB_PAGES(__ADDRESS__, __VALUE__)      (((__ADDRESS__) >= (FLASH_BASE)) && ((__ADDRESS__ + (__VALUE__*FLASH_PAGE_SIZE) - 1) <= (FLASH_BASE + FLASH_SIZE - 1UL)))"
+    },
+    {
+      "name": "IS_FLASH_NB_SECTORS",
+      "sig": "#define IS_FLASH_NB_SECTORS(__ADDRESS__, __VALUE__)    (((__ADDRESS__) >= (FLASH_BASE)) && ((__ADDRESS__ + (__VALUE__*FLASH_SECTOR_SIZE) - 1) <= (FLASH_BASE + FLASH_SIZE - 1UL)))",
+      "brief": "校验从起始地址起连续 __VALUE__ 个扇区(按 FLASH_SECTOR_SIZE 计算)的地址区间是否完全落在主 Flash 范围内。",
+      "params": [
+        {
+          "name": "__ADDRESS__",
+          "type": "宏参数",
+          "desc": "待校验区间的起始地址"
+        },
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "连续扇区数"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_FLASH_NB_SECTORS(__ADDRESS__, __VALUE__)    (((__ADDRESS__) >= (FLASH_BASE)) && ((__ADDRESS__ + (__VALUE__*FLASH_SECTOR_SIZE) - 1) <= (FLASH_BASE + FLASH_SIZE - 1UL)))"
+    },
+    {
+      "name": "IS_FLASH_PAGE",
+      "sig": "#define IS_FLASH_PAGE(__PAGE__)                        ((__PAGE__) < FLASH_PAGE_NB)",
+      "brief": "校验页号是否小于 FLASH_PAGE_NB, 即是否处于有效页号范围内。",
+      "params": [
+        {
+          "name": "__PAGE__",
+          "type": "宏参数",
+          "desc": "待校验的页号"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_FLASH_PAGE(__PAGE__)                        ((__PAGE__) < FLASH_PAGE_NB)"
+    },
+    {
+      "name": "IS_FLASH_PROGRAM_ADDRESS",
+      "sig": "#define IS_FLASH_PROGRAM_ADDRESS(__ADDRESS__)          (IS_FLASH_PROGRAM_MAIN_MEM_ADDRESS(__ADDRESS__))",
+      "brief": "校验编程地址是否有效, 直接复用 IS_FLASH_PROGRAM_MAIN_MEM_ADDRESS 的判断结果。",
+      "params": [
+        {
+          "name": "__ADDRESS__",
+          "type": "宏参数",
+          "desc": "待校验的编程目标地址"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_FLASH_PROGRAM_ADDRESS(__ADDRESS__)          (IS_FLASH_PROGRAM_MAIN_MEM_ADDRESS(__ADDRESS__))"
+    },
+    {
+      "name": "IS_FLASH_PROGRAM_MAIN_MEM_ADDRESS",
+      "sig": "#define IS_FLASH_PROGRAM_MAIN_MEM_ADDRESS(__ADDRESS__) (((__ADDRESS__) >= (FLASH_BASE)) && ((__ADDRESS__) <= (FLASH_BASE + FLASH_SIZE - 8UL)))",
+      "brief": "校验编程地址是否落在主存储器编程范围内(FLASH_BASE 至 FLASH_BASE + FLASH_SIZE - 8, 末尾 8 字节不参与编程)。",
+      "params": [
+        {
+          "name": "__ADDRESS__",
+          "type": "宏参数",
+          "desc": "待校验的编程目标地址"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_FLASH_PROGRAM_MAIN_MEM_ADDRESS(__ADDRESS__) (((__ADDRESS__) >= (FLASH_BASE)) && ((__ADDRESS__) <= (FLASH_BASE + FLASH_SIZE - 8UL)))"
+    },
+    {
+      "name": "IS_FLASH_TIMECONFIG_CLOCK",
+      "sig": "#define IS_FLASH_TIMECONFIG_CLOCK(__VALUE__)           (((__VALUE__) == FLASH_PROGRAM_ERASE_CLOCK_24MHZ) || \\\n                                                        ((__VALUE__) == FLASH_PROGRAM_ERASE_CLOCK_48MHZ))",
+      "brief": "校验编程/擦除时钟配置是否为 24MHz 或 48MHz 档(FLASH_PROGRAM_ERASE_CLOCK_24MHZ / _48MHZ)。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的编程/擦除时钟配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_FLASH_TIMECONFIG_CLOCK(__VALUE__)           (((__VALUE__) == FLASH_PROGRAM_ERASE_CLOCK_24MHZ) || \\\r\n                                                        ((__VALUE__) == FLASH_PROGRAM_ERASE_CLOCK_48MHZ))"
+    },
+    {
+      "name": "IS_FLASH_TYPEERASE",
+      "sig": "#define IS_FLASH_TYPEERASE(__VALUE__)                  (((__VALUE__) == FLASH_TYPEERASE_PAGEERASE) || \\\n                                                        ((__VALUE__) == FLASH_TYPEERASE_SECTORERASE) || \\\n                                                        ((__VALUE__) == FLASH_TYPEERASE_MASSERASE))",
+      "brief": "校验擦除类型是否为页擦除(FLASH_TYPEERASE_PAGEERASE)、扇区擦除(SECTORERASE)或整片擦除(MASSERASE)之一。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的擦除类型"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_FLASH_TYPEERASE(__VALUE__)                  (((__VALUE__) == FLASH_TYPEERASE_PAGEERASE) || \\\r\n                                                        ((__VALUE__) == FLASH_TYPEERASE_SECTORERASE) || \\\r\n                                                        ((__VALUE__) == FLASH_TYPEERASE_MASSERASE))"
+    },
+    {
+      "name": "IS_FLASH_TYPEPROGRAM",
+      "sig": "#define IS_FLASH_TYPEPROGRAM(__VALUE__)                ((__VALUE__) == FLASH_TYPEPROGRAM_PAGE)",
+      "brief": "校验编程类型是否为页编程(FLASH_TYPEPROGRAM_PAGE)。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的编程类型"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_FLASH_TYPEPROGRAM(__VALUE__)                ((__VALUE__) == FLASH_TYPEPROGRAM_PAGE)"
+    },
+    {
+      "name": "IS_OB_BOOTSIZE",
+      "sig": "#define IS_OB_BOOTSIZE(__VALUE__)                      (((__VALUE__) == OB_BOOT_SIZE_NONE) || \\\n                                                        ((__VALUE__) == OB_BOOT_SIZE_1K) || \\\n                                                        ((__VALUE__) == OB_BOOT_SIZE_2K) || \\\n                                                        ((__VALUE__) == OB_BOOT_SIZE_3K) || \\\n                                                        ((__VALUE__) == OB_BOOT_SIZE_4K))",
+      "brief": "校验选项字节启动容量配置是否为 NONE/1K/2K/3K/4K 之一(OB_BOOT_SIZE_*)。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的启动容量配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_OB_BOOTSIZE(__VALUE__)                      (((__VALUE__) == OB_BOOT_SIZE_NONE) || \\\r\n                                                        ((__VALUE__) == OB_BOOT_SIZE_1K) || \\\r\n                                                        ((__VALUE__) == OB_BOOT_SIZE_2K) || \\\r\n                                                        ((__VALUE__) == OB_BOOT_SIZE_3K) || \\\r\n                                                        ((__VALUE__) == OB_BOOT_SIZE_4K))"
+    },
+    {
+      "name": "IS_OB_BOOTTYPE",
+      "sig": "#define IS_OB_BOOTTYPE(__VALUE__)                      (((__VALUE__) == OB_BOOT_MODE_MAINFLASH) || \\\n                                                        ((__VALUE__) == OB_BOOT_MODE_SRAM) || \\\n                                                        ((__VALUE__) == OB_BOOT_MODE_LOADFLASH))",
+      "brief": "校验选项字节启动模式是否为主 Flash(OB_BOOT_MODE_MAINFLASH)、SRAM(OB_BOOT_MODE_SRAM)或系统存储器(OB_BOOT_MODE_LOADFLASH)之一。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的启动模式配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_OB_BOOTTYPE(__VALUE__)                      (((__VALUE__) == OB_BOOT_MODE_MAINFLASH) || \\\r\n                                                        ((__VALUE__) == OB_BOOT_MODE_SRAM) || \\\r\n                                                        ((__VALUE__) == OB_BOOT_MODE_LOADFLASH))"
+    },
+    {
+      "name": "IS_OB_PCROP_CONFIG",
+      "sig": "#define IS_OB_PCROP_CONFIG(__CONFIG__)                 (((__CONFIG__) & ~(OB_PCROP_ZONE_A | OB_PCROP_ZONE_B | OB_PCROP_RDP_ERASE)) == 0x00U)",
+      "brief": "校验 PCROP 配置值只允许包含 ZONE_A/ZONE_B/RDP_ERASE 位, 不允许置位其它非法位。",
+      "params": [
+        {
+          "name": "__CONFIG__",
+          "type": "宏参数",
+          "desc": "待校验的 PCROP 配置位掩码"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_OB_PCROP_CONFIG(__CONFIG__)                 (((__CONFIG__) & ~(OB_PCROP_ZONE_A | OB_PCROP_ZONE_B | OB_PCROP_RDP_ERASE)) == 0x00U)"
+    },
+    {
+      "name": "IS_OB_SEC_BOOT_LOCK",
+      "sig": "#define IS_OB_SEC_BOOT_LOCK(__VALUE__)                 (((__VALUE__) == OB_BOOT_ENTRY_FORCED_NONE) || ((__VALUE__) == OB_BOOT_ENTRY_FORCED_FLASH))",
+      "brief": "校验安全启动锁定配置是否为无强制启动入口(OB_BOOT_ENTRY_FORCED_NONE)或强制从 Flash 启动(OB_BOOT_ENTRY_FORCED_FLASH)。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的安全启动锁定配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_OB_SEC_BOOT_LOCK(__VALUE__)                 (((__VALUE__) == OB_BOOT_ENTRY_FORCED_NONE) || ((__VALUE__) == OB_BOOT_ENTRY_FORCED_FLASH))"
+    },
+    {
+      "name": "IS_OB_SEC_SIZE",
+      "sig": "#define IS_OB_SEC_SIZE(__VALUE__)                      ((__VALUE__) < (FLASH_PAGE_NB + 1U))",
+      "brief": "校验安全区页数是否小于 FLASH_PAGE_NB + 1, 即是否处于合法页数范围。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的安全区页数"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_OB_SEC_SIZE(__VALUE__)                      ((__VALUE__) < (FLASH_PAGE_NB + 1U))"
+    },
+    {
+      "name": "IS_OB_USER_CONFIG",
+      "sig": "#define IS_OB_USER_CONFIG(__TYPE__,__CONFIG__)         ((~(__TYPE__) & (__CONFIG__)) == 0x00U)",
+      "brief": "校验选项字节用户配置值不含类型位以外的非法位, 即 (~(__TYPE__) & (__CONFIG__)) == 0。",
+      "params": [
+        {
+          "name": "__TYPE__",
+          "type": "宏参数",
+          "desc": "允许的类型位掩码"
+        },
+        {
+          "name": "__CONFIG__",
+          "type": "宏参数",
+          "desc": "待校验的配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_OB_USER_CONFIG(__TYPE__,__CONFIG__)         ((~(__TYPE__) & (__CONFIG__)) == 0x00U)"
+    },
+    {
+      "name": "IS_OB_USER_TYPE",
+      "sig": "#define IS_OB_USER_TYPE(__TYPE__)                      ((((__TYPE__) & OB_USER_ALL) != 0x00U) && \\\n                                                        (((__TYPE__) & ~OB_USER_ALL) == 0x00U))",
+      "brief": "校验选项字节用户类型至少包含一个 OB_USER_ALL 中的位, 且不含 OB_USER_ALL 之外的非法位。",
+      "params": [
+        {
+          "name": "__TYPE__",
+          "type": "宏参数",
+          "desc": "待校验的用户选项类型位掩码"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_OB_USER_TYPE(__TYPE__)                      ((((__TYPE__) & OB_USER_ALL) != 0x00U) && \\\r\n                                                        (((__TYPE__) & ~OB_USER_ALL) == 0x00U))"
+    },
+    {
+      "name": "IS_OPTIONBYTE",
+      "sig": "#define IS_OPTIONBYTE(__VALUE__)                       ((((__VALUE__) & OPTIONBYTE_ALL) != 0x00U) && \\\n                                                       (((__VALUE__) & ~OPTIONBYTE_ALL) == 0x00U))",
+      "brief": "校验选项字节类型至少包含一个 OPTIONBYTE_ALL 中的位, 且不含 OPTIONBYTE_ALL 之外的非法位。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的选项字节类型位掩码"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_OPTIONBYTE(__VALUE__)                       ((((__VALUE__) & OPTIONBYTE_ALL) != 0x00U) && \\\r\n                                                       (((__VALUE__) & ~OPTIONBYTE_ALL) == 0x00U))"
+    },
+    {
+      "name": "IS_WRPSTATE",
+      "sig": "#define IS_WRPSTATE(__VALUE__)                         (((__VALUE__) == OB_WRPSTATE_DISABLE) || \\\n                                                        ((__VALUE__) == OB_WRPSTATE_ENABLE))",
+      "brief": "校验写保护状态是否为使能(OB_WRPSTATE_ENABLE)或禁用(OB_WRPSTATE_DISABLE)之一。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的写保护状态值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define IS_WRPSTATE(__VALUE__)                         (((__VALUE__) == OB_WRPSTATE_DISABLE) || \\\r\n                                                        ((__VALUE__) == OB_WRPSTATE_ENABLE))"
+    }
+  ],
+  "ll": [],
+  "types": [],
+  "consts": []
+}

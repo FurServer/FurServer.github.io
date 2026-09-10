@@ -1,0 +1,2529 @@
+{
+  "module": "ADC",
+  "moduleId": "adc",
+  "intro": "模数转换器(ADC) LL 库: 寄存器级单函数操作(时钟/分辨率/对齐/低功耗/采样时间/触发/序列/看门狗/校准/基准缓冲), 标志与中断管理, 以及 ADC 初始化结构体与电压/温度换算辅助宏。需定义 USE_FULL_LL_DRIVER 使用初始化函数。",
+  "files": [
+    "py32f002b_ll_adc.c",
+    "py32f002b_ll_adc.h"
+  ],
+  "hal": [],
+  "ll": [
+    {
+      "name": "LL_ADC_CommonDeInit",
+      "sig": "ErrorStatus LL_ADC_CommonDeInit(ADC_Common_TypeDef *ADCxy_COMMON)",
+      "brief": "将所有共享同一公共实例的 ADC 寄存器硬复位为默认值(通过 RCC ADC 复位实现)。",
+      "params": [
+        {
+          "name": "ADCxy_COMMON",
+          "type": "ADC_Common_TypeDef *",
+          "desc": "ADC 公共实例, 可直接用 CMSIS 定义或辅助宏 __LL_ADC_COMMON_INSTANCE()"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 成功; ERROR 不适用"
+      },
+      "notes": [
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_adc.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_ADC_CommonDeInit(ADC_Common_TypeDef *ADCxy_COMMON)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_COMMON_INSTANCE(ADCxy_COMMON));\r\n\r\n  /* Force reset of ADC clock (core clock) */\r\n  LL_APB1_GRP2_ForceReset(LL_APB1_GRP2_PERIPH_ADC1);\r\n\r\n  /* Release reset of ADC clock (core clock) */\r\n  LL_APB1_GRP2_ReleaseReset(LL_APB1_GRP2_PERIPH_ADC1);\r\n\r\n  return SUCCESS;\r\n}"
+    },
+    {
+      "name": "LL_ADC_DeInit",
+      "sig": "ErrorStatus LL_ADC_DeInit(ADC_TypeDef *ADCx)",
+      "brief": "将所选 ADC 实例的寄存器全部恢复为复位默认值(先停止转换并禁止 ADC)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 成功; ERROR ADC 处于未知状态或操作超时"
+      },
+      "notes": [
+        "需定义 USE_FULL_LL_DRIVER。",
+        "返回 ERROR 时可用 LL_ADC_CommonDeInit() 做硬复位。"
+      ],
+      "file": "py32f002b_ll_adc.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_ADC_DeInit(ADC_TypeDef *ADCx)\r\n{\r\n  ErrorStatus status = SUCCESS;\r\n\r\n  __IO uint32_t timeout_cpu_cycles = 0U;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(ADCx));\r\n\r\n  /* Disable ADC instance if not already disabled.                            */\r\n  if(LL_ADC_IsEnabled(ADCx) == 1U)\r\n  {\r\n     /* Set ADC group regular trigger source to SW start to ensure to not      */\r\n    /* have an external trigger event occurring during the conversion stop    */\r\n    /* ADC disable process.                                                   */\r\n    LL_ADC_REG_SetTriggerSource(ADCx, LL_ADC_REG_TRIG_SOFTWARE);\r\n    \r\n    /* Stop potential ADC conversion on going on ADC group regular.           */\r\n    if(LL_ADC_REG_IsConversionOngoing(ADCx) != 0U)\r\n    {\r\n      if(LL_ADC_REG_IsStopConversionOngoing(ADCx) == 0U)\r\n      {\r\n        LL_ADC_REG_StopConversion(ADCx);\r\n      }\r\n    }\r\n    \r\n    /* Wait for ADC conversions are effectively stopped                       */\r\n    timeout_cpu_cycles = ADC_TIMEOUT_STOP_CONVERSION_CPU_CYCLES;\r\n    while (LL_ADC_REG_IsStopConversionOngoing(ADCx) == 1U)\r\n    {\r\n      if(timeout_cpu_cycles-- == 0U)\r\n      {\r\n        /* Time-out error */\r\n        status = ERROR;\r\n      }\r\n    }\r\n    \r\n    /* Disable the ADC instance */\r\n    LL_ADC_Disable(ADCx);\r\n    \r\n    /* Wait for ADC instance is effectively disabled */\r\n    timeout_cpu_cycles = ADC_TIMEOUT_DISABLE_CPU_CYCLES;\r\n    while (LL_ADC_IsDisableOngoing(ADCx) == 1U)\r\n    {\r\n      if(timeout_cpu_cycles-- == 0U)\r\n      {\r\n        /* Time-out error */\r\n        status = ERROR;\r\n      }\r\n    }\r\n  }\r\n\r\n  /* Check whether ADC state is compliant with expected state */\r\n  if(READ_BIT(ADCx->CR,(ADC_CR_ADSTP | ADC_CR_ADSTART | ADC_CR_ADDIS | ADC_CR_ADEN ))== 0U)\r\n  {\r\n    /* ========== Reset ADC registers ========== */\r\n    /* Reset register IER */\r\n    CLEAR_BIT(ADCx->IER,\r\n              (  LL_ADC_IT_EOC\r\n                 | LL_ADC_IT_EOS\r\n                 | LL_ADC_IT_OVR\r\n                 | LL_ADC_IT_EOSMP\r\n                 | LL_ADC_IT_AWD )\r\n             );\r\n\r\n    /* Reset register ISR */\r\n    SET_BIT(ADCx->ISR,\r\n            (  LL_ADC_FLAG_EOC\r\n               | LL_ADC_FLAG_EOS\r\n               | LL_ADC_FLAG_OVR\r\n               | LL_ADC_FLAG_EOSMP\r\n               | LL_ADC_FLAG_AWD )\r\n           );\r\n    \r\n    /* Reset register CR */\r\n    /* Bits ADC_CR_VREFBUFF_SEL, ADC_CR_VREF_BUFFERE */\r\n    CLEAR_BIT(ADCx->CR,(ADC_CR_VREFBUFF_SEL | ADC_CR_VREF_BUFFERE) );\r\n\r\n    /* Reset register CFGR1 */\r\n    CLEAR_BIT(ADCx->CFGR1,\r\n              (  ADC_CFGR1_AWDCH   | ADC_CFGR1_AWDEN  | ADC_CFGR1_AWDSGL  | ADC_CFGR1_DISCEN\r\n                 | ADC_CFGR1_WAIT   | ADC_CFGR1_CONT    | ADC_CFGR1_OVRMOD\r\n                 | ADC_CFGR1_EXTEN   | ADC_CFGR1_EXTSEL | ADC_CFGR1_ALIGN   | ADC_CFGR1_RESSEL\r\n                 | ADC_CFGR1_SCANDIR                     )\r\n             );\r\n\r\n    /* Reset register CFGR2 */\r\n    /* Note: Update of ADC clock mode is conditioned to ADC state disabled:   */\r\n    /*       already done above.                                              */\r\n    CLEAR_BIT(ADCx->CFGR2, ADC_CFGR2_CKMODE);\r\n\r\n    /* Reset register SMPR */\r\n    CLEAR_BIT(ADCx->SMPR, ADC_SMPR_SMP);\r\n\r\n    /* Reset register TR */\r\n    MODIFY_REG(ADCx->TR, ADC_TR_HT | ADC_TR_LT, ADC_TR_HT);\r\n\r\n    /* Reset register CHSELR */\r\n#if defined(ADC_CHSELR_CHSEL10)\r\n    CLEAR_BIT(ADCx->CHSELR,\r\n              (   ADC_CHSELR_CHSEL10 | ADC_CHSELR_CHSEL9  | ADC_CHSELR_CHSEL8\r\n                | ADC_CHSELR_CHSEL7  | ADC_CHSELR_CHSEL6  | ADC_CHSELR_CHSEL5  | ADC_CHSELR_CHSEL4\r\n                | ADC_CHSELR_CHSEL3  | ADC_CHSELR_CHSEL2  | ADC_CHSELR_CHSEL1  | ADC_CHSELR_CHSEL0 )\r\n             );\r\n#else\r\n    CLEAR_BIT(ADCx->CHSELR,\r\n              (   ADC_CHSELR_CHSEL9  | ADC_CHSELR_CHSEL8\r\n                | ADC_CHSELR_CHSEL7  | ADC_CHSELR_CHSEL6  | ADC_CHSELR_CHSEL5  | ADC_CHSELR_CHSEL4\r\n                | ADC_CHSELR_CHSEL3  | ADC_CHSELR_CHSEL2  | ADC_CHSELR_CHSEL1  | ADC_CHSELR_CHSEL0 )\r\n             );\r\n\r\n\r\n#endif\r\n\r\n\r\n    /* Reset register CCR */\r\n    CLEAR_BIT(__LL_ADC_COMMON_INSTANCE(ADC1)->CCR,ADC_CCR_TSEN | ADC_CCR_VREFEN);\r\n\r\n    /* Reset register DR */\r\n    /* bits in access mode read only, no direct reset applicable */\r\n\r\n  }\r\n  else\r\n  {\r\n    /* ADC instance is in an unknown state */\r\n    /* Need to performing a hard reset of ADC instance, using high level      */\r\n    /* clock source RCC ADC reset.                                            */\r\n    status = ERROR;\r\n  }\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "LL_ADC_Init",
+      "sig": "ErrorStatus LL_ADC_Init(ADC_TypeDef *ADCx, LL_ADC_InitTypeDef *ADC_InitStruct)",
+      "brief": "初始化 ADC 实例级特性: 时钟源与分频、分辨率、数据对齐、低功耗模式。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "ADC_InitStruct",
+          "type": "LL_ADC_InitTypeDef *",
+          "desc": "实例配置结构体指针"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 成功; ERROR ADC 未禁止"
+      },
+      "notes": [
+        "前提: ADC 实例必须处于禁止状态。",
+        "之后还需用 LL_ADC_REG_SetSequencerChannels() 设置序列通道、LL_ADC_SetSamplingTimeCommonChannels() 设置采样时间。",
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_adc.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_ADC_Init(ADC_TypeDef *ADCx, LL_ADC_InitTypeDef *ADC_InitStruct)\r\n{\r\n  ErrorStatus status = SUCCESS;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(ADCx));\r\n\r\n  assert_param(IS_LL_ADC_CLOCK(ADC_InitStruct->Clock));\r\n  assert_param(IS_LL_ADC_RESOLUTION(ADC_InitStruct->Resolution));\r\n  assert_param(IS_LL_ADC_DATA_ALIGN(ADC_InitStruct->DataAlignment));\r\n  assert_param(IS_LL_ADC_LOW_POWER(ADC_InitStruct->LowPowerMode));\r\n\r\n  /* Note: Hardware constraint (refer to description of this function):       */\r\n  /*       ADC instance must be disabled.                                     */\r\n  if(LL_ADC_IsEnabled(ADCx) == 0U)\r\n  {\r\n    /* Configuration of ADC hierarchical scope:                               */\r\n    /*  - ADC instance                                                        */\r\n    /*    - Set ADC data resolution                                           */\r\n    /*    - Set ADC conversion data alignment                                 */\r\n    /*    - Set ADC low power mode                                            */\r\n    MODIFY_REG(ADCx->CFGR1,\r\n               ADC_CFGR1_RESSEL\r\n               | ADC_CFGR1_ALIGN\r\n               | ADC_CFGR1_WAIT\r\n               ,\r\n               ADC_InitStruct->Resolution\r\n               | ADC_InitStruct->DataAlignment\r\n               | ADC_InitStruct->LowPowerMode\r\n              );\r\n\r\n    MODIFY_REG(ADCx->CFGR2,\r\n               ADC_CFGR2_CKMODE\r\n               ,\r\n               ADC_InitStruct->Clock\r\n              );\r\n  }\r\n  else\r\n  {\r\n    /* Initialization error: ADC instance is not disabled. */\r\n    status = ERROR;\r\n  }\r\n  return status;\r\n}"
+    },
+    {
+      "name": "LL_ADC_StructInit",
+      "sig": "void LL_ADC_StructInit(LL_ADC_InitTypeDef *ADC_InitStruct)",
+      "brief": "将 LL_ADC_InitTypeDef 结构体各成员填充为默认值, 供 LL_ADC_Init() 使用。",
+      "params": [
+        {
+          "name": "ADC_InitStruct",
+          "type": "LL_ADC_InitTypeDef *",
+          "desc": "要填充的结构体指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "默认值: Clock=LL_ADC_CLOCK_SYNC_PCLK_DIV2, Resolution=LL_ADC_RESOLUTION_12B, DataAlignment=LL_ADC_DATA_ALIGN_RIGHT, LowPowerMode=LL_ADC_LP_MODE_NONE。",
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_adc.c",
+      "kind": "function",
+      "src": "void LL_ADC_StructInit(LL_ADC_InitTypeDef *ADC_InitStruct)\r\n{\r\n  /* Set ADC_InitStruct fields to default values */\r\n  /* Set fields of ADC instance */\r\n  ADC_InitStruct->Clock         = LL_ADC_CLOCK_SYNC_PCLK_DIV2;\r\n  ADC_InitStruct->Resolution    = LL_ADC_RESOLUTION_12B;\r\n  ADC_InitStruct->DataAlignment = LL_ADC_DATA_ALIGN_RIGHT;\r\n  ADC_InitStruct->LowPowerMode  = LL_ADC_LP_MODE_NONE;\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_Init",
+      "sig": "ErrorStatus LL_ADC_REG_Init(ADC_TypeDef *ADCx, LL_ADC_REG_InitTypeDef *ADC_REG_InitStruct)",
+      "brief": "初始化 ADC 规则组特性: 触发源、序列不连续模式、连续/单次模式、溢出行为。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "ADC_REG_InitStruct",
+          "type": "LL_ADC_REG_InitTypeDef *",
+          "desc": "规则组配置结构体指针"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 成功; ERROR ADC 未禁止"
+      },
+      "notes": [
+        "前提: ADC 实例必须处于禁止状态。",
+        "之后还需设置规则组序列通道与采样时间。",
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_adc.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_ADC_REG_Init(ADC_TypeDef *ADCx, LL_ADC_REG_InitTypeDef *ADC_REG_InitStruct)\r\n{\r\n  ErrorStatus status = SUCCESS;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(ADCx));\r\n  assert_param(IS_LL_ADC_REG_TRIG_SOURCE(ADC_REG_InitStruct->TriggerSource));\r\n  assert_param(IS_LL_ADC_REG_SEQ_SCAN_DISCONT_MODE(ADC_REG_InitStruct->SequencerDiscont));\r\n  assert_param(IS_LL_ADC_REG_CONTINUOUS_MODE(ADC_REG_InitStruct->ContinuousMode));\r\n  assert_param(IS_LL_ADC_REG_OVR_DATA_BEHAVIOR(ADC_REG_InitStruct->Overrun));\r\n\r\n  /* Note: Hardware constraint (refer to description of this function):       */\r\n  /*       ADC instance must be disabled.                                     */\r\n  if(LL_ADC_IsEnabled(ADCx) == 0U)\r\n  {\r\n    /* Configuration of ADC hierarchical scope:                               */\r\n    /*  - ADC group regular                                                   */\r\n    /*    - Set ADC group regular trigger source                              */\r\n    /*    - Set ADC group regular sequencer discontinuous mode                */\r\n    /*    - Set ADC group regular continuous mode                             */\r\n    /*    - Set ADC group regular overrun behavior                            */\r\n\r\n    MODIFY_REG(ADCx->CFGR1,\r\n               ADC_CFGR1_EXTSEL\r\n               | ADC_CFGR1_EXTEN\r\n               | ADC_CFGR1_DISCEN\r\n               | ADC_CFGR1_CONT\r\n               | ADC_CFGR1_OVRMOD\r\n               ,\r\n               ADC_REG_InitStruct->TriggerSource\r\n               | ADC_REG_InitStruct->SequencerDiscont\r\n               | ADC_REG_InitStruct->ContinuousMode\r\n               | ADC_REG_InitStruct->Overrun\r\n              );\r\n  }\r\n  else\r\n  {\r\n    /* Initialization error: ADC instance is not disabled. */\r\n    status = ERROR;\r\n  }\r\n  return status;\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_StructInit",
+      "sig": "void LL_ADC_REG_StructInit(LL_ADC_REG_InitTypeDef *ADC_REG_InitStruct)",
+      "brief": "将 LL_ADC_REG_InitTypeDef 结构体各成员填充为默认值, 供 LL_ADC_REG_Init() 使用。",
+      "params": [
+        {
+          "name": "ADC_REG_InitStruct",
+          "type": "LL_ADC_REG_InitTypeDef *",
+          "desc": "要填充的结构体指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "默认值: TriggerSource=LL_ADC_REG_TRIG_SOFTWARE, SequencerDiscont=LL_ADC_REG_SEQ_DISCONT_DISABLE, ContinuousMode=LL_ADC_REG_CONV_SINGLE, Overrun=LL_ADC_REG_OVR_DATA_OVERWRITTEN。",
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_adc.c",
+      "kind": "function",
+      "src": "void LL_ADC_REG_StructInit(LL_ADC_REG_InitTypeDef *ADC_REG_InitStruct)\r\n{\r\n  /* Set ADC_REG_InitStruct fields to default values */\r\n  /* Set fields of ADC group regular */\r\n  ADC_REG_InitStruct->TriggerSource    = LL_ADC_REG_TRIG_SOFTWARE;\r\n  ADC_REG_InitStruct->SequencerDiscont = LL_ADC_REG_SEQ_DISCONT_DISABLE;\r\n  ADC_REG_InitStruct->ContinuousMode   = LL_ADC_REG_CONV_SINGLE;\r\n  ADC_REG_InitStruct->Overrun          = LL_ADC_REG_OVR_DATA_OVERWRITTEN;\r\n}"
+    },
+    {
+      "name": "LL_ADC_SetCommonPathInternalCh",
+      "sig": "void LL_ADC_SetCommonPathInternalCh(ADC_Common_TypeDef *ADCxy_COMMON, uint32_t PathInternal)",
+      "brief": "设置多个 ADC 公共参数: 内部通道测量通路(VrefInt、温度传感器等), 可多值组合。",
+      "params": [
+        {
+          "name": "ADCxy_COMMON",
+          "type": "ADC_Common_TypeDef *",
+          "desc": "ADC 公共实例"
+        },
+        {
+          "name": "PathInternal",
+          "type": "uint32_t",
+          "desc": "内部通路组合: LL_ADC_PATH_INTERNAL_NONE / VREFINT / TEMPSENSOR"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "使能内部通路后、启动转换前需等待稳定时间(参考 LL_ADC_DELAY_VREFINT_STAB_US / LL_ADC_DELAY_TEMPSENSOR_STAB_US)。",
+        "设置受 ADC 状态约束: 公共组内所有 ADC 实例必须禁止。"
+      ],
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_SetCommonPathInternalCh(ADC_Common_TypeDef *ADCxy_COMMON, uint32_t PathInternal)\r\n{\r\n  MODIFY_REG(ADCxy_COMMON->CCR, ADC_CCR_VREFEN | ADC_CCR_TSEN, PathInternal);\r\n}"
+    },
+    {
+      "name": "LL_ADC_GetCommonPathInternalCh",
+      "sig": "uint32_t LL_ADC_GetCommonPathInternalCh(ADC_Common_TypeDef *ADCxy_COMMON)",
+      "brief": "读取多个 ADC 公共参数: 当前使能的内部通道测量通路。",
+      "params": [
+        {
+          "name": "ADCxy_COMMON",
+          "type": "ADC_Common_TypeDef *",
+          "desc": "ADC 公共实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "内部通路组合(LL_ADC_PATH_INTERNAL_*)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_GetCommonPathInternalCh(ADC_Common_TypeDef *ADCxy_COMMON)\r\n{\r\n  return (uint32_t)(READ_BIT(ADCxy_COMMON->CCR, ADC_CCR_VREFEN | ADC_CCR_TSEN));\r\n}"
+    },
+    {
+      "name": "LL_ADC_SetClock",
+      "sig": "void LL_ADC_SetClock(ADC_TypeDef *ADCx, uint32_t ClockSource)",
+      "brief": "设置 ADC 实例时钟源与分频(CFGR2 寄存器 CKMODE 位)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "ClockSource",
+          "type": "uint32_t",
+          "desc": "时钟源: LL_ADC_CLOCK_SYNC_PCLK_DIV1..64 或 LL_ADC_CLOCK_ASYNC_HSI_DIV1..64"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "只能在 ADC 禁止时修改。"
+      ],
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_SetClock(ADC_TypeDef *ADCx, uint32_t ClockSource)\r\n{\r\n  MODIFY_REG(ADCx->CFGR2, ADC_CFGR2_CKMODE, ClockSource);\r\n}"
+    },
+    {
+      "name": "LL_ADC_GetClock",
+      "sig": "uint32_t LL_ADC_GetClock(ADC_TypeDef *ADCx)",
+      "brief": "读取 ADC 实例时钟源与分频。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "时钟源值(LL_ADC_CLOCK_*)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_GetClock(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint32_t)(READ_BIT(ADCx->CFGR2, ADC_CFGR2_CKMODE));\r\n}"
+    },
+    {
+      "name": "LL_ADC_SetResolution",
+      "sig": "void LL_ADC_SetResolution(ADC_TypeDef *ADCx, uint32_t Resolution)",
+      "brief": "设置 ADC 分辨率(CFGR1 寄存器 RES 位)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "Resolution",
+          "type": "uint32_t",
+          "desc": "分辨率: LL_ADC_RESOLUTION_12B / 10B / 8B / 6B"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "只能在 ADC 禁止或规则组无转换进行时修改。"
+      ],
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_SetResolution(ADC_TypeDef *ADCx, uint32_t Resolution)\r\n{\r\n  MODIFY_REG(ADCx->CFGR1, ADC_CFGR1_RESSEL, Resolution);\r\n}"
+    },
+    {
+      "name": "LL_ADC_GetResolution",
+      "sig": "uint32_t LL_ADC_GetResolution(ADC_TypeDef *ADCx)",
+      "brief": "读取 ADC 分辨率。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "分辨率值(LL_ADC_RESOLUTION_*)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_GetResolution(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint32_t)(READ_BIT(ADCx->CFGR1, ADC_CFGR1_RESSEL));\r\n}"
+    },
+    {
+      "name": "LL_ADC_SetDataAlignment",
+      "sig": "void LL_ADC_SetDataAlignment(ADC_TypeDef *ADCx, uint32_t DataAlignment)",
+      "brief": "设置 ADC 转换数据对齐方式(CFGR1 寄存器 ALIGN 位)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "DataAlignment",
+          "type": "uint32_t",
+          "desc": "对齐方式: LL_ADC_DATA_ALIGN_RIGHT / LEFT"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "对齐格式与分辨率的对应关系参见参考手册。"
+      ],
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_SetDataAlignment(ADC_TypeDef *ADCx, uint32_t DataAlignment)\r\n{\r\n  MODIFY_REG(ADCx->CFGR1, ADC_CFGR1_ALIGN, DataAlignment);\r\n}"
+    },
+    {
+      "name": "LL_ADC_GetDataAlignment",
+      "sig": "uint32_t LL_ADC_GetDataAlignment(ADC_TypeDef *ADCx)",
+      "brief": "读取 ADC 转换数据对齐方式。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "对齐方式值(LL_ADC_DATA_ALIGN_*)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_GetDataAlignment(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint32_t)(READ_BIT(ADCx->CFGR1, ADC_CFGR1_ALIGN));\r\n}"
+    },
+    {
+      "name": "LL_ADC_SetLowPowerMode",
+      "sig": "void LL_ADC_SetLowPowerMode(ADC_TypeDef *ADCx, uint32_t LowPowerMode)",
+      "brief": "设置 ADC 低功耗模式(CFGR1 寄存器 WAIT 位)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "LowPowerMode",
+          "type": "uint32_t",
+          "desc": "低功耗模式: LL_ADC_LP_MODE_NONE / LL_ADC_LP_AUTOWAIT"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "自动等待(AUTOWAIT)模式下读取的数据对应上一次转换启动, 可能已过时。"
+      ],
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_SetLowPowerMode(ADC_TypeDef *ADCx, uint32_t LowPowerMode)\r\n{\r\n  MODIFY_REG(ADCx->CFGR1, (ADC_CFGR1_WAIT), LowPowerMode);\r\n}"
+    },
+    {
+      "name": "LL_ADC_GetLowPowerMode",
+      "sig": "uint32_t LL_ADC_GetLowPowerMode(ADC_TypeDef *ADCx)",
+      "brief": "读取 ADC 低功耗模式。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "低功耗模式值(LL_ADC_LP_*)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_GetLowPowerMode(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint32_t)(READ_BIT(ADCx->CFGR1, (ADC_CFGR1_WAIT )));\r\n}"
+    },
+    {
+      "name": "LL_ADC_SetSamplingTimeCommonChannels",
+      "sig": "void LL_ADC_SetSamplingTimeCommonChannels(ADC_TypeDef *ADCx, uint32_t SamplingTime)",
+      "brief": "设置一组通道的公共采样时间(SMPR 寄存器 SMP 位), 单位 ADC 时钟周期。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "SamplingTime",
+          "type": "uint32_t",
+          "desc": "采样时间: LL_ADC_SAMPLINGTIME_3CYCLES_5 .. 239CYCLES_5"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "内部通道(VrefInt/温度传感器)有最小采样时间要求, 参见数据手册。"
+      ],
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_SetSamplingTimeCommonChannels(ADC_TypeDef *ADCx, uint32_t SamplingTime)\r\n{\r\n  MODIFY_REG(ADCx->SMPR, ADC_SMPR_SMP, SamplingTime);\r\n}"
+    },
+    {
+      "name": "LL_ADC_GetSamplingTimeCommonChannels",
+      "sig": "uint32_t LL_ADC_GetSamplingTimeCommonChannels(ADC_TypeDef *ADCx)",
+      "brief": "读取一组通道的公共采样时间。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "采样时间值(LL_ADC_SAMPLINGTIME_*)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_GetSamplingTimeCommonChannels(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint32_t)(READ_BIT(ADCx->SMPR, ADC_SMPR_SMP));\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_SetTriggerSource",
+      "sig": "void LL_ADC_REG_SetTriggerSource(ADC_TypeDef *ADCx, uint32_t TriggerSource)",
+      "brief": "设置规则组转换触发源: 软件启动或外部(定时器事件)触发。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "TriggerSource",
+          "type": "uint32_t",
+          "desc": "触发源: LL_ADC_REG_TRIG_SOFTWARE / LL_ADC_REG_TRIG_EXT_TIM1_TRGO / LL_ADC_REG_TRIG_EXT_TIM1_CH4"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "选外部触发时同时将触发极性设为上升沿, 需要其它极性用 LL_ADC_REG_SetTriggerEdge() 修改。"
+      ],
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_REG_SetTriggerSource(ADC_TypeDef *ADCx, uint32_t TriggerSource)\r\n{\r\n  MODIFY_REG(ADCx->CFGR1, ADC_CFGR1_EXTEN | ADC_CFGR1_EXTSEL, TriggerSource);\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_GetTriggerSource",
+      "sig": "uint32_t LL_ADC_REG_GetTriggerSource(ADC_TypeDef *ADCx)",
+      "brief": "读取规则组转换触发源。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "触发源值(LL_ADC_REG_TRIG_*)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_REG_GetTriggerSource(ADC_TypeDef *ADCx)\r\n{\r\n  register uint32_t TriggerSource = READ_BIT(ADCx->CFGR1, ADC_CFGR1_EXTSEL | ADC_CFGR1_EXTEN);\r\n\r\n  /* Value for shift of {0; 4; 8; 12} depending on value of bitfield          */\r\n  /* corresponding to ADC_CFGR1_EXTEN {0; 1; 2; 3}.                           */\r\n  register uint32_t ShiftExten = ((TriggerSource & ADC_CFGR1_EXTEN) >> (ADC_REG_TRIG_EXTEN_BITOFFSET_POS - 2U));\r\n\r\n  /* Set bitfield corresponding to ADC_CFGR1_EXTEN and ADC_CFGR1_EXTSEL       */\r\n  /* to match with triggers literals definition.                              */\r\n  return ((TriggerSource\r\n           & (ADC_REG_TRIG_SOURCE_MASK >> ShiftExten) & ADC_CFGR1_EXTSEL)\r\n          | ((ADC_REG_TRIG_EDGE_MASK >> ShiftExten) & ADC_CFGR1_EXTEN)\r\n         );\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_IsTriggerSourceSWStart",
+      "sig": "uint32_t LL_ADC_REG_IsTriggerSourceSWStart(ADC_TypeDef *ADCx)",
+      "brief": "查询规则组触发源是否为软件启动。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 为软件启动, 0 为外部触发"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_REG_IsTriggerSourceSWStart(ADC_TypeDef *ADCx)\r\n{\r\n  return (READ_BIT(ADCx->CFGR1, ADC_CFGR1_EXTEN) == (LL_ADC_REG_TRIG_SOFTWARE & ADC_CFGR1_EXTEN));\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_SetTriggerEdge",
+      "sig": "void LL_ADC_REG_SetTriggerEdge(ADC_TypeDef *ADCx, uint32_t ExternalTriggerEdge)",
+      "brief": "设置规则组外部触发极性(仅外部触发源有效)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "ExternalTriggerEdge",
+          "type": "uint32_t",
+          "desc": "触发极性: LL_ADC_REG_TRIG_EXT_RISING / FALLING / RISINGFALLING"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_REG_SetTriggerEdge(ADC_TypeDef *ADCx, uint32_t ExternalTriggerEdge)\r\n{\r\n  MODIFY_REG(ADCx->CFGR1, ADC_CFGR1_EXTEN, ExternalTriggerEdge);\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_GetTriggerEdge",
+      "sig": "uint32_t LL_ADC_REG_GetTriggerEdge(ADC_TypeDef *ADCx)",
+      "brief": "读取规则组外部触发极性。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "触发极性值(LL_ADC_REG_TRIG_EXT_*)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_REG_GetTriggerEdge(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint32_t)(READ_BIT(ADCx->CFGR1, ADC_CFGR1_EXTEN));\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_SetSequencerScanDirection",
+      "sig": "void LL_ADC_REG_SetSequencerScanDirection(ADC_TypeDef *ADCx, uint32_t ScanDirection)",
+      "brief": "设置规则组序列器扫描方向。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "ScanDirection",
+          "type": "uint32_t",
+          "desc": "扫描方向: LL_ADC_REG_SEQ_SCAN_DIR_FORWARD / BACKWARD"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_REG_SetSequencerScanDirection(ADC_TypeDef *ADCx, uint32_t ScanDirection)\r\n{\r\n  MODIFY_REG(ADCx->CFGR1, ADC_CFGR1_SCANDIR, ScanDirection);\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_GetSequencerScanDirection",
+      "sig": "uint32_t LL_ADC_REG_GetSequencerScanDirection(ADC_TypeDef *ADCx)",
+      "brief": "读取规则组序列器扫描方向。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "扫描方向值(LL_ADC_REG_SEQ_SCAN_DIR_*)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_REG_GetSequencerScanDirection(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint32_t)(READ_BIT(ADCx->CFGR1, ADC_CFGR1_SCANDIR));\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_SetSequencerDiscont",
+      "sig": "void LL_ADC_REG_SetSequencerDiscont(ADC_TypeDef *ADCx, uint32_t SeqDiscont)",
+      "brief": "设置规则组序列器不连续模式: 序列分段, 每转换一个 rank 中断一次。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "SeqDiscont",
+          "type": "uint32_t",
+          "desc": "不连续模式: LL_ADC_REG_SEQ_DISCONT_DISABLE / LL_ADC_REG_SEQ_DISCONT_1RANK"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_REG_SetSequencerDiscont(ADC_TypeDef *ADCx, uint32_t SeqDiscont)\r\n{\r\n  MODIFY_REG(ADCx->CFGR1, ADC_CFGR1_DISCEN, SeqDiscont);\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_GetSequencerDiscont",
+      "sig": "uint32_t LL_ADC_REG_GetSequencerDiscont(ADC_TypeDef *ADCx)",
+      "brief": "读取规则组序列器不连续模式。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "不连续模式值(LL_ADC_REG_SEQ_DISCONT_*)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_REG_GetSequencerDiscont(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint32_t)(READ_BIT(ADCx->CFGR1, ADC_CFGR1_DISCEN));\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_SetSequencerChannels",
+      "sig": "void LL_ADC_REG_SetSequencerChannels(ADC_TypeDef *ADCx, uint32_t Channel)",
+      "brief": "设置规则组序列通道(整写 CHSELR): 通道 rank 固定为通道号, 可多通道组合。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "Channel",
+          "type": "uint32_t",
+          "desc": "通道组合: LL_ADC_CHANNEL_0 .. 10 / VREFINT / TEMPSENSOR / 1_3VCCA"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_REG_SetSequencerChannels(ADC_TypeDef *ADCx, uint32_t Channel)\r\n{\r\n  /* Parameter \"Channel\" is used with masks because containing                */\r\n  /* other bits reserved for other purpose.                                   */\r\n  WRITE_REG(ADCx->CHSELR, (Channel & ADC_CHANNEL_ID_BITFIELD_MASK));\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_SetSequencerChAdd",
+      "sig": "void LL_ADC_REG_SetSequencerChAdd(ADC_TypeDef *ADCx, uint32_t Channel)",
+      "brief": "向规则组序列添加通道(在现有配置上置位)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "Channel",
+          "type": "uint32_t",
+          "desc": "要添加的通道组合(LL_ADC_CHANNEL_*)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_REG_SetSequencerChAdd(ADC_TypeDef *ADCx, uint32_t Channel)\r\n{\r\n  /* Parameter \"Channel\" is used with masks because containing                */\r\n  /* other bits reserved for other purpose.                                   */\r\n  SET_BIT(ADCx->CHSELR, (Channel & ADC_CHANNEL_ID_BITFIELD_MASK));\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_SetSequencerChRem",
+      "sig": "void LL_ADC_REG_SetSequencerChRem(ADC_TypeDef *ADCx, uint32_t Channel)",
+      "brief": "从规则组序列移除通道(在现有配置上清零)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "Channel",
+          "type": "uint32_t",
+          "desc": "要移除的通道组合(LL_ADC_CHANNEL_*)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_REG_SetSequencerChRem(ADC_TypeDef *ADCx, uint32_t Channel)\r\n{\r\n  /* Parameter \"Channel\" is used with masks because containing                */\r\n  /* other bits reserved for other purpose.                                   */\r\n  CLEAR_BIT(ADCx->CHSELR, (Channel & ADC_CHANNEL_ID_BITFIELD_MASK));\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_GetSequencerChannels",
+      "sig": "uint32_t LL_ADC_REG_GetSequencerChannels(ADC_TypeDef *ADCx)",
+      "brief": "读取规则组序列中的通道组合。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "通道组合(LL_ADC_CHANNEL_*)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_REG_GetSequencerChannels(ADC_TypeDef *ADCx)\r\n{\r\n  register uint32_t ChannelsBitfield = READ_BIT(ADCx->CHSELR, ADC_CHSELR_CHSEL);\r\n\r\n  return (   (((ChannelsBitfield & ADC_CHSELR_CHSEL0) >> ADC_CHSELR_CHSEL0_BITOFFSET_POS) * LL_ADC_CHANNEL_0)\r\n             | (((ChannelsBitfield & ADC_CHSELR_CHSEL1) >> ADC_CHSELR_CHSEL1_BITOFFSET_POS) * LL_ADC_CHANNEL_1)\r\n             | (((ChannelsBitfield & ADC_CHSELR_CHSEL2) >> ADC_CHSELR_CHSEL2_BITOFFSET_POS) * LL_ADC_CHANNEL_2)\r\n             | (((ChannelsBitfield & ADC_CHSELR_CHSEL3) >> ADC_CHSELR_CHSEL3_BITOFFSET_POS) * LL_ADC_CHANNEL_3)\r\n             | (((ChannelsBitfield & ADC_CHSELR_CHSEL4) >> ADC_CHSELR_CHSEL4_BITOFFSET_POS) * LL_ADC_CHANNEL_4)\r\n             | (((ChannelsBitfield & ADC_CHSELR_CHSEL5) >> ADC_CHSELR_CHSEL5_BITOFFSET_POS) * LL_ADC_CHANNEL_5)\r\n             | (((ChannelsBitfield & ADC_CHSELR_CHSEL6) >> ADC_CHSELR_CHSEL6_BITOFFSET_POS) * LL_ADC_CHANNEL_6)\r\n             | (((ChannelsBitfield & ADC_CHSELR_CHSEL7) >> ADC_CHSELR_CHSEL7_BITOFFSET_POS) * LL_ADC_CHANNEL_7)\r\n             | (((ChannelsBitfield & ADC_CHSELR_CHSEL8) >> ADC_CHSELR_CHSEL8_BITOFFSET_POS) * LL_ADC_CHANNEL_8)\r\n             | (((ChannelsBitfield & ADC_CHSELR_CHSEL9) >> ADC_CHSELR_CHSEL9_BITOFFSET_POS) * LL_ADC_CHANNEL_9)\r\n             | (((ChannelsBitfield & ADC_CHSELR_CHSEL10) >> ADC_CHSELR_CHSEL10_BITOFFSET_POS) * LL_ADC_CHANNEL_10)\r\n         );\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_SetContinuousMode",
+      "sig": "void LL_ADC_REG_SetContinuousMode(ADC_TypeDef *ADCx, uint32_t Continuous)",
+      "brief": "设置规则组连续转换模式: 单次(每触发一次转换)或连续(首次触发后自动连续)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "Continuous",
+          "type": "uint32_t",
+          "desc": "模式: LL_ADC_REG_CONV_SINGLE / LL_ADC_REG_CONV_CONTINUOUS"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "连续模式与不连续模式不能同时使能。"
+      ],
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_REG_SetContinuousMode(ADC_TypeDef *ADCx, uint32_t Continuous)\r\n{\r\n  MODIFY_REG(ADCx->CFGR1, ADC_CFGR1_CONT, Continuous);\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_GetContinuousMode",
+      "sig": "uint32_t LL_ADC_REG_GetContinuousMode(ADC_TypeDef *ADCx)",
+      "brief": "读取规则组连续转换模式。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "模式值(LL_ADC_REG_CONV_*)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_REG_GetContinuousMode(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint32_t)(READ_BIT(ADCx->CFGR1, ADC_CFGR1_CONT));\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_SetOverrun",
+      "sig": "void LL_ADC_REG_SetOverrun(ADC_TypeDef *ADCx, uint32_t Overrun)",
+      "brief": "设置规则组溢出行为: 数据保留或覆盖。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "Overrun",
+          "type": "uint32_t",
+          "desc": "溢出行为: LL_ADC_REG_OVR_DATA_PRESERVED / OVERWRITTEN"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_REG_SetOverrun(ADC_TypeDef *ADCx, uint32_t Overrun)\r\n{\r\n  MODIFY_REG(ADCx->CFGR1, ADC_CFGR1_OVRMOD, Overrun);\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_GetOverrun",
+      "sig": "uint32_t LL_ADC_REG_GetOverrun(ADC_TypeDef *ADCx)",
+      "brief": "读取规则组溢出行为。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "溢出行为值(LL_ADC_REG_OVR_DATA_*)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_REG_GetOverrun(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint32_t)(READ_BIT(ADCx->CFGR1, ADC_CFGR1_OVRMOD));\r\n}"
+    },
+    {
+      "name": "LL_ADC_SetAnalogWDMonitChannels",
+      "sig": "void LL_ADC_SetAnalogWDMonitChannels(ADC_TypeDef *ADCx, uint32_t AWDChannelGroup)",
+      "brief": "设置模拟看门狗监测通道: 单个通道或全部通道(规则组), 选定后看门狗自动使能。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "AWDChannelGroup",
+          "type": "uint32_t",
+          "desc": "监测通道: LL_ADC_AWD_DISABLE / LL_ADC_AWD_ALL_CHANNELS_REG / LL_ADC_AWD_CHANNEL_x_REG / LL_ADC_AWD_CH_VREFINT_REG / LL_ADC_AWD_CH_TEMPSENSOR_REG / LL_ADC_AWD_CH_1_3VCCA_REG"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_SetAnalogWDMonitChannels(ADC_TypeDef *ADCx, uint32_t AWDChannelGroup)\r\n{\r\n  MODIFY_REG(ADCx->CFGR1,\r\n             (ADC_CFGR1_AWDCH | ADC_CFGR1_AWDSGL | ADC_CFGR1_AWDEN),\r\n             (AWDChannelGroup & ADC_AWD_CR_ALL_CHANNEL_MASK));\r\n}"
+    },
+    {
+      "name": "LL_ADC_GetAnalogWDMonitChannels",
+      "sig": "uint32_t LL_ADC_GetAnalogWDMonitChannels(ADC_TypeDef *ADCx)",
+      "brief": "读取模拟看门狗当前监测的通道。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "监测通道值(LL_ADC_AWD_*), 与 LL_ADC_CHANNEL_x 比较或经 __LL_ADC_CHANNEL_TO_DECIMAL_NB() 转十进制"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_GetAnalogWDMonitChannels(ADC_TypeDef *ADCx)\r\n{\r\n  register uint32_t AWDChannelGroup = READ_BIT(ADCx->CFGR1, (ADC_CFGR1_AWDCH | ADC_CFGR1_AWDSGL | ADC_CFGR1_AWDEN));\r\n\r\n  /* Note: Set variable according to channel definition including channel ID  */\r\n  /*       with bitfield.                                                     */\r\n  register uint32_t AWDChannelSingle = ((AWDChannelGroup & ADC_CFGR1_AWDSGL) >> ADC_CFGR1_AWDSGL_BITOFFSET_POS);\r\n  register uint32_t AWDChannelBitField = (ADC_CHANNEL_0_BITFIELD << ((AWDChannelGroup & ADC_CHANNEL_ID_NUMBER_MASK) >> ADC_CHANNEL_ID_NUMBER_BITOFFSET_POS));\r\n\r\n  return (AWDChannelGroup | (AWDChannelBitField * AWDChannelSingle));\r\n}"
+    },
+    {
+      "name": "LL_ADC_ConfigAnalogWDThresholds",
+      "sig": "void LL_ADC_ConfigAnalogWDThresholds(ADC_TypeDef *ADCx, uint32_t AWDThresholdHighValue, uint32_t AWDThresholdLowValue)",
+      "brief": "同时设置模拟看门狗高、低阈值(TR 寄存器 HT/LT)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "AWDThresholdHighValue",
+          "type": "uint32_t",
+          "desc": "高阈值, 0x000~0xFFF"
+        },
+        {
+          "name": "AWDThresholdLowValue",
+          "type": "uint32_t",
+          "desc": "低阈值, 0x000~0xFFF"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "分辨率非 12 位时, 阈值需用 __LL_ADC_ANALOGWD_SET_THRESHOLD_RESOLUTION() 移位。"
+      ],
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_ConfigAnalogWDThresholds(ADC_TypeDef *ADCx, uint32_t AWDThresholdHighValue, uint32_t AWDThresholdLowValue)\r\n{\r\n  MODIFY_REG(ADCx->TR,ADC_TR_HT | ADC_TR_LT,(AWDThresholdHighValue << ADC_TR_HT_BITOFFSET_POS) | AWDThresholdLowValue);\r\n}"
+    },
+    {
+      "name": "LL_ADC_SetAnalogWDThresholds",
+      "sig": "void LL_ADC_SetAnalogWDThresholds(ADC_TypeDef *ADCx, uint32_t AWDThresholdsHighLow, uint32_t AWDThresholdValue)",
+      "brief": "单独设置模拟看门狗高阈值或低阈值。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "AWDThresholdsHighLow",
+          "type": "uint32_t",
+          "desc": "选择阈值: LL_ADC_AWD_THRESHOLD_HIGH / LL_ADC_AWD_THRESHOLD_LOW"
+        },
+        {
+          "name": "AWDThresholdValue",
+          "type": "uint32_t",
+          "desc": "阈值, 0x000~0xFFF"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_SetAnalogWDThresholds(ADC_TypeDef *ADCx, uint32_t AWDThresholdsHighLow, uint32_t AWDThresholdValue)\r\n{\r\n  /* Parameter \"AWDThresholdsHighLow\" is used with mask \"0x00000010\"          */\r\n  /* to be equivalent to \"POSITION_VAL(AWDThresholdsHighLow)\": if threshold   */\r\n  /* high is selected, then data is shifted to LSB. Else(threshold low),      */\r\n  /* data is not shifted.                                                     */\r\n  MODIFY_REG(ADCx->TR, AWDThresholdsHighLow,AWDThresholdValue << ((AWDThresholdsHighLow >> ADC_TR_HT_BITOFFSET_POS) & 0x00000010U));\r\n}"
+    },
+    {
+      "name": "LL_ADC_GetAnalogWDThresholds",
+      "sig": "uint32_t LL_ADC_GetAnalogWDThresholds(ADC_TypeDef *ADCx, uint32_t AWDThresholdsHighLow)",
+      "brief": "读取模拟看门狗阈值: 高阈值、低阈值或高低阈值拼接原始值。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "AWDThresholdsHighLow",
+          "type": "uint32_t",
+          "desc": "选择: LL_ADC_AWD_THRESHOLD_HIGH / LOW / THRESHOLDS_HIGH_LOW"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "阈值值 0x000~0xFFF; 拼接原始值可用 __LL_ADC_ANALOGWD_THRESHOLDS_HIGH_LOW() 拆分"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_GetAnalogWDThresholds(ADC_TypeDef *ADCx, uint32_t AWDThresholdsHighLow)\r\n{\r\n  /* Parameter \"AWDThresholdsHighLow\" is used with mask \"0x00000010\"          */\r\n  /* to be equivalent to \"POSITION_VAL(AWDThresholdsHighLow)\": if threshold   */\r\n  /* high is selected, then data is shifted to LSB. Else(threshold low or     */\r\n  /* both thresholds), data is not shifted.                                   */\r\n  return (uint32_t)(READ_BIT(ADCx->TR,(AWDThresholdsHighLow | ADC_TR_LT))>> ((~AWDThresholdsHighLow) & 0x00000010U));\r\n}"
+    },
+    {
+      "name": "LL_ADC_Enable",
+      "sig": "void LL_ADC_Enable(ADC_TypeDef *ADCx)",
+      "brief": "使能所选 ADC 实例(置位 CR 寄存器 ADEN)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_Enable(ADC_TypeDef *ADCx)\r\n{\r\n  /* Note: Write register with some additional bits forced to state reset     */\r\n  /*       instead of modifying only the selected bit for this function,      */\r\n  /*       to not interfere with bits with HW property \"rs\".                  */\r\n  MODIFY_REG(ADCx->CR,ADC_CR_BITS_PROPERTY_RS,ADC_CR_ADEN);\r\n}"
+    },
+    {
+      "name": "LL_ADC_Disable",
+      "sig": "void LL_ADC_Disable(ADC_TypeDef *ADCx)",
+      "brief": "禁止所选 ADC 实例(置位 CR 寄存器 ADDIS)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "禁止前必须先停止转换。"
+      ],
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_Disable(ADC_TypeDef *ADCx)\r\n{\r\n  /* Note: Write register with some additional bits forced to state reset     */\r\n  /*       instead of modifying only the selected bit for this function,      */\r\n  /*       to not interfere with bits with HW property \"rs\".                  */\r\n  MODIFY_REG(ADCx->CR, ADC_CR_BITS_PROPERTY_RS, ADC_CR_ADDIS);\r\n}"
+    },
+    {
+      "name": "LL_ADC_Reset",
+      "sig": "void LL_ADC_Reset(ADC_TypeDef *ADCx)",
+      "brief": "硬复位所选 ADC 实例(通过 RCC ADC 复位)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_Reset(ADC_TypeDef *ADCx)\r\n{\r\n  /* Note: Write register with some additional bits forced to state reset     */\r\n  /*       instead of modifying only the selected bit for this function       */\r\n\r\n  /* Force reset of ADC clock (core clock) */\r\n  LL_APB1_GRP2_ForceReset(LL_APB1_GRP2_PERIPH_ADC1);\r\n\r\n  /* Release reset of ADC clock (core clock) */\r\n  LL_APB1_GRP2_ReleaseReset(LL_APB1_GRP2_PERIPH_ADC1);\r\n}"
+    },
+    {
+      "name": "LL_ADC_IsEnabled",
+      "sig": "uint32_t LL_ADC_IsEnabled(ADC_TypeDef *ADCx)",
+      "brief": "查询所选 ADC 实例是否已使能。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 已使能, 0 已禁止"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_IsEnabled(ADC_TypeDef *ADCx)\r\n{\r\n  return (READ_BIT(ADCx->CR, ADC_CR_ADEN) == (ADC_CR_ADEN));\r\n}"
+    },
+    {
+      "name": "LL_ADC_IsDisableOngoing",
+      "sig": "uint32_t LL_ADC_IsDisableOngoing(ADC_TypeDef *ADCx)",
+      "brief": "查询所选 ADC 实例的禁止命令是否进行中(ADDIS 位)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 禁止进行中, 0 无禁止命令"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_IsDisableOngoing(ADC_TypeDef *ADCx)\r\n{\r\n  return (READ_BIT(ADCx->CR, ADC_CR_ADDIS) == (ADC_CR_ADDIS));\r\n}"
+    },
+    {
+      "name": "LL_ADC_StartCalibration",
+      "sig": "void LL_ADC_StartCalibration(ADC_TypeDef *ADCx)",
+      "brief": "启动 ADC 校准(置位 CR 寄存器 ADCAL)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "前提: ADC 必须处于禁止状态。"
+      ],
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_StartCalibration(ADC_TypeDef *ADCx)\r\n{\r\n  /* Note: Write register with some additional bits forced to state reset     */\r\n  /*       instead of modifying only the selected bit for this function,      */\r\n  /*       to not interfere with bits with HW property \"rs\".                  */\r\n  MODIFY_REG(ADCx->CR,ADC_CR_BITS_PROPERTY_RS,ADC_CR_ADCAL);\r\n}"
+    },
+    {
+      "name": "LL_ADC_IsCalibrationOnGoing",
+      "sig": "uint32_t LL_ADC_IsCalibrationOnGoing(ADC_TypeDef *ADCx)",
+      "brief": "查询 ADC 校准是否在进行中。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 校准进行中, 0 校准完成"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_IsCalibrationOnGoing(ADC_TypeDef *ADCx)\r\n{\r\n  return (READ_BIT(ADCx->CR, ADC_CR_ADCAL) == (ADC_CR_ADCAL));\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_StartConversion",
+      "sig": "void LL_ADC_REG_StartConversion(ADC_TypeDef *ADCx)",
+      "brief": "启动规则组转换(置位 CR 寄存器 ADSTART)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_REG_StartConversion(ADC_TypeDef *ADCx)\r\n{\r\n  /* Note: Write register with some additional bits forced to state reset     */\r\n  /*       instead of modifying only the selected bit for this function,      */\r\n  /*       to not interfere with bits with HW property \"rs\".                  */\r\n  MODIFY_REG(ADCx->CR, ADC_CR_BITS_PROPERTY_RS,ADC_CR_ADSTART);\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_StopConversion",
+      "sig": "void LL_ADC_REG_StopConversion(ADC_TypeDef *ADCx)",
+      "brief": "停止规则组转换(置位 CR 寄存器 ADSTP)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_REG_StopConversion(ADC_TypeDef *ADCx)\r\n{\r\n  /* Note: Write register with some additional bits forced to state reset     */\r\n  /*       instead of modifying only the selected bit for this function,      */\r\n  /*       to not interfere with bits with HW property \"rs\".                  */\r\n  MODIFY_REG(ADCx->CR,ADC_CR_BITS_PROPERTY_RS,ADC_CR_ADSTP);\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_IsConversionOngoing",
+      "sig": "uint32_t LL_ADC_REG_IsConversionOngoing(ADC_TypeDef *ADCx)",
+      "brief": "查询规则组转换是否在进行中。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 转换进行中, 0 无转换"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_REG_IsConversionOngoing(ADC_TypeDef *ADCx)\r\n{\r\n  return (READ_BIT(ADCx->CR, ADC_CR_ADSTART) == (ADC_CR_ADSTART));\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_IsStopConversionOngoing",
+      "sig": "uint32_t LL_ADC_REG_IsStopConversionOngoing(ADC_TypeDef *ADCx)",
+      "brief": "查询规则组停止转换命令是否进行中。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 停止命令进行中, 0 无"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_REG_IsStopConversionOngoing(ADC_TypeDef *ADCx)\r\n{\r\n  return (READ_BIT(ADCx->CR, ADC_CR_ADSTP) == (ADC_CR_ADSTP));\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_ReadConversionData32",
+      "sig": "uint32_t LL_ADC_REG_ReadConversionData32(ADC_TypeDef *ADCx)",
+      "brief": "读取规则组转换数据(32 位范围, 兼容所有分辨率)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "转换数据 0x00000000~0xFFFFFFFF"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_REG_ReadConversionData32(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint32_t)(READ_BIT(ADCx->DR, ADC_DR_DATA));\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_ReadConversionData12",
+      "sig": "uint16_t LL_ADC_REG_ReadConversionData12(ADC_TypeDef *ADCx)",
+      "brief": "读取规则组转换数据(适配 12 位分辨率, 0x000~0xFFF)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint16_t",
+        "desc": "转换数据 0x000~0xFFF"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint16_t LL_ADC_REG_ReadConversionData12(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint16_t)(READ_BIT(ADCx->DR, ADC_DR_DATA));\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_ReadConversionData10",
+      "sig": "uint16_t LL_ADC_REG_ReadConversionData10(ADC_TypeDef *ADCx)",
+      "brief": "读取规则组转换数据(适配 10 位分辨率, 0x000~0x3FF)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint16_t",
+        "desc": "转换数据 0x000~0x3FF"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint16_t LL_ADC_REG_ReadConversionData10(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint16_t)(READ_BIT(ADCx->DR, ADC_DR_DATA));\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_ReadConversionData8",
+      "sig": "uint8_t LL_ADC_REG_ReadConversionData8(ADC_TypeDef *ADCx)",
+      "brief": "读取规则组转换数据(适配 8 位分辨率, 0x00~0xFF)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint8_t",
+        "desc": "转换数据 0x00~0xFF"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint8_t LL_ADC_REG_ReadConversionData8(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint8_t)(READ_BIT(ADCx->DR, ADC_DR_DATA));\r\n}"
+    },
+    {
+      "name": "LL_ADC_REG_ReadConversionData6",
+      "sig": "uint8_t LL_ADC_REG_ReadConversionData6(ADC_TypeDef *ADCx)",
+      "brief": "读取规则组转换数据(适配 6 位分辨率, 0x00~0x3F)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint8_t",
+        "desc": "转换数据 0x00~0x3F"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint8_t LL_ADC_REG_ReadConversionData6(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint8_t)(READ_BIT(ADCx->DR, ADC_DR_DATA));\r\n}"
+    },
+    {
+      "name": "LL_ADC_IsActiveFlag_EOC",
+      "sig": "uint32_t LL_ADC_IsActiveFlag_EOC(ADC_TypeDef *ADCx)",
+      "brief": "查询规则组单次转换结束标志(EOC)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志状态(1 置位, 0 未置位)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_IsActiveFlag_EOC(ADC_TypeDef *ADCx)\r\n{\r\n  return (READ_BIT(ADCx->ISR, ADC_ISR_EOC) == (ADC_ISR_EOC));\r\n}"
+    },
+    {
+      "name": "LL_ADC_IsActiveFlag_EOS",
+      "sig": "uint32_t LL_ADC_IsActiveFlag_EOS(ADC_TypeDef *ADCx)",
+      "brief": "查询规则序列转换结束标志(EOS)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志状态(1 置位, 0 未置位)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_IsActiveFlag_EOS(ADC_TypeDef *ADCx)\r\n{\r\n  return (READ_BIT(ADCx->ISR, LL_ADC_FLAG_EOS) == (LL_ADC_FLAG_EOS));\r\n}"
+    },
+    {
+      "name": "LL_ADC_IsActiveFlag_OVR",
+      "sig": "uint32_t LL_ADC_IsActiveFlag_OVR(ADC_TypeDef *ADCx)",
+      "brief": "查询规则组溢出标志(OVR)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志状态(1 置位, 0 未置位)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_IsActiveFlag_OVR(ADC_TypeDef *ADCx)\r\n{\r\n  return (READ_BIT(ADCx->ISR, LL_ADC_FLAG_OVR) == (LL_ADC_FLAG_OVR));\r\n}"
+    },
+    {
+      "name": "LL_ADC_IsActiveFlag_EOSMP",
+      "sig": "uint32_t LL_ADC_IsActiveFlag_EOSMP(ADC_TypeDef *ADCx)",
+      "brief": "查询规则组采样结束标志(EOSMP)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志状态(1 置位, 0 未置位)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_IsActiveFlag_EOSMP(ADC_TypeDef *ADCx)\r\n{\r\n  return (READ_BIT(ADCx->ISR, LL_ADC_FLAG_EOSMP) == (LL_ADC_FLAG_EOSMP));\r\n}"
+    },
+    {
+      "name": "LL_ADC_IsActiveFlag_AWD",
+      "sig": "uint32_t LL_ADC_IsActiveFlag_AWD(ADC_TypeDef *ADCx)",
+      "brief": "查询模拟看门狗标志(AWD)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志状态(1 置位, 0 未置位)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_IsActiveFlag_AWD(ADC_TypeDef *ADCx)\r\n{\r\n  return (READ_BIT(ADCx->ISR, LL_ADC_FLAG_AWD) == (LL_ADC_FLAG_AWD));\r\n}"
+    },
+    {
+      "name": "LL_ADC_ClearFlag_EOC",
+      "sig": "void LL_ADC_ClearFlag_EOC(ADC_TypeDef *ADCx)",
+      "brief": "清除规则组单次转换结束标志(EOC)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_ClearFlag_EOC(ADC_TypeDef *ADCx)\r\n{\r\n  WRITE_REG(ADCx->ISR, LL_ADC_FLAG_EOC);\r\n}"
+    },
+    {
+      "name": "LL_ADC_ClearFlag_EOS",
+      "sig": "void LL_ADC_ClearFlag_EOS(ADC_TypeDef *ADCx)",
+      "brief": "清除规则序列转换结束标志(EOS)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_ClearFlag_EOS(ADC_TypeDef *ADCx)\r\n{\r\n  WRITE_REG(ADCx->ISR, LL_ADC_FLAG_EOS);\r\n}"
+    },
+    {
+      "name": "LL_ADC_ClearFlag_OVR",
+      "sig": "void LL_ADC_ClearFlag_OVR(ADC_TypeDef *ADCx)",
+      "brief": "清除规则组溢出标志(OVR)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_ClearFlag_OVR(ADC_TypeDef *ADCx)\r\n{\r\n  WRITE_REG(ADCx->ISR, LL_ADC_FLAG_OVR);\r\n}"
+    },
+    {
+      "name": "LL_ADC_ClearFlag_EOSMP",
+      "sig": "void LL_ADC_ClearFlag_EOSMP(ADC_TypeDef *ADCx)",
+      "brief": "清除规则组采样结束标志(EOSMP)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_ClearFlag_EOSMP(ADC_TypeDef *ADCx)\r\n{\r\n  WRITE_REG(ADCx->ISR, LL_ADC_FLAG_EOSMP);\r\n}"
+    },
+    {
+      "name": "LL_ADC_ClearFlag_AWD",
+      "sig": "void LL_ADC_ClearFlag_AWD(ADC_TypeDef *ADCx)",
+      "brief": "清除模拟看门狗标志(AWD)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_ClearFlag_AWD(ADC_TypeDef *ADCx)\r\n{\r\n  WRITE_REG(ADCx->ISR, LL_ADC_FLAG_AWD);\r\n}"
+    },
+    {
+      "name": "LL_ADC_EnableIT_EOC",
+      "sig": "void LL_ADC_EnableIT_EOC(ADC_TypeDef *ADCx)",
+      "brief": "使能规则组单次转换结束中断(EOC)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_EnableIT_EOC(ADC_TypeDef *ADCx)\r\n{\r\n  SET_BIT(ADCx->IER, LL_ADC_IT_EOC);\r\n}"
+    },
+    {
+      "name": "LL_ADC_EnableIT_EOS",
+      "sig": "void LL_ADC_EnableIT_EOS(ADC_TypeDef *ADCx)",
+      "brief": "使能规则序列转换结束中断(EOS)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_EnableIT_EOS(ADC_TypeDef *ADCx)\r\n{\r\n  SET_BIT(ADCx->IER, LL_ADC_IT_EOS);\r\n}"
+    },
+    {
+      "name": "LL_ADC_EnableIT_OVR",
+      "sig": "void LL_ADC_EnableIT_OVR(ADC_TypeDef *ADCx)",
+      "brief": "使能规则组溢出中断(OVR)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_EnableIT_OVR(ADC_TypeDef *ADCx)\r\n{\r\n  SET_BIT(ADCx->IER, LL_ADC_IT_OVR);\r\n}"
+    },
+    {
+      "name": "LL_ADC_EnableIT_EOSMP",
+      "sig": "void LL_ADC_EnableIT_EOSMP(ADC_TypeDef *ADCx)",
+      "brief": "使能规则组采样结束中断(EOSMP)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_EnableIT_EOSMP(ADC_TypeDef *ADCx)\r\n{\r\n  SET_BIT(ADCx->IER, LL_ADC_IT_EOSMP);\r\n}"
+    },
+    {
+      "name": "LL_ADC_EnableIT_AWD",
+      "sig": "void LL_ADC_EnableIT_AWD(ADC_TypeDef *ADCx)",
+      "brief": "使能模拟看门狗中断(AWD)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_EnableIT_AWD(ADC_TypeDef *ADCx)\r\n{\r\n  SET_BIT(ADCx->IER, LL_ADC_IT_AWD);\r\n}"
+    },
+    {
+      "name": "LL_ADC_DisableIT_EOC",
+      "sig": "void LL_ADC_DisableIT_EOC(ADC_TypeDef *ADCx)",
+      "brief": "禁止规则组单次转换结束中断(EOC)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_DisableIT_EOC(ADC_TypeDef *ADCx)\r\n{\r\n  CLEAR_BIT(ADCx->IER, LL_ADC_IT_EOC);\r\n}"
+    },
+    {
+      "name": "LL_ADC_DisableIT_EOS",
+      "sig": "void LL_ADC_DisableIT_EOS(ADC_TypeDef *ADCx)",
+      "brief": "禁止规则序列转换结束中断(EOS)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_DisableIT_EOS(ADC_TypeDef *ADCx)\r\n{\r\n  CLEAR_BIT(ADCx->IER, LL_ADC_IT_EOS);\r\n}"
+    },
+    {
+      "name": "LL_ADC_DisableIT_OVR",
+      "sig": "void LL_ADC_DisableIT_OVR(ADC_TypeDef *ADCx)",
+      "brief": "禁止规则组溢出中断(OVR)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_DisableIT_OVR(ADC_TypeDef *ADCx)\r\n{\r\n  CLEAR_BIT(ADCx->IER, LL_ADC_IT_OVR);\r\n}"
+    },
+    {
+      "name": "LL_ADC_DisableIT_EOSMP",
+      "sig": "void LL_ADC_DisableIT_EOSMP(ADC_TypeDef *ADCx)",
+      "brief": "禁止规则组采样结束中断(EOSMP)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_DisableIT_EOSMP(ADC_TypeDef *ADCx)\r\n{\r\n  CLEAR_BIT(ADCx->IER, LL_ADC_IT_EOSMP);\r\n}"
+    },
+    {
+      "name": "LL_ADC_DisableIT_AWD",
+      "sig": "void LL_ADC_DisableIT_AWD(ADC_TypeDef *ADCx)",
+      "brief": "禁止模拟看门狗中断(AWD)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_DisableIT_AWD(ADC_TypeDef *ADCx)\r\n{\r\n  CLEAR_BIT(ADCx->IER, LL_ADC_IT_AWD);\r\n}"
+    },
+    {
+      "name": "LL_ADC_IsEnabledIT_EOC",
+      "sig": "uint32_t LL_ADC_IsEnabledIT_EOC(ADC_TypeDef *ADCx)",
+      "brief": "查询规则组单次转换结束中断是否使能。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 使能, 0 禁止"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_IsEnabledIT_EOC(ADC_TypeDef *ADCx)\r\n{\r\n  return (READ_BIT(ADCx->IER, LL_ADC_IT_EOC) == (LL_ADC_IT_EOC));\r\n}"
+    },
+    {
+      "name": "LL_ADC_IsEnabledIT_EOS",
+      "sig": "uint32_t LL_ADC_IsEnabledIT_EOS(ADC_TypeDef *ADCx)",
+      "brief": "查询规则序列转换结束中断是否使能。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 使能, 0 禁止"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_IsEnabledIT_EOS(ADC_TypeDef *ADCx)\r\n{\r\n  return (READ_BIT(ADCx->IER, LL_ADC_IT_EOS) == (LL_ADC_IT_EOS));\r\n}"
+    },
+    {
+      "name": "LL_ADC_IsEnabledIT_OVR",
+      "sig": "uint32_t LL_ADC_IsEnabledIT_OVR(ADC_TypeDef *ADCx)",
+      "brief": "查询规则组溢出中断是否使能。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 使能, 0 禁止"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_IsEnabledIT_OVR(ADC_TypeDef *ADCx)\r\n{\r\n  return (READ_BIT(ADCx->IER, LL_ADC_IT_OVR) == (LL_ADC_IT_OVR));\r\n}"
+    },
+    {
+      "name": "LL_ADC_IsEnabledIT_EOSMP",
+      "sig": "uint32_t LL_ADC_IsEnabledIT_EOSMP(ADC_TypeDef *ADCx)",
+      "brief": "查询规则组采样结束中断是否使能。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 使能, 0 禁止"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_IsEnabledIT_EOSMP(ADC_TypeDef *ADCx)\r\n{\r\n  return (READ_BIT(ADCx->IER, LL_ADC_IT_EOSMP) == (LL_ADC_IT_EOSMP));\r\n}"
+    },
+    {
+      "name": "LL_ADC_IsEnabledIT_AWD",
+      "sig": "uint32_t LL_ADC_IsEnabledIT_AWD(ADC_TypeDef *ADCx)",
+      "brief": "查询模拟看门狗中断是否使能。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 使能, 0 禁止"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_IsEnabledIT_AWD(ADC_TypeDef *ADCx)\r\n{\r\n  return (READ_BIT(ADCx->IER, LL_ADC_IT_AWD) == (LL_ADC_IT_AWD));\r\n}"
+    },
+    {
+      "name": "LL_ADC_SetCalibrationSamplingTime",
+      "sig": "void LL_ADC_SetCalibrationSamplingTime(ADC_TypeDef *ADCx, uint32_t CalibrationSamplingTime)",
+      "brief": "设置校准采样时间(CCSR 寄存器 CALSMP 位), 单位 ADC 时钟周期。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "CalibrationSamplingTime",
+          "type": "uint32_t",
+          "desc": "校准采样时间: LL_ADC_CAL_SAMPLINGTIME_1CYCLE / 2CYCLES / 4CYCLES / 8CYCLES"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_SetCalibrationSamplingTime(ADC_TypeDef *ADCx, uint32_t CalibrationSamplingTime)\r\n{\r\n  MODIFY_REG(ADCx->CCSR, ADC_CCSR_CALSMP, CalibrationSamplingTime);\r\n}"
+    },
+    {
+      "name": "LL_ADC_GetCalibrationSamplingTime",
+      "sig": "uint32_t LL_ADC_GetCalibrationSamplingTime(ADC_TypeDef *ADCx)",
+      "brief": "读取校准采样时间。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校准采样时间值(LL_ADC_CAL_SAMPLINGTIME_*)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_GetCalibrationSamplingTime(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint32_t)(READ_BIT(ADCx->CCSR, ADC_CCSR_CALSMP));\r\n}"
+    },
+    {
+      "name": "LL_ADC_GetCalibrationOffsetStatus",
+      "sig": "uint32_t LL_ADC_GetCalibrationOffsetStatus(ADC_TypeDef *ADCx)",
+      "brief": "读取校准偏移状态(OFFSUC 位)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_ADC_CAL_OFFSET_STATUS_SUCCESS / FAIL"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_GetCalibrationOffsetStatus(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint32_t)(READ_BIT(ADCx->CCSR, ADC_CCSR_OFFSUC));\r\n}"
+    },
+    {
+      "name": "LL_ADC_GetCalibrationCapacitanceStatus",
+      "sig": "uint32_t LL_ADC_GetCalibrationCapacitanceStatus(ADC_TypeDef *ADCx)",
+      "brief": "读取校准电容状态(CAPSUC 位)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_ADC_CAL_CAPACITANCE_STATUS_SUCCESS / FAIL"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_GetCalibrationCapacitanceStatus(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint32_t)(READ_BIT(ADCx->CCSR, ADC_CCSR_CAPSUC));\r\n}"
+    },
+    {
+      "name": "LL_ADC_SetCalibrationMode",
+      "sig": "void LL_ADC_SetCalibrationMode(ADC_TypeDef *ADCx,uint32_t CalibrationMode)",
+      "brief": "设置校准模式(CCSR 寄存器 CALSEL 位)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "CalibrationMode",
+          "type": "uint32_t",
+          "desc": "校准模式: LL_ADC_CAL_MODE_OFFSET / LL_ADC_CAL_MODE_OFFSET_CAPACITANCE"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_SetCalibrationMode(ADC_TypeDef *ADCx,uint32_t CalibrationMode)\r\n{\r\n  MODIFY_REG(ADCx->CCSR,ADC_CCSR_CALSEL, CalibrationMode);\r\n}"
+    },
+    {
+      "name": "LL_ADC_GetCalibrationMode",
+      "sig": "uint32_t LL_ADC_GetCalibrationMode(ADC_TypeDef *ADCx)",
+      "brief": "读取校准模式。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校准模式值(LL_ADC_CAL_MODE_*)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_GetCalibrationMode(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint32_t)(READ_BIT(ADCx->CCSR, ADC_CCSR_CALSEL));\r\n}"
+    },
+    {
+      "name": "LL_ADC_EnableVrefBufferVoltage",
+      "sig": "void LL_ADC_EnableVrefBufferVoltage(ADC_TypeDef *ADCx)",
+      "brief": "使能 VrefBuffer(基准电压缓冲)输出。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_EnableVrefBufferVoltage(ADC_TypeDef *ADCx)\r\n{\r\n  SET_BIT(ADCx->CR, ADC_CR_VREF_BUFFERE);\r\n}"
+    },
+    {
+      "name": "LL_ADC_DisableVrefBufferVoltage",
+      "sig": "void LL_ADC_DisableVrefBufferVoltage(ADC_TypeDef *ADCx)",
+      "brief": "禁止 VrefBuffer(基准电压缓冲)输出。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_DisableVrefBufferVoltage(ADC_TypeDef *ADCx)\r\n{\r\n  CLEAR_BIT(ADCx->CR, ADC_CR_VREF_BUFFERE);\r\n}"
+    },
+    {
+      "name": "LL_ADC_IsEnabled_VrefBufferVoltage",
+      "sig": "uint32_t LL_ADC_IsEnabled_VrefBufferVoltage(ADC_TypeDef *ADCx)",
+      "brief": "查询 VrefBuffer 输出电压是否使能。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 输出使能, 0 输出禁止"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_IsEnabled_VrefBufferVoltage(ADC_TypeDef *ADCx)\r\n{\r\n  return (READ_BIT(ADCx->CR, ADC_CR_VREF_BUFFERE) == (ADC_CR_VREF_BUFFERE));\r\n}"
+    },
+    {
+      "name": "LL_ADC_SetVrefBufferVoltage",
+      "sig": "void LL_ADC_SetVrefBufferVoltage(ADC_TypeDef *ADCx, uint32_t VrefBufferVoltage)",
+      "brief": "设置 VrefBuffer 输出电压选择(VREFBUFF_SEL 位)。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        },
+        {
+          "name": "VrefBufferVoltage",
+          "type": "uint32_t",
+          "desc": "输出电压: LL_ADC_VREFBUF_1P5V / 2P048V / 2P5V"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_ADC_SetVrefBufferVoltage(ADC_TypeDef *ADCx, uint32_t VrefBufferVoltage)\r\n{\r\n  MODIFY_REG(ADCx->CR, ADC_CR_VREFBUFF_SEL, VrefBufferVoltage);\r\n}"
+    },
+    {
+      "name": "LL_ADC_GetVrefBufferVoltage",
+      "sig": "uint32_t LL_ADC_GetVrefBufferVoltage(ADC_TypeDef *ADCx)",
+      "brief": "读取 VrefBuffer 输出电压选择。",
+      "params": [
+        {
+          "name": "ADCx",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "输出电压选择值(LL_ADC_VREFBUF_*)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_ADC_GetVrefBufferVoltage(ADC_TypeDef *ADCx)\r\n{\r\n  return (uint32_t)(READ_BIT(ADCx->CR, ADC_CR_VREFBUFF_SEL));\r\n}"
+    },
+    {
+      "name": "LL_ADC_WriteReg",
+      "sig": "#define LL_ADC_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG(__INSTANCE__->__REG__, (__VALUE__))",
+      "brief": "宏: 向 ADC 寄存器写入值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "ADC 实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要写入的寄存器"
+        },
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "要写入的值"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define LL_ADC_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG(__INSTANCE__->__REG__, (__VALUE__))"
+    },
+    {
+      "name": "LL_ADC_ReadReg",
+      "sig": "#define LL_ADC_ReadReg(__INSTANCE__, __REG__) READ_REG(__INSTANCE__->__REG__)",
+      "brief": "宏: 读取 ADC 寄存器值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "ADC 实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要读取的寄存器"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "寄存器值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define LL_ADC_ReadReg(__INSTANCE__, __REG__) READ_REG(__INSTANCE__->__REG__)"
+    },
+    {
+      "name": "__LL_ADC_CHANNEL_TO_DECIMAL_NB",
+      "sig": "#define __LL_ADC_CHANNEL_TO_DECIMAL_NB(__CHANNEL__)                                                               \\\r\n  ((((__CHANNEL__) & ADC_CHANNEL_ID_BITFIELD_MASK) == 0U)                                                         \\\r\n    ? (                                                                                                           \\\r\n       ((__CHANNEL__) & ADC_CHANNEL_ID_NUMBER_MASK) >> ADC_CHANNEL_ID_NUMBER_BITOFFSET_POS                        \\\r\n      )                                                                                                           \\\r\n      :                                                                                                           \\\r\n      (                                                                                                           \\\r\n       (((__CHANNEL__) & ADC_CHSELR_CHSEL0) == ADC_CHSELR_CHSEL0) ? (0U) :                                        \\\r\n        (                                                                                                         \\\r\n         (((__CHANNEL__) & ADC_CHSELR_CHSEL1) == ADC_CHSELR_CHSEL1) ? (1U) :                                      \\\r\n          (                                                                                                       \\\r\n           (((__CHANNEL__) & ADC_CHSELR_CHSEL2) == ADC_CHSELR_CHSEL2) ? (2U) :                                    \\\r\n            (                                                                                                     \\\r\n             (((__CHANNEL__) & ADC_CHSELR_CHSEL3) == ADC_CHSELR_CHSEL3) ? (3U) :                                  \\\r\n              (                                                                                                   \\\r\n               (((__CHANNEL__) & ADC_CHSELR_CHSEL4) == ADC_CHSELR_CHSEL4) ? (4U) :                                \\\r\n                (                                                                                                 \\\r\n                 (((__CHANNEL__) & ADC_CHSELR_CHSEL5) == ADC_CHSELR_CHSEL5) ? (5U) :                              \\\r\n                  (                                                                                               \\\r\n                   (((__CHANNEL__) & ADC_CHSELR_CHSEL6) == ADC_CHSELR_CHSEL6) ? (6U) :                            \\\r\n                    (                                                                                             \\\r\n                     (((__CHANNEL__) & ADC_CHSELR_CHSEL7) == ADC_CHSELR_CHSEL7) ? (7U) :                          \\\r\n                      (                                                                                           \\\r\n                       (((__CHANNEL__) & ADC_CHSELR_CHSEL8) == ADC_CHSELR_CHSEL8) ? (8U) :                        \\\r\n                        (                                                                                         \\\r\n                         (((__CHANNEL__) & ADC_CHSELR_CHSEL9) == ADC_CHSELR_CHSEL9) ? (9U) :                      \\\r\n                          (                                                                                       \\\r\n                            (((__CHANNEL__) & ADC_CHSELR_CHSEL10) == ADC_CHSELR_CHSEL10) ? (10U) :                \\\r\n                               (0U)                                                                               \\\r\n                            )                                                                                     \\\r\n                          )                                                                                       \\\r\n                        )                                                                                         \\\r\n                      )                                                                                           \\\r\n                    )                                                                                             \\\r\n                  )                                                                                               \\\r\n                )                                                                                                 \\\r\n              )                                                                                                   \\\r\n            )                                                                                                     \\\r\n          )                                                                                                       \\\r\n        )                                                                                                         \\\r\n      )",
+      "brief": "宏: 将 LL_ADC_CHANNEL_x 字面量转换为十进制通道号。",
+      "params": [
+        {
+          "name": "__CHANNEL__",
+          "type": "宏参数",
+          "desc": "LL_ADC_CHANNEL_0 .. 10 / VREFINT / TEMPSENSOR / 1_3VCCA"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "通道号 0~10"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_CHANNEL_TO_DECIMAL_NB(__CHANNEL__)                                                               \\\r\n  ((((__CHANNEL__) & ADC_CHANNEL_ID_BITFIELD_MASK) == 0U)                                                         \\\r\n    ? (                                                                                                           \\\r\n       ((__CHANNEL__) & ADC_CHANNEL_ID_NUMBER_MASK) >> ADC_CHANNEL_ID_NUMBER_BITOFFSET_POS                        \\\r\n      )                                                                                                           \\\r\n      :                                                                                                           \\\r\n      (                                                                                                           \\\r\n       (((__CHANNEL__) & ADC_CHSELR_CHSEL0) == ADC_CHSELR_CHSEL0) ? (0U) :                                        \\\r\n        (                                                                                                         \\\r\n         (((__CHANNEL__) & ADC_CHSELR_CHSEL1) == ADC_CHSELR_CHSEL1) ? (1U) :                                      \\\r\n          (                                                                                                       \\\r\n           (((__CHANNEL__) & ADC_CHSELR_CHSEL2) == ADC_CHSELR_CHSEL2) ? (2U) :                                    \\\r\n            (                                                                                                     \\\r\n             (((__CHANNEL__) & ADC_CHSELR_CHSEL3) == ADC_CHSELR_CHSEL3) ? (3U) :                                  \\\r\n              (                                                                                                   \\\r\n               (((__CHANNEL__) & ADC_CHSELR_CHSEL4) == ADC_CHSELR_CHSEL4) ? (4U) :                                \\\r\n                (                                                                                                 \\\r\n                 (((__CHANNEL__) & ADC_CHSELR_CHSEL5) == ADC_CHSELR_CHSEL5) ? (5U) :                              \\\r\n                  (                                                                                               \\\r\n                   (((__CHANNEL__) & ADC_CHSELR_CHSEL6) == ADC_CHSELR_CHSEL6) ? (6U) :                            \\\r\n                    (                                                                                             \\\r\n                     (((__CHANNEL__) & ADC_CHSELR_CHSEL7) == ADC_CHSELR_CHSEL7) ? (7U) :                          \\\r\n                      (                                                                                           \\\r\n                       (((__CHANNEL__) & ADC_CHSELR_CHSEL8) == ADC_CHSELR_CHSEL8) ? (8U) :                        \\\r\n                        (                                                                                         \\\r\n                         (((__CHANNEL__) & ADC_CHSELR_CHSEL9) == ADC_CHSELR_CHSEL9) ? (9U) :                      \\\r\n                          (                                                                                       \\\r\n                            (((__CHANNEL__) & ADC_CHSELR_CHSEL10) == ADC_CHSELR_CHSEL10) ? (10U) :                \\\r\n                               (0U)                                                                               \\\r\n                            )                                                                                     \\\r\n                          )                                                                                       \\\r\n                        )                                                                                         \\\r\n                      )                                                                                           \\\r\n                    )                                                                                             \\\r\n                  )                                                                                               \\\r\n                )                                                                                                 \\\r\n              )                                                                                                   \\\r\n            )                                                                                                     \\\r\n          )                                                                                                       \\\r\n        )                                                                                                         \\\r\n      )"
+    },
+    {
+      "name": "__LL_ADC_DECIMAL_NB_TO_CHANNEL",
+      "sig": "#define __LL_ADC_DECIMAL_NB_TO_CHANNEL(__DECIMAL_NB__)                         \\\r\n  (                                                                            \\\r\n   ((__DECIMAL_NB__) << ADC_CHANNEL_ID_NUMBER_BITOFFSET_POS) |                 \\\r\n   (ADC_CHSELR_CHSEL0 << (__DECIMAL_NB__))                                     \\\r\n  )",
+      "brief": "宏: 将十进制通道号转换为 LL_ADC_CHANNEL_x 字面量。",
+      "params": [
+        {
+          "name": "__DECIMAL_NB__",
+          "type": "宏参数",
+          "desc": "通道号 0~10"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_ADC_CHANNEL_x 等价值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_DECIMAL_NB_TO_CHANNEL(__DECIMAL_NB__)                         \\\r\n  (                                                                            \\\r\n   ((__DECIMAL_NB__) << ADC_CHANNEL_ID_NUMBER_BITOFFSET_POS) |                 \\\r\n   (ADC_CHSELR_CHSEL0 << (__DECIMAL_NB__))                                     \\\r\n  )"
+    },
+    {
+      "name": "__LL_ADC_IS_CHANNEL_INTERNAL",
+      "sig": "#define __LL_ADC_IS_CHANNEL_INTERNAL(__CHANNEL__)                              \\\r\n  (((__CHANNEL__) & ADC_CHANNEL_ID_INTERNAL_CH_MASK) != 0U)",
+      "brief": "宏: 判断所选通道是否为内部通道(VrefInt/温度传感器/1/3VCCA)。",
+      "params": [
+        {
+          "name": "__CHANNEL__",
+          "type": "宏参数",
+          "desc": "LL_ADC_CHANNEL_* 通道字面量"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 为内部通道, 0 为外部通道"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_IS_CHANNEL_INTERNAL(__CHANNEL__)                              \\\r\n  (((__CHANNEL__) & ADC_CHANNEL_ID_INTERNAL_CH_MASK) != 0U)"
+    },
+    {
+      "name": "__LL_ADC_CHANNEL_INTERNAL_TO_EXTERNAL",
+      "sig": "#define __LL_ADC_CHANNEL_INTERNAL_TO_EXTERNAL(__CHANNEL__)                     \\\r\n  ((__CHANNEL__) & ~ADC_CHANNEL_ID_INTERNAL_CH_MASK)",
+      "brief": "宏: 将内部通道字面量转换为等价的外部通道字面量。",
+      "params": [
+        {
+          "name": "__CHANNEL__",
+          "type": "宏参数",
+          "desc": "LL_ADC_CHANNEL_VREFINT / TEMPSENSOR / 1_3VCCA"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "对应外部通道字面量(LL_ADC_CHANNEL_x)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_CHANNEL_INTERNAL_TO_EXTERNAL(__CHANNEL__)                     \\\r\n  ((__CHANNEL__) & ~ADC_CHANNEL_ID_INTERNAL_CH_MASK)"
+    },
+    {
+      "name": "__LL_ADC_IS_CHANNEL_INTERNAL_AVAILABLE",
+      "sig": "#define __LL_ADC_IS_CHANNEL_INTERNAL_AVAILABLE(__ADC_INSTANCE__, __CHANNEL__)  \\\r\n  (                                                                            \\\r\n    ((__CHANNEL__) == LL_ADC_CHANNEL_VREFINT)    ||                            \\\r\n    ((__CHANNEL__) == LL_ADC_CHANNEL_TEMPSENSOR) ||                            \\\r\n    ((__CHANNEL__) == LL_ADC_CHANNEL_1_3VCCA)                                  \\\r\n  )",
+      "brief": "宏: 判断所选内部通道在所选 ADC 实例上是否可用。",
+      "params": [
+        {
+          "name": "__ADC_INSTANCE__",
+          "type": "宏参数",
+          "desc": "ADC 实例"
+        },
+        {
+          "name": "__CHANNEL__",
+          "type": "宏参数",
+          "desc": "内部通道: LL_ADC_CHANNEL_VREFINT / TEMPSENSOR / 1_3VCCA"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 可用, 0 不可用"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_IS_CHANNEL_INTERNAL_AVAILABLE(__ADC_INSTANCE__, __CHANNEL__)  \\\r\n  (                                                                            \\\r\n    ((__CHANNEL__) == LL_ADC_CHANNEL_VREFINT)    ||                            \\\r\n    ((__CHANNEL__) == LL_ADC_CHANNEL_TEMPSENSOR) ||                            \\\r\n    ((__CHANNEL__) == LL_ADC_CHANNEL_1_3VCCA)                                  \\\r\n  )"
+    },
+    {
+      "name": "__LL_ADC_ANALOGWD_CHANNEL_GROUP",
+      "sig": "#define __LL_ADC_ANALOGWD_CHANNEL_GROUP(__CHANNEL__, __GROUP__)\\\r\n  (((__CHANNEL__) & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)",
+      "brief": "宏: 由通道与组定义生成模拟看门狗监测通道参数, 供 LL_ADC_SetAnalogWDMonitChannels() 使用。",
+      "params": [
+        {
+          "name": "__CHANNEL__",
+          "type": "宏参数",
+          "desc": "LL_ADC_CHANNEL_* 通道"
+        },
+        {
+          "name": "__GROUP__",
+          "type": "宏参数",
+          "desc": "组: LL_ADC_GROUP_REGULAR"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_ADC_AWD_CHANNEL_x_REG 等价值"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_ANALOGWD_CHANNEL_GROUP(__CHANNEL__, __GROUP__)\\\r\n  (((__CHANNEL__) & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)"
+    },
+    {
+      "name": "__LL_ADC_ANALOGWD_SET_THRESHOLD_RESOLUTION",
+      "sig": "#define __LL_ADC_ANALOGWD_SET_THRESHOLD_RESOLUTION(__ADC_RESOLUTION__, __AWD_THRESHOLD__) \\\r\n  ((__AWD_THRESHOLD__) << ((__ADC_RESOLUTION__) >> (ADC_CFGR1_RES_BITOFFSET_POS - 1U )))",
+      "brief": "宏: 非 12 位分辨率下, 按分辨率左移生成看门狗阈值, 供 LL_ADC_ConfigAnalogWDThresholds() / LL_ADC_SetAnalogWDThresholds() 使用。",
+      "params": [
+        {
+          "name": "__ADC_RESOLUTION__",
+          "type": "宏参数",
+          "desc": "分辨率: LL_ADC_RESOLUTION_12B / 10B / 8B / 6B"
+        },
+        {
+          "name": "__AWD_THRESHOLD__",
+          "type": "宏参数",
+          "desc": "阈值 0x000~0xFFF"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "移位后阈值 0x000~0xFFF"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_ANALOGWD_SET_THRESHOLD_RESOLUTION(__ADC_RESOLUTION__, __AWD_THRESHOLD__) \\\r\n  ((__AWD_THRESHOLD__) << ((__ADC_RESOLUTION__) >> (ADC_CFGR1_RES_BITOFFSET_POS - 1U )))"
+    },
+    {
+      "name": "__LL_ADC_ANALOGWD_GET_THRESHOLD_RESOLUTION",
+      "sig": "#define __LL_ADC_ANALOGWD_GET_THRESHOLD_RESOLUTION(__ADC_RESOLUTION__, __AWD_THRESHOLD_12_BITS__) \\\r\n  ((__AWD_THRESHOLD_12_BITS__) >> ((__ADC_RESOLUTION__) >> (ADC_CFGR1_RES_BITOFFSET_POS - 1U )))",
+      "brief": "宏: 非 12 位分辨率下, 将看门狗阈值右移回实际分辨率数值, 配合 LL_ADC_GetAnalogWDThresholds() 使用。",
+      "params": [
+        {
+          "name": "__ADC_RESOLUTION__",
+          "type": "宏参数",
+          "desc": "分辨率: LL_ADC_RESOLUTION_12B / 10B / 8B / 6B"
+        },
+        {
+          "name": "__AWD_THRESHOLD_12_BITS__",
+          "type": "宏参数",
+          "desc": "12 位格式阈值 0x000~0xFFF"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "实际分辨率阈值 0x000~0xFFF"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_ANALOGWD_GET_THRESHOLD_RESOLUTION(__ADC_RESOLUTION__, __AWD_THRESHOLD_12_BITS__) \\\r\n  ((__AWD_THRESHOLD_12_BITS__) >> ((__ADC_RESOLUTION__) >> (ADC_CFGR1_RES_BITOFFSET_POS - 1U )))"
+    },
+    {
+      "name": "__LL_ADC_ANALOGWD_THRESHOLDS_HIGH_LOW",
+      "sig": "#define __LL_ADC_ANALOGWD_THRESHOLDS_HIGH_LOW(__AWD_THRESHOLD_TYPE__, __AWD_THRESHOLDS__) \\\r\n  (((__AWD_THRESHOLD_TYPE__) == LL_ADC_AWD_THRESHOLD_LOW)                                 \\\r\n    ? (                                                                                   \\\r\n       (__AWD_THRESHOLDS__) & LL_ADC_AWD_THRESHOLD_LOW                                    \\\r\n      )                                                                                   \\\r\n      :                                                                                   \\\r\n      (                                                                                   \\\r\n       ((__AWD_THRESHOLDS__) >> ADC_TR_HT_BITOFFSET_POS) & LL_ADC_AWD_THRESHOLD_LOW       \\\r\n      )                                                                                   \\\r\n  )",
+      "brief": "宏: 从高低阈值拼接的原始寄存器值中取出高或低阈值。",
+      "params": [
+        {
+          "name": "__AWD_THRESHOLD_TYPE__",
+          "type": "宏参数",
+          "desc": "LL_ADC_AWD_THRESHOLD_HIGH / LOW"
+        },
+        {
+          "name": "__AWD_THRESHOLDS__",
+          "type": "宏参数",
+          "desc": "TR 寄存器原始值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "阈值 0x000~0xFFF"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_ANALOGWD_THRESHOLDS_HIGH_LOW(__AWD_THRESHOLD_TYPE__, __AWD_THRESHOLDS__) \\\r\n  (((__AWD_THRESHOLD_TYPE__) == LL_ADC_AWD_THRESHOLD_LOW)                                 \\\r\n    ? (                                                                                   \\\r\n       (__AWD_THRESHOLDS__) & LL_ADC_AWD_THRESHOLD_LOW                                    \\\r\n      )                                                                                   \\\r\n      :                                                                                   \\\r\n      (                                                                                   \\\r\n       ((__AWD_THRESHOLDS__) >> ADC_TR_HT_BITOFFSET_POS) & LL_ADC_AWD_THRESHOLD_LOW       \\\r\n      )                                                                                   \\\r\n  )"
+    },
+    {
+      "name": "__LL_ADC_COMMON_INSTANCE",
+      "sig": "#define __LL_ADC_COMMON_INSTANCE(__ADCx__)                                     \\\r\n  (ADC1_COMMON)",
+      "brief": "宏: 返回所选 ADC 实例所属的公共实例(本芯片为 ADC1_COMMON)。",
+      "params": [
+        {
+          "name": "__ADCx__",
+          "type": "宏参数",
+          "desc": "ADC 实例"
+        }
+      ],
+      "retval": {
+        "type": "ADC_Common_TypeDef *",
+        "desc": "ADC 公共实例指针"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_COMMON_INSTANCE(__ADCx__)                                     \\\r\n  (ADC1_COMMON)"
+    },
+    {
+      "name": "__LL_ADC_IS_ENABLED_ALL_COMMON_INSTANCE",
+      "sig": "#define __LL_ADC_IS_ENABLED_ALL_COMMON_INSTANCE(__ADCXY_COMMON__)              \\\r\n  LL_ADC_IsEnabled(ADC1)",
+      "brief": "宏: 检查共享同一公共实例的所有 ADC 是否均已禁止(本芯片即检查 ADC1)。",
+      "params": [
+        {
+          "name": "__ADCXY_COMMON__",
+          "type": "宏参数",
+          "desc": "ADC 公共实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "0 全部禁止, 1 至少一个使能"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_IS_ENABLED_ALL_COMMON_INSTANCE(__ADCXY_COMMON__)              \\\r\n  LL_ADC_IsEnabled(ADC1)"
+    },
+    {
+      "name": "__LL_ADC_DIGITAL_SCALE",
+      "sig": "#define __LL_ADC_DIGITAL_SCALE(__ADC_RESOLUTION__)                             \\\r\n  (0xFFFU >> ((__ADC_RESOLUTION__) >> (ADC_CFGR1_RES_BITOFFSET_POS - 1U)))",
+      "brief": "宏: 返回所选分辨率的满量程数字值。",
+      "params": [
+        {
+          "name": "__ADC_RESOLUTION__",
+          "type": "宏参数",
+          "desc": "分辨率: LL_ADC_RESOLUTION_12B / 10B / 8B / 6B"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "满量程数字值(12 位为 0xFFF)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_DIGITAL_SCALE(__ADC_RESOLUTION__)                             \\\r\n  (0xFFFU >> ((__ADC_RESOLUTION__) >> (ADC_CFGR1_RES_BITOFFSET_POS - 1U)))"
+    },
+    {
+      "name": "__LL_ADC_CONVERT_DATA_RESOLUTION",
+      "sig": "#define __LL_ADC_CONVERT_DATA_RESOLUTION(__DATA__, __ADC_RESOLUTION_CURRENT__, __ADC_RESOLUTION_TARGET__) \\\r\n  (((__DATA__)                                                                 \\\r\n    << ((__ADC_RESOLUTION_CURRENT__) >> (ADC_CFGR1_RES_BITOFFSET_POS - 1U)))   \\\r\n   >> ((__ADC_RESOLUTION_TARGET__) >> (ADC_CFGR1_RES_BITOFFSET_POS - 1U))      \\\r\n  )",
+      "brief": "宏: 将 ADC 转换数据从一种分辨率换算到另一种分辨率。",
+      "params": [
+        {
+          "name": "__DATA__",
+          "type": "宏参数",
+          "desc": "待换算的转换数据"
+        },
+        {
+          "name": "__ADC_RESOLUTION_CURRENT__",
+          "type": "宏参数",
+          "desc": "数据当前分辨率"
+        },
+        {
+          "name": "__ADC_RESOLUTION_TARGET__",
+          "type": "宏参数",
+          "desc": "目标分辨率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "换算后的转换数据"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_CONVERT_DATA_RESOLUTION(__DATA__, __ADC_RESOLUTION_CURRENT__, __ADC_RESOLUTION_TARGET__) \\\r\n  (((__DATA__)                                                                 \\\r\n    << ((__ADC_RESOLUTION_CURRENT__) >> (ADC_CFGR1_RES_BITOFFSET_POS - 1U)))   \\\r\n   >> ((__ADC_RESOLUTION_TARGET__) >> (ADC_CFGR1_RES_BITOFFSET_POS - 1U))      \\\r\n  )"
+    },
+    {
+      "name": "__LL_ADC_CALC_DATA_TO_VOLTAGE",
+      "sig": "#define __LL_ADC_CALC_DATA_TO_VOLTAGE(__VREFANALOG_VOLTAGE__,__ADC_DATA__,__ADC_RESOLUTION__)                      \\\r\n  ((__ADC_DATA__) * (__VREFANALOG_VOLTAGE__)/ __LL_ADC_DIGITAL_SCALE(__ADC_RESOLUTION__))",
+      "brief": "宏: 由 ADC 转换数据计算对应电压值(单位 mV)。",
+      "params": [
+        {
+          "name": "__VREFANALOG_VOLTAGE__",
+          "type": "宏参数",
+          "desc": "模拟参考电压 Vref+(单位 mV)"
+        },
+        {
+          "name": "__ADC_DATA__",
+          "type": "宏参数",
+          "desc": "ADC 转换数据(12 位)"
+        },
+        {
+          "name": "__ADC_RESOLUTION__",
+          "type": "宏参数",
+          "desc": "分辨率: LL_ADC_RESOLUTION_12B / 10B / 8B / 6B"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "电压值(单位 mV)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_CALC_DATA_TO_VOLTAGE(__VREFANALOG_VOLTAGE__,__ADC_DATA__,__ADC_RESOLUTION__)                      \\\r\n  ((__ADC_DATA__) * (__VREFANALOG_VOLTAGE__)/ __LL_ADC_DIGITAL_SCALE(__ADC_RESOLUTION__))"
+    },
+    {
+      "name": "__LL_ADC_CALC_VREFANALOG_VOLTAGE",
+      "sig": "#define __LL_ADC_CALC_VREFANALOG_VOLTAGE(__VREFINT_ADC_DATA__,__ADC_RESOLUTION__)                   \\\r\n  (4095*( VREFINT_CAL_VREF)/ __LL_ADC_CONVERT_DATA_RESOLUTION((__VREFINT_ADC_DATA__),(__ADC_RESOLUTION__),LL_ADC_RESOLUTION_12B))",
+      "brief": "宏: 由 VrefInt 内部基准的 ADC 转换数据反算模拟参考电压 Vref+(单位 mV), 使用出厂校准值。",
+      "params": [
+        {
+          "name": "__VREFINT_ADC_DATA__",
+          "type": "宏参数",
+          "desc": "VrefInt 通道 ADC 转换数据(12 位)"
+        },
+        {
+          "name": "__ADC_RESOLUTION__",
+          "type": "宏参数",
+          "desc": "测量时分辨率: LL_ADC_RESOLUTION_*"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "模拟参考电压 Vref+(单位 mV)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_CALC_VREFANALOG_VOLTAGE(__VREFINT_ADC_DATA__,__ADC_RESOLUTION__)                   \\\r\n  (4095*( VREFINT_CAL_VREF)/ __LL_ADC_CONVERT_DATA_RESOLUTION((__VREFINT_ADC_DATA__),(__ADC_RESOLUTION__),LL_ADC_RESOLUTION_12B))"
+    },
+    {
+      "name": "__LL_ADC_CALC_TEMPERATURE",
+      "sig": "#define __LL_ADC_CALC_TEMPERATURE(__VREFANALOG_VOLTAGE__,\\\r\n                                  __TEMPSENSOR_ADC_DATA__,\\\r\n                                  __ADC_RESOLUTION__)                              \\\r\n  (((( ((int32_t)((__LL_ADC_CONVERT_DATA_RESOLUTION((__TEMPSENSOR_ADC_DATA__),     \\\r\n                                                    (__ADC_RESOLUTION__),          \\\r\n                                                    LL_ADC_RESOLUTION_12B)         \\\r\n                   * (__VREFANALOG_VOLTAGE__))                                     \\\r\n                  / TEMPSENSOR_CAL_VREFANALOG)                                     \\\r\n        - (int32_t) *TEMPSENSOR_CAL1_ADDR)                                         \\\r\n     ) * (int32_t)(TEMPSENSOR_CAL2_TEMP - TEMPSENSOR_CAL1_TEMP)                    \\\r\n    ) / (int32_t)((int32_t)*TEMPSENSOR_CAL2_ADDR - (int32_t)*TEMPSENSOR_CAL1_ADDR) \\\r\n   ) + TEMPSENSOR_CAL1_TEMP                                                        \\\r\n  )",
+      "brief": "宏: 由内部温度传感器 ADC 数据计算温度(单位 ℃), 使用出厂校准值 TS_CAL1/TS_CAL2(30℃/85℃ 或 105℃ 点)。",
+      "params": [
+        {
+          "name": "__VREFANALOG_VOLTAGE__",
+          "type": "宏参数",
+          "desc": "模拟参考电压 Vref+(单位 mV)"
+        },
+        {
+          "name": "__TEMPSENSOR_ADC_DATA__",
+          "type": "宏参数",
+          "desc": "温度传感器通道 ADC 转换数据"
+        },
+        {
+          "name": "__ADC_RESOLUTION__",
+          "type": "宏参数",
+          "desc": "测量时分辨率: LL_ADC_RESOLUTION_*"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "温度(单位 ℃)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_CALC_TEMPERATURE(__VREFANALOG_VOLTAGE__,\\\r\n                                  __TEMPSENSOR_ADC_DATA__,\\\r\n                                  __ADC_RESOLUTION__)                              \\\r\n  (((( ((int32_t)((__LL_ADC_CONVERT_DATA_RESOLUTION((__TEMPSENSOR_ADC_DATA__),     \\\r\n                                                    (__ADC_RESOLUTION__),          \\\r\n                                                    LL_ADC_RESOLUTION_12B)         \\\r\n                   * (__VREFANALOG_VOLTAGE__))                                     \\\r\n                  / TEMPSENSOR_CAL_VREFANALOG)                                     \\\r\n        - (int32_t) *TEMPSENSOR_CAL1_ADDR)                                         \\\r\n     ) * (int32_t)(TEMPSENSOR_CAL2_TEMP - TEMPSENSOR_CAL1_TEMP)                    \\\r\n    ) / (int32_t)((int32_t)*TEMPSENSOR_CAL2_ADDR - (int32_t)*TEMPSENSOR_CAL1_ADDR) \\\r\n   ) + TEMPSENSOR_CAL1_TEMP                                                        \\\r\n  )"
+    },
+    {
+      "name": "__LL_ADC_CALC_TEMPERATURE_85",
+      "sig": "#define __LL_ADC_CALC_TEMPERATURE_85(__VREFANALOG_VOLTAGE__,\\\r\n                                  __TEMPSENSOR_ADC_DATA__,\\\r\n                                  __ADC_RESOLUTION__)                              \\\r\n  (((( ((int32_t)((__LL_ADC_CONVERT_DATA_RESOLUTION((__TEMPSENSOR_ADC_DATA__),     \\\r\n                                                    (__ADC_RESOLUTION__),          \\\r\n                                                    LL_ADC_RESOLUTION_12B)         \\\r\n                   * (__VREFANALOG_VOLTAGE__))                                     \\\r\n                  / TEMPSENSOR_CAL_VREFANALOG)                                     \\\r\n        - (int32_t) *TEMPSENSOR_CAL1_ADDR)                                         \\\r\n     ) * (int32_t)(TEMPSENSOR_CAL2_TEMP - TEMPSENSOR_CAL1_TEMP)                    \\\r\n    ) / (int32_t)((int32_t)*TEMPSENSOR_CAL2_ADDR - (int32_t)*TEMPSENSOR_CAL1_ADDR) \\\r\n   ) + TEMPSENSOR_CAL1_TEMP                                                        \\\r\n  )",
+      "brief": "宏: 由温度传感器 ADC 数据计算温度(单位 ℃), 采用 85℃ 校准点(TS_CAL2)。",
+      "params": [
+        {
+          "name": "__VREFANALOG_VOLTAGE__",
+          "type": "宏参数",
+          "desc": "模拟参考电压 Vref+(单位 mV)"
+        },
+        {
+          "name": "__TEMPSENSOR_ADC_DATA__",
+          "type": "宏参数",
+          "desc": "温度传感器通道 ADC 转换数据"
+        },
+        {
+          "name": "__ADC_RESOLUTION__",
+          "type": "宏参数",
+          "desc": "测量时分辨率: LL_ADC_RESOLUTION_*"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "温度(单位 ℃)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_CALC_TEMPERATURE_85(__VREFANALOG_VOLTAGE__,\\\r\n                                  __TEMPSENSOR_ADC_DATA__,\\\r\n                                  __ADC_RESOLUTION__)                              \\\r\n  (((( ((int32_t)((__LL_ADC_CONVERT_DATA_RESOLUTION((__TEMPSENSOR_ADC_DATA__),     \\\r\n                                                    (__ADC_RESOLUTION__),          \\\r\n                                                    LL_ADC_RESOLUTION_12B)         \\\r\n                   * (__VREFANALOG_VOLTAGE__))                                     \\\r\n                  / TEMPSENSOR_CAL_VREFANALOG)                                     \\\r\n        - (int32_t) *TEMPSENSOR_CAL1_ADDR)                                         \\\r\n     ) * (int32_t)(TEMPSENSOR_CAL2_TEMP - TEMPSENSOR_CAL1_TEMP)                    \\\r\n    ) / (int32_t)((int32_t)*TEMPSENSOR_CAL2_ADDR - (int32_t)*TEMPSENSOR_CAL1_ADDR) \\\r\n   ) + TEMPSENSOR_CAL1_TEMP                                                        \\\r\n  )"
+    },
+    {
+      "name": "__LL_ADC_CALC_TEMPERATURE_105",
+      "sig": "#define __LL_ADC_CALC_TEMPERATURE_105(__VREFANALOG_VOLTAGE__,\\\r\n                                  __TEMPSENSOR_ADC_DATA__,\\\r\n                                  __ADC_RESOLUTION__)                              \\\r\n  (((( ((int32_t)((__LL_ADC_CONVERT_DATA_RESOLUTION((__TEMPSENSOR_ADC_DATA__),     \\\r\n                                                    (__ADC_RESOLUTION__),          \\\r\n                                                    LL_ADC_RESOLUTION_12B)         \\\r\n                   * (__VREFANALOG_VOLTAGE__))                                     \\\r\n                  / TEMPSENSOR_CAL_VREFANALOG)                                     \\\r\n        - (int32_t) *TEMPSENSOR_CAL1_ADDR)                                         \\\r\n     ) * (int32_t)(TEMPSENSOR_CAL3_TEMP - TEMPSENSOR_CAL1_TEMP)                    \\\r\n    ) / (int32_t)((int32_t)*TEMPSENSOR_CAL2_ADDR - (int32_t)*TEMPSENSOR_CAL1_ADDR) \\\r\n   ) + TEMPSENSOR_CAL1_TEMP                                                        \\\r\n  )",
+      "brief": "宏: 由温度传感器 ADC 数据计算温度(单位 ℃), 采用 105℃ 校准点(TS_CAL3)。",
+      "params": [
+        {
+          "name": "__VREFANALOG_VOLTAGE__",
+          "type": "宏参数",
+          "desc": "模拟参考电压 Vref+(单位 mV)"
+        },
+        {
+          "name": "__TEMPSENSOR_ADC_DATA__",
+          "type": "宏参数",
+          "desc": "温度传感器通道 ADC 转换数据"
+        },
+        {
+          "name": "__ADC_RESOLUTION__",
+          "type": "宏参数",
+          "desc": "测量时分辨率: LL_ADC_RESOLUTION_*"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "温度(单位 ℃)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_CALC_TEMPERATURE_105(__VREFANALOG_VOLTAGE__,\\\r\n                                  __TEMPSENSOR_ADC_DATA__,\\\r\n                                  __ADC_RESOLUTION__)                              \\\r\n  (((( ((int32_t)((__LL_ADC_CONVERT_DATA_RESOLUTION((__TEMPSENSOR_ADC_DATA__),     \\\r\n                                                    (__ADC_RESOLUTION__),          \\\r\n                                                    LL_ADC_RESOLUTION_12B)         \\\r\n                   * (__VREFANALOG_VOLTAGE__))                                     \\\r\n                  / TEMPSENSOR_CAL_VREFANALOG)                                     \\\r\n        - (int32_t) *TEMPSENSOR_CAL1_ADDR)                                         \\\r\n     ) * (int32_t)(TEMPSENSOR_CAL3_TEMP - TEMPSENSOR_CAL1_TEMP)                    \\\r\n    ) / (int32_t)((int32_t)*TEMPSENSOR_CAL2_ADDR - (int32_t)*TEMPSENSOR_CAL1_ADDR) \\\r\n   ) + TEMPSENSOR_CAL1_TEMP                                                        \\\r\n  )"
+    },
+    {
+      "name": "__LL_ADC_CALC_TEMPERATURE_TYP_PARAMS",
+      "sig": "#define __LL_ADC_CALC_TEMPERATURE_TYP_PARAMS(__TEMPSENSOR_TYP_AVGSLOPE__,\\\r\n                                             __TEMPSENSOR_TYP_CALX_V__,\\\r\n                                             __TEMPSENSOR_CALX_TEMP__,\\\r\n                                             __VREFANALOG_VOLTAGE__,\\\r\n                                             __TEMPSENSOR_ADC_DATA__,\\\r\n                                             __ADC_RESOLUTION__)               \\\r\n  (((( (int32_t)((((__TEMPSENSOR_ADC_DATA__) * (__VREFANALOG_VOLTAGE__))       \\\r\n                  / __LL_ADC_DIGITAL_SCALE(__ADC_RESOLUTION__))                \\\r\n                 * 1000)- (int32_t)(((__TEMPSENSOR_TYP_CALX_V__))              \\\r\n                 * 1000))) / (__TEMPSENSOR_TYP_AVGSLOPE__)                     \\\r\n   ) + (__TEMPSENSOR_CALX_TEMP__)                                              \\\r\n  )",
+      "brief": "宏: 使用数据手册典型参数(斜率 Avg_Slope、典型电压、校准温度)由温度传感器 ADC 数据计算温度。",
+      "params": [
+        {
+          "name": "__TEMPSENSOR_TYP_AVGSLOPE__",
+          "type": "宏参数",
+          "desc": "数据手册温度传感器典型斜率(uV/℃)"
+        },
+        {
+          "name": "__TEMPSENSOR_TYP_CALX_V__",
+          "type": "宏参数",
+          "desc": "数据手册典型校准电压(mV)"
+        },
+        {
+          "name": "__TEMPSENSOR_CALX_TEMP__",
+          "type": "宏参数",
+          "desc": "校准电压对应温度(℃)"
+        },
+        {
+          "name": "__VREFANALOG_VOLTAGE__",
+          "type": "宏参数",
+          "desc": "模拟参考电压 Vref+(mV)"
+        },
+        {
+          "name": "__TEMPSENSOR_ADC_DATA__",
+          "type": "宏参数",
+          "desc": "温度传感器通道 ADC 转换数据"
+        },
+        {
+          "name": "__ADC_RESOLUTION__",
+          "type": "宏参数",
+          "desc": "测量时分辨率: LL_ADC_RESOLUTION_*"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "温度(单位 ℃)"
+      },
+      "file": "py32f002b_ll_adc.h",
+      "kind": "macro",
+      "src": "#define __LL_ADC_CALC_TEMPERATURE_TYP_PARAMS(__TEMPSENSOR_TYP_AVGSLOPE__,\\\r\n                                             __TEMPSENSOR_TYP_CALX_V__,\\\r\n                                             __TEMPSENSOR_CALX_TEMP__,\\\r\n                                             __VREFANALOG_VOLTAGE__,\\\r\n                                             __TEMPSENSOR_ADC_DATA__,\\\r\n                                             __ADC_RESOLUTION__)               \\\r\n  (((( (int32_t)((((__TEMPSENSOR_ADC_DATA__) * (__VREFANALOG_VOLTAGE__))       \\\r\n                  / __LL_ADC_DIGITAL_SCALE(__ADC_RESOLUTION__))                \\\r\n                 * 1000)- (int32_t)(((__TEMPSENSOR_TYP_CALX_V__))              \\\r\n                 * 1000))) / (__TEMPSENSOR_TYP_AVGSLOPE__)                     \\\r\n   ) + (__TEMPSENSOR_CALX_TEMP__)                                              \\\r\n  )"
+    }
+  ],
+  "types": [
+    {
+      "name": "LL_ADC_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t Clock; uint32_t Resolution; uint32_t DataAlignment; uint32_t LowPowerMode; } LL_ADC_InitTypeDef;",
+      "desc": "ADC 实例级初始化结构体, 作为 LL_ADC_Init() 的参数(需定义 USE_FULL_LL_DRIVER); 各特性可用对应单元函数单独修改。",
+      "members": [
+        {
+          "name": "Clock",
+          "type": "uint32_t",
+          "desc": "时钟源与分频, 可取 LL_ADC_CLOCK_SYNC_PCLK_DIVx / LL_ADC_CLOCK_ASYNC_HSI_DIVx"
+        },
+        {
+          "name": "Resolution",
+          "type": "uint32_t",
+          "desc": "分辨率, 可取 LL_ADC_RESOLUTION_12B / 10B / 8B / 6B"
+        },
+        {
+          "name": "DataAlignment",
+          "type": "uint32_t",
+          "desc": "数据对齐, 可取 LL_ADC_DATA_ALIGN_RIGHT / LEFT"
+        },
+        {
+          "name": "LowPowerMode",
+          "type": "uint32_t",
+          "desc": "低功耗模式, 可取 LL_ADC_LP_MODE_NONE / LL_ADC_LP_AUTOWAIT"
+        }
+      ],
+      "file": "py32f002b_ll_adc.h"
+    },
+    {
+      "name": "LL_ADC_REG_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t TriggerSource; uint32_t SequencerDiscont; uint32_t ContinuousMode; uint32_t Overrun; } LL_ADC_REG_InitTypeDef;",
+      "desc": "ADC 规则组初始化结构体, 作为 LL_ADC_REG_Init() 的参数(需定义 USE_FULL_LL_DRIVER)。",
+      "members": [
+        {
+          "name": "TriggerSource",
+          "type": "uint32_t",
+          "desc": "触发源, 可取 LL_ADC_REG_TRIG_SOFTWARE / EXT_TIM1_TRGO / EXT_TIM1_CH4"
+        },
+        {
+          "name": "SequencerDiscont",
+          "type": "uint32_t",
+          "desc": "序列不连续模式, 可取 LL_ADC_REG_SEQ_DISCONT_DISABLE / 1RANK(仅序列器使能时有效)"
+        },
+        {
+          "name": "ContinuousMode",
+          "type": "uint32_t",
+          "desc": "连续/单次模式, 可取 LL_ADC_REG_CONV_SINGLE / CONTINUOUS(与不连续模式互斥)"
+        },
+        {
+          "name": "Overrun",
+          "type": "uint32_t",
+          "desc": "溢出行为, 可取 LL_ADC_REG_OVR_DATA_PRESERVED / OVERWRITTEN"
+        }
+      ],
+      "file": "py32f002b_ll_adc.h"
+    }
+  ],
+  "consts": []
+}

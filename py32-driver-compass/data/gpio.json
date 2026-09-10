@@ -1,0 +1,1812 @@
+{
+  "module": "GPIO",
+  "moduleId": "gpio",
+  "intro": "通用输入输出: 引脚模式/速度/上下拉/复用配置, 电平读写与翻转, 引脚锁定, EXTI 外部中断辅助。含 HAL 库(py32f002b_hal_gpio.c/.h)与 LL 库(py32f002b_ll_gpio.h)。",
+  "files": [
+    "py32f002b_hal_gpio.c",
+    "py32f002b_hal_gpio.h",
+    "py32f002b_hal_gpio_ex.h",
+    "py32f002b_ll_gpio.h"
+  ],
+  "hal": [
+    {
+      "name": "HAL_GPIO_Init",
+      "sig": "void HAL_GPIO_Init(GPIO_TypeDef *GPIOx, GPIO_InitTypeDef *GPIO_Init)",
+      "brief": "根据 GPIO_Init 结构体中的参数初始化 GPIOx 端口: 配置引脚模式、上下拉、速度、输出类型与复用功能, 并可挂接 EXTI 中断/事件。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针, 可取 GPIOA / GPIOB / GPIOC"
+        },
+        {
+          "name": "GPIO_Init",
+          "type": "GPIO_InitTypeDef *",
+          "desc": "指向配置结构体的指针, 含 Pin/Mode/Pull/Speed/Alternate 各成员"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "模拟模式(Analog)用于 ADC 通道或 DAC 输出。",
+        "EXTI 模式需配合 HAL_NVIC_SetPriority() / HAL_NVIC_EnableIRQ() 使能对应中断。"
+      ],
+      "file": "py32f002b_hal_gpio.c",
+      "kind": "function",
+      "src": "void HAL_GPIO_Init(GPIO_TypeDef  *GPIOx, GPIO_InitTypeDef *GPIO_Init)\r\n{\r\n  uint32_t position = 0x00u;\r\n  uint32_t iocurrent;\r\n  uint32_t temp;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_GPIO_ALL_INSTANCE(GPIOx));\r\n  assert_param(IS_GPIO_PIN(GPIO_Init->Pin));\r\n  assert_param(IS_GPIO_MODE(GPIO_Init->Mode));\r\n  assert_param(IS_GPIO_PULL(GPIO_Init->Pull));\r\n\r\n  /* Configure the port pins */\r\n  while (((GPIO_Init->Pin) >> position) != 0x00u)\r\n  {\r\n    /* Get current io position */\r\n    iocurrent = (GPIO_Init->Pin) & (1uL << position);\r\n\r\n    if (iocurrent != 0x00u)\r\n    {\r\n      /*--------------------- GPIO Mode Configuration ------------------------*/\r\n      /* In case of Alternate function mode selection */\r\n      if ((GPIO_Init->Mode == GPIO_MODE_AF_PP) || (GPIO_Init->Mode == GPIO_MODE_AF_OD))\r\n      {\r\n        /* Check the Alternate function parameters */\r\n        assert_param(IS_GPIO_AF_INSTANCE(GPIOx));\r\n        assert_param(IS_GPIO_AF(GPIO_Init->Alternate));\r\n\r\n        /* Configure Alternate function mapped with the current IO */\r\n        temp = GPIOx->AFR[position >> 3u];\r\n        temp &= ~(0xFu << ((position & 0x07u) * 4u));\r\n        temp |= ((GPIO_Init->Alternate) << ((position & 0x07u) * 4u));\r\n        GPIOx->AFR[position >> 3u] = temp;\r\n      }\r\n\r\n      /* Configure IO Direction mode (Input, Output, Alternate or Analog) */\r\n      temp = GPIOx->MODER;\r\n      temp &= ~(GPIO_MODER_MODE0 << (position * 2u));\r\n      temp |= ((GPIO_Init->Mode & GPIO_MODE) << (position * 2u));\r\n      GPIOx->MODER = temp;\r\n\r\n      /* In case of Output or Alternate function mode selection */\r\n      if ((GPIO_Init->Mode == GPIO_MODE_OUTPUT_PP) || (GPIO_Init->Mode == GPIO_MODE_AF_PP) ||\r\n          (GPIO_Init->Mode == GPIO_MODE_OUTPUT_OD) || (GPIO_Init->Mode == GPIO_MODE_AF_OD))\r\n      {\r\n        /* Check the Speed parameter */\r\n        assert_param(IS_GPIO_SPEED(GPIO_Init->Speed));\r\n        /* Configure the IO Speed */\r\n        temp = GPIOx->OSPEEDR;\r\n        temp &= ~(GPIO_OSPEEDR_OSPEED0 << (position * 2u));\r\n        temp |= (GPIO_Init->Speed << (position * 2u));\r\n        GPIOx->OSPEEDR = temp;\r\n\r\n        /* Configure the IO Output Type */\r\n        temp = GPIOx->OTYPER;\r\n        temp &= ~(GPIO_OTYPER_OT0 << position) ;\r\n        temp |= (((GPIO_Init->Mode & GPIO_OUTPUT_TYPE) >> 4u) << position);\r\n        GPIOx->OTYPER = temp;\r\n      }\r\n\r\n      /* Activate the Pull-up or Pull down resistor for the current IO */\r\n      temp = GPIOx->PUPDR;\r\n      temp &= ~(GPIO_PUPDR_PUPD0 << (position * 2u));\r\n      temp |= ((GPIO_Init->Pull) << (position * 2u));\r\n      GPIOx->PUPDR = temp;\r\n\r\n      /*--------------------- EXTI Mode Configuration ------------------------*/\r\n      /* Configure the External Interrupt or event for the current IO */\r\n      if ((GPIO_Init->Mode & EXTI_MODE) == EXTI_MODE)\r\n      {\r\n        temp = EXTI->EXTICR[position >> 2u];\r\n        temp &= ~(0x0FuL << (8u * (position & 0x03u)));\r\n        temp |= (GPIO_GET_INDEX(GPIOx) << (8u * (position & 0x03u)));\r\n        EXTI->EXTICR[position >> 2u] = temp;\r\n\r\n        /* Clear EXTI line configuration */\r\n        temp = EXTI->IMR;\r\n        temp &= ~(iocurrent);\r\n        if ((GPIO_Init->Mode & GPIO_MODE_IT) == GPIO_MODE_IT)\r\n        {\r\n          temp |= iocurrent;\r\n        }\r\n        EXTI->IMR = temp;\r\n\r\n        temp = EXTI->EMR;\r\n        temp &= ~(iocurrent);\r\n        if ((GPIO_Init->Mode & GPIO_MODE_EVT) == GPIO_MODE_EVT)\r\n        {\r\n          temp |= iocurrent;\r\n        }\r\n        EXTI->EMR = temp;\r\n\r\n        /* Clear Rising Falling edge configuration */\r\n        temp = EXTI->RTSR;\r\n        temp &= ~(iocurrent);\r\n        if ((GPIO_Init->Mode & RISING_EDGE) == RISING_EDGE)\r\n        {\r\n          temp |= iocurrent;\r\n        }\r\n        EXTI->RTSR = temp;\r\n\r\n        temp = EXTI->FTSR;\r\n        temp &= ~(iocurrent);\r\n        if ((GPIO_Init->Mode & FALLING_EDGE) == FALLING_EDGE)\r\n        {\r\n          temp |= iocurrent;\r\n        }\r\n        EXTI->FTSR = temp;\r\n      }\r\n    }\r\n\r\n    position++;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_GPIO_DeInit",
+      "sig": "void HAL_GPIO_DeInit(GPIO_TypeDef *GPIOx, uint32_t GPIO_Pin)",
+      "brief": "将 GPIOx 的指定引脚寄存器恢复为复位默认值(模拟模式、无上下拉), 并清除对应 EXTI 配置。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针, 可取 GPIOA / GPIOB / GPIOC"
+        },
+        {
+          "name": "GPIO_Pin",
+          "type": "uint32_t",
+          "desc": "要复位的引脚, 可取 GPIO_PIN_x 的任意组合(x = 0..15)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_gpio.c",
+      "kind": "function",
+      "src": "void HAL_GPIO_DeInit(GPIO_TypeDef  *GPIOx, uint32_t GPIO_Pin)\r\n{\r\n  uint32_t position = 0x00u;\r\n  uint32_t iocurrent;\r\n  uint32_t tmp;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_GPIO_ALL_INSTANCE(GPIOx));\r\n  assert_param(IS_GPIO_PIN(GPIO_Pin));\r\n\r\n  /* Configure the port pins */\r\n  while ((GPIO_Pin >> position) != 0x00u)\r\n  {\r\n    /* Get current io position */\r\n    iocurrent = (GPIO_Pin) & (1uL << position);\r\n\r\n    if (iocurrent != 0x00u)\r\n    {\r\n      /*------------------------- EXTI Mode Configuration --------------------*/\r\n      /* Clear the External Interrupt or Event for the current IO */\r\n\r\n      tmp = EXTI->EXTICR[position >> 2u];\r\n      tmp &= (0x0FuL << (8u * (position & 0x03u)));\r\n      if (tmp == (GPIO_GET_INDEX(GPIOx) << (8u * (position & 0x03u))))\r\n      {\r\n        /* Clear EXTI line configuration */\r\n        EXTI->IMR &= ~(iocurrent);\r\n        EXTI->EMR &= ~(iocurrent);\r\n\r\n        /* Clear Rising Falling edge configuration */\r\n        EXTI->RTSR &= ~(iocurrent);\r\n        EXTI->FTSR &= ~(iocurrent);\r\n\r\n        tmp = 0x0FuL << (8u * (position & 0x03u));\r\n        EXTI->EXTICR[position >> 2u] &= ~tmp;\r\n      }\r\n\r\n      /*------------------------- GPIO Mode Configuration --------------------*/\r\n      /* Configure IO in Analog Mode */\r\n      GPIOx->MODER |= (GPIO_MODER_MODE0 << (position * 2u));\r\n\r\n      /* Configure the default Alternate Function in current IO */\r\n      GPIOx->AFR[position >> 3u] &= ~(0xFu << ((position & 0x07u) * 4u)) ;\r\n\r\n      /* Configure the default value for IO Speed */\r\n      GPIOx->OSPEEDR &= ~(GPIO_OSPEEDR_OSPEED0 << (position * 2u));\r\n\r\n      /* Configure the default value IO Output Type */\r\n      GPIOx->OTYPER  &= ~(GPIO_OTYPER_OT0 << position) ;\r\n\r\n      /* Deactivate the Pull-up and Pull-down resistor for the current IO */\r\n      GPIOx->PUPDR &= ~(GPIO_PUPDR_PUPD0 << (position * 2u));\r\n    }\r\n\r\n    position++;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_GPIO_ReadPin",
+      "sig": "GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)",
+      "brief": "读取指定输入引脚的电平状态。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针, 可取 GPIOA / GPIOB / GPIOC"
+        },
+        {
+          "name": "GPIO_Pin",
+          "type": "uint16_t",
+          "desc": "要读取的引脚, 可取 GPIO_PIN_x 的任意组合(x = 0..15)"
+        }
+      ],
+      "retval": {
+        "type": "GPIO_PinState",
+        "desc": "引脚电平: GPIO_PIN_SET(高) 或 GPIO_PIN_RESET(低)"
+      },
+      "file": "py32f002b_hal_gpio.c",
+      "kind": "function",
+      "src": "GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)\r\n{\r\n  GPIO_PinState bitstatus;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_GPIO_PIN(GPIO_Pin));\r\n\r\n  if ((GPIOx->IDR & GPIO_Pin) != 0x00u)\r\n  {\r\n    bitstatus = GPIO_PIN_SET;\r\n  }\r\n  else\r\n  {\r\n    bitstatus = GPIO_PIN_RESET;\r\n  }\r\n  return bitstatus;\r\n}"
+    },
+    {
+      "name": "HAL_GPIO_WritePin",
+      "sig": "void HAL_GPIO_WritePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, GPIO_PinState PinState)",
+      "brief": "将指定引脚设置为指定电平: PinState = GPIO_PIN_SET 置高, GPIO_PIN_RESET 置低。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针, 可取 GPIOA / GPIOB / GPIOC"
+        },
+        {
+          "name": "GPIO_Pin",
+          "type": "uint16_t",
+          "desc": "要写入的引脚, 可取 GPIO_PIN_x 的任意组合(x = 0..15)"
+        },
+        {
+          "name": "PinState",
+          "type": "GPIO_PinState",
+          "desc": "写入的电平: GPIO_PIN_SET 置高 / GPIO_PIN_RESET 置低"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "内部使用 BSRR/BRR 寄存器实现原子读改写, 不存在被中断打断导致读改写不一致的风险。"
+      ],
+      "file": "py32f002b_hal_gpio.c",
+      "kind": "function",
+      "src": "void HAL_GPIO_WritePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, GPIO_PinState PinState)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_GPIO_PIN(GPIO_Pin));\r\n  assert_param(IS_GPIO_PIN_ACTION(PinState));\r\n\r\n  if (PinState != GPIO_PIN_RESET)\r\n  {\r\n    GPIOx->BSRR = (uint32_t)GPIO_Pin;\r\n  }\r\n  else\r\n  {\r\n    GPIOx->BRR = (uint32_t)GPIO_Pin;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_GPIO_TogglePin",
+      "sig": "void HAL_GPIO_TogglePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)",
+      "brief": "翻转指定引脚的电平(高变低、低变高)。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针, 可取 GPIOA / GPIOB / GPIOC"
+        },
+        {
+          "name": "GPIO_Pin",
+          "type": "uint16_t",
+          "desc": "要翻转的引脚, 可取 GPIO_PIN_x 的任意组合(x = 0..15)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_gpio.c",
+      "kind": "function",
+      "src": "void HAL_GPIO_TogglePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_GPIO_PIN(GPIO_Pin));\r\n\r\n  if ((GPIOx->ODR & GPIO_Pin) != 0x00u)\r\n  {\r\n    GPIOx->BRR = (uint32_t)GPIO_Pin;\r\n  }\r\n  else\r\n  {\r\n    GPIOx->BSRR = (uint32_t)GPIO_Pin;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_GPIO_LockPin",
+      "sig": "HAL_StatusTypeDef HAL_GPIO_LockPin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)",
+      "brief": "锁定指定引脚的配置寄存器(MODER/OTYPER/OSPEEDR/PUPDR/AFRL/AFRH), 锁定后直到下次复位前都无法再修改。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针, 可取 GPIOA / GPIOB / GPIOC"
+        },
+        {
+          "name": "GPIO_Pin",
+          "type": "uint16_t",
+          "desc": "要锁定的引脚, 可取 GPIO_PIN_x 的任意组合(x = 0..15)"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 锁定成功; HAL_ERROR 锁定失败(未读到锁定确认位)"
+      },
+      "file": "py32f002b_hal_gpio.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_GPIO_LockPin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)\r\n{\r\n  __IO uint32_t tmp = GPIO_LCKR_LCKK;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_GPIO_LOCK_INSTANCE(GPIOx));\r\n  assert_param(IS_GPIO_PIN(GPIO_Pin));\r\n\r\n  /* Apply lock key write sequence */\r\n  tmp |= GPIO_Pin;\r\n  /* Set LCKx bit(s): LCKK='1' + LCK[15-0] */\r\n  GPIOx->LCKR = tmp;\r\n  /* Reset LCKx bit(s): LCKK='0' + LCK[15-0] */\r\n  GPIOx->LCKR = GPIO_Pin;\r\n  /* Set LCKx bit(s): LCKK='1' + LCK[15-0] */\r\n  GPIOx->LCKR = tmp;\r\n  /* Read LCKK register. This read is mandatory to complete key lock sequence */\r\n  tmp = GPIOx->LCKR;\r\n\r\n  /* read again in order to confirm lock is active */\r\n  if ((GPIOx->LCKR & __GPIO_LOCK_KEY_Msk) != 0x00u)\r\n  {\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_GPIO_EXTI_IRQHandler",
+      "sig": "void HAL_GPIO_EXTI_IRQHandler(uint16_t GPIO_Pin)",
+      "brief": "EXTI 中断服务处理函数: 检测对应 EXTI 线路中断标志, 清除标志并调用 HAL_GPIO_EXTI_Callback()。应在 EXTI0..15 的 IRQHandler 中调用。",
+      "params": [
+        {
+          "name": "GPIO_Pin",
+          "type": "uint16_t",
+          "desc": "与 EXTI 线路相连的引脚, 可取 GPIO_PIN_x(x = 0..15)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_gpio.c",
+      "kind": "function",
+      "src": "void HAL_GPIO_EXTI_IRQHandler(uint16_t GPIO_Pin)\r\n{\r\n  /* EXTI line interrupt detected */\r\n  if(__HAL_GPIO_EXTI_GET_IT(GPIO_Pin) != 0x00u)\r\n  {\r\n    __HAL_GPIO_EXTI_CLEAR_IT(GPIO_Pin);\r\n    HAL_GPIO_EXTI_Callback(GPIO_Pin);\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_GPIO_EXTI_Callback",
+      "sig": "void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)",
+      "brief": "EXTI 中断回调(弱定义空函数): 由 HAL_GPIO_EXTI_IRQHandler() 自动调用, 用户在应用里重写以实现自己的中断处理。",
+      "params": [
+        {
+          "name": "GPIO_Pin",
+          "type": "uint16_t",
+          "desc": "触发中断的引脚(GPIO_PIN_x)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "不要修改库里的弱定义, 应在用户文件中重新实现同名函数。"
+      ],
+      "file": "py32f002b_hal_gpio.c",
+      "kind": "function",
+      "src": "__weak void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(GPIO_Pin);\r\n\r\n  /* NOTE: This function should not be modified, when the callback is needed,\r\n            the HAL_GPIO_EXTI_Callback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "__HAL_GPIO_EXTI_GET_FLAG",
+      "sig": "#define __HAL_GPIO_EXTI_GET_FLAG(__EXTI_LINE__) (EXTI->PR & (__EXTI_LINE__))",
+      "brief": "宏: 查询指定 EXTI 线路的中断标志是否置位(未清除的挂起标志)。",
+      "params": [
+        {
+          "name": "__EXTI_LINE__",
+          "type": "宏参数",
+          "desc": "要检查的 EXTI 线路, 可取 GPIO_PIN_x(x = 0..15)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "该线路标志的新状态(置位为 1, 否则 0)"
+      },
+      "file": "py32f002b_hal_gpio.h",
+      "kind": "macro",
+      "src": "#define __HAL_GPIO_EXTI_GET_FLAG(__EXTI_LINE__) (EXTI->PR & (__EXTI_LINE__))"
+    },
+    {
+      "name": "__HAL_GPIO_EXTI_CLEAR_FLAG",
+      "sig": "#define __HAL_GPIO_EXTI_CLEAR_FLAG(__EXTI_LINE__) (EXTI->PR = (__EXTI_LINE__))",
+      "brief": "宏: 清除指定 EXTI 线路的挂起标志。",
+      "params": [
+        {
+          "name": "__EXTI_LINE__",
+          "type": "宏参数",
+          "desc": "要清除的 EXTI 线路, 可取 GPIO_PIN_x 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_gpio.h",
+      "kind": "macro",
+      "src": "#define __HAL_GPIO_EXTI_CLEAR_FLAG(__EXTI_LINE__) (EXTI->PR = (__EXTI_LINE__))"
+    },
+    {
+      "name": "__HAL_GPIO_EXTI_GET_IT",
+      "sig": "#define __HAL_GPIO_EXTI_GET_IT(__EXTI_LINE__) (EXTI->PR & (__EXTI_LINE__))",
+      "brief": "宏: 查询指定 EXTI 线路的中断触发状态(中断挂起位)。",
+      "params": [
+        {
+          "name": "__EXTI_LINE__",
+          "type": "宏参数",
+          "desc": "要检查的 EXTI 线路, 可取 GPIO_PIN_x(x = 0..15)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "中断状态(触发为 1, 否则 0)"
+      },
+      "file": "py32f002b_hal_gpio.h",
+      "kind": "macro",
+      "src": "#define __HAL_GPIO_EXTI_GET_IT(__EXTI_LINE__) (EXTI->PR & (__EXTI_LINE__))"
+    },
+    {
+      "name": "__HAL_GPIO_EXTI_CLEAR_IT",
+      "sig": "#define __HAL_GPIO_EXTI_CLEAR_IT(__EXTI_LINE__) (EXTI->PR = (__EXTI_LINE__))",
+      "brief": "宏: 清除指定 EXTI 线路的中断挂起位。",
+      "params": [
+        {
+          "name": "__EXTI_LINE__",
+          "type": "宏参数",
+          "desc": "要清除的 EXTI 线路, 可取 GPIO_PIN_x 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_gpio.h",
+      "kind": "macro",
+      "src": "#define __HAL_GPIO_EXTI_CLEAR_IT(__EXTI_LINE__) (EXTI->PR = (__EXTI_LINE__))"
+    },
+    {
+      "name": "__HAL_GPIO_EXTI_GENERATE_SWIT",
+      "sig": "#define __HAL_GPIO_EXTI_GENERATE_SWIT(__EXTI_LINE__)  (EXTI->SWIER |= (__EXTI_LINE__))",
+      "brief": "宏: 在指定 EXTI 线路上产生一次软件中断。",
+      "params": [
+        {
+          "name": "__EXTI_LINE__",
+          "type": "宏参数",
+          "desc": "要触发软件中断的 EXTI 线路, 可取 GPIO_PIN_x(x = 0..15)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_gpio.h",
+      "kind": "macro",
+      "src": "#define __HAL_GPIO_EXTI_GENERATE_SWIT(__EXTI_LINE__)  (EXTI->SWIER |= (__EXTI_LINE__))"
+    }
+  ],
+  "ll": [
+    {
+      "name": "LL_GPIO_SetPinMode",
+      "sig": "void LL_GPIO_SetPinMode(GPIO_TypeDef *GPIOx, uint32_t Pin, uint32_t Mode)",
+      "brief": "配置指定端口上单个引脚的 GPIO 模式(输入/推挽输出/复用/模拟)。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "Pin",
+          "type": "uint32_t",
+          "desc": "引脚, 只能传一个: LL_GPIO_PIN_0 .. LL_GPIO_PIN_15"
+        },
+        {
+          "name": "Mode",
+          "type": "uint32_t",
+          "desc": "模式: LL_GPIO_MODE_INPUT / OUTPUT / ALTERNATE / ANALOG"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "注意: 一次只能传一个引脚。"
+      ],
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_GPIO_SetPinMode(GPIO_TypeDef *GPIOx, uint32_t Pin, uint32_t Mode)\r\n{\r\n  MODIFY_REG(GPIOx->MODER, ((Pin * Pin) * GPIO_MODER_MODE0), ((Pin * Pin) * Mode));\r\n}"
+    },
+    {
+      "name": "LL_GPIO_GetPinMode",
+      "sig": "uint32_t LL_GPIO_GetPinMode(GPIO_TypeDef *GPIOx, uint32_t Pin)",
+      "brief": "读取指定端口上单个引脚的 GPIO 模式。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "Pin",
+          "type": "uint32_t",
+          "desc": "引脚, 只能传一个: LL_GPIO_PIN_0 .. LL_GPIO_PIN_15"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "模式值, 对应 LL_GPIO_MODE_*"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_GPIO_GetPinMode(GPIO_TypeDef *GPIOx, uint32_t Pin)\r\n{\r\n  return (uint32_t)(READ_BIT(GPIOx->MODER, ((Pin * Pin) * GPIO_MODER_MODE0)) / (Pin * Pin));\r\n}"
+    },
+    {
+      "name": "LL_GPIO_SetPinOutputType",
+      "sig": "void LL_GPIO_SetPinOutputType(GPIO_TypeDef *GPIOx, uint32_t PinMask, uint32_t OutputType)",
+      "brief": "配置指定端口上多个引脚的输出类型(推挽/开漏)。仅在输出或复用模式下有效。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "PinMask",
+          "type": "uint32_t",
+          "desc": "引脚掩码, 可取 LL_GPIO_PIN_x 任意组合或 LL_GPIO_PIN_ALL"
+        },
+        {
+          "name": "OutputType",
+          "type": "uint32_t",
+          "desc": "输出类型: LL_GPIO_OUTPUT_PUSHPULL / LL_GPIO_OUTPUT_OPENDRAIN"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_GPIO_SetPinOutputType(GPIO_TypeDef *GPIOx, uint32_t PinMask, uint32_t OutputType)\r\n{\r\n  MODIFY_REG(GPIOx->OTYPER, PinMask, (PinMask * OutputType));\r\n}"
+    },
+    {
+      "name": "LL_GPIO_GetPinOutputType",
+      "sig": "uint32_t LL_GPIO_GetPinOutputType(GPIO_TypeDef *GPIOx, uint32_t Pin)",
+      "brief": "读取指定端口上单个引脚的输出类型。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "Pin",
+          "type": "uint32_t",
+          "desc": "引脚, 只能传一个: LL_GPIO_PIN_0 .. LL_GPIO_PIN_15"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "输出类型, 对应 LL_GPIO_OUTPUT_*"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_GPIO_GetPinOutputType(GPIO_TypeDef *GPIOx, uint32_t Pin)\r\n{\r\n  return (uint32_t)(READ_BIT(GPIOx->OTYPER, Pin) / Pin);\r\n}"
+    },
+    {
+      "name": "LL_GPIO_SetPinSpeed",
+      "sig": "void LL_GPIO_SetPinSpeed(GPIO_TypeDef *GPIOx, uint32_t Pin, uint32_t Speed)",
+      "brief": "配置指定端口上单个引脚的输出速度(低/中/高/最高)。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "Pin",
+          "type": "uint32_t",
+          "desc": "引脚, 只能传一个: LL_GPIO_PIN_0 .. LL_GPIO_PIN_15"
+        },
+        {
+          "name": "Speed",
+          "type": "uint32_t",
+          "desc": "速度: LL_GPIO_SPEED_FREQ_LOW / MEDIUM / HIGH / VERY_HIGH"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "各速度的允许频率/供电/负载条件参见数据手册。"
+      ],
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_GPIO_SetPinSpeed(GPIO_TypeDef *GPIOx, uint32_t Pin, uint32_t  Speed)\r\n{\r\n  MODIFY_REG(GPIOx->OSPEEDR, ((Pin * Pin) * GPIO_OSPEEDR_OSPEED0), ((Pin * Pin) * Speed));\r\n}"
+    },
+    {
+      "name": "LL_GPIO_GetPinSpeed",
+      "sig": "uint32_t LL_GPIO_GetPinSpeed(GPIO_TypeDef *GPIOx, uint32_t Pin)",
+      "brief": "读取指定端口上单个引脚的输出速度。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "Pin",
+          "type": "uint32_t",
+          "desc": "引脚, 只能传一个: LL_GPIO_PIN_0 .. LL_GPIO_PIN_15"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "速度值, 对应 LL_GPIO_SPEED_*"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_GPIO_GetPinSpeed(GPIO_TypeDef *GPIOx, uint32_t Pin)\r\n{\r\n  return (uint32_t)(READ_BIT(GPIOx->OSPEEDR, ((Pin * Pin) * GPIO_OSPEEDR_OSPEED0)) / (Pin * Pin));\r\n}"
+    },
+    {
+      "name": "LL_GPIO_SetPinPull",
+      "sig": "void LL_GPIO_SetPinPull(GPIO_TypeDef *GPIOx, uint32_t Pin, uint32_t Pull)",
+      "brief": "配置指定端口上单个引脚的上下拉(无/上拉/下拉)。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "Pin",
+          "type": "uint32_t",
+          "desc": "引脚, 只能传一个: LL_GPIO_PIN_0 .. LL_GPIO_PIN_15"
+        },
+        {
+          "name": "Pull",
+          "type": "uint32_t",
+          "desc": "上下拉: LL_GPIO_PULL_NO / LL_GPIO_PULL_UP / LL_GPIO_PULL_DOWN"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_GPIO_SetPinPull(GPIO_TypeDef *GPIOx, uint32_t Pin, uint32_t Pull)\r\n{\r\n  MODIFY_REG(GPIOx->PUPDR, ((Pin * Pin) * GPIO_PUPDR_PUPD0), ((Pin * Pin) * Pull));\r\n}"
+    },
+    {
+      "name": "LL_GPIO_GetPinPull",
+      "sig": "uint32_t LL_GPIO_GetPinPull(GPIO_TypeDef *GPIOx, uint32_t Pin)",
+      "brief": "读取指定端口上单个引脚的上下拉配置。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "Pin",
+          "type": "uint32_t",
+          "desc": "引脚, 只能传一个: LL_GPIO_PIN_0 .. LL_GPIO_PIN_15"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "上下拉值, 对应 LL_GPIO_PULL_*"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_GPIO_GetPinPull(GPIO_TypeDef *GPIOx, uint32_t Pin)\r\n{\r\n  return (uint32_t)(READ_BIT(GPIOx->PUPDR, ((Pin * Pin) * GPIO_PUPDR_PUPD0)) / (Pin * Pin));\r\n}"
+    },
+    {
+      "name": "LL_GPIO_SetAFPin_0_7",
+      "sig": "void LL_GPIO_SetAFPin_0_7(GPIO_TypeDef *GPIOx, uint32_t Pin, uint32_t Alternate)",
+      "brief": "配置指定端口上 0~7 号引脚的复用功能(AF0~AF7)。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "Pin",
+          "type": "uint32_t",
+          "desc": "引脚, 只能传一个: LL_GPIO_PIN_0 .. LL_GPIO_PIN_7"
+        },
+        {
+          "name": "Alternate",
+          "type": "uint32_t",
+          "desc": "复用功能号: LL_GPIO_AF_0 .. LL_GPIO_AF_7"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "注意: 一次只能传一个引脚。"
+      ],
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_GPIO_SetAFPin_0_7(GPIO_TypeDef *GPIOx, uint32_t Pin, uint32_t Alternate)\r\n{\r\n  MODIFY_REG(GPIOx->AFR[0], ((((Pin * Pin) * Pin) * Pin) * GPIO_AFRL_AFSEL0),\r\n             ((((Pin * Pin) * Pin) * Pin) * Alternate));\r\n}"
+    },
+    {
+      "name": "LL_GPIO_GetAFPin_0_7",
+      "sig": "uint32_t LL_GPIO_GetAFPin_0_7(GPIO_TypeDef *GPIOx, uint32_t Pin)",
+      "brief": "读取指定端口上 0~7 号引脚的复用功能号。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "Pin",
+          "type": "uint32_t",
+          "desc": "引脚, 只能传一个: LL_GPIO_PIN_0 .. LL_GPIO_PIN_7"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "复用功能号, 对应 LL_GPIO_AF_*"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_GPIO_GetAFPin_0_7(GPIO_TypeDef *GPIOx, uint32_t Pin)\r\n{\r\n  return (uint32_t)(READ_BIT(GPIOx->AFR[0],\r\n                             ((((Pin * Pin) * Pin) * Pin) * GPIO_AFRL_AFSEL0)) / (((Pin * Pin) * Pin) * Pin));\r\n}"
+    },
+    {
+      "name": "LL_GPIO_SetAFPin_8_15",
+      "sig": "void LL_GPIO_SetAFPin_8_15(GPIO_TypeDef *GPIOx, uint32_t Pin, uint32_t Alternate)",
+      "brief": "配置指定端口上 8~15 号引脚的复用功能(AF0~AF7)。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "Pin",
+          "type": "uint32_t",
+          "desc": "引脚, 只能传一个: LL_GPIO_PIN_8 .. LL_GPIO_PIN_15"
+        },
+        {
+          "name": "Alternate",
+          "type": "uint32_t",
+          "desc": "复用功能号: LL_GPIO_AF_0 .. LL_GPIO_AF_7"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_GPIO_SetAFPin_8_15(GPIO_TypeDef *GPIOx, uint32_t Pin, uint32_t Alternate)\r\n{\r\n  MODIFY_REG(GPIOx->AFR[1], (((((Pin >> 8U) * (Pin >> 8U)) * (Pin >> 8U)) * (Pin >> 8U)) * GPIO_AFRH_AFSEL8),\r\n             (((((Pin >> 8U) * (Pin >> 8U)) * (Pin >> 8U)) * (Pin >> 8U)) * Alternate));\r\n}"
+    },
+    {
+      "name": "LL_GPIO_GetAFPin_8_15",
+      "sig": "uint32_t LL_GPIO_GetAFPin_8_15(GPIO_TypeDef *GPIOx, uint32_t Pin)",
+      "brief": "读取指定端口上 8~15 号引脚的复用功能号。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "Pin",
+          "type": "uint32_t",
+          "desc": "引脚, 只能传一个: LL_GPIO_PIN_8 .. LL_GPIO_PIN_15"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "复用功能号, 对应 LL_GPIO_AF_*"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_GPIO_GetAFPin_8_15(GPIO_TypeDef *GPIOx, uint32_t Pin)\r\n{\r\n  return (uint32_t)(READ_BIT(GPIOx->AFR[1],\r\n                             (((((Pin >> 8U) * (Pin >> 8U)) * (Pin >> 8U)) * (Pin >> 8U)) * GPIO_AFRH_AFSEL8)) /\r\n                             ((((Pin >> 8U) * (Pin >> 8U)) * (Pin >> 8U)) * (Pin >> 8U)));\r\n}"
+    },
+    {
+      "name": "LL_GPIO_LockPin",
+      "sig": "void LL_GPIO_LockPin(GPIO_TypeDef *GPIOx, uint32_t PinMask)",
+      "brief": "锁定指定端口上若干引脚的配置, 锁定后直到下次复位前配置不能再修改。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "PinMask",
+          "type": "uint32_t",
+          "desc": "引脚掩码, 可取 LL_GPIO_PIN_x 任意组合或 LL_GPIO_PIN_ALL"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_GPIO_LockPin(GPIO_TypeDef *GPIOx, uint32_t PinMask)\r\n{\r\n  __IO uint32_t temp;\r\n  WRITE_REG(GPIOx->LCKR, GPIO_LCKR_LCKK | PinMask);\r\n  WRITE_REG(GPIOx->LCKR, PinMask);\r\n  WRITE_REG(GPIOx->LCKR, GPIO_LCKR_LCKK | PinMask);\r\n  /* Read LCKK register. This read is mandatory to complete key lock sequence */\r\n  temp = READ_REG(GPIOx->LCKR);\r\n  (void) temp;\r\n}"
+    },
+    {
+      "name": "LL_GPIO_IsPinLocked",
+      "sig": "uint32_t LL_GPIO_IsPinLocked(GPIO_TypeDef *GPIOx, uint32_t PinMask)",
+      "brief": "查询指定端口上传入的所有引脚是否都已锁定。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "PinMask",
+          "type": "uint32_t",
+          "desc": "引脚掩码, 可取 LL_GPIO_PIN_x 任意组合或 LL_GPIO_PIN_ALL"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "全部锁定返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_GPIO_IsPinLocked(GPIO_TypeDef *GPIOx, uint32_t PinMask)\r\n{\r\n  return (READ_BIT(GPIOx->LCKR, PinMask) == (PinMask));\r\n}"
+    },
+    {
+      "name": "LL_GPIO_IsAnyPinLocked",
+      "sig": "uint32_t LL_GPIO_IsAnyPinLocked(GPIO_TypeDef *GPIOx)",
+      "brief": "查询指定端口上是否有任一引脚被锁定。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "有锁定返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_GPIO_IsAnyPinLocked(GPIO_TypeDef *GPIOx)\r\n{\r\n  return (READ_BIT(GPIOx->LCKR, LL_GPIO_LCKR_LCKK) != 0U);\r\n}"
+    },
+    {
+      "name": "LL_GPIO_ReadInputPort",
+      "sig": "uint32_t LL_GPIO_ReadInputPort(GPIO_TypeDef *GPIOx)",
+      "brief": "读取指定端口完整的输入数据寄存器(IDR)值。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "端口输入数据寄存器值"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_GPIO_ReadInputPort(GPIO_TypeDef *GPIOx)\r\n{\r\n  return (uint32_t)(READ_REG(GPIOx->IDR));\r\n}"
+    },
+    {
+      "name": "LL_GPIO_IsInputPinSet",
+      "sig": "uint32_t LL_GPIO_IsInputPinSet(GPIO_TypeDef *GPIOx, uint32_t PinMask)",
+      "brief": "查询指定端口上传入的引脚输入电平是否全为高。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "PinMask",
+          "type": "uint32_t",
+          "desc": "引脚掩码, 可取 LL_GPIO_PIN_x 任意组合或 LL_GPIO_PIN_ALL"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "全为高返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_GPIO_IsInputPinSet(GPIO_TypeDef *GPIOx, uint32_t PinMask)\r\n{\r\n  return (READ_BIT(GPIOx->IDR, PinMask) == (PinMask));\r\n}"
+    },
+    {
+      "name": "LL_GPIO_WriteOutputPort",
+      "sig": "void LL_GPIO_WriteOutputPort(GPIO_TypeDef *GPIOx, uint32_t PortValue)",
+      "brief": "直接向指定端口的输出数据寄存器(ODR)写入整端口电平值。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "PortValue",
+          "type": "uint32_t",
+          "desc": "端口每个引脚的电平值(按位对应)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_GPIO_WriteOutputPort(GPIO_TypeDef *GPIOx, uint32_t PortValue)\r\n{\r\n  WRITE_REG(GPIOx->ODR, PortValue);\r\n}"
+    },
+    {
+      "name": "LL_GPIO_ReadOutputPort",
+      "sig": "uint32_t LL_GPIO_ReadOutputPort(GPIO_TypeDef *GPIOx)",
+      "brief": "读取指定端口完整的输出数据寄存器(ODR)值。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "端口输出数据寄存器值"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_GPIO_ReadOutputPort(GPIO_TypeDef *GPIOx)\r\n{\r\n  return (uint32_t)(READ_REG(GPIOx->ODR));\r\n}"
+    },
+    {
+      "name": "LL_GPIO_IsOutputPinSet",
+      "sig": "uint32_t LL_GPIO_IsOutputPinSet(GPIO_TypeDef *GPIOx, uint32_t PinMask)",
+      "brief": "查询指定端口上传入的引脚输出电平是否全为高。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "PinMask",
+          "type": "uint32_t",
+          "desc": "引脚掩码, 可取 LL_GPIO_PIN_x 任意组合或 LL_GPIO_PIN_ALL"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "全为高返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_GPIO_IsOutputPinSet(GPIO_TypeDef *GPIOx, uint32_t PinMask)\r\n{\r\n  return (READ_BIT(GPIOx->ODR, PinMask) == (PinMask));\r\n}"
+    },
+    {
+      "name": "LL_GPIO_SetOutputPin",
+      "sig": "void LL_GPIO_SetOutputPin(GPIO_TypeDef *GPIOx, uint32_t PinMask)",
+      "brief": "将指定端口上若干引脚置为高电平(通过 BSRR 寄存器)。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "PinMask",
+          "type": "uint32_t",
+          "desc": "引脚掩码, 可取 LL_GPIO_PIN_x 任意组合或 LL_GPIO_PIN_ALL"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_GPIO_SetOutputPin(GPIO_TypeDef *GPIOx, uint32_t PinMask)\r\n{\r\n  WRITE_REG(GPIOx->BSRR, PinMask);\r\n}"
+    },
+    {
+      "name": "LL_GPIO_ResetOutputPin",
+      "sig": "void LL_GPIO_ResetOutputPin(GPIO_TypeDef *GPIOx, uint32_t PinMask)",
+      "brief": "将指定端口上若干引脚置为低电平(通过 BRR 寄存器)。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "PinMask",
+          "type": "uint32_t",
+          "desc": "引脚掩码, 可取 LL_GPIO_PIN_x 任意组合或 LL_GPIO_PIN_ALL"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_GPIO_ResetOutputPin(GPIO_TypeDef *GPIOx, uint32_t PinMask)\r\n{\r\n  WRITE_REG(GPIOx->BRR, PinMask);\r\n}"
+    },
+    {
+      "name": "LL_GPIO_TogglePin",
+      "sig": "void LL_GPIO_TogglePin(GPIO_TypeDef *GPIOx, uint32_t PinMask)",
+      "brief": "翻转指定端口上若干引脚的电平(读 ODR 后异或写回)。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "PinMask",
+          "type": "uint32_t",
+          "desc": "引脚掩码, 可取 LL_GPIO_PIN_x 任意组合或 LL_GPIO_PIN_ALL"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_GPIO_TogglePin(GPIO_TypeDef *GPIOx, uint32_t PinMask)\r\n{\r\n  WRITE_REG(GPIOx->ODR, READ_REG(GPIOx->ODR) ^ PinMask);\r\n}"
+    },
+    {
+      "name": "LL_GPIO_Init",
+      "sig": "ErrorStatus LL_GPIO_Init(GPIO_TypeDef *GPIOx, LL_GPIO_InitTypeDef *GPIO_InitStruct)",
+      "brief": "根据 LL_GPIO_InitTypeDef 结构体批量初始化 GPIO 引脚(模式/速度/输出类型/上下拉/复用)。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        },
+        {
+          "name": "GPIO_InitStruct",
+          "type": "LL_GPIO_InitTypeDef *",
+          "desc": "指向配置结构体的指针, 含 Pin/Mode/Speed/OutputType/Pull/Alternate"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 成功; ERROR 失败"
+      },
+      "file": "py32f002b_ll_gpio.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_GPIO_Init(GPIO_TypeDef *GPIOx, LL_GPIO_InitTypeDef *GPIO_InitStruct)\r\n{\r\n  uint32_t pinpos;\r\n  uint32_t currentpin;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_GPIO_ALL_INSTANCE(GPIOx));\r\n  assert_param(IS_LL_GPIO_PIN(GPIO_InitStruct->Pin));\r\n  assert_param(IS_LL_GPIO_MODE(GPIO_InitStruct->Mode));\r\n  assert_param(IS_LL_GPIO_PULL(GPIO_InitStruct->Pull));\r\n\r\n  /* ------------------------- Configure the port pins ---------------- */\r\n  /* Initialize  pinpos on first pin set */\r\n  pinpos = 0;\r\n\r\n  /* Configure the port pins */\r\n  while (((GPIO_InitStruct->Pin) >> pinpos) != 0x00u)\r\n  {\r\n    /* Get current io position */\r\n    currentpin = (GPIO_InitStruct->Pin) & (0x00000001uL << pinpos);\r\n\r\n    if (currentpin != 0x00u)\r\n    {\r\n      /* Pin Mode configuration */\r\n      LL_GPIO_SetPinMode(GPIOx, currentpin, GPIO_InitStruct->Mode);\r\n\r\n      if ((GPIO_InitStruct->Mode == LL_GPIO_MODE_OUTPUT) || (GPIO_InitStruct->Mode == LL_GPIO_MODE_ALTERNATE))\r\n      {\r\n        /* Check Speed mode parameters */\r\n        assert_param(IS_LL_GPIO_SPEED(GPIO_InitStruct->Speed));\r\n\r\n        /* Speed mode configuration */\r\n        LL_GPIO_SetPinSpeed(GPIOx, currentpin, GPIO_InitStruct->Speed);\r\n      }\r\n\r\n      /* Pull-up Pull down resistor configuration*/\r\n      LL_GPIO_SetPinPull(GPIOx, currentpin, GPIO_InitStruct->Pull);\r\n\r\n      if (GPIO_InitStruct->Mode == LL_GPIO_MODE_ALTERNATE)\r\n      {\r\n        /* Check Alternate parameter */\r\n        assert_param(IS_LL_GPIO_ALTERNATE(GPIO_InitStruct->Alternate));\r\n\r\n        /* Speed mode configuration */\r\n        if (currentpin < LL_GPIO_PIN_8)\r\n        {\r\n          LL_GPIO_SetAFPin_0_7(GPIOx, currentpin, GPIO_InitStruct->Alternate);\r\n        }\r\n        else\r\n        {\r\n          LL_GPIO_SetAFPin_8_15(GPIOx, currentpin, GPIO_InitStruct->Alternate);\r\n        }\r\n      }\r\n    }\r\n    pinpos++;\r\n  }\r\n\r\n  if ((GPIO_InitStruct->Mode == LL_GPIO_MODE_OUTPUT) || (GPIO_InitStruct->Mode == LL_GPIO_MODE_ALTERNATE))\r\n  {\r\n    /* Check Output mode parameters */\r\n    assert_param(IS_LL_GPIO_OUTPUT_TYPE(GPIO_InitStruct->OutputType));\r\n\r\n    /* Output mode configuration*/\r\n    LL_GPIO_SetPinOutputType(GPIOx, GPIO_InitStruct->Pin, GPIO_InitStruct->OutputType);\r\n\r\n  }\r\n  return (SUCCESS);\r\n}"
+    },
+    {
+      "name": "LL_GPIO_DeInit",
+      "sig": "ErrorStatus LL_GPIO_DeInit(GPIO_TypeDef *GPIOx)",
+      "brief": "将指定端口的 GPIO 寄存器全部恢复为复位默认值。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "GPIOx",
+          "type": "GPIO_TypeDef *",
+          "desc": "GPIO 端口指针"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 成功; ERROR 失败"
+      },
+      "file": "py32f002b_ll_gpio.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_GPIO_DeInit(GPIO_TypeDef *GPIOx)\r\n{\r\n  ErrorStatus status = SUCCESS;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_GPIO_ALL_INSTANCE(GPIOx));\r\n\r\n  /* Force and Release reset on clock of GPIOx Port */\r\n  if (GPIOx == GPIOA)\r\n  {\r\n    LL_IOP_GRP1_ForceReset(LL_IOP_GRP1_PERIPH_GPIOA);\r\n    LL_IOP_GRP1_ReleaseReset(LL_IOP_GRP1_PERIPH_GPIOA);\r\n  }\r\n  else if (GPIOx == GPIOB)\r\n  {\r\n    LL_IOP_GRP1_ForceReset(LL_IOP_GRP1_PERIPH_GPIOB);\r\n    LL_IOP_GRP1_ReleaseReset(LL_IOP_GRP1_PERIPH_GPIOB);\r\n  }\r\n  else if (GPIOx == GPIOC)\r\n  {\r\n    LL_IOP_GRP1_ForceReset(LL_IOP_GRP1_PERIPH_GPIOC);\r\n    LL_IOP_GRP1_ReleaseReset(LL_IOP_GRP1_PERIPH_GPIOC);\r\n  }\r\n  else\r\n  {\r\n    status = ERROR;\r\n  }\r\n\r\n  return (status);\r\n}"
+    },
+    {
+      "name": "LL_GPIO_StructInit",
+      "sig": "void LL_GPIO_StructInit(LL_GPIO_InitTypeDef *GPIO_InitStruct)",
+      "brief": "将 LL_GPIO_InitTypeDef 结构体各成员填充为默认值, 供 LL_GPIO_Init() 使用。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "GPIO_InitStruct",
+          "type": "LL_GPIO_InitTypeDef *",
+          "desc": "指向要填充的结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_gpio.c",
+      "kind": "function",
+      "src": "void LL_GPIO_StructInit(LL_GPIO_InitTypeDef *GPIO_InitStruct)\r\n{\r\n  /* Reset GPIO init structure parameters values */\r\n  GPIO_InitStruct->Pin        = LL_GPIO_PIN_ALL;\r\n  GPIO_InitStruct->Mode       = LL_GPIO_MODE_ANALOG;\r\n  GPIO_InitStruct->Speed      = LL_GPIO_SPEED_FREQ_LOW;\r\n  GPIO_InitStruct->OutputType = LL_GPIO_OUTPUT_PUSHPULL;\r\n  GPIO_InitStruct->Pull       = LL_GPIO_PULL_NO;\r\n  GPIO_InitStruct->Alternate  = LL_GPIO_AF_0;\r\n}"
+    }
+  ],
+  "types": [
+    {
+      "name": "GPIO_PinState",
+      "kind": "enum",
+      "def": "typedef enum { GPIO_PIN_RESET = 0U, GPIO_PIN_SET } GPIO_PinState;",
+      "desc": "GPIO 引脚电平状态枚举, 常用于 HAL_GPIO_ReadPin() 的返回值与 HAL_GPIO_WritePin() 的写入值。",
+      "members": [
+        {
+          "name": "GPIO_PIN_RESET",
+          "value": "0U",
+          "desc": "低电平(复位/清零状态)"
+        },
+        {
+          "name": "GPIO_PIN_SET",
+          "value": "1U",
+          "desc": "高电平(置位状态)"
+        }
+      ],
+      "file": "py32f002b_hal_gpio.h"
+    },
+    {
+      "name": "GPIO_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t Pin; uint32_t Mode; uint32_t Pull; uint32_t Speed; uint32_t Alternate; } GPIO_InitTypeDef;",
+      "desc": "GPIO 初始化配置结构体, 作为 HAL_GPIO_Init() 的参数。",
+      "members": [
+        {
+          "name": "Pin",
+          "type": "uint32_t",
+          "desc": "要配置的引脚, 可取 GPIO_PIN_x 任意组合(x = 0..15)"
+        },
+        {
+          "name": "Mode",
+          "type": "uint32_t",
+          "desc": "工作模式, 可取 GPIO_MODE_*(输入/输出/复用/模拟/EXTI 中断/事件等)"
+        },
+        {
+          "name": "Pull",
+          "type": "uint32_t",
+          "desc": "上下拉, 可取 GPIO_NOPULL / GPIO_PULLUP / GPIO_PULLDOWN"
+        },
+        {
+          "name": "Speed",
+          "type": "uint32_t",
+          "desc": "输出速度, 可取 GPIO_SPEED_FREQ_*(输出/复用模式下有效)"
+        },
+        {
+          "name": "Alternate",
+          "type": "uint32_t",
+          "desc": "复用的外设, 可取 GPIO_AF0_* .. GPIO_AF7_*(复用模式下有效)"
+        }
+      ],
+      "file": "py32f002b_hal_gpio.h"
+    },
+    {
+      "name": "LL_GPIO_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t Pin; uint32_t Mode; uint32_t Speed; uint32_t OutputType; uint32_t Pull; uint32_t Alternate; } LL_GPIO_InitTypeDef;",
+      "desc": "LL 库 GPIO 初始化配置结构体, 作为 LL_GPIO_Init() 的参数(需定义 USE_FULL_LL_DRIVER)。",
+      "members": [
+        {
+          "name": "Pin",
+          "type": "uint32_t",
+          "desc": "要配置的引脚, 可取 LL_GPIO_PIN_x 任意组合"
+        },
+        {
+          "name": "Mode",
+          "type": "uint32_t",
+          "desc": "工作模式, 可取 LL_GPIO_MODE_*"
+        },
+        {
+          "name": "Speed",
+          "type": "uint32_t",
+          "desc": "输出速度, 可取 LL_GPIO_SPEED_*"
+        },
+        {
+          "name": "OutputType",
+          "type": "uint32_t",
+          "desc": "输出类型, 可取 LL_GPIO_OUTPUT_*"
+        },
+        {
+          "name": "Pull",
+          "type": "uint32_t",
+          "desc": "上下拉, 可取 LL_GPIO_PULL_*"
+        },
+        {
+          "name": "Alternate",
+          "type": "uint32_t",
+          "desc": "复用功能, 可取 LL_GPIO_AF_0 .. LL_GPIO_AF_7"
+        }
+      ],
+      "file": "py32f002b_ll_gpio.h"
+    },
+    {
+      "name": "GPIO_TypeDef",
+      "kind": "periph",
+      "def": "typedef struct { __IO uint32_t MODER; __IO uint32_t OTYPER; __IO uint32_t OSPEEDR; __IO uint32_t PUPDR; __IO uint32_t IDR; __IO uint32_t ODR; __IO uint32_t BSRR; __IO uint32_t LCKR; __IO uint32_t AFR[2]; __IO uint32_t BRR; } GPIO_TypeDef;",
+      "desc": "GPIO 外设寄存器结构体。实例: GPIOA / GPIOB / GPIOC。",
+      "members": [
+        {
+          "name": "MODER",
+          "type": "__IO uint32_t",
+          "desc": "端口模式寄存器(每引脚 2 位: 输入/输出/复用/模拟)"
+        },
+        {
+          "name": "OTYPER",
+          "type": "__IO uint32_t",
+          "desc": "端口输出类型寄存器(推挽/开漏)"
+        },
+        {
+          "name": "OSPEEDR",
+          "type": "__IO uint32_t",
+          "desc": "端口输出速度寄存器"
+        },
+        {
+          "name": "PUPDR",
+          "type": "__IO uint32_t",
+          "desc": "端口上下拉寄存器"
+        },
+        {
+          "name": "IDR",
+          "type": "__IO uint32_t",
+          "desc": "端口输入数据寄存器(只读)"
+        },
+        {
+          "name": "ODR",
+          "type": "__IO uint32_t",
+          "desc": "端口输出数据寄存器"
+        },
+        {
+          "name": "BSRR",
+          "type": "__IO uint32_t",
+          "desc": "端口置位/复位寄存器(写 1 置位, 高 16 位写 1 复位)"
+        },
+        {
+          "name": "LCKR",
+          "type": "__IO uint32_t",
+          "desc": "端口配置锁定寄存器"
+        },
+        {
+          "name": "AFR[2]",
+          "type": "__IO uint32_t",
+          "desc": "复用功能寄存器(低/高 8 引脚各 4 位)"
+        },
+        {
+          "name": "BRR",
+          "type": "__IO uint32_t",
+          "desc": "端口位复位寄存器(写 1 复位)"
+        }
+      ],
+      "file": "py32f002xx5.h"
+    }
+  ],
+  "consts": [
+    {
+      "name": "GPIO_PIN_0",
+      "value": "((uint16_t)0x0001)",
+      "desc": "选中第 0 引脚",
+      "group": "引脚掩码",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define GPIO_PIN_0                 ((uint16_t)0x0001)  /* Pin 0 selected    */"
+    },
+    {
+      "name": "GPIO_PIN_1",
+      "value": "((uint16_t)0x0002)",
+      "desc": "选中第 1 引脚",
+      "group": "引脚掩码",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define GPIO_PIN_1                 ((uint16_t)0x0002)  /* Pin 1 selected    */"
+    },
+    {
+      "name": "GPIO_PIN_2",
+      "value": "((uint16_t)0x0004)",
+      "desc": "选中第 2 引脚",
+      "group": "引脚掩码",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define GPIO_PIN_2                 ((uint16_t)0x0004)  /* Pin 2 selected    */"
+    },
+    {
+      "name": "GPIO_PIN_3",
+      "value": "((uint16_t)0x0008)",
+      "desc": "选中第 3 引脚",
+      "group": "引脚掩码",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define GPIO_PIN_3                 ((uint16_t)0x0008)  /* Pin 3 selected    */"
+    },
+    {
+      "name": "GPIO_PIN_4",
+      "value": "((uint16_t)0x0010)",
+      "desc": "选中第 4 引脚",
+      "group": "引脚掩码",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define GPIO_PIN_4                 ((uint16_t)0x0010)  /* Pin 4 selected    */"
+    },
+    {
+      "name": "GPIO_PIN_5",
+      "value": "((uint16_t)0x0020)",
+      "desc": "选中第 5 引脚",
+      "group": "引脚掩码",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define GPIO_PIN_5                 ((uint16_t)0x0020)  /* Pin 5 selected    */"
+    },
+    {
+      "name": "GPIO_PIN_6",
+      "value": "((uint16_t)0x0040)",
+      "desc": "选中第 6 引脚",
+      "group": "引脚掩码",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define GPIO_PIN_6                 ((uint16_t)0x0040)  /* Pin 6 selected    */"
+    },
+    {
+      "name": "GPIO_PIN_7",
+      "value": "((uint16_t)0x0080)",
+      "desc": "选中第 7 引脚",
+      "group": "引脚掩码",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define GPIO_PIN_7                 ((uint16_t)0x0080)  /* Pin 7 selected    */"
+    },
+    {
+      "name": "GPIO_PIN_8",
+      "value": "((uint16_t)0x0100)",
+      "desc": "选中第 8 引脚",
+      "group": "引脚掩码",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define GPIO_PIN_8                 ((uint16_t)0x0100)  /* Pin 8 selected    */"
+    },
+    {
+      "name": "GPIO_PIN_9",
+      "value": "((uint16_t)0x0200)",
+      "desc": "选中第 9 引脚",
+      "group": "引脚掩码",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define GPIO_PIN_9                 ((uint16_t)0x0200)  /* Pin 9 selected    */"
+    },
+    {
+      "name": "GPIO_PIN_10",
+      "value": "((uint16_t)0x0400)",
+      "desc": "选中第 10 引脚",
+      "group": "引脚掩码",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define GPIO_PIN_10                ((uint16_t)0x0400)  /* Pin 10 selected   */"
+    },
+    {
+      "name": "GPIO_PIN_11",
+      "value": "((uint16_t)0x0800)",
+      "desc": "选中第 11 引脚",
+      "group": "引脚掩码",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define GPIO_PIN_11                ((uint16_t)0x0800)  /* Pin 11 selected   */"
+    },
+    {
+      "name": "GPIO_PIN_12",
+      "value": "((uint16_t)0x1000)",
+      "desc": "选中第 12 引脚",
+      "group": "引脚掩码",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define GPIO_PIN_12                ((uint16_t)0x1000)  /* Pin 12 selected   */"
+    },
+    {
+      "name": "GPIO_PIN_13",
+      "value": "((uint16_t)0x2000)",
+      "desc": "选中第 13 引脚",
+      "group": "引脚掩码",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define GPIO_PIN_13                ((uint16_t)0x2000)  /* Pin 13 selected   */"
+    },
+    {
+      "name": "GPIO_PIN_14",
+      "value": "((uint16_t)0x4000)",
+      "desc": "选中第 14 引脚",
+      "group": "引脚掩码",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define GPIO_PIN_14                ((uint16_t)0x4000)  /* Pin 14 selected   */"
+    },
+    {
+      "name": "GPIO_PIN_15",
+      "value": "((uint16_t)0x8000)",
+      "desc": "选中第 15 引脚",
+      "group": "引脚掩码",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define GPIO_PIN_15                ((uint16_t)0x8000)  /* Pin 15 selected   */"
+    },
+    {
+      "name": "GPIO_PIN_All",
+      "value": "((uint16_t)0xFFFF)",
+      "desc": "选中全部引脚",
+      "group": "引脚掩码",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define GPIO_PIN_All               ((uint16_t)0xFFFF)  /* All pins selected */"
+    },
+    {
+      "name": "GPIO_PIN_MASK",
+      "value": "(0x0000FFFFu)",
+      "desc": "引脚掩码(用于 assert 参数校验)",
+      "group": "引脚掩码",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define GPIO_PIN_MASK              (0x0000FFFFu) /* PIN mask for assert test */"
+    },
+    {
+      "name": "GPIO_MODE_INPUT",
+      "value": "(0x00000000u)",
+      "desc": "输入模式(浮空)",
+      "group": "GPIO 模式",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_MODE_INPUT                        (0x00000000u)   /*!< Input Floating Mode                   */"
+    },
+    {
+      "name": "GPIO_MODE_OUTPUT_PP",
+      "value": "(0x00000001u)",
+      "desc": "推挽输出模式",
+      "group": "GPIO 模式",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_MODE_OUTPUT_PP                    (0x00000001u)   /*!< Output Push Pull Mode                 */"
+    },
+    {
+      "name": "GPIO_MODE_OUTPUT_OD",
+      "value": "(0x00000011u)",
+      "desc": "开漏输出模式",
+      "group": "GPIO 模式",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_MODE_OUTPUT_OD                    (0x00000011u)   /*!< Output Open Drain Mode                */"
+    },
+    {
+      "name": "GPIO_MODE_AF_PP",
+      "value": "(0x00000002u)",
+      "desc": "复用功能推挽模式",
+      "group": "GPIO 模式",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_MODE_AF_PP                        (0x00000002u)   /*!< Alternate Function Push Pull Mode     */"
+    },
+    {
+      "name": "GPIO_MODE_AF_OD",
+      "value": "(0x00000012u)",
+      "desc": "复用功能开漏模式",
+      "group": "GPIO 模式",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_MODE_AF_OD                        (0x00000012u)   /*!< Alternate Function Open Drain Mode    */"
+    },
+    {
+      "name": "GPIO_MODE_ANALOG",
+      "value": "(0x00000003u)",
+      "desc": "模拟模式(用于 ADC 等)",
+      "group": "GPIO 模式",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_MODE_ANALOG                       (0x00000003u)   /*!< Analog Mode  */"
+    },
+    {
+      "name": "GPIO_MODE_IT_RISING",
+      "value": "(0x10110000u)",
+      "desc": "外部中断模式, 上升沿触发",
+      "group": "GPIO 模式",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_MODE_IT_RISING                    (0x10110000u)   /*!< External Interrupt Mode with Rising edge trigger detection          */"
+    },
+    {
+      "name": "GPIO_MODE_IT_FALLING",
+      "value": "(0x10210000u)",
+      "desc": "外部中断模式, 下降沿触发",
+      "group": "GPIO 模式",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_MODE_IT_FALLING                   (0x10210000u)   /*!< External Interrupt Mode with Falling edge trigger detection         */"
+    },
+    {
+      "name": "GPIO_MODE_IT_RISING_FALLING",
+      "value": "(0x10310000u)",
+      "desc": "外部中断模式, 上升/下降沿均触发",
+      "group": "GPIO 模式",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_MODE_IT_RISING_FALLING            (0x10310000u)   /*!< External Interrupt Mode with Rising/Falling edge trigger detection  */"
+    },
+    {
+      "name": "GPIO_MODE_EVT_RISING",
+      "value": "(0x10120000u)",
+      "desc": "外部事件模式, 上升沿触发",
+      "group": "GPIO 模式",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_MODE_EVT_RISING                   (0x10120000u)   /*!< External Event Mode with Rising edge trigger detection               */"
+    },
+    {
+      "name": "GPIO_MODE_EVT_FALLING",
+      "value": "(0x10220000u)",
+      "desc": "外部事件模式, 下降沿触发",
+      "group": "GPIO 模式",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_MODE_EVT_FALLING                  (0x10220000u)   /*!< External Event Mode with Falling edge trigger detection              */"
+    },
+    {
+      "name": "GPIO_MODE_EVT_RISING_FALLING",
+      "value": "(0x10320000u)",
+      "desc": "外部事件模式, 上升/下降沿均触发",
+      "group": "GPIO 模式",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_MODE_EVT_RISING_FALLING           (0x10320000u)   /*!< External Event Mode with Rising/Falling edge trigger detection       */"
+    },
+    {
+      "name": "GPIO_SPEED_FREQ_LOW",
+      "value": "(0x00000000u)",
+      "desc": "低速",
+      "group": "GPIO 速度",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_SPEED_FREQ_LOW        (0x00000000u)  /*!< Low speed       */"
+    },
+    {
+      "name": "GPIO_SPEED_FREQ_MEDIUM",
+      "value": "(0x00000001u)",
+      "desc": "中速",
+      "group": "GPIO 速度",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_SPEED_FREQ_MEDIUM     (0x00000001u)  /*!< Medium speed    */"
+    },
+    {
+      "name": "GPIO_SPEED_FREQ_HIGH",
+      "value": "(0x00000002u)",
+      "desc": "高速",
+      "group": "GPIO 速度",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_SPEED_FREQ_HIGH       (0x00000002u)  /*!< High speed      */"
+    },
+    {
+      "name": "GPIO_SPEED_FREQ_VERY_HIGH",
+      "value": "(0x00000003u)",
+      "desc": "最高速",
+      "group": "GPIO 速度",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_SPEED_FREQ_VERY_HIGH  (0x00000003u)  /*!< Very high speed */"
+    },
+    {
+      "name": "GPIO_NOPULL",
+      "value": "(0x00000000u)",
+      "desc": "无上下拉",
+      "group": "GPIO 上下拉",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_NOPULL        (0x00000000u)   /*!< No Pull-up or Pull-down activation  */"
+    },
+    {
+      "name": "GPIO_PULLUP",
+      "value": "(0x00000001u)",
+      "desc": "上拉",
+      "group": "GPIO 上下拉",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_PULLUP        (0x00000001u)   /*!< Pull-up activation                  */"
+    },
+    {
+      "name": "GPIO_PULLDOWN",
+      "value": "(0x00000002u)",
+      "desc": "下拉",
+      "group": "GPIO 上下拉",
+      "file": "py32f002b_hal_gpio.h",
+      "src": "#define  GPIO_PULLDOWN      (0x00000002u)   /*!< Pull-down activation                */"
+    },
+    {
+      "name": "GPIO_AF0_SPI1",
+      "value": "(0x0000000U)",
+      "desc": "AF0: SPI1 复用映射",
+      "group": "复用功能",
+      "file": "py32f002b_hal_gpio_ex.h",
+      "src": "#define GPIO_AF0_SPI1          (0x0000000U)   /*!< SPI1 Alternate Function mapping */"
+    },
+    {
+      "name": "GPIO_AF0_SWJ",
+      "value": "(0x0000000U)",
+      "desc": "AF0: SWJ(SWD) 复用映射",
+      "group": "复用功能",
+      "file": "py32f002b_hal_gpio_ex.h",
+      "src": "#define GPIO_AF0_SWJ           (0x0000000U)   /*!< SWJ (SWD) Alternate Function mapping */"
+    },
+    {
+      "name": "GPIO_AF1_USART1",
+      "value": "(0x0000001U)",
+      "desc": "AF1: USART1 复用映射",
+      "group": "复用功能",
+      "file": "py32f002b_hal_gpio_ex.h",
+      "src": "#define GPIO_AF1_USART1        (0x0000001U)   /*!< USART1 Alternate Function mapping */"
+    },
+    {
+      "name": "GPIO_AF2_TIM1",
+      "value": "(0x0000002U)",
+      "desc": "AF2: TIM1 复用映射",
+      "group": "复用功能",
+      "file": "py32f002b_hal_gpio_ex.h",
+      "src": "#define GPIO_AF2_TIM1          (0x0000002U)   /*!< TIM1 Alternate Function mapping */"
+    },
+    {
+      "name": "GPIO_AF2_SPI1",
+      "value": "(0x0000002U)",
+      "desc": "AF2: SPI1 复用映射",
+      "group": "复用功能",
+      "file": "py32f002b_hal_gpio_ex.h",
+      "src": "#define GPIO_AF2_SPI1          (0x0000002U)   /*!< SPI1 Alternate Function mapping */"
+    },
+    {
+      "name": "GPIO_AF3_USART1",
+      "value": "(0x0000003U)",
+      "desc": "AF3: USART1 复用映射",
+      "group": "复用功能",
+      "file": "py32f002b_hal_gpio_ex.h",
+      "src": "#define GPIO_AF3_USART1        (0x0000003U)   /*!< USART1 Alternate Function mapping*/"
+    },
+    {
+      "name": "GPIO_AF3_TIM1",
+      "value": "(0x0000003U)",
+      "desc": "AF3: TIM1 复用映射",
+      "group": "复用功能",
+      "file": "py32f002b_hal_gpio_ex.h",
+      "src": "#define GPIO_AF3_TIM1          (0x0000003U)   /*!< TIM1 Alternate Function mapping*/"
+    },
+    {
+      "name": "GPIO_AF4_MCO",
+      "value": "(0x0000004U)",
+      "desc": "AF4: MCO 时钟输出复用映射",
+      "group": "复用功能",
+      "file": "py32f002b_hal_gpio_ex.h",
+      "src": "#define GPIO_AF4_MCO           (0x0000004U)   /*!< MCO Alternate Function mapping*/"
+    },
+    {
+      "name": "GPIO_AF4_COMP1",
+      "value": "(0x0000004U)",
+      "desc": "AF4: COMP1 复用映射",
+      "group": "复用功能",
+      "file": "py32f002b_hal_gpio_ex.h",
+      "src": "#define GPIO_AF4_COMP1         (0x0000004U)   /*!< COMP1 Alternate Function mapping*/"
+    },
+    {
+      "name": "GPIO_AF4_COMP2",
+      "value": "(0x0000004U)",
+      "desc": "AF4: COMP2 复用映射",
+      "group": "复用功能",
+      "file": "py32f002b_hal_gpio_ex.h",
+      "src": "#define GPIO_AF4_COMP2         (0x0000004U)   /*!< COMP2 Alternate Function mapping*/"
+    },
+    {
+      "name": "GPIO_AF5_TIM14",
+      "value": "(0x0000005U)",
+      "desc": "AF5: TIM14 复用映射",
+      "group": "复用功能",
+      "file": "py32f002b_hal_gpio_ex.h",
+      "src": "#define GPIO_AF5_TIM14         (0x0000005U)   /*!< TIM14 Alternate Function mapping*/"
+    },
+    {
+      "name": "GPIO_AF6_I2C1",
+      "value": "(0x0000006U)",
+      "desc": "AF6: I2C1 复用映射",
+      "group": "复用功能",
+      "file": "py32f002b_hal_gpio_ex.h",
+      "src": "#define GPIO_AF6_I2C1           (0x0000006U)   /*!< I2C1 Alternate Function mapping */"
+    },
+    {
+      "name": "GPIO_AF7_EVENTOUT",
+      "value": "(0x0000007U)",
+      "desc": "AF7: EVENTOUT 事件输出复用映射",
+      "group": "复用功能",
+      "file": "py32f002b_hal_gpio_ex.h",
+      "src": "#define GPIO_AF7_EVENTOUT      (0x0000007U)   /*!< EVENTOUT Alternate Function mapping */"
+    },
+    {
+      "name": "LL_GPIO_PIN_0",
+      "value": "GPIO_BSRR_BS0",
+      "desc": "选中第 0 引脚",
+      "group": "LL 引脚掩码",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PIN_0                      GPIO_BSRR_BS0  /*!< Select pin 0 */"
+    },
+    {
+      "name": "LL_GPIO_PIN_1",
+      "value": "GPIO_BSRR_BS1",
+      "desc": "选中第 1 引脚",
+      "group": "LL 引脚掩码",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PIN_1                      GPIO_BSRR_BS1  /*!< Select pin 1 */"
+    },
+    {
+      "name": "LL_GPIO_PIN_2",
+      "value": "GPIO_BSRR_BS2",
+      "desc": "选中第 2 引脚",
+      "group": "LL 引脚掩码",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PIN_2                      GPIO_BSRR_BS2  /*!< Select pin 2 */"
+    },
+    {
+      "name": "LL_GPIO_PIN_3",
+      "value": "GPIO_BSRR_BS3",
+      "desc": "选中第 3 引脚",
+      "group": "LL 引脚掩码",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PIN_3                      GPIO_BSRR_BS3  /*!< Select pin 3 */"
+    },
+    {
+      "name": "LL_GPIO_PIN_4",
+      "value": "GPIO_BSRR_BS4",
+      "desc": "选中第 4 引脚",
+      "group": "LL 引脚掩码",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PIN_4                      GPIO_BSRR_BS4  /*!< Select pin 4 */"
+    },
+    {
+      "name": "LL_GPIO_PIN_5",
+      "value": "GPIO_BSRR_BS5",
+      "desc": "选中第 5 引脚",
+      "group": "LL 引脚掩码",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PIN_5                      GPIO_BSRR_BS5  /*!< Select pin 5 */"
+    },
+    {
+      "name": "LL_GPIO_PIN_6",
+      "value": "GPIO_BSRR_BS6",
+      "desc": "选中第 6 引脚",
+      "group": "LL 引脚掩码",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PIN_6                      GPIO_BSRR_BS6  /*!< Select pin 6 */"
+    },
+    {
+      "name": "LL_GPIO_PIN_7",
+      "value": "GPIO_BSRR_BS7",
+      "desc": "选中第 7 引脚",
+      "group": "LL 引脚掩码",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PIN_7                      GPIO_BSRR_BS7  /*!< Select pin 7 */"
+    },
+    {
+      "name": "LL_GPIO_PIN_8",
+      "value": "GPIO_BSRR_BS8",
+      "desc": "选中第 8 引脚",
+      "group": "LL 引脚掩码",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PIN_8                      GPIO_BSRR_BS8  /*!< Select pin 8 */"
+    },
+    {
+      "name": "LL_GPIO_PIN_9",
+      "value": "GPIO_BSRR_BS9",
+      "desc": "选中第 9 引脚",
+      "group": "LL 引脚掩码",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PIN_9                      GPIO_BSRR_BS9  /*!< Select pin 9 */"
+    },
+    {
+      "name": "LL_GPIO_PIN_10",
+      "value": "GPIO_BSRR_BS10",
+      "desc": "选中第 10 引脚",
+      "group": "LL 引脚掩码",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PIN_10                     GPIO_BSRR_BS10 /*!< Select pin 10 */"
+    },
+    {
+      "name": "LL_GPIO_PIN_11",
+      "value": "GPIO_BSRR_BS11",
+      "desc": "选中第 11 引脚",
+      "group": "LL 引脚掩码",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PIN_11                     GPIO_BSRR_BS11 /*!< Select pin 11 */"
+    },
+    {
+      "name": "LL_GPIO_PIN_12",
+      "value": "GPIO_BSRR_BS12",
+      "desc": "选中第 12 引脚",
+      "group": "LL 引脚掩码",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PIN_12                     GPIO_BSRR_BS12 /*!< Select pin 12 */"
+    },
+    {
+      "name": "LL_GPIO_PIN_13",
+      "value": "GPIO_BSRR_BS13",
+      "desc": "选中第 13 引脚",
+      "group": "LL 引脚掩码",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PIN_13                     GPIO_BSRR_BS13 /*!< Select pin 13 */"
+    },
+    {
+      "name": "LL_GPIO_PIN_14",
+      "value": "GPIO_BSRR_BS14",
+      "desc": "选中第 14 引脚",
+      "group": "LL 引脚掩码",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PIN_14                     GPIO_BSRR_BS14 /*!< Select pin 14 */"
+    },
+    {
+      "name": "LL_GPIO_PIN_15",
+      "value": "GPIO_BSRR_BS15",
+      "desc": "选中第 15 引脚",
+      "group": "LL 引脚掩码",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PIN_15                     GPIO_BSRR_BS15 /*!< Select pin 15 */"
+    },
+    {
+      "name": "LL_GPIO_PIN_ALL",
+      "value": "(GPIO_BSRR_BS0 | ... | GPIO_BSRR_BS15)",
+      "desc": "选中全部引脚",
+      "group": "LL 引脚掩码",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PIN_ALL                    (GPIO_BSRR_BS0 | GPIO_BSRR_BS1  | GPIO_BSRR_BS2  | \\\r\n                                           GPIO_BSRR_BS3  | GPIO_BSRR_BS4  | GPIO_BSRR_BS5  | \\\r\n                                           GPIO_BSRR_BS6  | GPIO_BSRR_BS7  | GPIO_BSRR_BS8  | \\\r\n                                           GPIO_BSRR_BS9  | GPIO_BSRR_BS10 | GPIO_BSRR_BS11 | \\\r\n                                           GPIO_BSRR_BS12 | GPIO_BSRR_BS13 | GPIO_BSRR_BS14 | \\\r\n                                           GPIO_BSRR_BS15) /*!< Select all pins */"
+    },
+    {
+      "name": "LL_GPIO_MODE_INPUT",
+      "value": "(0x00000000U)",
+      "desc": "输入模式",
+      "group": "LL 模式",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_MODE_INPUT                 (0x00000000U)       /*!< Select input mode */"
+    },
+    {
+      "name": "LL_GPIO_MODE_OUTPUT",
+      "value": "GPIO_MODER_MODE0_0",
+      "desc": "输出模式",
+      "group": "LL 模式",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_MODE_OUTPUT                GPIO_MODER_MODE0_0  /*!< Select output mode */"
+    },
+    {
+      "name": "LL_GPIO_MODE_ALTERNATE",
+      "value": "GPIO_MODER_MODE0_1",
+      "desc": "复用功能模式",
+      "group": "LL 模式",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_MODE_ALTERNATE             GPIO_MODER_MODE0_1  /*!< Select alternate function mode */"
+    },
+    {
+      "name": "LL_GPIO_MODE_ANALOG",
+      "value": "GPIO_MODER_MODE0",
+      "desc": "模拟模式",
+      "group": "LL 模式",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_MODE_ANALOG                GPIO_MODER_MODE0    /*!< Select analog mode */"
+    },
+    {
+      "name": "LL_GPIO_OUTPUT_PUSHPULL",
+      "value": "(0x00000000U)",
+      "desc": "推挽输出",
+      "group": "LL 输出类型",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_OUTPUT_PUSHPULL            (0x00000000U)   /*!< Select push-pull as output type */"
+    },
+    {
+      "name": "LL_GPIO_OUTPUT_OPENDRAIN",
+      "value": "GPIO_OTYPER_OT0",
+      "desc": "开漏输出",
+      "group": "LL 输出类型",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_OUTPUT_OPENDRAIN           GPIO_OTYPER_OT0 /*!< Select open-drain as output type */"
+    },
+    {
+      "name": "LL_GPIO_SPEED_FREQ_LOW",
+      "value": "(0x00000000U)",
+      "desc": "低速",
+      "group": "LL 速度",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_SPEED_FREQ_LOW             (0x00000000U)          /*!< Select I/O low output speed    */"
+    },
+    {
+      "name": "LL_GPIO_SPEED_FREQ_MEDIUM",
+      "value": "GPIO_OSPEEDR_OSPEED0_0",
+      "desc": "中速",
+      "group": "LL 速度",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_SPEED_FREQ_MEDIUM          GPIO_OSPEEDR_OSPEED0_0 /*!< Select I/O medium output speed */"
+    },
+    {
+      "name": "LL_GPIO_SPEED_FREQ_HIGH",
+      "value": "GPIO_OSPEEDR_OSPEED0_1",
+      "desc": "高速",
+      "group": "LL 速度",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_SPEED_FREQ_HIGH            GPIO_OSPEEDR_OSPEED0_1 /*!< Select I/O fast output speed   */"
+    },
+    {
+      "name": "LL_GPIO_SPEED_FREQ_VERY_HIGH",
+      "value": "GPIO_OSPEEDR_OSPEED0",
+      "desc": "最高速",
+      "group": "LL 速度",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_SPEED_FREQ_VERY_HIGH       GPIO_OSPEEDR_OSPEED0   /*!< Select I/O high output speed   */"
+    },
+    {
+      "name": "LL_GPIO_PULL_NO",
+      "value": "(0x00000000U)",
+      "desc": "无上下拉",
+      "group": "LL 上下拉",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PULL_NO                    (0x00000000U)      /*!< Select I/O no pull */"
+    },
+    {
+      "name": "LL_GPIO_PULL_UP",
+      "value": "GPIO_PUPDR_PUPD0_0",
+      "desc": "上拉",
+      "group": "LL 上下拉",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PULL_UP                    GPIO_PUPDR_PUPD0_0 /*!< Select I/O pull up */"
+    },
+    {
+      "name": "LL_GPIO_PULL_DOWN",
+      "value": "GPIO_PUPDR_PUPD0_1",
+      "desc": "下拉",
+      "group": "LL 上下拉",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_PULL_DOWN                  GPIO_PUPDR_PUPD0_1 /*!< Select I/O pull down */"
+    },
+    {
+      "name": "LL_GPIO_AF_0",
+      "value": "(0x0000000U)",
+      "desc": "复用功能 0",
+      "group": "LL 复用功能",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_AF_0                       (0x0000000U) /*!< Select alternate function 0 */"
+    },
+    {
+      "name": "LL_GPIO_AF_1",
+      "value": "(0x0000001U)",
+      "desc": "复用功能 1",
+      "group": "LL 复用功能",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_AF_1                       (0x0000001U) /*!< Select alternate function 1 */"
+    },
+    {
+      "name": "LL_GPIO_AF_2",
+      "value": "(0x0000002U)",
+      "desc": "复用功能 2",
+      "group": "LL 复用功能",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_AF_2                       (0x0000002U) /*!< Select alternate function 2 */"
+    },
+    {
+      "name": "LL_GPIO_AF_3",
+      "value": "(0x0000003U)",
+      "desc": "复用功能 3",
+      "group": "LL 复用功能",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_AF_3                       (0x0000003U) /*!< Select alternate function 3 */"
+    },
+    {
+      "name": "LL_GPIO_AF_4",
+      "value": "(0x0000004U)",
+      "desc": "复用功能 4",
+      "group": "LL 复用功能",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_AF_4                       (0x0000004U) /*!< Select alternate function 4 */"
+    },
+    {
+      "name": "LL_GPIO_AF_5",
+      "value": "(0x0000005U)",
+      "desc": "复用功能 5",
+      "group": "LL 复用功能",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_AF_5                       (0x0000005U) /*!< Select alternate function 5 */"
+    },
+    {
+      "name": "LL_GPIO_AF_6",
+      "value": "(0x0000006U)",
+      "desc": "复用功能 6",
+      "group": "LL 复用功能",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_AF_6                       (0x0000006U) /*!< Select alternate function 6 */"
+    },
+    {
+      "name": "LL_GPIO_AF_7",
+      "value": "(0x0000007U)",
+      "desc": "复用功能 7",
+      "group": "LL 复用功能",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_AF_7                       (0x0000007U) /*!< Select alternate function 7 */"
+    },
+    {
+      "name": "LL_GPIO_LCKR_LCKK",
+      "value": "0x00010000U",
+      "desc": "LCKR 锁键位(锁定时序用)",
+      "group": "LL 其他",
+      "file": "py32f002b_ll_gpio.h",
+      "src": "#define LL_GPIO_LCKR_LCKK                  0x00010000U"
+    }
+  ]
+}

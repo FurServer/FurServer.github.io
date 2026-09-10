@@ -1,0 +1,1569 @@
+{
+  "module": "CORTEX 内核控制",
+  "moduleId": "cortex",
+  "hal": [
+    {
+      "name": "__BKPT",
+      "sig": "#define __BKPT(value)                       __ASM volatile (\"bkpt \"#value)",
+      "brief": "CMSIS 内建断点指令宏: 执行 BKPT 断点指令, 暂停 CPU 并触发调试器断点。",
+      "params": [
+        {
+          "name": "value",
+          "type": "宏参数",
+          "desc": "断点立即数, 范围 0~255"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "指令宏, 无返回值"
+      },
+      "notes": [],
+      "file": "cmsis_gcc.h",
+      "kind": "macro",
+      "src": "#define __BKPT(value)                       __ASM volatile (\"bkpt \"#value)"
+    },
+    {
+      "name": "__CMSIS_GCC_OUT_REG",
+      "sig": "#define __CMSIS_GCC_OUT_REG(r) \"=l\" (r)",
+      "brief": "生成 GCC 内联汇编的输出操作数约束字符串: ARMv6-M 下为 \"=l\"(低 8 个通用寄存器), 其它架构为 \"=r\"(通用寄存器)。",
+      "params": [
+        {
+          "name": "r",
+          "type": "宏参数",
+          "desc": "内联汇编输出操作数变量"
+        }
+      ],
+      "retval": {
+        "type": "字符串",
+        "desc": "展开为内联汇编输出约束, 如 \"=l\" (r)"
+      },
+      "notes": [],
+      "file": "cmsis_gcc.h",
+      "kind": "macro",
+      "src": "#define __CMSIS_GCC_OUT_REG(r) \"=l\" (r)"
+    },
+    {
+      "name": "__CMSIS_GCC_USE_REG",
+      "sig": "#define __CMSIS_GCC_USE_REG(r) \"l\" (r)",
+      "brief": "生成 GCC 内联汇编的输入操作数约束字符串: ARMv6-M 下为 \"l\"(低 8 个通用寄存器), 其它架构为 \"r\"(通用寄存器)。",
+      "params": [
+        {
+          "name": "r",
+          "type": "宏参数",
+          "desc": "内联汇编输入操作数变量"
+        }
+      ],
+      "retval": {
+        "type": "字符串",
+        "desc": "展开为内联汇编输入约束, 如 \"l\" (r)"
+      },
+      "notes": [],
+      "file": "cmsis_gcc.h",
+      "kind": "macro",
+      "src": "#define __CMSIS_GCC_USE_REG(r) \"l\" (r)"
+    },
+    {
+      "name": "__PKHBT",
+      "sig": "#define __PKHBT(ARG1,ARG2,ARG3) \\\n({                          \\\n  uint32_t __RES, __ARG1 = (ARG1), __ARG2 = (ARG2); \\\n  __ASM (\"pkhbt %0, %1, %2, lsl %3\" : \"=r\" (__RES) :  \"r\" (__ARG1), \"r\" (__ARG2), \"I\" (ARG3)  ); \\\n  __RES; \\\n })",
+      "brief": "CMSIS 内建 PKHBT 半字打包指令宏: 取 ARG1 的低半字与 ARG2 左移 ARG3 位后的高半字组合成一个 32 位值。",
+      "params": [
+        {
+          "name": "ARG1",
+          "type": "宏参数",
+          "desc": "提供低半字的操作数"
+        },
+        {
+          "name": "ARG2",
+          "type": "宏参数",
+          "desc": "提供高半字的操作数"
+        },
+        {
+          "name": "ARG3",
+          "type": "宏参数",
+          "desc": "左移位数, 范围 0~31"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "组合后的 32 位结果"
+      },
+      "notes": [],
+      "file": "cmsis_gcc.h",
+      "kind": "macro",
+      "src": "#define __PKHBT(ARG1,ARG2,ARG3) \\\r\n({                          \\\r\n  uint32_t __RES, __ARG1 = (ARG1), __ARG2 = (ARG2); \\\r\n  __ASM (\"pkhbt %0, %1, %2, lsl %3\" : \"=r\" (__RES) :  \"r\" (__ARG1), \"r\" (__ARG2), \"I\" (ARG3)  ); \\\r\n  __RES; \\\r\n })"
+    },
+    {
+      "name": "__PKHTB",
+      "sig": "#define __PKHTB(ARG1,ARG2,ARG3) \\\n({                          \\\n  uint32_t __RES, __ARG1 = (ARG1), __ARG2 = (ARG2); \\\n  if (ARG3 == 0) \\\n    __ASM (\"pkhtb %0, %1, %2\" : \"=r\" (__RES) :  \"r\" (__ARG1), \"r\" (__ARG2)  ); \\\n  else \\\n    __ASM (\"pkhtb %0, %1, %2, asr %3\" : \"=r\" (__RES) :  \"r\" (__ARG1), \"r\" (__ARG2), \"I\" (ARG3)  ); \\\n  __RES; \\\n })",
+      "brief": "CMSIS 内建 PKHTB 半字打包指令宏: 取 ARG1 的高半字与 ARG2 算术右移 ARG3 位后的低半字组合成一个 32 位值, ARG3 为 0 时不移位。",
+      "params": [
+        {
+          "name": "ARG1",
+          "type": "宏参数",
+          "desc": "提供高半字的操作数"
+        },
+        {
+          "name": "ARG2",
+          "type": "宏参数",
+          "desc": "提供低半字的操作数"
+        },
+        {
+          "name": "ARG3",
+          "type": "宏参数",
+          "desc": "算术右移位数, 范围 0~31"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "组合后的 32 位结果"
+      },
+      "notes": [],
+      "file": "cmsis_gcc.h",
+      "kind": "macro",
+      "src": "#define __PKHTB(ARG1,ARG2,ARG3) \\\r\n({                          \\\r\n  uint32_t __RES, __ARG1 = (ARG1), __ARG2 = (ARG2); \\\r\n  if (ARG3 == 0) \\\r\n    __ASM (\"pkhtb %0, %1, %2\" : \"=r\" (__RES) :  \"r\" (__ARG1), \"r\" (__ARG2)  ); \\\r\n  else \\\r\n    __ASM (\"pkhtb %0, %1, %2, asr %3\" : \"=r\" (__RES) :  \"r\" (__ARG1), \"r\" (__ARG2), \"I\" (ARG3)  ); \\\r\n  __RES; \\\r\n })"
+    },
+    {
+      "name": "__SSAT",
+      "sig": "#define __SSAT(ARG1,ARG2) \\\n({                          \\\n  uint32_t __RES, __ARG1 = (ARG1); \\\n  __ASM (\"ssat %0, %1, %2\" : \"=r\" (__RES) :  \"I\" (ARG2), \"r\" (__ARG1) ); \\\n  __RES; \\\n })",
+      "brief": "CMSIS 内建 SSAT 有符号饱和指令宏: 将有符号数 ARG1 饱和到 ARG2 位宽的有符号范围内。",
+      "params": [
+        {
+          "name": "ARG1",
+          "type": "宏参数",
+          "desc": "待饱和的有符号数值"
+        },
+        {
+          "name": "ARG2",
+          "type": "宏参数",
+          "desc": "饱和位宽, 范围 1~32"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "饱和后的数值"
+      },
+      "notes": [],
+      "file": "cmsis_gcc.h",
+      "kind": "macro",
+      "src": "#define __SSAT(ARG1,ARG2) \\\r\n({                          \\\r\n  uint32_t __RES, __ARG1 = (ARG1); \\\r\n  __ASM (\"ssat %0, %1, %2\" : \"=r\" (__RES) :  \"I\" (ARG2), \"r\" (__ARG1) ); \\\r\n  __RES; \\\r\n })"
+    },
+    {
+      "name": "__SSAT16",
+      "sig": "#define __SSAT16(ARG1,ARG2) \\\n({                          \\\n  int32_t __RES, __ARG1 = (ARG1); \\\n  __ASM (\"ssat16 %0, %1, %2\" : \"=r\" (__RES) :  \"I\" (ARG2), \"r\" (__ARG1) ); \\\n  __RES; \\\n })",
+      "brief": "CMSIS 内建 SSAT16 半字有符号饱和指令宏: 对 ARG1 的两个 16 位半字分别做有符号饱和到 ARG2 位宽。",
+      "params": [
+        {
+          "name": "ARG1",
+          "type": "宏参数",
+          "desc": "待饱和的 32 位数值, 按两个 16 位半字处理"
+        },
+        {
+          "name": "ARG2",
+          "type": "宏参数",
+          "desc": "饱和位宽, 范围 1~16"
+        }
+      ],
+      "retval": {
+        "type": "int32_t",
+        "desc": "两个半字分别饱和后的结果"
+      },
+      "notes": [],
+      "file": "cmsis_gcc.h",
+      "kind": "macro",
+      "src": "#define __SSAT16(ARG1,ARG2) \\\r\n({                          \\\r\n  int32_t __RES, __ARG1 = (ARG1); \\\r\n  __ASM (\"ssat16 %0, %1, %2\" : \"=r\" (__RES) :  \"I\" (ARG2), \"r\" (__ARG1) ); \\\r\n  __RES; \\\r\n })"
+    },
+    {
+      "name": "__USAT",
+      "sig": "#define __USAT(ARG1,ARG2) \\\n({                          \\\n  uint32_t __RES, __ARG1 = (ARG1); \\\n  __ASM (\"usat %0, %1, %2\" : \"=r\" (__RES) :  \"I\" (ARG2), \"r\" (__ARG1) ); \\\n  __RES; \\\n })",
+      "brief": "CMSIS 内建 USAT 无符号饱和指令宏: 将数值 ARG1 无符号饱和到 ARG2 位宽范围内。",
+      "params": [
+        {
+          "name": "ARG1",
+          "type": "宏参数",
+          "desc": "待饱和的数值"
+        },
+        {
+          "name": "ARG2",
+          "type": "宏参数",
+          "desc": "饱和位宽, 范围 1~32"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "饱和后的数值"
+      },
+      "notes": [],
+      "file": "cmsis_gcc.h",
+      "kind": "macro",
+      "src": "#define __USAT(ARG1,ARG2) \\\r\n({                          \\\r\n  uint32_t __RES, __ARG1 = (ARG1); \\\r\n  __ASM (\"usat %0, %1, %2\" : \"=r\" (__RES) :  \"I\" (ARG2), \"r\" (__ARG1) ); \\\r\n  __RES; \\\r\n })"
+    },
+    {
+      "name": "__USAT16",
+      "sig": "#define __USAT16(ARG1,ARG2) \\\n({                          \\\n  uint32_t __RES, __ARG1 = (ARG1); \\\n  __ASM (\"usat16 %0, %1, %2\" : \"=r\" (__RES) :  \"I\" (ARG2), \"r\" (__ARG1) ); \\\n  __RES; \\\n })",
+      "brief": "CMSIS 内建 USAT16 半字无符号饱和指令宏: 对 ARG1 的两个 16 位半字分别做无符号饱和到 ARG2 位宽。",
+      "params": [
+        {
+          "name": "ARG1",
+          "type": "宏参数",
+          "desc": "待饱和的 32 位数值, 按两个 16 位半字处理"
+        },
+        {
+          "name": "ARG2",
+          "type": "宏参数",
+          "desc": "饱和位宽, 范围 1~16"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "两个半字分别饱和后的结果"
+      },
+      "notes": [],
+      "file": "cmsis_gcc.h",
+      "kind": "macro",
+      "src": "#define __USAT16(ARG1,ARG2) \\\r\n({                          \\\r\n  uint32_t __RES, __ARG1 = (ARG1); \\\r\n  __ASM (\"usat16 %0, %1, %2\" : \"=r\" (__RES) :  \"I\" (ARG2), \"r\" (__ARG1) ); \\\r\n  __RES; \\\r\n })"
+    },
+    {
+      "name": "_BIT_SHIFT",
+      "sig": "#define _BIT_SHIFT(IRQn)         (  ((((uint32_t)(int32_t)(IRQn))         )      &  0x03UL) * 8UL)",
+      "brief": "计算中断号 IRQn 在 NVIC->IP 或 SCB->SHP 数组元素内的位偏移((IRQn & 0x03) * 8), 用于定位 8 位优先级字段。",
+      "params": [
+        {
+          "name": "IRQn",
+          "type": "宏参数",
+          "desc": "中断号(IRQn_Type 枚举值)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "字节内位偏移, 0/8/16/24"
+      },
+      "notes": [],
+      "file": "core_cm0plus.h",
+      "kind": "macro",
+      "src": "#define _BIT_SHIFT(IRQn)         (  ((((uint32_t)(int32_t)(IRQn))         )      &  0x03UL) * 8UL)"
+    },
+    {
+      "name": "_FLD2VAL",
+      "sig": "#define _FLD2VAL(field, value)    ((value & field ## _Msk) >> field ## _Pos)",
+      "brief": "从寄存器原始值中提取字段位段值: (value & field_Msk) >> field_Pos。",
+      "params": [
+        {
+          "name": "field",
+          "type": "宏参数",
+          "desc": "寄存器位段名, 宏自动拼接 field_Msk 与 field_Pos"
+        },
+        {
+          "name": "value",
+          "type": "宏参数",
+          "desc": "寄存器原始值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "提取出的位段值"
+      },
+      "notes": [],
+      "file": "core_cm0plus.h",
+      "kind": "macro",
+      "src": "#define _FLD2VAL(field, value)    ((value & field ## _Msk) >> field ## _Pos)"
+    },
+    {
+      "name": "_IP_IDX",
+      "sig": "#define _IP_IDX(IRQn)            (   (((uint32_t)(int32_t)(IRQn))                >>    2UL)      )",
+      "brief": "计算中断号 IRQn 在 NVIC->IP 数组中的元素索引(IRQn >> 2), 每个元素容纳 4 个 8 位优先级。",
+      "params": [
+        {
+          "name": "IRQn",
+          "type": "宏参数",
+          "desc": "中断号(IRQn_Type 枚举值)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "IP 数组元素索引"
+      },
+      "notes": [],
+      "file": "core_cm0plus.h",
+      "kind": "macro",
+      "src": "#define _IP_IDX(IRQn)            (   (((uint32_t)(int32_t)(IRQn))                >>    2UL)      )"
+    },
+    {
+      "name": "_SHP_IDX",
+      "sig": "#define _SHP_IDX(IRQn)           ( (((((uint32_t)(int32_t)(IRQn)) & 0x0FUL)-8UL) >>    2UL)      )",
+      "brief": "计算系统异常号 IRQn 在 SCB->SHP(System Handler Priority)数组中的元素索引, 仅对 4~15 的系统异常有效。",
+      "params": [
+        {
+          "name": "IRQn",
+          "type": "宏参数",
+          "desc": "中断号(IRQn_Type 枚举值, 4~15 的系统异常)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "SHP 数组元素索引"
+      },
+      "notes": [],
+      "file": "core_cm0plus.h",
+      "kind": "macro",
+      "src": "#define _SHP_IDX(IRQn)           ( (((((uint32_t)(int32_t)(IRQn)) & 0x0FUL)-8UL) >>    2UL)      )"
+    },
+    {
+      "name": "_VAL2FLD",
+      "sig": "#define _VAL2FLD(field, value)    ((value << field ## _Pos) & field ## _Msk)",
+      "brief": "将字段值按字段位段位置与掩码转换为寄存器位值: (value << field_Pos) & field_Msk。",
+      "params": [
+        {
+          "name": "field",
+          "type": "宏参数",
+          "desc": "寄存器位段名, 宏自动拼接 field_Msk 与 field_Pos"
+        },
+        {
+          "name": "value",
+          "type": "宏参数",
+          "desc": "待写入的字段值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "可写入寄存器的位值"
+      },
+      "notes": [],
+      "file": "core_cm0plus.h",
+      "kind": "macro",
+      "src": "#define _VAL2FLD(field, value)    ((value << field ## _Pos) & field ## _Msk)"
+    },
+    {
+      "name": "IS_ADC_ALL_INSTANCE",
+      "sig": "#define IS_ADC_ALL_INSTANCE(INSTANCE) ((INSTANCE) == ADC1)",
+      "brief": "校验 ADC 外设实例是否为可用实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "ADC 外设实例(如 ADC1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_ALL_INSTANCE(INSTANCE) ((INSTANCE) == ADC1)"
+    },
+    {
+      "name": "IS_ADC_COMMON_INSTANCE",
+      "sig": "#define IS_ADC_COMMON_INSTANCE(INSTANCE) ((INSTANCE) == ADC)",
+      "brief": "校验是否为 ADC 公共(Common)实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "ADC 公共外设实例(ADC)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_COMMON_INSTANCE(INSTANCE) ((INSTANCE) == ADC)"
+    },
+    {
+      "name": "IS_COMP_ALL_INSTANCE",
+      "sig": "#define IS_COMP_ALL_INSTANCE(INSTANCE) (((INSTANCE) == COMP1) || \\\n                                        ((INSTANCE) == COMP2))",
+      "brief": "校验比较器外设实例是否为可用实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "比较器外设实例(COMP1 或 COMP2)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_COMP_ALL_INSTANCE(INSTANCE) (((INSTANCE) == COMP1) || \\\r\n                                        ((INSTANCE) == COMP2))"
+    },
+    {
+      "name": "IS_CRC_ALL_INSTANCE",
+      "sig": "#define IS_CRC_ALL_INSTANCE(INSTANCE) ((INSTANCE) == CRC)",
+      "brief": "校验 CRC 外设实例是否为可用实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "CRC 外设实例(CRC)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_CRC_ALL_INSTANCE(INSTANCE) ((INSTANCE) == CRC)"
+    },
+    {
+      "name": "IS_GPIO_AF_INSTANCE",
+      "sig": "#define IS_GPIO_AF_INSTANCE(INSTANCE)   IS_GPIO_ALL_INSTANCE(INSTANCE)",
+      "brief": "校验是否为支持复用功能(AF)配置的 GPIO 实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "GPIO 外设实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_GPIO_AF_INSTANCE(INSTANCE)   IS_GPIO_ALL_INSTANCE(INSTANCE)"
+    },
+    {
+      "name": "IS_GPIO_ALL_INSTANCE",
+      "sig": "#define IS_GPIO_ALL_INSTANCE(INSTANCE) (((INSTANCE) == GPIOA) || \\\n                                        ((INSTANCE) == GPIOB) || \\\n                                        ((INSTANCE) == GPIOC))",
+      "brief": "校验 GPIO 外设实例是否为可用实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "GPIO 外设实例(GPIOA/GPIOB/GPIOC)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_GPIO_ALL_INSTANCE(INSTANCE) (((INSTANCE) == GPIOA) || \\\r\n                                        ((INSTANCE) == GPIOB) || \\\r\n                                        ((INSTANCE) == GPIOC))"
+    },
+    {
+      "name": "IS_GPIO_LOCK_INSTANCE",
+      "sig": "#define IS_GPIO_LOCK_INSTANCE(INSTANCE) IS_GPIO_ALL_INSTANCE(INSTANCE)",
+      "brief": "校验是否为支持引脚锁定(Lock)功能的 GPIO 实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "GPIO 外设实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_GPIO_LOCK_INSTANCE(INSTANCE) IS_GPIO_ALL_INSTANCE(INSTANCE)"
+    },
+    {
+      "name": "IS_I2C_ALL_INSTANCE",
+      "sig": "#define IS_I2C_ALL_INSTANCE(INSTANCE) ((INSTANCE) == I2C)",
+      "brief": "校验 I2C 外设实例是否为可用实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "I2C 外设实例(I2C)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_I2C_ALL_INSTANCE(INSTANCE) ((INSTANCE) == I2C)"
+    },
+    {
+      "name": "IS_I2C_WAKEUP_FROMSTOP_INSTANCE",
+      "sig": "#define IS_I2C_WAKEUP_FROMSTOP_INSTANCE(INSTANCE) (((INSTANCE) == I2C))",
+      "brief": "校验是否为支持从停机模式唤醒的 I2C 实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "I2C 外设实例(I2C)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_I2C_WAKEUP_FROMSTOP_INSTANCE(INSTANCE) (((INSTANCE) == I2C))"
+    },
+    {
+      "name": "IS_IRDA_INSTANCE",
+      "sig": "#define IS_IRDA_INSTANCE(INSTANCE) ((INSTANCE) == USART1)",
+      "brief": "校验是否为支持 IrDA 功能的串口实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "串口外设实例(USART1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_IRDA_INSTANCE(INSTANCE) ((INSTANCE) == USART1)"
+    },
+    {
+      "name": "IS_IWDG_ALL_INSTANCE",
+      "sig": "#define IS_IWDG_ALL_INSTANCE(INSTANCE)  ((INSTANCE) == IWDG)",
+      "brief": "校验 IWDG 外设实例是否为可用实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "独立看门狗外设实例(IWDG)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_IWDG_ALL_INSTANCE(INSTANCE)  ((INSTANCE) == IWDG)"
+    },
+    {
+      "name": "IS_LPTIM_ENCODER_INTERFACE_INSTANCE",
+      "sig": "#define IS_LPTIM_ENCODER_INTERFACE_INSTANCE(INSTANCE) ((INSTANCE) == LPTIM)",
+      "brief": "校验是否为支持编码器接口模式的 LPTIM 实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "低功耗定时器实例(LPTIM)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_LPTIM_ENCODER_INTERFACE_INSTANCE(INSTANCE) ((INSTANCE) == LPTIM)"
+    },
+    {
+      "name": "IS_LPTIM_INSTANCE",
+      "sig": "#define IS_LPTIM_INSTANCE(INSTANCE)     ((INSTANCE) == LPTIM)",
+      "brief": "校验 LPTIM 外设实例是否为可用实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "低功耗定时器实例(LPTIM)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_LPTIM_INSTANCE(INSTANCE)     ((INSTANCE) == LPTIM)"
+    },
+    {
+      "name": "IS_NVIC_DEVICE_IRQ",
+      "sig": "#define IS_NVIC_DEVICE_IRQ(IRQ)                   ((IRQ) > SysTick_IRQn)",
+      "brief": "校验 IRQ 是否为设备外设中断号(大于 SysTick_IRQn, 即非内核系统异常)。",
+      "params": [
+        {
+          "name": "IRQ",
+          "type": "宏参数",
+          "desc": "待校验的中断号(IRQn_Type 枚举值)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_cortex.h",
+      "kind": "macro",
+      "src": "#define IS_NVIC_DEVICE_IRQ(IRQ)                   ((IRQ) > SysTick_IRQn)"
+    },
+    {
+      "name": "IS_NVIC_PREEMPTION_PRIORITY",
+      "sig": "#define IS_NVIC_PREEMPTION_PRIORITY(PRIORITY)     ((PRIORITY) < 0x4U)",
+      "brief": "校验 NVIC 抢占优先级值是否合法(小于 0x4U, 对应 2 位优先级)。",
+      "params": [
+        {
+          "name": "PRIORITY",
+          "type": "宏参数",
+          "desc": "待校验的抢占优先级值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_cortex.h",
+      "kind": "macro",
+      "src": "#define IS_NVIC_PREEMPTION_PRIORITY(PRIORITY)     ((PRIORITY) < 0x4U)"
+    },
+    {
+      "name": "IS_SMARTCARD_INSTANCE",
+      "sig": "#define IS_SMARTCARD_INSTANCE(INSTANCE) ((INSTANCE) == USART1)",
+      "brief": "校验是否为支持智能卡(SmartCard)模式的串口实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "串口外设实例(USART1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_SMARTCARD_INSTANCE(INSTANCE) ((INSTANCE) == USART1)"
+    },
+    {
+      "name": "IS_SPI_ALL_INSTANCE",
+      "sig": "#define IS_SPI_ALL_INSTANCE(INSTANCE) ((INSTANCE) == SPI1)",
+      "brief": "校验 SPI 外设实例是否为可用实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "SPI 外设实例(SPI1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_SPI_ALL_INSTANCE(INSTANCE) ((INSTANCE) == SPI1)"
+    },
+    {
+      "name": "IS_SYSTICK_CLK_SOURCE",
+      "sig": "#define IS_SYSTICK_CLK_SOURCE(SOURCE)             (((SOURCE) == SYSTICK_CLKSOURCE_HCLK) || \\\n                                                   ((SOURCE) == SYSTICK_CLKSOURCE_HCLK_DIV8))",
+      "brief": "校验 SysTick 时钟源选择是否合法(HCLK 或 HCLK/8)。",
+      "params": [
+        {
+          "name": "SOURCE",
+          "type": "宏参数",
+          "desc": "SysTick 时钟源(SYSTICK_CLKSOURCE_HCLK 或 SYSTICK_CLKSOURCE_HCLK_DIV8)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_cortex.h",
+      "kind": "macro",
+      "src": "#define IS_SYSTICK_CLK_SOURCE(SOURCE)             (((SOURCE) == SYSTICK_CLKSOURCE_HCLK) || \\\r\n                                                   ((SOURCE) == SYSTICK_CLKSOURCE_HCLK_DIV8))"
+    },
+    {
+      "name": "IS_TIM_ADVANCED_INSTANCE",
+      "sig": "#define IS_TIM_ADVANCED_INSTANCE(INSTANCE)    (((INSTANCE) == TIM1))",
+      "brief": "校验是否为高级定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_ADVANCED_INSTANCE(INSTANCE)    (((INSTANCE) == TIM1))"
+    },
+    {
+      "name": "IS_TIM_BKIN2_INSTANCE",
+      "sig": "#define IS_TIM_BKIN2_INSTANCE(INSTANCE)    ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持第二路刹车输入(BKIN2)的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_BKIN2_INSTANCE(INSTANCE)    ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_BREAK_INSTANCE",
+      "sig": "#define IS_TIM_BREAK_INSTANCE(INSTANCE)    (((INSTANCE) == TIM1)    || \\\n                                            ((INSTANCE) == TIM14))",
+      "brief": "校验是否为支持刹车(Break)功能的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1 或 TIM14)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_BREAK_INSTANCE(INSTANCE)    (((INSTANCE) == TIM1)    || \\\r\n                                            ((INSTANCE) == TIM14))"
+    },
+    {
+      "name": "IS_TIM_BREAKSOURCE_INSTANCE",
+      "sig": "#define IS_TIM_BREAKSOURCE_INSTANCE(INSTANCE) (((INSTANCE) == TIM1)   || \\\n                                               ((INSTANCE) == TIM14))",
+      "brief": "校验是否为支持刹车源(Break Source)配置的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1 或 TIM14)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_BREAKSOURCE_INSTANCE(INSTANCE) (((INSTANCE) == TIM1)   || \\\r\n                                               ((INSTANCE) == TIM14))"
+    },
+    {
+      "name": "IS_TIM_CC1_INSTANCE",
+      "sig": "#define IS_TIM_CC1_INSTANCE(INSTANCE)   (((INSTANCE) == TIM1)   || \\\n                                         ((INSTANCE) == TIM14))",
+      "brief": "校验是否为支持捕获/比较通道 1(CC1)的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1 或 TIM14)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CC1_INSTANCE(INSTANCE)   (((INSTANCE) == TIM1)   || \\\r\n                                         ((INSTANCE) == TIM14))"
+    },
+    {
+      "name": "IS_TIM_CC2_INSTANCE",
+      "sig": "#define IS_TIM_CC2_INSTANCE(INSTANCE)   ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持捕获/比较通道 2(CC2)的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CC2_INSTANCE(INSTANCE)   ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_CC3_INSTANCE",
+      "sig": "#define IS_TIM_CC3_INSTANCE(INSTANCE)   ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持捕获/比较通道 3(CC3)的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CC3_INSTANCE(INSTANCE)   ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_CC4_INSTANCE",
+      "sig": "#define IS_TIM_CC4_INSTANCE(INSTANCE)   ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持捕获/比较通道 4(CC4)的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CC4_INSTANCE(INSTANCE)   ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_CC5_INSTANCE",
+      "sig": "#define IS_TIM_CC5_INSTANCE(INSTANCE)   ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持捕获/比较通道 5(CC5)的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CC5_INSTANCE(INSTANCE)   ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_CC6_INSTANCE",
+      "sig": "#define IS_TIM_CC6_INSTANCE(INSTANCE)   ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持捕获/比较通道 6(CC6)的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CC6_INSTANCE(INSTANCE)   ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_CCX_INSTANCE",
+      "sig": "#define IS_TIM_CCX_INSTANCE(INSTANCE, CHANNEL) \\\n    ((((INSTANCE) == TIM1) &&                  \\\n     (((CHANNEL) == TIM_CHANNEL_1) ||          \\\n      ((CHANNEL) == TIM_CHANNEL_2) ||          \\\n      ((CHANNEL) == TIM_CHANNEL_3) ||          \\\n      ((CHANNEL) == TIM_CHANNEL_4)))           \\\n     ||                                        \\\n     (((INSTANCE) == TIM14) &&                 \\\n     (((CHANNEL) == TIM_CHANNEL_1))))",
+      "brief": "校验定时器实例与捕获/比较通道的组合是否合法(TIM1 支持 CH1~CH4, TIM14 仅支持 CH1)。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1 或 TIM14)"
+        },
+        {
+          "name": "CHANNEL",
+          "type": "宏参数",
+          "desc": "捕获/比较通道号(TIM_CHANNEL_1~4)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CCX_INSTANCE(INSTANCE, CHANNEL) \\\r\n    ((((INSTANCE) == TIM1) &&                  \\\r\n     (((CHANNEL) == TIM_CHANNEL_1) ||          \\\r\n      ((CHANNEL) == TIM_CHANNEL_2) ||          \\\r\n      ((CHANNEL) == TIM_CHANNEL_3) ||          \\\r\n      ((CHANNEL) == TIM_CHANNEL_4)))           \\\r\n     ||                                        \\\r\n     (((INSTANCE) == TIM14) &&                 \\\r\n     (((CHANNEL) == TIM_CHANNEL_1))))"
+    },
+    {
+      "name": "IS_TIM_CCXN_INSTANCE",
+      "sig": "#define IS_TIM_CCXN_INSTANCE(INSTANCE, CHANNEL) \\\n   ((((INSTANCE) == TIM1) &&                    \\\n     (((CHANNEL) == TIM_CHANNEL_1) ||           \\\n      ((CHANNEL) == TIM_CHANNEL_2) ||           \\\n      ((CHANNEL) == TIM_CHANNEL_3)))            \\\n    ||                                          \\\n    (((INSTANCE) == TIM14) &&                   \\\n     ((CHANNEL) == TIM_CHANNEL_1)))",
+      "brief": "校验定时器实例与互补通道的组合是否合法(TIM1 支持 CH1N~CH3N, TIM14 仅支持 CH1N)。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1 或 TIM14)"
+        },
+        {
+          "name": "CHANNEL",
+          "type": "宏参数",
+          "desc": "互补通道号(TIM_CHANNEL_1~3)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CCXN_INSTANCE(INSTANCE, CHANNEL) \\\r\n   ((((INSTANCE) == TIM1) &&                    \\\r\n     (((CHANNEL) == TIM_CHANNEL_1) ||           \\\r\n      ((CHANNEL) == TIM_CHANNEL_2) ||           \\\r\n      ((CHANNEL) == TIM_CHANNEL_3)))            \\\r\n    ||                                          \\\r\n    (((INSTANCE) == TIM14) &&                   \\\r\n     ((CHANNEL) == TIM_CHANNEL_1)))"
+    },
+    {
+      "name": "IS_TIM_CLOCK_DIVISION_INSTANCE",
+      "sig": "#define IS_TIM_CLOCK_DIVISION_INSTANCE(INSTANCE)   (((INSTANCE) == TIM1)    || \\\n                                                    ((INSTANCE) == TIM14))",
+      "brief": "校验是否为支持时钟分频(CKD)配置的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1 或 TIM14)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CLOCK_DIVISION_INSTANCE(INSTANCE)   (((INSTANCE) == TIM1)    || \\\r\n                                                    ((INSTANCE) == TIM14))"
+    },
+    {
+      "name": "IS_TIM_CLOCKSOURCE_ETRMODE1_INSTANCE",
+      "sig": "#define IS_TIM_CLOCKSOURCE_ETRMODE1_INSTANCE(INSTANCE) ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持外部触发模式 1(ETR Mode 1)时钟源的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CLOCKSOURCE_ETRMODE1_INSTANCE(INSTANCE) ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_CLOCKSOURCE_ETRMODE2_INSTANCE",
+      "sig": "#define IS_TIM_CLOCKSOURCE_ETRMODE2_INSTANCE(INSTANCE) ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持外部触发模式 2(ETR Mode 2)时钟源的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CLOCKSOURCE_ETRMODE2_INSTANCE(INSTANCE) ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_CLOCKSOURCE_ITRX_INSTANCE",
+      "sig": "#define IS_TIM_CLOCKSOURCE_ITRX_INSTANCE(INSTANCE)     ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持内部触发(ITRx)时钟源的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CLOCKSOURCE_ITRX_INSTANCE(INSTANCE)     ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_CLOCKSOURCE_TIX_INSTANCE",
+      "sig": "#define IS_TIM_CLOCKSOURCE_TIX_INSTANCE(INSTANCE)      ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持输入捕获引脚(TIx)时钟源的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CLOCKSOURCE_TIX_INSTANCE(INSTANCE)      ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_COMMUTATION_EVENT_INSTANCE",
+      "sig": "#define IS_TIM_COMMUTATION_EVENT_INSTANCE(INSTANCE) (((INSTANCE) == TIM1)   || \\\n                                                     ((INSTANCE) == TIM14))",
+      "brief": "校验是否为支持换相事件(Commutation)的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1 或 TIM14)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_COMMUTATION_EVENT_INSTANCE(INSTANCE) (((INSTANCE) == TIM1)   || \\\r\n                                                     ((INSTANCE) == TIM14))"
+    },
+    {
+      "name": "IS_TIM_COUNTER_MODE_SELECT_INSTANCE",
+      "sig": "#define IS_TIM_COUNTER_MODE_SELECT_INSTANCE(INSTANCE)  ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持计数模式选择(向上/向下/中心对齐)的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_COUNTER_MODE_SELECT_INSTANCE(INSTANCE)  ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_ENCODER_INTERFACE_INSTANCE",
+      "sig": "#define IS_TIM_ENCODER_INTERFACE_INSTANCE(INSTANCE)  ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持编码器接口模式的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_ENCODER_INTERFACE_INSTANCE(INSTANCE)  ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_ETR_INSTANCE",
+      "sig": "#define IS_TIM_ETR_INSTANCE(INSTANCE)      ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持外部触发输入(ETR)的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_ETR_INSTANCE(INSTANCE)      ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_ETRSEL_INSTANCE",
+      "sig": "#define IS_TIM_ETRSEL_INSTANCE(INSTANCE)    ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持 ETR 输入选择(ETRSEL)的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_ETRSEL_INSTANCE(INSTANCE)    ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_HALL_SENSOR_INTERFACE_INSTANCE",
+      "sig": "#define IS_TIM_HALL_SENSOR_INTERFACE_INSTANCE(INSTANCE) ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持霍尔传感器接口模式的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_HALL_SENSOR_INTERFACE_INSTANCE(INSTANCE) ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_INSTANCE",
+      "sig": "#define IS_TIM_INSTANCE(INSTANCE)       (((INSTANCE) == TIM1)   || \\\n                                         ((INSTANCE) == TIM14))",
+      "brief": "校验定时器外设实例是否为可用实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1 或 TIM14)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_INSTANCE(INSTANCE)       (((INSTANCE) == TIM1)   || \\\r\n                                         ((INSTANCE) == TIM14))"
+    },
+    {
+      "name": "IS_TIM_MASTER_INSTANCE",
+      "sig": "#define IS_TIM_MASTER_INSTANCE(INSTANCE)   ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持主模式(可作主定时器)的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_MASTER_INSTANCE(INSTANCE)   ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_OCXREF_CLEAR_INSTANCE",
+      "sig": "#define IS_TIM_OCXREF_CLEAR_INSTANCE(INSTANCE)        ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持 OCxREF 清零(外部事件清除输出参考信号)的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_OCXREF_CLEAR_INSTANCE(INSTANCE)        ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_REMAP_INSTANCE",
+      "sig": "#define IS_TIM_REMAP_INSTANCE(INSTANCE)    ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持引脚重映射(Remap)的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_REMAP_INSTANCE(INSTANCE)    ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_REPETITION_COUNTER_INSTANCE",
+      "sig": "#define IS_TIM_REPETITION_COUNTER_INSTANCE(INSTANCE)  ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持重复计数器(RCR)的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_REPETITION_COUNTER_INSTANCE(INSTANCE)  ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_SLAVE_INSTANCE",
+      "sig": "#define IS_TIM_SLAVE_INSTANCE(INSTANCE)    ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持从模式(可作从定时器)的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_SLAVE_INSTANCE(INSTANCE)    ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_TIM_SYNCHRO_INSTANCE",
+      "sig": "#define IS_TIM_SYNCHRO_INSTANCE(INSTANCE)  IS_TIM_MASTER_INSTANCE(INSTANCE)",
+      "brief": "校验是否为支持同步(Synchro)功能的定时器实例(等价于主模式实例判断)。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_SYNCHRO_INSTANCE(INSTANCE)  IS_TIM_MASTER_INSTANCE(INSTANCE)"
+    },
+    {
+      "name": "IS_TIM_TISEL_INSTANCE",
+      "sig": "#define IS_TIM_TISEL_INSTANCE(INSTANCE) (((INSTANCE) == TIM1)   || \\\n                                         ((INSTANCE) == TIM14))",
+      "brief": "校验是否为支持 TI 输入选择(TISEL)的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1 或 TIM14)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_TISEL_INSTANCE(INSTANCE) (((INSTANCE) == TIM1)   || \\\r\n                                         ((INSTANCE) == TIM14))"
+    },
+    {
+      "name": "IS_TIM_TRGO2_INSTANCE",
+      "sig": "#define IS_TIM_TRGO2_INSTANCE(INSTANCE)    (((INSTANCE) == TIM1))",
+      "brief": "校验是否为支持 TRGO2 触发输出的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_TRGO2_INSTANCE(INSTANCE)    (((INSTANCE) == TIM1))"
+    },
+    {
+      "name": "IS_TIM_XOR_INSTANCE",
+      "sig": "#define IS_TIM_XOR_INSTANCE(INSTANCE)      ((INSTANCE) == TIM1)",
+      "brief": "校验是否为支持输入异或(XOR)组合的定时器实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "定时器外设实例(TIM1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_XOR_INSTANCE(INSTANCE)      ((INSTANCE) == TIM1)"
+    },
+    {
+      "name": "IS_UART_DRIVER_ENABLE_INSTANCE",
+      "sig": "#define IS_UART_DRIVER_ENABLE_INSTANCE(INSTANCE)     ((INSTANCE) == USART1)",
+      "brief": "校验是否为支持驱动使能(DE)功能的 UART 实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "串口外设实例(USART1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_UART_DRIVER_ENABLE_INSTANCE(INSTANCE)     ((INSTANCE) == USART1)"
+    },
+    {
+      "name": "IS_UART_FIFO_INSTANCE",
+      "sig": "#define IS_UART_FIFO_INSTANCE(INSTANCE)     ((INSTANCE) == USART1)",
+      "brief": "校验是否为支持 FIFO 功能的 UART 实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "串口外设实例(USART1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_UART_FIFO_INSTANCE(INSTANCE)     ((INSTANCE) == USART1)"
+    },
+    {
+      "name": "IS_UART_HALFDUPLEX_INSTANCE",
+      "sig": "#define IS_UART_HALFDUPLEX_INSTANCE(INSTANCE)   ((INSTANCE) == USART1)",
+      "brief": "校验是否为支持半双工模式的 UART 实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "串口外设实例(USART1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_UART_HALFDUPLEX_INSTANCE(INSTANCE)   ((INSTANCE) == USART1)"
+    },
+    {
+      "name": "IS_UART_HWFLOW_INSTANCE",
+      "sig": "#define IS_UART_HWFLOW_INSTANCE(INSTANCE) ((INSTANCE) == USART1)",
+      "brief": "校验是否为支持硬件流控(RTS/CTS)的 UART 实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "串口外设实例(USART1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_UART_HWFLOW_INSTANCE(INSTANCE) ((INSTANCE) == USART1)"
+    },
+    {
+      "name": "IS_UART_INSTANCE",
+      "sig": "#define IS_UART_INSTANCE(INSTANCE) ((INSTANCE) == USART1)",
+      "brief": "校验 UART 外设实例是否为可用实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "串口外设实例(USART1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_UART_INSTANCE(INSTANCE) ((INSTANCE) == USART1)"
+    },
+    {
+      "name": "IS_UART_LIN_INSTANCE",
+      "sig": "#define IS_UART_LIN_INSTANCE(INSTANCE)   ((INSTANCE) == USART1)",
+      "brief": "校验是否为支持 LIN 模式的 UART 实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "串口外设实例(USART1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_UART_LIN_INSTANCE(INSTANCE)   ((INSTANCE) == USART1)"
+    },
+    {
+      "name": "IS_UART_SPI_SLAVE_INSTANCE",
+      "sig": "#define IS_UART_SPI_SLAVE_INSTANCE(INSTANCE) ((INSTANCE) == USART1)",
+      "brief": "校验是否为支持 SPI 从机模式的 UART 实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "串口外设实例(USART1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_UART_SPI_SLAVE_INSTANCE(INSTANCE) ((INSTANCE) == USART1)"
+    },
+    {
+      "name": "IS_UART_WAKEUP_FROMSTOP_INSTANCE",
+      "sig": "#define IS_UART_WAKEUP_FROMSTOP_INSTANCE(INSTANCE)   ((INSTANCE) == USART1)",
+      "brief": "校验是否为支持从停机模式唤醒的 UART 实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "串口外设实例(USART1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_UART_WAKEUP_FROMSTOP_INSTANCE(INSTANCE)   ((INSTANCE) == USART1)"
+    },
+    {
+      "name": "IS_USART_AUTOBAUDRATE_DETECTION_INSTANCE",
+      "sig": "#define IS_USART_AUTOBAUDRATE_DETECTION_INSTANCE(INSTANCE) ((INSTANCE) == USART1)",
+      "brief": "校验是否为支持自动波特率检测的 USART 实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "串口外设实例(USART1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_USART_AUTOBAUDRATE_DETECTION_INSTANCE(INSTANCE) ((INSTANCE) == USART1)"
+    },
+    {
+      "name": "IS_USART_INSTANCE",
+      "sig": "#define IS_USART_INSTANCE(INSTANCE) ((INSTANCE) == USART1)",
+      "brief": "校验 USART 外设实例是否为可用实例。",
+      "params": [
+        {
+          "name": "INSTANCE",
+          "type": "宏参数",
+          "desc": "串口外设实例(USART1)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002bx5.h",
+      "kind": "macro",
+      "src": "#define IS_USART_INSTANCE(INSTANCE) ((INSTANCE) == USART1)"
+    }
+  ],
+  "ll": [],
+  "types": [],
+  "consts": []
+}

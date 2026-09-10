@@ -1,0 +1,3161 @@
+{
+  "module": "FLASH",
+  "moduleId": "flash",
+  "intro": "片内 Flash 编程/擦除与选项字节(Option Bytes)管理: 支持页(128B)/扇区(4KB)/全片擦除、页编程(阻塞或中断方式)、写保护(WRP)/SDK 保护、启动模式、BOR/看门狗/引脚映射等用户选项字节的编程与读取。含 HAL 库(py32f002b_hal_flash.c/.h)与 LL 库(py32f002b_ll_flash.h)。",
+  "files": [
+    "py32f002b_hal_flash.c",
+    "py32f002b_hal_flash.h",
+    "py32f002b_ll_flash.h"
+  ],
+  "hal": [
+    {
+      "name": "HAL_FLASH_Unlock",
+      "sig": "HAL_StatusTypeDef HAL_FLASH_Unlock(void)",
+      "brief": "解锁 FLASH 控制寄存器访问(依次写入 FLASH_KEY1/FLASH_KEY2 两个解锁键)。",
+      "params": [],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 解锁成功; HAL_ERROR 解锁失败(未读到 LOCK 位清零)"
+      },
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_FLASH_Unlock(void)\r\n{\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  if (READ_BIT(FLASH->CR, FLASH_CR_LOCK) != 0x00U)\r\n  {\r\n    /* Authorize the FLASH Registers access */\r\n    WRITE_REG(FLASH->KEYR, FLASH_KEY1);\r\n    WRITE_REG(FLASH->KEYR, FLASH_KEY2);\r\n\r\n    /* verify Flash is unlock */\r\n    if (READ_BIT(FLASH->CR, FLASH_CR_LOCK) != 0x00U)\r\n    {\r\n      status = HAL_ERROR;\r\n    }\r\n  }\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_FLASH_Lock",
+      "sig": "HAL_StatusTypeDef HAL_FLASH_Lock(void)",
+      "brief": "锁定 FLASH 控制寄存器访问(置位 CR 的 LOCK 位), 防止意外擦写。",
+      "params": [],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 锁定成功; HAL_ERROR 锁定失败"
+      },
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_FLASH_Lock(void)\r\n{\r\n  HAL_StatusTypeDef status = HAL_ERROR;\r\n\r\n  /* Set the LOCK Bit to lock the FLASH Registers access */\r\n  SET_BIT(FLASH->CR, FLASH_CR_LOCK);\r\n\r\n  /* verify Flash is locked */\r\n  if (READ_BIT(FLASH->CR, FLASH_CR_LOCK) != 0x00u)\r\n  {\r\n    status = HAL_OK;\r\n  }\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_FLASH_OB_Unlock",
+      "sig": "HAL_StatusTypeDef HAL_FLASH_OB_Unlock(void)",
+      "brief": "解锁 FLASH 选项字节寄存器访问(依次写入 FLASH_OPTKEY1/FLASH_OPTKEY2)。",
+      "params": [],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 解锁成功; HAL_ERROR 解锁失败"
+      },
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_FLASH_OB_Unlock(void)\r\n{\r\n  HAL_StatusTypeDef status = HAL_ERROR;\r\n\r\n  if (READ_BIT(FLASH->CR, FLASH_CR_OPTLOCK) != 0x00U)\r\n  {\r\n    /* Authorizes the Option Byte register programming */\r\n    WRITE_REG(FLASH->OPTKEYR, FLASH_OPTKEY1);\r\n    WRITE_REG(FLASH->OPTKEYR, FLASH_OPTKEY2);\r\n\r\n    /* verify option bytes are unlocked */\r\n    if (READ_BIT(FLASH->CR, FLASH_CR_OPTLOCK) == 0x00U)\r\n    {\r\n      status = HAL_OK;\r\n    }\r\n  }\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_FLASH_OB_Lock",
+      "sig": "HAL_StatusTypeDef HAL_FLASH_OB_Lock(void)",
+      "brief": "锁定 FLASH 选项字节寄存器访问(置位 CR 的 OPTLOCK 位)。",
+      "params": [],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 锁定成功; HAL_ERROR 锁定失败"
+      },
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_FLASH_OB_Lock(void)\r\n{\r\n  HAL_StatusTypeDef status = HAL_ERROR;\r\n\r\n  /* Set the OPTLOCK Bit to lock the FLASH Option Byte Registers access */\r\n  SET_BIT(FLASH->CR, FLASH_CR_OPTLOCK);\r\n\r\n  /* verify option bytes are locked */\r\n  if (READ_BIT(FLASH->CR, FLASH_CR_OPTLOCK) != 0x00u)\r\n  {\r\n    status = HAL_OK;\r\n  }\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_FLASH_OB_Launch",
+      "sig": "HAL_StatusTypeDef HAL_FLASH_OB_Launch(void)",
+      "brief": "触发选项字节重载(置位 CR 的 OBL_LAUNCH 位), 使新配置生效。",
+      "params": [],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_ERROR(重载会产生选项字节复位, 函数不会正常返回)"
+      },
+      "notes": [
+        "选项字节重载将产生一次系统复位, 该函数实际不会正常返回。"
+      ],
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_FLASH_OB_Launch(void)\r\n{\r\n  /* Set the bit to force the option byte reloading */\r\n  SET_BIT(FLASH->CR, FLASH_CR_OBL_LAUNCH);\r\n\r\n  /* We should not reach here : Option byte launch generates Option byte reset\r\n     so return error */\r\n  return HAL_ERROR;\r\n}"
+    },
+    {
+      "name": "HAL_FLASH_GetError",
+      "sig": "uint32_t HAL_FLASH_GetError(void)",
+      "brief": "获取最近一次 FLASH 操作记录的错误码(来自 pFlash.ErrorCode)。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "错误码: HAL_FLASH_ERROR_NONE 无错误 / HAL_FLASH_ERROR_WRP 写保护错误 / HAL_FLASH_ERROR_OPTV 选项有效性错误"
+      },
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "uint32_t HAL_FLASH_GetError(void)\r\n{\r\n  return pFlash.ErrorCode;\r\n}"
+    },
+    {
+      "name": "HAL_FLASH_Erase",
+      "sig": "HAL_StatusTypeDef HAL_FLASH_Erase(FLASH_EraseInitTypeDef *pEraseInit, uint32_t *PageSectorError)",
+      "brief": "执行全片擦除或指定页/扇区擦除, 擦除过程轮询 BSY 标志等待完成。",
+      "params": [
+        {
+          "name": "pEraseInit",
+          "type": "FLASH_EraseInitTypeDef *",
+          "desc": "擦除配置结构体指针, 含 TypeErase/PageAddress/NbPages/SectorAddress/NbSectors"
+        },
+        {
+          "name": "PageSectorError",
+          "type": "uint32_t *",
+          "desc": "出参: 出错页/扇区的地址, 0xFFFFFFFF 表示所有页/扇区均正确擦除"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR / HAL_TIMEOUT 失败"
+      },
+      "notes": [
+        "执行前必须先调用 HAL_FLASH_Unlock() 解锁; 完成后建议调用 HAL_FLASH_Lock() 重新锁定, 防止意外操作。",
+        "全片擦除(FLASH_TYPEERASE_MASSERASE)仅擦除 Bank1。"
+      ],
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_FLASH_Erase(FLASH_EraseInitTypeDef *pEraseInit, uint32_t *PageSectorError)\r\n{\r\n  HAL_StatusTypeDef status = HAL_ERROR;\r\n  uint32_t address = 0U;\r\n\r\n  /* Process Locked */\r\n  __HAL_LOCK(&pFlash);\r\n    \r\n  /* Config flash timming */\r\n  __HAL_FLASH_TIMMING_SEQUENCE_CONFIG();\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_FLASH_TYPEERASE(pEraseInit->TypeErase));\r\n\r\n  if (pEraseInit->TypeErase == FLASH_TYPEERASE_MASSERASE)\r\n  {\r\n    /* Mass Erase requested for Bank1 */\r\n    /* Wait for last operation to be completed */\r\n    if (FLASH_WaitForLastOperation((uint32_t)FLASH_TIMEOUT_VALUE) == HAL_OK)\r\n    {\r\n      /*Mass erase to be done*/\r\n      FLASH_MassErase();\r\n\r\n      /* Wait for last operation to be completed */\r\n      status = FLASH_WaitForLastOperation((uint32_t)FLASH_TIMEOUT_VALUE);\r\n\r\n      /* If the erase operation is completed, disable the MER Bit */\r\n      CLEAR_BIT(FLASH->CR, FLASH_CR_MER);\r\n    }\r\n  }else if(pEraseInit->TypeErase == FLASH_TYPEERASE_PAGEERASE)\r\n  {\r\n    /* Page Erase is requested */\r\n    /* Check the parameters */\r\n    assert_param(IS_FLASH_PROGRAM_ADDRESS(pEraseInit->PageAddress));\r\n    assert_param(IS_FLASH_NB_PAGES(pEraseInit->PageAddress, pEraseInit->NbPages));\r\n\r\n    /* Wait for last operation to be completed */\r\n    if (FLASH_WaitForLastOperation((uint32_t)FLASH_TIMEOUT_VALUE) == HAL_OK)\r\n    {\r\n      /*Initialization of PageSectorError variable*/\r\n      *PageSectorError = 0xFFFFFFFFU;\r\n\r\n      /* Erase page by page to be done*/\r\n      for(address = pEraseInit->PageAddress;\r\n          address < ((pEraseInit->NbPages * FLASH_PAGE_SIZE) + pEraseInit->PageAddress);\r\n          address += FLASH_PAGE_SIZE)\r\n      {\r\n        FLASH_PageErase(address);\r\n\r\n        /* Wait for last operation to be completed */\r\n        status = FLASH_WaitForLastOperation((uint32_t)FLASH_TIMEOUT_VALUE);\r\n        /* If the erase operation is completed, disable the PER Bit */\r\n        CLEAR_BIT(FLASH->CR, FLASH_CR_PER);\r\n        if (status != HAL_OK)\r\n        {\r\n          /* In case of error, stop erase procedure and return the faulty address */\r\n          *PageSectorError = address;\r\n          break;\r\n        }\r\n      }\r\n    }\r\n  }\r\n  else if(pEraseInit->TypeErase == FLASH_TYPEERASE_SECTORERASE)\r\n  {\r\n    /* Sector Erase is requested */\r\n    /* Check the parameters */\r\n    assert_param(IS_FLASH_PROGRAM_ADDRESS(pEraseInit->SectorAddress));\r\n    assert_param(IS_FLASH_NB_SECTORS(pEraseInit->SectorAddress, pEraseInit->NbSectors));\r\n\r\n    /* Wait for last operation to be completed */\r\n    if (FLASH_WaitForLastOperation((uint32_t)FLASH_TIMEOUT_VALUE) == HAL_OK)\r\n    {\r\n      /*Initialization of PageSectorError variable*/\r\n      *PageSectorError = 0xFFFFFFFFU;\r\n\r\n      /* Erase page by page to be done*/\r\n      for(address = pEraseInit->SectorAddress;\r\n          address < ((pEraseInit->NbSectors * FLASH_SECTOR_SIZE) + pEraseInit->SectorAddress);\r\n          address += FLASH_SECTOR_SIZE)\r\n      {\r\n        FLASH_SectorErase(address);\r\n        /* Wait for last operation to be completed */\r\n        status = FLASH_WaitForLastOperation((uint32_t)FLASH_TIMEOUT_VALUE);\r\n        /* If the erase operation is completed, disable the SER Bit */\r\n        CLEAR_BIT(FLASH->CR, FLASH_CR_SER);\r\n        if (status != HAL_OK)\r\n        {\r\n          /* In case of error, stop erase procedure and return the faulty address */\r\n          *PageSectorError = address;\r\n          break;\r\n        }\r\n      }  \r\n    }\r\n  }\r\n\r\n  /* Process Unlocked */\r\n  __HAL_UNLOCK(&pFlash);\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_FLASH_Erase_IT",
+      "sig": "HAL_StatusTypeDef HAL_FLASH_Erase_IT(FLASH_EraseInitTypeDef *pEraseInit)",
+      "brief": "以中断方式执行全片/页/扇区擦除: 启动首个擦除操作后立即返回, 剩余操作由 HAL_FLASH_IRQHandler() 在中断中完成。",
+      "params": [
+        {
+          "name": "pEraseInit",
+          "type": "FLASH_EraseInitTypeDef *",
+          "desc": "擦除配置结构体指针, 含 TypeErase/PageAddress/NbPages/SectorAddress/NbSectors"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 已启动; HAL_ERROR / HAL_TIMEOUT 失败"
+      },
+      "notes": [
+        "需使能 FLASH 中断(EOP/ERR), 并在中断服务程序中调用 HAL_FLASH_IRQHandler()。"
+      ],
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_FLASH_Erase_IT(FLASH_EraseInitTypeDef *pEraseInit)\r\n{\r\n  HAL_StatusTypeDef status;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_FLASH_TYPEERASE(pEraseInit->TypeErase));\r\n\r\n  /* Process Locked */\r\n  __HAL_LOCK(&pFlash);\r\n    \r\n  /* Config flash timming */\r\n  __HAL_FLASH_TIMMING_SEQUENCE_CONFIG();\r\n\r\n  /* Reset error code */\r\n  pFlash.ErrorCode = HAL_FLASH_ERROR_NONE;\r\n\r\n  /* save procedure for interrupt treatment */\r\n  pFlash.ProcedureOnGoing = pEraseInit->TypeErase;\r\n\r\n  /* Wait for last operation to be completed */\r\n  status = FLASH_WaitForLastOperation(FLASH_TIMEOUT_VALUE);\r\n\r\n  if (status != HAL_OK)\r\n  {\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(&pFlash);\r\n  }\r\n  else\r\n  {\r\n    /* Enable End of Operation and Error interrupts */\r\n    FLASH->CR |= FLASH_CR_EOPIE | FLASH_CR_ERRIE;\r\n\r\n    if (pEraseInit->TypeErase == FLASH_TYPEERASE_MASSERASE)\r\n    {\r\n      /* Set Page to 0 for Interrupt callback management */\r\n      pFlash.PageOrSector = 0;\r\n\r\n      /* Proceed to Mass Erase */\r\n      FLASH_MassErase();\r\n    }else if (pEraseInit->TypeErase == FLASH_TYPEERASE_PAGEERASE)\r\n    {\r\n      /* Erase by page to be done */\r\n      pFlash.NbPagesSectorsToErase = pEraseInit->NbPages;\r\n      pFlash.PageOrSector = pEraseInit->PageAddress;\r\n\r\n      /*Erase 1st page and wait for IT */\r\n      FLASH_PageErase(pEraseInit->PageAddress);\r\n    }else if (pEraseInit->TypeErase == FLASH_TYPEERASE_SECTORERASE)\r\n    {\r\n      /* Erase by sector to be done */\r\n      pFlash.NbPagesSectorsToErase = pEraseInit->NbSectors;\r\n      pFlash.PageOrSector = pEraseInit->SectorAddress;\r\n        \r\n      FLASH_SectorErase(pEraseInit->SectorAddress);\r\n    }\r\n  }\r\n\r\n  /* return status */\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_FLASH_PageProgram",
+      "sig": "HAL_StatusTypeDef HAL_FLASH_PageProgram(uint32_t Address, uint32_t *DataAddr)",
+      "brief": "在指定地址编程一页(内部调用 HAL_FLASH_Program, 编程类型固定为页编程)。",
+      "params": [
+        {
+          "name": "Address",
+          "type": "uint32_t",
+          "desc": "要编程的起始地址, 必须是页首地址(FLASH_PAGE_SIZE 对齐)"
+        },
+        {
+          "name": "DataAddr",
+          "type": "uint32_t *",
+          "desc": "指向待编程数据缓冲区的指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR / HAL_TIMEOUT 失败"
+      },
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_FLASH_PageProgram(uint32_t Address, uint32_t * DataAddr )\r\n{\r\n   return HAL_FLASH_Program(FLASH_TYPEPROGRAM_PAGE, Address, DataAddr);\r\n}"
+    },
+    {
+      "name": "HAL_FLASH_Program",
+      "sig": "HAL_StatusTypeDef HAL_FLASH_Program(uint32_t TypeProgram, uint32_t Address, uint32_t *DataAddr)",
+      "brief": "在指定地址编程 32 个字(128 字节, 一页), 轮询等待操作完成。",
+      "params": [
+        {
+          "name": "TypeProgram",
+          "type": "uint32_t",
+          "desc": "编程类型, 本芯片仅支持 FLASH_TYPEPROGRAM_PAGE"
+        },
+        {
+          "name": "Address",
+          "type": "uint32_t",
+          "desc": "要编程的起始地址, 必须是页首地址(FLASH_PAGE_SIZE 对齐)"
+        },
+        {
+          "name": "DataAddr",
+          "type": "uint32_t *",
+          "desc": "指向待编程数据缓冲区的指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR / HAL_TIMEOUT 失败"
+      },
+      "notes": [
+        "地址必须是页首地址(128 字节对齐), 一次编程 32 个字(128 字节)。",
+        "编程期间会临时关闭全局中断(进入临界区)以保证写入时序。"
+      ],
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_FLASH_Program(uint32_t TypeProgram, uint32_t Address, uint32_t * DataAddr )\r\n{\r\n  HAL_StatusTypeDef status = HAL_ERROR;\r\n\r\n  /* Process Locked */\r\n  __HAL_LOCK(&pFlash);\r\n    \r\n  /* Config flash timming */\r\n  __HAL_FLASH_TIMMING_SEQUENCE_CONFIG();\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_FLASH_TYPEPROGRAM(TypeProgram));\r\n  assert_param(IS_FLASH_PROGRAM_ADDRESS(Address));\r\n\r\n  /* must be the first address of the PAGE */\r\n  if(Address%FLASH_PAGE_SIZE)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Wait for last operation to be completed */\r\n  status = FLASH_WaitForLastOperation(FLASH_TIMEOUT_VALUE);\r\n\r\n  if(status == HAL_OK)\r\n  {\r\n    FLASH_Program_Page(Address, DataAddr);\r\n\r\n    /* Wait for last operation to be completed */\r\n    status = FLASH_WaitForLastOperation(FLASH_TIMEOUT_VALUE);\r\n    /* If the program operation is completed, disable the PG Bit */\r\n    CLEAR_BIT(FLASH->CR, FLASH_CR_PG);\r\n    /* In case of error, stop programming procedure */\r\n    if (status != HAL_OK)\r\n    {\r\n      return status;\r\n    }\r\n  }\r\n\r\n  /* Process Unlocked */\r\n  __HAL_UNLOCK(&pFlash);\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_FLASH_PageProgram_IT",
+      "sig": "HAL_StatusTypeDef HAL_FLASH_PageProgram_IT(uint32_t Address, uint32_t *DataAddr)",
+      "brief": "以中断方式在指定地址编程一页(内部调用 HAL_FLASH_Program_IT)。",
+      "params": [
+        {
+          "name": "Address",
+          "type": "uint32_t",
+          "desc": "要编程的起始地址, 必须是页首地址(FLASH_PAGE_SIZE 对齐)"
+        },
+        {
+          "name": "DataAddr",
+          "type": "uint32_t *",
+          "desc": "指向待编程数据缓冲区的指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 已启动; HAL_ERROR / HAL_TIMEOUT 失败"
+      },
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_FLASH_PageProgram_IT(uint32_t Address, uint32_t *DataAddr)\r\n{\r\n  return HAL_FLASH_Program_IT(FLASH_TYPEPROGRAM_PAGE, Address, DataAddr);\r\n}"
+    },
+    {
+      "name": "HAL_FLASH_Program_IT",
+      "sig": "HAL_StatusTypeDef HAL_FLASH_Program_IT(uint32_t TypeProgram, uint32_t Address, uint32_t *DataAddr)",
+      "brief": "以中断方式编程一页: 使能 EOP/OPERR 中断后启动编程, 结果由 HAL_FLASH_IRQHandler() 及回调处理。",
+      "params": [
+        {
+          "name": "TypeProgram",
+          "type": "uint32_t",
+          "desc": "编程类型, 本芯片仅支持 FLASH_TYPEPROGRAM_PAGE"
+        },
+        {
+          "name": "Address",
+          "type": "uint32_t",
+          "desc": "要编程的起始地址, 必须是页首地址"
+        },
+        {
+          "name": "DataAddr",
+          "type": "uint32_t *",
+          "desc": "指向待编程数据缓冲区的指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 已启动; HAL_ERROR / HAL_TIMEOUT 失败"
+      },
+      "notes": [
+        "需使能 FLASH 中断, 并在中断服务程序中调用 HAL_FLASH_IRQHandler()。"
+      ],
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_FLASH_Program_IT(uint32_t TypeProgram, uint32_t Address, uint32_t *DataAddr)\r\n{\r\n  HAL_StatusTypeDef status;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_FLASH_TYPEPROGRAM(TypeProgram));\r\n  assert_param(IS_FLASH_PROGRAM_ADDRESS(Address));\r\n\r\n  /* Process Locked */\r\n  __HAL_LOCK(&pFlash);\r\n    \r\n  /* Config flash timming */\r\n  __HAL_FLASH_TIMMING_SEQUENCE_CONFIG();\r\n\r\n  /* Reset error code */\r\n  pFlash.ErrorCode = HAL_FLASH_ERROR_NONE;\r\n\r\n  /* Wait for last operation to be completed */\r\n  status = FLASH_WaitForLastOperation(FLASH_TIMEOUT_VALUE);\r\n\r\n  if (status != HAL_OK)\r\n  {\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(&pFlash);\r\n  }else\r\n  {\r\n    /* Set internal variables used by the IRQ handler */\r\n    pFlash.ProcedureOnGoing = TypeProgram;\r\n    pFlash.Address = Address;\r\n\r\n    /* Enable End of Operation and Error interrupts */\r\n    __HAL_FLASH_ENABLE_IT(FLASH_IT_EOP | FLASH_IT_OPERR);\r\n\r\n    FLASH_Program_Page(Address, DataAddr);\r\n  }\r\n\r\n  /* return status */\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_FLASH_OBProgram",
+      "sig": "HAL_StatusTypeDef HAL_FLASH_OBProgram(FLASH_OBProgramInitTypeDef *pOBInit)",
+      "brief": "编程选项字节: 按 pOBInit 配置写保护(WPR)、SDK 保护区域与用户选项字节(USER)。",
+      "params": [
+        {
+          "name": "pOBInit",
+          "type": "FLASH_OBProgramInitTypeDef *",
+          "desc": "选项字节编程配置结构体指针, 含 OptionType/WRPSector/SDKStartAddr/SDKEndAddr/USERType/USERConfig"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR / HAL_TIMEOUT 失败"
+      },
+      "notes": [
+        "编程前需先调用 HAL_FLASH_Unlock() 解锁 FLASH 接口、HAL_FLASH_OB_Unlock() 解锁选项字节; 编程完成后调用 HAL_FLASH_OB_Launch() 强制重载选项字节(将产生系统复位)。"
+      ],
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_FLASH_OBProgram(FLASH_OBProgramInitTypeDef *pOBInit)\r\n{\r\n  HAL_StatusTypeDef status = HAL_ERROR;\r\n\r\n  /* Process Locked */\r\n  __HAL_LOCK(&pFlash);\r\n    \r\n  /* Config flash timming */\r\n  __HAL_FLASH_TIMMING_SEQUENCE_CONFIG();\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_OPTIONBYTE(pOBInit->OptionType));\r\n\r\n  /* WRP register */\r\n  if ((pOBInit->OptionType & OPTIONBYTE_WRP) != 0)\r\n  {\r\n    /* Write protection configuration */\r\n    FLASH->WRPR = (uint16_t)(~(pOBInit->WRPSector));\r\n  }\r\n  \r\n  /* SDK register */\r\n  if ((pOBInit->OptionType & OPTIONBYTE_SDK) != 0)\r\n  {\r\n    /* SDK protection configuration */\r\n    FLASH->SDKR = (pOBInit->SDKStartAddr) | (pOBInit->SDKEndAddr<<8);\r\n  }\r\n  \r\n  if ((pOBInit->OptionType & OPTIONBYTE_USER) != 0x00U)\r\n  {\r\n    FLASH_OB_OptrConfig(pOBInit->USERType, pOBInit->USERConfig);\r\n  }\r\n  else\r\n  {\r\n    /* nothing to do */\r\n  }\r\n\r\n  /* starts to modify Flash Option bytes */\r\n  FLASH->CR|=FLASH_CR_OPTSTRT;\r\n\r\n  /* set bit EOPIE */\r\n  FLASH->CR|=FLASH_CR_EOPIE;\r\n\r\n  /* trigger program */\r\n  *((__IO uint32_t *)(0x40022080))=0xff;\r\n\r\n  /* Wait for last operation to be completed */\r\n  status = FLASH_WaitForLastOperation((uint32_t)FLASH_TIMEOUT_VALUE);\r\n\r\n  /* Process Unlocked */\r\n  __HAL_UNLOCK(&pFlash);\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_FLASH_OBBOOTProgram",
+      "sig": "HAL_StatusTypeDef HAL_FLASH_OBBOOTProgram(FLASH_OBBootProgramInitTypeDef *pBOOTInit)",
+      "brief": "编程启动选项字节: 配置启动模式(BOOTType)与启动区大小(BOOTSize)。",
+      "params": [
+        {
+          "name": "pBOOTInit",
+          "type": "FLASH_OBBootProgramInitTypeDef *",
+          "desc": "启动选项字节配置结构体指针, 含 BOOTType/BOOTSize"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR / HAL_TIMEOUT 失败"
+      },
+      "notes": [
+        "编程前需先调用 HAL_FLASH_Unlock() 与 HAL_FLASH_OB_Unlock() 解锁; 完成后调用 HAL_FLASH_OB_Launch() 重载选项字节(将产生系统复位)。"
+      ],
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_FLASH_OBBOOTProgram(FLASH_OBBootProgramInitTypeDef *pBOOTInit)\r\n{\r\n  HAL_StatusTypeDef status = HAL_ERROR;\r\n\r\n  /* Process Locked */\r\n  __HAL_LOCK(&pFlash);\r\n    \r\n  /* Config flash timming */\r\n  __HAL_FLASH_TIMMING_SEQUENCE_CONFIG();\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_OB_BOOTTYPE(pBOOTInit->BOOTType));\r\n  assert_param(IS_OB_BOOTSIZE(pBOOTInit->BOOTSize));\r\n \r\n  MODIFY_REG(FLASH->BTCR, FLASH_BTCR_NBOOT1 | FLASH_BTCR_BOOT0 | FLASH_BTCR_BOOT_SIZE ,pBOOTInit->BOOTType | pBOOTInit->BOOTSize );\r\n\r\n  /* starts to modify Flash Option bytes */\r\n  FLASH->CR|=FLASH_CR_OPTSTRT;\r\n\r\n  /* set bit EOPIE */\r\n  FLASH->CR|=FLASH_CR_EOPIE;\r\n\r\n  /* trigger program */\r\n  *((__IO uint32_t *)(0x40022080))=0xff;\r\n\r\n  /* Wait for last operation to be completed */\r\n  status = FLASH_WaitForLastOperation((uint32_t)FLASH_TIMEOUT_VALUE);\r\n\r\n  /* Process Unlocked */\r\n  __HAL_UNLOCK(&pFlash);\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_FLASH_OBBOOTGetConfig",
+      "sig": "void HAL_FLASH_OBBOOTGetConfig(FLASH_OBBootProgramInitTypeDef *pBOOTInit)",
+      "brief": "读取当前启动选项字节配置, 填入 pBOOTInit 结构体。",
+      "params": [
+        {
+          "name": "pBOOTInit",
+          "type": "FLASH_OBBootProgramInitTypeDef *",
+          "desc": "出参: 填充 BOOTType/BOOTSize"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "void HAL_FLASH_OBBOOTGetConfig(FLASH_OBBootProgramInitTypeDef *pBOOTInit)\r\n{\r\n  pBOOTInit->BOOTType= READ_BIT(FLASH->BTCR,FLASH_BTCR_BOOT0 | FLASH_BTCR_NBOOT1 ) ;\r\n  pBOOTInit->BOOTSize= READ_BIT(FLASH->BTCR,FLASH_BTCR_BOOT_SIZE);\r\n}"
+    },
+    {
+      "name": "HAL_FLASH_OBGetConfig",
+      "sig": "void HAL_FLASH_OBGetConfig(FLASH_OBProgramInitTypeDef *pOBInit)",
+      "brief": "读取当前选项字节配置(写保护、SDK 区域、用户选项), 填入 pOBInit 结构体。",
+      "params": [
+        {
+          "name": "pOBInit",
+          "type": "FLASH_OBProgramInitTypeDef *",
+          "desc": "出参: 填充 OptionType/WRPSector/SDKStartAddr/SDKEndAddr/USERType/USERConfig"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "void HAL_FLASH_OBGetConfig(FLASH_OBProgramInitTypeDef *pOBInit)\r\n{\r\n  pOBInit->OptionType = OPTIONBYTE_ALL;\r\n\r\n  /* Get WRP sector */\r\n  pOBInit->WRPSector = (uint16_t)(~FLASH->WRPR);\r\n\r\n  /* Get SDK sector */\r\n  pOBInit->SDKStartAddr = (FLASH->SDKR)&0x1F;\r\n  pOBInit->SDKEndAddr = ((FLASH->SDKR)&0x1F00)>>8;\r\n\r\n  /*Get USER*/\r\n  pOBInit->USERType = OB_USER_ALL;\r\n\r\n#if defined(FLASH_OPTR_IWDG_STOP)\r\n  pOBInit->USERConfig = (FLASH->OPTR)&(FLASH_OPTR_IWDG_SW   | FLASH_OPTR_IWDG_STOP |  \\\r\n                                       FLASH_OPTR_NRST_MODE | FLASH_OPTR_BOR_EN   |    \\\r\n                                       FLASH_OPTR_BOR_LEV   | FLASH_OPTR_SWD_MODE);\r\n#else\r\n  pOBInit->USERConfig = (FLASH->OPTR)&(FLASH_OPTR_IWDG_SW   | FLASH_OPTR_SWD_MODE |  \\\r\n                                       FLASH_OPTR_NRST_MODE | FLASH_OPTR_BOR_EN   |    \\\r\n                                       FLASH_OPTR_BOR_LEV);\r\n#endif\r\n}"
+    },
+    {
+      "name": "HAL_FLASH_IRQHandler",
+      "sig": "void HAL_FLASH_IRQHandler(void)",
+      "brief": "FLASH 中断服务处理函数: 检查错误标志与操作结束标志, 继续中断方式下的页/扇区擦除流程, 结束后调用回调并解锁。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "应在 FLASH 全局中断的 IRQHandler 中调用; 内部调用 HAL_FLASH_EndOfOperationCallback() / HAL_FLASH_OperationErrorCallback()。"
+      ],
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "void HAL_FLASH_IRQHandler(void)\r\n{\r\n  uint32_t param = 0xFFFFFFFFU;\r\n  uint32_t error;\r\n\r\n  /* Save flash errors. Only ECC detection can be checked here as ECCC\r\n     generates NMI */\r\n  error = (FLASH->SR & FLASH_FLAG_SR_ERROR);\r\n\r\n  CLEAR_BIT(FLASH->CR, pFlash.ProcedureOnGoing);\r\n\r\n  /* A] Set parameter for user or error callbacks */\r\n  /* check operation was a program or erase */\r\n  if ((pFlash.ProcedureOnGoing & (FLASH_TYPEPROGRAM_PAGE)) != 0x00U)\r\n  {\r\n    /* return adress being programmed */\r\n    param = pFlash.Address;\r\n  }else if ((pFlash.ProcedureOnGoing & (FLASH_TYPEERASE_MASSERASE | FLASH_TYPEERASE_SECTORERASE | FLASH_TYPEERASE_PAGEERASE)) != 0x00U)\r\n  {\r\n    /* return page number being erased (0 for mass erase) */\r\n    param = pFlash.PageOrSector;\r\n  }else\r\n  {\r\n    /* Nothing to do */\r\n  }\r\n\r\n  /* B] Check errors */\r\n  if (error != 0x00U)\r\n  {\r\n    /*Save the error code*/\r\n    pFlash.ErrorCode |= error;\r\n\r\n    /* clear error flags */\r\n    __HAL_FLASH_CLEAR_FLAG(error);\r\n\r\n    /*Stop the procedure ongoing*/\r\n    pFlash.ProcedureOnGoing = FLASH_TYPENONE;\r\n\r\n    /* Error callback */\r\n    HAL_FLASH_OperationErrorCallback(param);\r\n  }\r\n\r\n  /* C] Check FLASH End of Operation flag */\r\n  if (__HAL_FLASH_GET_FLAG(FLASH_FLAG_EOP) != 0x00U)\r\n  {\r\n    /* Clear FLASH End of Operation pending bit */\r\n    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP);\r\n\r\n    if (pFlash.ProcedureOnGoing == FLASH_TYPEERASE_PAGEERASE)\r\n    {\r\n      /* Nb of pages to erased can be decreased */\r\n      pFlash.NbPagesSectorsToErase--;\r\n\r\n      /* Check if there are still pages to erase*/\r\n      if (pFlash.NbPagesSectorsToErase != 0x00U)\r\n      {\r\n        /* Increment page number */\r\n        pFlash.PageOrSector += FLASH_PAGE_SIZE;\r\n        FLASH_PageErase(pFlash.PageOrSector);\r\n      }else\r\n      {\r\n        /* No more pages to erase: stop erase pages procedure */\r\n        pFlash.ProcedureOnGoing = FLASH_TYPENONE;\r\n      }\r\n    }\r\n    else if (pFlash.ProcedureOnGoing == FLASH_TYPEERASE_SECTORERASE)\r\n    {\r\n      /* Nb of sectors to erased can be decreased */\r\n      pFlash.NbPagesSectorsToErase--;\r\n\r\n      /* Check if there are still pages to erase*/\r\n      if (pFlash.NbPagesSectorsToErase != 0x00U)\r\n      {\r\n        /* Increment page number */\r\n        pFlash.PageOrSector += FLASH_SECTOR_SIZE;\r\n        FLASH_SectorErase(pFlash.PageOrSector);\r\n      }else\r\n      {\r\n        /* No more pages to erase: stop erase pages procedure */\r\n        pFlash.ProcedureOnGoing = FLASH_TYPENONE;\r\n      }\r\n    }\r\n    else\r\n    {\r\n      /*Stop the ongoing procedure */\r\n      pFlash.ProcedureOnGoing = FLASH_TYPENONE;\r\n    }\r\n\r\n    /* User callback */\r\n    HAL_FLASH_EndOfOperationCallback(param);\r\n  }\r\n\r\n  if (pFlash.ProcedureOnGoing == FLASH_TYPENONE)\r\n  {\r\n    /* Disable End of Operation and Error interrupts */\r\n    __HAL_FLASH_DISABLE_IT(FLASH_IT_EOP | FLASH_IT_OPERR);\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(&pFlash);\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_FLASH_EndOfOperationCallback",
+      "sig": "void HAL_FLASH_EndOfOperationCallback(uint32_t ReturnValue)",
+      "brief": "FLASH 操作结束中断回调(弱定义空函数), 由 HAL_FLASH_IRQHandler() 自动调用, 用户可在应用里重写。",
+      "params": [
+        {
+          "name": "ReturnValue",
+          "type": "uint32_t",
+          "desc": "取决于进行中的操作: 全片擦除为 0, 页/扇区擦除为被擦除页地址, 编程为编程地址"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件中重写同名函数。"
+      ],
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "__weak void HAL_FLASH_EndOfOperationCallback(uint32_t ReturnValue)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(ReturnValue);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_FLASH_EndOfOperationCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_FLASH_OperationErrorCallback",
+      "sig": "void HAL_FLASH_OperationErrorCallback(uint32_t ReturnValue)",
+      "brief": "FLASH 操作错误中断回调(弱定义空函数), 由 HAL_FLASH_IRQHandler() 检测到错误时自动调用。",
+      "params": [
+        {
+          "name": "ReturnValue",
+          "type": "uint32_t",
+          "desc": "取决于出错的操作: 全片擦除为 0, 页/扇区擦除为出错页地址, 编程为编程地址"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件中重写同名函数。"
+      ],
+      "file": "py32f002b_hal_flash.c",
+      "kind": "function",
+      "src": "__weak void HAL_FLASH_OperationErrorCallback(uint32_t ReturnValue)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(ReturnValue);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_FLASH_OperationErrorCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "__HAL_FLASH_SET_LATENCY",
+      "sig": "#define __HAL_FLASH_SET_LATENCY(__LATENCY__)    MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, (__LATENCY__))",
+      "brief": "宏: 设置 FLASH 读取等待周期(Latency)。",
+      "params": [
+        {
+          "name": "__LATENCY__",
+          "type": "宏参数",
+          "desc": "等待周期: FLASH_LATENCY_0 零等待 / FLASH_LATENCY_1 一个等待周期"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define __HAL_FLASH_SET_LATENCY(__LATENCY__)    MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, (__LATENCY__))"
+    },
+    {
+      "name": "__HAL_FLASH_GET_LATENCY",
+      "sig": "#define __HAL_FLASH_GET_LATENCY()               READ_BIT(FLASH->ACR, FLASH_ACR_LATENCY)",
+      "brief": "宏: 读取当前 FLASH 读取等待周期。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "等待周期值, 对应 FLASH_LATENCY_0 / FLASH_LATENCY_1"
+      },
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define __HAL_FLASH_GET_LATENCY()               READ_BIT(FLASH->ACR, FLASH_ACR_LATENCY)"
+    },
+    {
+      "name": "__HAL_FLASH_ENABLE_IT",
+      "sig": "#define __HAL_FLASH_ENABLE_IT(__INTERRUPT__)    SET_BIT(FLASH->CR, (__INTERRUPT__))",
+      "brief": "宏: 使能指定的 FLASH 中断。",
+      "params": [
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "中断源: FLASH_IT_EOP 操作结束 / FLASH_IT_OPERR 错误, 可组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define __HAL_FLASH_ENABLE_IT(__INTERRUPT__)    SET_BIT(FLASH->CR, (__INTERRUPT__))"
+    },
+    {
+      "name": "__HAL_FLASH_DISABLE_IT",
+      "sig": "#define __HAL_FLASH_DISABLE_IT(__INTERRUPT__)   CLEAR_BIT(FLASH->CR, (__INTERRUPT__))",
+      "brief": "宏: 禁止指定的 FLASH 中断。",
+      "params": [
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "中断源: FLASH_IT_EOP / FLASH_IT_OPERR, 可组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define __HAL_FLASH_DISABLE_IT(__INTERRUPT__)   CLEAR_BIT(FLASH->CR, (__INTERRUPT__))"
+    },
+    {
+      "name": "__HAL_FLASH_GET_FLAG",
+      "sig": "#define __HAL_FLASH_GET_FLAG(__FLAG__)                    (READ_BIT(FLASH->SR,   (__FLAG__)) == (__FLAG__))",
+      "brief": "宏: 查询指定的 FLASH 状态标志是否置位。",
+      "params": [
+        {
+          "name": "__FLAG__",
+          "type": "宏参数",
+          "desc": "标志: FLASH_FLAG_BSY / FLASH_FLAG_WRPERR / FLASH_FLAG_OPTVERR / FLASH_FLAG_EOP / FLASH_FLAG_ALL_ERRORS"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志新状态(置位为 1, 否则 0)"
+      },
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define __HAL_FLASH_GET_FLAG(__FLAG__)                    (READ_BIT(FLASH->SR,   (__FLAG__)) == (__FLAG__))"
+    },
+    {
+      "name": "__HAL_FLASH_CLEAR_FLAG",
+      "sig": "#define __HAL_FLASH_CLEAR_FLAG(__FLAG__)                do {  WRITE_REG(FLASH->SR, (__FLAG__)); \\\r\n                                                           } while(0U)",
+      "brief": "宏: 清除指定的 FLASH 挂起标志。",
+      "params": [
+        {
+          "name": "__FLAG__",
+          "type": "宏参数",
+          "desc": "要清除的标志, 可取 FLASH_FLAG_* 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define __HAL_FLASH_CLEAR_FLAG(__FLAG__)                do {  WRITE_REG(FLASH->SR, (__FLAG__)); \\\r\n                                                           } while(0U)"
+    },
+    {
+      "name": "__HAL_FLASH_TIME_REG_SET",
+      "sig": "#define __HAL_FLASH_TIME_REG_SET(__EPPARA0__,__EPPARA1__,__EPPARA2__,__EPPARA3__,__EPPARA4__)           \\\r\n                                                        do {                                            \\\r\n                                                            FLASH->TS0  = (__EPPARA0__)&0x1FF;          \\\r\n                                                            FLASH->TS1  = ((__EPPARA0__)>>18)&0x3FF;    \\\r\n                                                            FLASH->TS3  = ((__EPPARA0__)>>9)&0x1FF;     \\\r\n                                                            FLASH->TS2P = (__EPPARA1__)&0x1FF;          \\\r\n                                                            FLASH->TPS3 = ((__EPPARA1__)>>16)&0xFFF;    \\\r\n                                                            FLASH->PERTPE = (__EPPARA2__)&0x3FFFF;      \\\r\n                                                            FLASH->SMERTPE = (__EPPARA3__)&0x3FFFF;     \\\r\n                                                            FLASH->PRGTPE = (__EPPARA4__)&0xFFFF;       \\\r\n                                                            FLASH->PRETPE = ((__EPPARA4__)>>16)&0x3FFF; \\\r\n                                                         } while(0U)",
+      "brief": "宏: 将 5 个时序参数(从信息区校准值读出)按位段装载到 TS0/TS1/TS3/TS2P/TPS3/PERTPE/SMERTPE/PRGTPE/PRETPE 寄存器。",
+      "params": [
+        {
+          "name": "__EPPARA0__..__EPPARA4__",
+          "type": "宏参数",
+          "desc": "5 个 32 位时序参数, 分别对应各时序寄存器位段"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define __HAL_FLASH_TIME_REG_SET(__EPPARA0__,__EPPARA1__,__EPPARA2__,__EPPARA3__,__EPPARA4__)           \\\r\n                                                        do {                                            \\\r\n                                                            FLASH->TS0  = (__EPPARA0__)&0x1FF;          \\\r\n                                                            FLASH->TS1  = ((__EPPARA0__)>>18)&0x3FF;    \\\r\n                                                            FLASH->TS3  = ((__EPPARA0__)>>9)&0x1FF;     \\\r\n                                                            FLASH->TS2P = (__EPPARA1__)&0x1FF;          \\\r\n                                                            FLASH->TPS3 = ((__EPPARA1__)>>16)&0xFFF;    \\\r\n                                                            FLASH->PERTPE = (__EPPARA2__)&0x3FFFF;      \\\r\n                                                            FLASH->SMERTPE = (__EPPARA3__)&0x3FFFF;     \\\r\n                                                            FLASH->PRGTPE = (__EPPARA4__)&0xFFFF;       \\\r\n                                                            FLASH->PRETPE = ((__EPPARA4__)>>16)&0x3FFF; \\\r\n                                                         } while(0U)"
+    },
+    {
+      "name": "__HAL_FLASH_IS_INVALID_TIMMING_SEQUENCE",
+      "sig": "#define __HAL_FLASH_IS_INVALID_TIMMING_SEQUENCE(_INDEX_)  (((FLASH->TS0)     !=  ((*(uint32_t *)(_FlashTimmingParam[_INDEX_]))&0x1FF))         ||  \\\r\n                                                           ((FLASH->TS1)     != (((*(uint32_t *)(_FlashTimmingParam[_INDEX_]))>>18)&0x3FF))    ||  \\\r\n                                                           ((FLASH->TS3)     != (((*(uint32_t *)(_FlashTimmingParam[_INDEX_]))>>9)&0x1FF))     ||  \\\r\n                                                           ((FLASH->TS2P)    !=  ((*(uint32_t *)(_FlashTimmingParam[_INDEX_]+4))&0x1FF))       ||  \\\r\n                                                           ((FLASH->TPS3)    != (((*(uint32_t *)(_FlashTimmingParam[_INDEX_]+4))>>16)&0xFFF))  ||  \\\r\n                                                           ((FLASH->PERTPE)  !=  ((*(uint32_t *)(_FlashTimmingParam[_INDEX_]+8))&0x3FFFF))     ||  \\\r\n                                                           ((FLASH->SMERTPE) !=  ((*(uint32_t *)(_FlashTimmingParam[_INDEX_]+12))&0x3FFFF))    ||  \\\r\n                                                           ((FLASH->PRGTPE)  !=  ((*(uint32_t *)(_FlashTimmingParam[_INDEX_]+16))&0xFFFF))     ||  \\\r\n                                                           ((FLASH->PRETPE)  != (((*(uint32_t *)(_FlashTimmingParam[_INDEX_]+16))>>16)&0x3FFF)))",
+      "brief": "宏: 检查索引 _INDEX_ 对应的信息区校准时序参数与当前时序寄存器是否不一致(用于判断是否需要重新配置时序)。",
+      "params": [
+        {
+          "name": "_INDEX_",
+          "type": "宏参数",
+          "desc": "时序参数表索引, 取自 RCC 的 HSI 频率档位"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "时序不一致返回非 0(需重新配置), 否则 0"
+      },
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define __HAL_FLASH_IS_INVALID_TIMMING_SEQUENCE(_INDEX_)  (((FLASH->TS0)     !=  ((*(uint32_t *)(_FlashTimmingParam[_INDEX_]))&0x1FF))         ||  \\\r\n                                                           ((FLASH->TS1)     != (((*(uint32_t *)(_FlashTimmingParam[_INDEX_]))>>18)&0x3FF))    ||  \\\r\n                                                           ((FLASH->TS3)     != (((*(uint32_t *)(_FlashTimmingParam[_INDEX_]))>>9)&0x1FF))     ||  \\\r\n                                                           ((FLASH->TS2P)    !=  ((*(uint32_t *)(_FlashTimmingParam[_INDEX_]+4))&0x1FF))       ||  \\\r\n                                                           ((FLASH->TPS3)    != (((*(uint32_t *)(_FlashTimmingParam[_INDEX_]+4))>>16)&0xFFF))  ||  \\\r\n                                                           ((FLASH->PERTPE)  !=  ((*(uint32_t *)(_FlashTimmingParam[_INDEX_]+8))&0x3FFFF))     ||  \\\r\n                                                           ((FLASH->SMERTPE) !=  ((*(uint32_t *)(_FlashTimmingParam[_INDEX_]+12))&0x3FFFF))    ||  \\\r\n                                                           ((FLASH->PRGTPE)  !=  ((*(uint32_t *)(_FlashTimmingParam[_INDEX_]+16))&0xFFFF))     ||  \\\r\n                                                           ((FLASH->PRETPE)  != (((*(uint32_t *)(_FlashTimmingParam[_INDEX_]+16))>>16)&0x3FFF)))"
+    },
+    {
+      "name": "__HAL_FLASH_TIMMING_SEQUENCE_CONFIG",
+      "sig": "#define __HAL_FLASH_TIMMING_SEQUENCE_CONFIG() do{                                                                            \\\r\n                                                uint32_t tmpreg = (RCC->ICSCR & RCC_ICSCR_HSI_FS) >> RCC_ICSCR_HSI_FS_Pos;   \\\r\n                                                if (__HAL_FLASH_IS_INVALID_TIMMING_SEQUENCE(tmpreg))                         \\\r\n                                                {                                                                            \\\r\n                                                  __HAL_FLASH_TIME_REG_SET((*(uint32_t *)(_FlashTimmingParam[tmpreg])),      \\\r\n                                                                           (*(uint32_t *)(_FlashTimmingParam[tmpreg]+4)),    \\\r\n                                                                           (*(uint32_t *)(_FlashTimmingParam[tmpreg]+8)),    \\\r\n                                                                           (*(uint32_t *)(_FlashTimmingParam[tmpreg]+12)),   \\\r\n                                                                           (*(uint32_t *)(_FlashTimmingParam[tmpreg]+16)));  \\\r\n                                                }                                                                            \\\r\n                                              }while(0U)",
+      "brief": "宏: 依据当前 HSI 频率档位检查并配置 FLASH 擦写时序参数寄存器(擦除/编程前由驱动自动调用)。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_flash.h",
+      "kind": "macro",
+      "src": "#define __HAL_FLASH_TIMMING_SEQUENCE_CONFIG() do{                                                                            \\\r\n                                                uint32_t tmpreg = (RCC->ICSCR & RCC_ICSCR_HSI_FS) >> RCC_ICSCR_HSI_FS_Pos;   \\\r\n                                                if (__HAL_FLASH_IS_INVALID_TIMMING_SEQUENCE(tmpreg))                         \\\r\n                                                {                                                                            \\\r\n                                                  __HAL_FLASH_TIME_REG_SET((*(uint32_t *)(_FlashTimmingParam[tmpreg])),      \\\r\n                                                                           (*(uint32_t *)(_FlashTimmingParam[tmpreg]+4)),    \\\r\n                                                                           (*(uint32_t *)(_FlashTimmingParam[tmpreg]+8)),    \\\r\n                                                                           (*(uint32_t *)(_FlashTimmingParam[tmpreg]+12)),   \\\r\n                                                                           (*(uint32_t *)(_FlashTimmingParam[tmpreg]+16)));  \\\r\n                                                }                                                                            \\\r\n                                              }while(0U)"
+    }
+  ],
+  "ll": [
+    {
+      "name": "LL_FLASH_WriteReg",
+      "sig": "#define LL_FLASH_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG(__INSTANCE__->__REG__, (__VALUE__))",
+      "brief": "宏: 向 FLASH 寄存器写入一个值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "FLASH 实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要写入的寄存器"
+        },
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "要写入的值"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "macro",
+      "src": "#define LL_FLASH_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG(__INSTANCE__->__REG__, (__VALUE__))"
+    },
+    {
+      "name": "LL_FLASH_ReadReg",
+      "sig": "#define LL_FLASH_ReadReg(__INSTANCE__, __REG__) READ_REG(__INSTANCE__->__REG__)",
+      "brief": "宏: 读取 FLASH 寄存器的值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "FLASH 实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要读取的寄存器"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "寄存器值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "macro",
+      "src": "#define LL_FLASH_ReadReg(__INSTANCE__, __REG__) READ_REG(__INSTANCE__->__REG__)"
+    },
+    {
+      "name": "LL_FLASH_TIMMING_SEQUENCE_CONFIG_4M",
+      "sig": "#define LL_FLASH_TIMMING_SEQUENCE_CONFIG_4M()            \\\r\n                                                        do {                                            \\\r\n                                                            FLASH->TS0  = (*(uint32_t *)(0x1FFF0158))&0xFF;           \\\r\n                                                            FLASH->TS1  = ((*(uint32_t *)(0x1FFF0158))>>16)&0x1FF;    \\\r\n                                                            FLASH->TS3  = ((*(uint32_t *)(0x1FFF0158))>>8)&0xFF;      \\\r\n                                                            FLASH->TS2P = (*(uint32_t *)(0x1FFF015C))&0xFF;           \\\r\n                                                            FLASH->TPS3 = ((*(uint32_t *)(0x1FFF015C))>>16)&0x7FF;    \\\r\n                                                            FLASH->PERTPE = (*(uint32_t *)(0x1FFF0160))&0x1FFFF;      \\\r\n                                                            FLASH->SMERTPE = (*(uint32_t *)(0x1FFF0164))&0x1FFFF;     \\\r\n                                                            FLASH->PRGTPE = (*(uint32_t *)(0x1FFF0168))&0xFFFF;       \\\r\n                                                            FLASH->PRETPE = ((*(uint32_t *)(0x1FFF0168))>>16)&0xFFF; \\\r\n                                                         } while(0U)",
+      "brief": "宏: 按 4MHz 系统时钟从信息区校准参数装载 FLASH 擦写时序寄存器。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "macro",
+      "src": "#define LL_FLASH_TIMMING_SEQUENCE_CONFIG_4M()            \\\r\n                                                        do {                                            \\\r\n                                                            FLASH->TS0  = (*(uint32_t *)(0x1FFF0158))&0xFF;           \\\r\n                                                            FLASH->TS1  = ((*(uint32_t *)(0x1FFF0158))>>16)&0x1FF;    \\\r\n                                                            FLASH->TS3  = ((*(uint32_t *)(0x1FFF0158))>>8)&0xFF;      \\\r\n                                                            FLASH->TS2P = (*(uint32_t *)(0x1FFF015C))&0xFF;           \\\r\n                                                            FLASH->TPS3 = ((*(uint32_t *)(0x1FFF015C))>>16)&0x7FF;    \\\r\n                                                            FLASH->PERTPE = (*(uint32_t *)(0x1FFF0160))&0x1FFFF;      \\\r\n                                                            FLASH->SMERTPE = (*(uint32_t *)(0x1FFF0164))&0x1FFFF;     \\\r\n                                                            FLASH->PRGTPE = (*(uint32_t *)(0x1FFF0168))&0xFFFF;       \\\r\n                                                            FLASH->PRETPE = ((*(uint32_t *)(0x1FFF0168))>>16)&0xFFF; \\\r\n                                                         } while(0U)"
+    },
+    {
+      "name": "LL_FLASH_TIMMING_SEQUENCE_CONFIG_8M",
+      "sig": "#define LL_FLASH_TIMMING_SEQUENCE_CONFIG_8M()            \\\r\n                                                        do {                                            \\\r\n                                                            FLASH->TS0  = (*(uint32_t *)(0x1FFF016C))&0xFF;           \\\r\n                                                            FLASH->TS1  = ((*(uint32_t *)(0x1FFF016C))>>16)&0x1FF;    \\\r\n                                                            FLASH->TS3  = ((*(uint32_t *)(0x1FFF016C))>>8)&0xFF;      \\\r\n                                                            FLASH->TS2P = (*(uint32_t *)(0x1FFF0170))&0xFF;           \\\r\n                                                            FLASH->TPS3 = ((*(uint32_t *)(0x1FFF0170))>>16)&0x7FF;    \\\r\n                                                            FLASH->PERTPE = (*(uint32_t *)(0x1FFF0174))&0x1FFFF;      \\\r\n                                                            FLASH->SMERTPE = (*(uint32_t *)(0x1FFF0178))&0x1FFFF;     \\\r\n                                                            FLASH->PRGTPE = (*(uint32_t *)(0x1FFF017C))&0xFFFF;       \\\r\n                                                            FLASH->PRETPE = ((*(uint32_t *)(0x1FFF017C))>>16)&0xFFF; \\\r\n                                                         } while(0U)",
+      "brief": "宏: 按 8MHz 系统时钟从信息区校准参数装载 FLASH 擦写时序寄存器。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "macro",
+      "src": "#define LL_FLASH_TIMMING_SEQUENCE_CONFIG_8M()            \\\r\n                                                        do {                                            \\\r\n                                                            FLASH->TS0  = (*(uint32_t *)(0x1FFF016C))&0xFF;           \\\r\n                                                            FLASH->TS1  = ((*(uint32_t *)(0x1FFF016C))>>16)&0x1FF;    \\\r\n                                                            FLASH->TS3  = ((*(uint32_t *)(0x1FFF016C))>>8)&0xFF;      \\\r\n                                                            FLASH->TS2P = (*(uint32_t *)(0x1FFF0170))&0xFF;           \\\r\n                                                            FLASH->TPS3 = ((*(uint32_t *)(0x1FFF0170))>>16)&0x7FF;    \\\r\n                                                            FLASH->PERTPE = (*(uint32_t *)(0x1FFF0174))&0x1FFFF;      \\\r\n                                                            FLASH->SMERTPE = (*(uint32_t *)(0x1FFF0178))&0x1FFFF;     \\\r\n                                                            FLASH->PRGTPE = (*(uint32_t *)(0x1FFF017C))&0xFFFF;       \\\r\n                                                            FLASH->PRETPE = ((*(uint32_t *)(0x1FFF017C))>>16)&0xFFF; \\\r\n                                                         } while(0U)"
+    },
+    {
+      "name": "LL_FLASH_TIMMING_SEQUENCE_CONFIG_24M",
+      "sig": "#define LL_FLASH_TIMMING_SEQUENCE_CONFIG_24M()           \\\r\n                                                        do {                                            \\\r\n                                                            FLASH->TS0  = (*(uint32_t *)(0x1FFF011C))&0x1FF;           \\\r\n                                                            FLASH->TS1  = ((*(uint32_t *)(0x1FFF011C))>>18)&0x3FF;    \\\r\n                                                            FLASH->TS3  = ((*(uint32_t *)(0x1FFF011C))>>9)&0x1FF;      \\\r\n                                                            FLASH->TS2P = (*(uint32_t *)(0x1FFF0120))&0x1FF;           \\\r\n                                                            FLASH->TPS3 = ((*(uint32_t *)(0x1FFF0120))>>16)&0xFFF;    \\\r\n                                                            FLASH->PERTPE = (*(uint32_t *)(0x1FFF0124))&0x3FFFF;      \\\r\n                                                            FLASH->SMERTPE = (*(uint32_t *)(0x1FFF0128))&0x3FFFF;     \\\r\n                                                            FLASH->PRGTPE = (*(uint32_t *)(0x1FFF012C))&0xFFFF;       \\\r\n                                                            FLASH->PRETPE = ((*(uint32_t *)(0x1FFF012C))>>16)&0x3FFF; \\\r\n                                                         } while(0U)",
+      "brief": "宏: 按 24MHz 系统时钟从信息区校准参数装载 FLASH 擦写时序寄存器。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "macro",
+      "src": "#define LL_FLASH_TIMMING_SEQUENCE_CONFIG_24M()           \\\r\n                                                        do {                                            \\\r\n                                                            FLASH->TS0  = (*(uint32_t *)(0x1FFF011C))&0x1FF;           \\\r\n                                                            FLASH->TS1  = ((*(uint32_t *)(0x1FFF011C))>>18)&0x3FF;    \\\r\n                                                            FLASH->TS3  = ((*(uint32_t *)(0x1FFF011C))>>9)&0x1FF;      \\\r\n                                                            FLASH->TS2P = (*(uint32_t *)(0x1FFF0120))&0x1FF;           \\\r\n                                                            FLASH->TPS3 = ((*(uint32_t *)(0x1FFF0120))>>16)&0xFFF;    \\\r\n                                                            FLASH->PERTPE = (*(uint32_t *)(0x1FFF0124))&0x3FFFF;      \\\r\n                                                            FLASH->SMERTPE = (*(uint32_t *)(0x1FFF0128))&0x3FFFF;     \\\r\n                                                            FLASH->PRGTPE = (*(uint32_t *)(0x1FFF012C))&0xFFFF;       \\\r\n                                                            FLASH->PRETPE = ((*(uint32_t *)(0x1FFF012C))>>16)&0x3FFF; \\\r\n                                                         } while(0U)"
+    },
+    {
+      "name": "LL_FLASH_TIMMING_SEQUENCE_CONFIG_48M",
+      "sig": "#define LL_FLASH_TIMMING_SEQUENCE_CONFIG_48M()           \\\r\n                                                        do {                                            \\\r\n                                                            FLASH->TS0  = (*(uint32_t *)(0x1FFF0130))&0x1FF;           \\\r\n                                                            FLASH->TS1  = ((*(uint32_t *)(0x1FFF0130))>>18)&0x3FF;    \\\r\n                                                            FLASH->TS3  = ((*(uint32_t *)(0x1FFF0130))>>9)&0x1FF;      \\\r\n                                                            FLASH->TS2P = (*(uint32_t *)(0x1FFF0134))&0x1FF;           \\\r\n                                                            FLASH->TPS3 = ((*(uint32_t *)(0x1FFF0134))>>16)&0xFFF;    \\\r\n                                                            FLASH->PERTPE = (*(uint32_t *)(0x1FFF0138))&0x3FFFF;      \\\r\n                                                            FLASH->SMERTPE = (*(uint32_t *)(0x1FFF013C))&0x3FFFF;     \\\r\n                                                            FLASH->PRGTPE = (*(uint32_t *)(0x1FFF0140))&0xFFFF;       \\\r\n                                                            FLASH->PRETPE = ((*(uint32_t *)(0x1FFF0140))>>16)&0x3FFF; \\\r\n                                                         } while(0U)",
+      "brief": "宏: 按 48MHz 系统时钟从信息区校准参数装载 FLASH 擦写时序寄存器(需芯片支持 48MHz, 条件编译)。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "macro",
+      "src": "#define LL_FLASH_TIMMING_SEQUENCE_CONFIG_48M()           \\\r\n                                                        do {                                            \\\r\n                                                            FLASH->TS0  = (*(uint32_t *)(0x1FFF0130))&0x1FF;           \\\r\n                                                            FLASH->TS1  = ((*(uint32_t *)(0x1FFF0130))>>18)&0x3FF;    \\\r\n                                                            FLASH->TS3  = ((*(uint32_t *)(0x1FFF0130))>>9)&0x1FF;      \\\r\n                                                            FLASH->TS2P = (*(uint32_t *)(0x1FFF0134))&0x1FF;           \\\r\n                                                            FLASH->TPS3 = ((*(uint32_t *)(0x1FFF0134))>>16)&0xFFF;    \\\r\n                                                            FLASH->PERTPE = (*(uint32_t *)(0x1FFF0138))&0x3FFFF;      \\\r\n                                                            FLASH->SMERTPE = (*(uint32_t *)(0x1FFF013C))&0x3FFFF;     \\\r\n                                                            FLASH->PRGTPE = (*(uint32_t *)(0x1FFF0140))&0xFFFF;       \\\r\n                                                            FLASH->PRETPE = ((*(uint32_t *)(0x1FFF0140))>>16)&0x3FFF; \\\r\n                                                         } while(0U)"
+    },
+    {
+      "name": "LL_FLASH_IsActiveFlag_EOP",
+      "sig": "uint32_t LL_FLASH_IsActiveFlag_EOP(FLASH_TypeDef *FLASHx)",
+      "brief": "查询 FLASH 操作结束标志(EOP)是否置位。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_IsActiveFlag_EOP(FLASH_TypeDef *FLASHx)\r\n{\r\n  return (READ_BIT(FLASHx->SR, FLASH_SR_EOP) == (FLASH_SR_EOP));\r\n}"
+    },
+    {
+      "name": "LL_FLASH_IsActiveFlag_WRPERR",
+      "sig": "uint32_t LL_FLASH_IsActiveFlag_WRPERR(FLASH_TypeDef *FLASHx)",
+      "brief": "查询写保护错误标志(WRPERR)是否置位。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_IsActiveFlag_WRPERR(FLASH_TypeDef *FLASHx)\r\n{\r\n  return (READ_BIT(FLASHx->SR, FLASH_SR_WRPERR) == (FLASH_SR_WRPERR));\r\n}"
+    },
+    {
+      "name": "LL_FLASH_IsActiveFlag_OPTVERR",
+      "sig": "uint32_t LL_FLASH_IsActiveFlag_OPTVERR(FLASH_TypeDef *FLASHx)",
+      "brief": "查询选项有效性错误标志(OPTVERR)是否置位。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_IsActiveFlag_OPTVERR(FLASH_TypeDef *FLASHx)\r\n{\r\n  return (READ_BIT(FLASHx->SR, FLASH_SR_OPTVERR) == (FLASH_SR_OPTVERR));\r\n}"
+    },
+    {
+      "name": "LL_FLASH_IsActiveFlag_BUSY",
+      "sig": "uint32_t LL_FLASH_IsActiveFlag_BUSY(FLASH_TypeDef *FLASHx)",
+      "brief": "查询 FLASH 忙标志(BSY)是否置位(有擦写操作正在进行)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_IsActiveFlag_BUSY(FLASH_TypeDef *FLASHx)\r\n{\r\n  return (READ_BIT(FLASHx->SR, FLASH_SR_BSY) == (FLASH_SR_BSY));\r\n}"
+    },
+    {
+      "name": "LL_FLASH_ClearFlag_EOP",
+      "sig": "void LL_FLASH_ClearFlag_EOP(FLASH_TypeDef *FLASHx)",
+      "brief": "清除操作结束标志(EOP)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_ClearFlag_EOP(FLASH_TypeDef *FLASHx)\r\n{\r\n  WRITE_REG(FLASHx->SR, FLASH_SR_EOP);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_ClearFlag_WRPERR",
+      "sig": "void LL_FLASH_ClearFlag_WRPERR(FLASH_TypeDef *FLASHx)",
+      "brief": "清除写保护错误标志(WRPERR)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_ClearFlag_WRPERR(FLASH_TypeDef *FLASHx)\r\n{\r\n  WRITE_REG(FLASHx->SR, FLASH_SR_WRPERR);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_ClearFlag_OPTVERR",
+      "sig": "void LL_FLASH_ClearFlag_OPTVERR(FLASH_TypeDef *FLASHx)",
+      "brief": "清除选项有效性错误标志(OPTVERR)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_ClearFlag_OPTVERR(FLASH_TypeDef *FLASHx)\r\n{\r\n  WRITE_REG(FLASHx->SR, FLASH_SR_OPTVERR);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_EnablePageProgram",
+      "sig": "void LL_FLASH_EnablePageProgram(FLASH_TypeDef *FLASHx)",
+      "brief": "使能页编程(置位 CR 的 PG 位)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_EnablePageProgram(FLASH_TypeDef *FLASHx)\r\n{\r\n  SET_BIT(FLASHx->CR, FLASH_CR_PG);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_EnableMassErase",
+      "sig": "void LL_FLASH_EnableMassErase(FLASH_TypeDef *FLASHx)",
+      "brief": "使能全片擦除(置位 CR 的 MER 位)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_EnableMassErase(FLASH_TypeDef *FLASHx)\r\n{\r\n  SET_BIT(FLASHx->CR, FLASH_CR_MER);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_EnablePageErase",
+      "sig": "void LL_FLASH_EnablePageErase(FLASH_TypeDef *FLASHx)",
+      "brief": "使能页擦除(置位 CR 的 PER 位)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_EnablePageErase(FLASH_TypeDef *FLASHx)\r\n{\r\n  SET_BIT(FLASHx->CR, FLASH_CR_PER);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_EnableSectorErase",
+      "sig": "void LL_FLASH_EnableSectorErase(FLASH_TypeDef *FLASHx)",
+      "brief": "使能扇区擦除(置位 CR 的 SER 位)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_EnableSectorErase(FLASH_TypeDef *FLASHx)\r\n{\r\n  SET_BIT(FLASHx->CR, FLASH_CR_SER);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_DisablePageProgram",
+      "sig": "void LL_FLASH_DisablePageProgram(FLASH_TypeDef *FLASHx)",
+      "brief": "禁止页编程(清除 CR 的 PG 位)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_DisablePageProgram(FLASH_TypeDef *FLASHx)\r\n{\r\n  CLEAR_BIT(FLASHx->CR, FLASH_CR_PG);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_DisableMassErase",
+      "sig": "void LL_FLASH_DisableMassErase(FLASH_TypeDef *FLASHx)",
+      "brief": "禁止全片擦除(清除 CR 的 MER 位)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_DisableMassErase(FLASH_TypeDef *FLASHx)\r\n{\r\n  CLEAR_BIT(FLASHx->CR, FLASH_CR_MER);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_DisablePageErase",
+      "sig": "void LL_FLASH_DisablePageErase(FLASH_TypeDef *FLASHx)",
+      "brief": "禁止页擦除(清除 CR 的 PER 位)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_DisablePageErase(FLASH_TypeDef *FLASHx)\r\n{\r\n  CLEAR_BIT(FLASHx->CR, FLASH_CR_PER);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_DisableSectorErase",
+      "sig": "void LL_FLASH_DisableSectorErase(FLASH_TypeDef *FLASHx)",
+      "brief": "禁止扇区擦除(清除 CR 的 SER 位)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_DisableSectorErase(FLASH_TypeDef *FLASHx)\r\n{\r\n  CLEAR_BIT(FLASHx->CR, FLASH_CR_SER);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_IsEnabledPageProgram",
+      "sig": "uint32_t LL_FLASH_IsEnabledPageProgram(FLASH_TypeDef *FLASHx)",
+      "brief": "查询页编程是否已使能。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_IsEnabledPageProgram(FLASH_TypeDef *FLASHx)\r\n{\r\n  return ((READ_BIT(FLASHx->CR, FLASH_CR_PG) == (FLASH_CR_PG)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_IsEnabledMassErase",
+      "sig": "uint32_t LL_FLASH_IsEnabledMassErase(FLASH_TypeDef *FLASHx)",
+      "brief": "查询全片擦除是否已使能。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_IsEnabledMassErase(FLASH_TypeDef *FLASHx)\r\n{\r\n  return ((READ_BIT(FLASHx->CR, FLASH_CR_MER) == (FLASH_CR_MER)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_IsEnabledPageErase",
+      "sig": "uint32_t LL_FLASH_IsEnabledPageErase(FLASH_TypeDef *FLASHx)",
+      "brief": "查询页擦除是否已使能。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_IsEnabledPageErase(FLASH_TypeDef *FLASHx)\r\n{\r\n  return ((READ_BIT(FLASHx->CR, FLASH_CR_PER) == (FLASH_CR_PER)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_IsEnabledSectorErase",
+      "sig": "uint32_t LL_FLASH_IsEnabledSectorErase(FLASH_TypeDef *FLASHx)",
+      "brief": "查询扇区擦除是否已使能。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_IsEnabledSectorErase(FLASH_TypeDef *FLASHx)\r\n{\r\n  return ((READ_BIT(FLASHx->CR, FLASH_CR_SER) == (FLASH_CR_SER)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_SetEraseAddress",
+      "sig": "void LL_FLASH_SetEraseAddress(FLASH_TypeDef *FLASHx, uint32_t address)",
+      "brief": "触发指定地址的擦除(向该地址写入 0xFFFFFFFF 启动擦除流程)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        },
+        {
+          "name": "address",
+          "type": "uint32_t",
+          "desc": "要擦除的地址"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_SetEraseAddress(FLASH_TypeDef *FLASHx,uint32_t address)\r\n{\r\n  *(__IO uint32_t *)(address) = 0xFFFFFFFF;\r\n}"
+    },
+    {
+      "name": "LL_FLASH_Unlock",
+      "sig": "void LL_FLASH_Unlock(FLASH_TypeDef *FLASHx)",
+      "brief": "解锁 FLASH(依次写入 LL_FLASH_KEY1/KEY2 两个解锁键)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_Unlock(FLASH_TypeDef *FLASHx)\r\n{\r\n  SET_BIT(FLASHx->KEYR, LL_FLASH_KEY1);\r\n  SET_BIT(FLASHx->KEYR, LL_FLASH_KEY2);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_OBUnlock",
+      "sig": "void LL_FLASH_OBUnlock(FLASH_TypeDef *FLASHx)",
+      "brief": "解锁选项字节(依次写入 LL_FLASH_OPTKEY1/OPTKEY2)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_OBUnlock(FLASH_TypeDef *FLASHx)\r\n{\r\n  SET_BIT(FLASHx->OPTKEYR, LL_FLASH_OPTKEY1);\r\n  SET_BIT(FLASHx->OPTKEYR, LL_FLASH_OPTKEY2);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_Lock",
+      "sig": "void LL_FLASH_Lock(FLASH_TypeDef *FLASHx)",
+      "brief": "锁定 FLASH(置位 CR 的 LOCK 位)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_Lock(FLASH_TypeDef *FLASHx)\r\n{\r\n  SET_BIT(FLASHx->CR, FLASH_CR_LOCK);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_OBLock",
+      "sig": "void LL_FLASH_OBLock(FLASH_TypeDef *FLASHx)",
+      "brief": "锁定选项字节(置位 CR 的 OPTLOCK 位)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_OBLock(FLASH_TypeDef *FLASHx)\r\n{\r\n  SET_BIT(FLASHx->CR, FLASH_CR_OPTLOCK);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_IsLocked",
+      "sig": "uint32_t LL_FLASH_IsLocked(FLASH_TypeDef *FLASHx)",
+      "brief": "查询 FLASH 是否处于锁定状态。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已锁定返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_IsLocked(FLASH_TypeDef *FLASHx)\r\n{\r\n  return ((READ_BIT(FLASHx->CR, FLASH_CR_LOCK) == (FLASH_CR_LOCK)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_IsOBLocked",
+      "sig": "uint32_t LL_FLASH_IsOBLocked(FLASH_TypeDef *FLASHx)",
+      "brief": "查询选项字节是否处于锁定状态。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已锁定返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_IsOBLocked(FLASH_TypeDef *FLASHx)\r\n{\r\n  return ((READ_BIT(FLASHx->CR, FLASH_CR_OPTLOCK) == (FLASH_CR_OPTLOCK)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_Launch",
+      "sig": "void LL_FLASH_Launch(FLASH_TypeDef *FLASHx)",
+      "brief": "强制触发选项字节重载(置位 CR 的 OBL_LAUNCH 位)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "选项字节重载将产生系统复位。"
+      ],
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_Launch(FLASH_TypeDef *FLASHx)\r\n{\r\n  SET_BIT(FLASHx->CR, FLASH_CR_OBL_LAUNCH);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_EnableIT_ERR",
+      "sig": "void LL_FLASH_EnableIT_ERR(FLASH_TypeDef *FLASHx)",
+      "brief": "使能 FLASH 错误中断(置位 CR 的 ERRIE)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_EnableIT_ERR(FLASH_TypeDef *FLASHx)\r\n{\r\n  SET_BIT(FLASHx->CR, FLASH_CR_ERRIE);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_EnableIT_EOP",
+      "sig": "void LL_FLASH_EnableIT_EOP(FLASH_TypeDef *FLASHx)",
+      "brief": "使能 FLASH 操作结束中断(置位 CR 的 EOPIE)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_EnableIT_EOP(FLASH_TypeDef *FLASHx)\r\n{\r\n  SET_BIT(FLASHx->CR, FLASH_CR_EOPIE);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_DisableIT_ERR",
+      "sig": "void LL_FLASH_DisableIT_ERR(FLASH_TypeDef *FLASHx)",
+      "brief": "禁止 FLASH 错误中断(清除 CR 的 ERRIE)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_DisableIT_ERR(FLASH_TypeDef *FLASHx)\r\n{\r\n  CLEAR_BIT(FLASHx->CR, FLASH_CR_ERRIE);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_DisableIT_EOP",
+      "sig": "void LL_FLASH_DisableIT_EOP(FLASH_TypeDef *FLASHx)",
+      "brief": "禁止 FLASH 操作结束中断(清除 CR 的 EOPIE)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_DisableIT_EOP(FLASH_TypeDef *FLASHx)\r\n{\r\n  CLEAR_BIT(FLASHx->CR, FLASH_CR_EOPIE);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_IsEnabledIT_ERR",
+      "sig": "uint32_t LL_FLASH_IsEnabledIT_ERR(FLASH_TypeDef *FLASHx)",
+      "brief": "查询 FLASH 错误中断是否已使能。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_IsEnabledIT_ERR(FLASH_TypeDef *FLASHx)\r\n{\r\n  return (READ_BIT(FLASH->CR, FLASH_CR_ERRIE) == (FLASH_CR_ERRIE));\r\n}"
+    },
+    {
+      "name": "LL_FLASH_IsEnabledIT_EOP",
+      "sig": "uint32_t LL_FLASH_IsEnabledIT_EOP(FLASH_TypeDef *FLASHx)",
+      "brief": "查询 FLASH 操作结束中断是否已使能。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_IsEnabledIT_EOP(FLASH_TypeDef *FLASHx)\r\n{\r\n  return (READ_BIT(FLASH->CR, FLASH_CR_EOPIE) == (FLASH_CR_EOPIE));\r\n}"
+    },
+    {
+      "name": "LL_FLASH_EnablePageProgramStart",
+      "sig": "void LL_FLASH_EnablePageProgramStart(FLASH_TypeDef *FLASHx)",
+      "brief": "使能页编程启动(置位 CR 的 PGSTRT 位)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_EnablePageProgramStart(FLASH_TypeDef *FLASHx)\r\n{\r\n  SET_BIT(FLASHx->CR, FLASH_CR_PGSTRT);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_EnableOptionProgramStart",
+      "sig": "void LL_FLASH_EnableOptionProgramStart(FLASH_TypeDef *FLASHx)",
+      "brief": "使能选项字节编程启动(置位 CR 的 OPTSTRT 位)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_EnableOptionProgramStart(FLASH_TypeDef *FLASHx)\r\n{\r\n  SET_BIT(FLASHx->CR, FLASH_CR_OPTSTRT);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_DisablePageProgramStart",
+      "sig": "void LL_FLASH_DisablePageProgramStart(FLASH_TypeDef *FLASHx)",
+      "brief": "禁止页编程启动(清除 CR 的 PGSTRT 位)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_DisablePageProgramStart(FLASH_TypeDef *FLASHx)\r\n{\r\n  CLEAR_BIT(FLASHx->CR, FLASH_CR_PGSTRT);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_DisableOptionProgramStart",
+      "sig": "void LL_FLASH_DisableOptionProgramStart(FLASH_TypeDef *FLASHx)",
+      "brief": "禁止选项字节编程启动(清除 CR 的 OPTSTRT 位)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_DisableOptionProgramStart(FLASH_TypeDef *FLASHx)\r\n{\r\n  CLEAR_BIT(FLASHx->CR, FLASH_CR_OPTSTRT);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_IsEnabledPageProgramStart",
+      "sig": "uint32_t LL_FLASH_IsEnabledPageProgramStart(FLASH_TypeDef *FLASHx)",
+      "brief": "查询页编程启动是否已使能。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_IsEnabledPageProgramStart(FLASH_TypeDef *FLASHx)\r\n{\r\n  return (READ_BIT(FLASHx->CR, FLASH_CR_PGSTRT) == (FLASH_CR_PGSTRT));\r\n}"
+    },
+    {
+      "name": "LL_FLASH_IsEnabledOptionProgramStart",
+      "sig": "uint32_t LL_FLASH_IsEnabledOptionProgramStart(FLASH_TypeDef *FLASHx)",
+      "brief": "查询选项字节编程启动是否已使能。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_IsEnabledOptionProgramStart(FLASH_TypeDef *FLASHx)\r\n{\r\n  return (READ_BIT(FLASHx->CR, FLASH_CR_OPTSTRT) == (FLASH_CR_OPTSTRT));\r\n}"
+    },
+    {
+      "name": "LL_FLASH_TriggerOptionProgramStart",
+      "sig": "void LL_FLASH_TriggerOptionProgramStart(FLASH_TypeDef *FLASHx)",
+      "brief": "触发选项字节编程(向选项字节编程触发地址 0x40022080 写入 0xFF)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_TriggerOptionProgramStart(FLASH_TypeDef *FLASHx)\r\n{\r\n  *((__IO uint32_t *)(0x40022080))=0xff;\r\n}"
+    },
+    {
+      "name": "LL_FLASH_PageProgram",
+      "sig": "void LL_FLASH_PageProgram(FLASH_TypeDef *FLASHx, uint32_t Address, uint32_t *DataAddress)",
+      "brief": "编程一页: 连续写入 32 个字(128 字节), 在第 31 个字时触发编程启动。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        },
+        {
+          "name": "Address",
+          "type": "uint32_t",
+          "desc": "编程起始地址, 必须是页首地址"
+        },
+        {
+          "name": "DataAddress",
+          "type": "uint32_t *",
+          "desc": "指向待编程数据缓冲区的指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "编程期间会临时关闭全局中断(进入临界区)以保证写入时序。"
+      ],
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_PageProgram(FLASH_TypeDef *FLASHx,uint32_t Address, uint32_t * DataAddress)\r\n{\r\n  uint8_t index=0;\r\n  uint32_t dest = Address;\r\n  uint32_t * src = DataAddress;\r\n  uint32_t primask_bit;\r\n  /* Enter critical section */\r\n  primask_bit = __get_PRIMASK();\r\n  __disable_irq();\r\n  /* 32 words*/\r\n  while(index<32U)\r\n  {\r\n    *(uint32_t *)dest = *src;\r\n    src += 1U;\r\n    dest += 4U;\r\n    index++;\r\n    if(index==31)\r\n    {\r\n      LL_FLASH_EnablePageProgramStart(FLASHx);\r\n    }\r\n  }\r\n\r\n  /* Exit critical section: restore previous priority mask */\r\n  __set_PRIMASK(primask_bit);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_IsEnabledBOR",
+      "sig": "uint32_t LL_FLASH_IsEnabledBOR(FLASH_TypeDef *FLASHx)",
+      "brief": "查询 BOR(掉电复位)是否使能。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_IsEnabledBOR(FLASH_TypeDef *FLASHx)\r\n{\r\n  return (READ_BIT(FLASHx->OPTR, FLASH_OPTR_BOR_EN) == (FLASH_OPTR_BOR_EN));\r\n}"
+    },
+    {
+      "name": "LL_FLASH_GetBORLevel",
+      "sig": "uint32_t LL_FLASH_GetBORLevel(FLASH_TypeDef *FLASHx)",
+      "brief": "读取当前 BOR 复位阈值电平档位。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "BOR 电平, 对应 LL_FLASH_BOR_LEV0..LEV7"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_GetBORLevel(FLASH_TypeDef *FLASHx)\r\n{\r\n  return READ_BIT(FLASHx->OPTR, FLASH_OPTR_BOR_LEV);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_GetSwdNrstMode",
+      "sig": "uint32_t LL_FLASH_GetSwdNrstMode(FLASH_TypeDef *FLASHx)",
+      "brief": "读取 SWD/NRST 引脚映射模式。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "映射模式: LL_FLASH_SWD_PB6_NRST_PC0 / LL_FLASH_SWD_PB6_GPIO_PC0 / LL_FLASH_SWD_PC0_GPIO_PB6"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_GetSwdNrstMode(FLASH_TypeDef *FLASHx)\r\n{\r\n  return READ_BIT(FLASHx->OPTR, FLASH_OPTR_NRST_MODE | FLASH_OPTR_SWD_MODE);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_GetIWDGMode",
+      "sig": "uint32_t LL_FLASH_GetIWDGMode(FLASH_TypeDef *FLASHx)",
+      "brief": "读取独立看门狗(IWDG)模式: 硬件模式或软件模式。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_FLASH_IWDG_MODE_HW / LL_FLASH_IWDG_MODE_SW"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_GetIWDGMode(FLASH_TypeDef *FLASHx)\r\n{\r\n  return READ_BIT(FLASHx->OPTR, FLASH_OPTR_IWDG_SW);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_GetIWDGInStop",
+      "sig": "uint32_t LL_FLASH_GetIWDGInStop(FLASH_TypeDef *FLASHx)",
+      "brief": "读取 IWDG 在 STOP 模式下的行为(冻结或继续计数)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_FLASH_IWDG_INSTOP_FREEZE / LL_FLASH_IWDG_INSTOP_ACTIVE"
+      },
+      "notes": [
+        "仅芯片支持 FLASH_OPTR_IWDG_STOP 位时可用(条件编译)。"
+      ],
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_GetIWDGInStop(FLASH_TypeDef *FLASHx)\r\n{\r\n  return READ_BIT(FLASHx->OPTR, FLASH_OPTR_IWDG_STOP);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_GetBootMode",
+      "sig": "uint32_t LL_FLASH_GetBootMode(FLASH_TypeDef *FLASHx)",
+      "brief": "读取当前启动模式。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_FLASH_BOOTMODE_MAINFLASH / LL_FLASH_BOOTMODE_LOADFLASH / LL_FLASH_BOOTMODE_SRAM"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_GetBootMode(FLASH_TypeDef *FLASHx)\r\n{\r\n  return READ_BIT(FLASHx->BTCR, FLASH_BTCR_NBOOT1 | FLASH_BTCR_BOOT0);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_GetLoadFlashSize",
+      "sig": "uint32_t LL_FLASH_GetLoadFlashSize(FLASH_TypeDef *FLASHx)",
+      "brief": "读取 LoadFlash(系统存储器)大小配置。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_FLASH_LOADFLASH_NONE / _1K / _2K / _3K / _4K"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_GetLoadFlashSize(FLASH_TypeDef *FLASHx)\r\n{\r\n  return READ_BIT(FLASHx->BTCR, FLASH_BTCR_BOOT_SIZE);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_SetSDKAddress",
+      "sig": "void LL_FLASH_SetSDKAddress(FLASH_TypeDef *FLASHx, uint32_t SDKStartAddress, uint32_t SDKEndAddress)",
+      "brief": "设置 SDK 保护区域的起始与结束地址(写入 SDKR 寄存器)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        },
+        {
+          "name": "SDKStartAddress",
+          "type": "uint32_t",
+          "desc": "起始地址, 可取 LL_FLASH_SDKSTARTADDRESS_0X08000000..0X08005800(2KB 粒度)"
+        },
+        {
+          "name": "SDKEndAddress",
+          "type": "uint32_t",
+          "desc": "结束地址, 可取 LL_FLASH_SDKENDADDRESS_0X080007FF..0X08005FFF"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_SetSDKAddress(FLASH_TypeDef *FLASHx,uint32_t SDKStartAddress,uint32_t SDKEndAddress)\r\n{\r\n  MODIFY_REG(FLASHx->SDKR, FLASH_SDKR_SDK_STRT | FLASH_SDKR_SDK_END , SDKStartAddress | SDKEndAddress);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_GetSDKStartAddress",
+      "sig": "uint32_t LL_FLASH_GetSDKStartAddress(FLASH_TypeDef *FLASHx)",
+      "brief": "读取 SDK 保护区域的起始地址配置。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "起始地址值, 对应 LL_FLASH_SDKSTARTADDRESS_*"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_GetSDKStartAddress(FLASH_TypeDef *FLASHx)\r\n{\r\n  return READ_BIT(FLASHx->SDKR, FLASH_SDKR_SDK_STRT);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_GetSDKEndAddress",
+      "sig": "uint32_t LL_FLASH_GetSDKEndAddress(FLASH_TypeDef *FLASHx)",
+      "brief": "读取 SDK 保护区域的结束地址配置。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "结束地址值, 对应 LL_FLASH_SDKENDADDRESS_*"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_GetSDKEndAddress(FLASH_TypeDef *FLASHx)\r\n{\r\n  return (READ_BIT(FLASHx->SDKR, FLASH_SDKR_SDK_END));\r\n}"
+    },
+    {
+      "name": "LL_FLASH_SetWRPAddress",
+      "sig": "void LL_FLASH_SetWRPAddress(FLASH_TypeDef *FLASHx, uint32_t Address)",
+      "brief": "设置写保护区域(写入 WRPR 寄存器, 内部取反)。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        },
+        {
+          "name": "Address",
+          "type": "uint32_t",
+          "desc": "写保护区域, 可取 LL_FLASH_WRP_* 任意组合(含 LL_FLASH_WRP_DISABLE 关闭保护)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_SetWRPAddress(FLASH_TypeDef *FLASHx,uint32_t Address)\r\n{\r\n  MODIFY_REG(FLASHx->WRPR, FLASH_WRPR_WRP , ((~(Address)) & FLASH_WRPR_WRP));\r\n}"
+    },
+    {
+      "name": "LL_FLASH_GetWRPAddress",
+      "sig": "uint32_t LL_FLASH_GetWRPAddress(FLASH_TypeDef *FLASHx)",
+      "brief": "读取当前写保护区域配置。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "写保护区域值, 对应 LL_FLASH_WRP_* 组合"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_GetWRPAddress(FLASH_TypeDef *FLASHx)\r\n{\r\n  return ((~(READ_BIT(FLASHx->WRPR, FLASH_WRPR_WRP))) & FLASH_WRPR_WRP);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_SetBTCR",
+      "sig": "void LL_FLASH_SetBTCR(FLASH_TypeDef *FLASHx, uint32_t BootMode, uint32_t LoadFlashSize)",
+      "brief": "设置启动控制寄存器: 配置启动模式与 LoadFlash 大小。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        },
+        {
+          "name": "BootMode",
+          "type": "uint32_t",
+          "desc": "启动模式: LL_FLASH_BOOTMODE_MAINFLASH / _LOADFLASH / _SRAM"
+        },
+        {
+          "name": "LoadFlashSize",
+          "type": "uint32_t",
+          "desc": "LoadFlash 大小: LL_FLASH_LOADFLASH_NONE / _1K / _2K / _3K / _4K"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_SetBTCR(FLASH_TypeDef *FLASHx,uint32_t BootMode,uint32_t LoadFlashSize)\r\n{\r\n  MODIFY_REG(FLASHx->BTCR, (FLASH_BTCR_NBOOT1 | FLASH_BTCR_BOOT0 | FLASH_BTCR_BOOT_SIZE), (BootMode | LoadFlashSize));\r\n}"
+    },
+    {
+      "name": "LL_FLASH_SetOPTR",
+      "sig": "void LL_FLASH_SetOPTR(FLASH_TypeDef *FLASHx, uint32_t BOREnable, uint32_t BORLevel, uint32_t IWDGMode, uint32_t SwdNrstMode, uint32_t IWDGInStop)",
+      "brief": "设置用户选项字节寄存器(OPTR): 配置 BOR 使能/电平、IWDG 模式、SWD/NRST 引脚映射与 IWDG 停止模式行为。",
+      "params": [
+        {
+          "name": "FLASHx",
+          "type": "FLASH_TypeDef *",
+          "desc": "FLASH 实例指针"
+        },
+        {
+          "name": "BOREnable",
+          "type": "uint32_t",
+          "desc": "BOR 使能: LL_FLASH_BOR_DISABLE / LL_FLASH_BOR_ENABLE"
+        },
+        {
+          "name": "BORLevel",
+          "type": "uint32_t",
+          "desc": "BOR 电平: LL_FLASH_BOR_LEV0..LEV7"
+        },
+        {
+          "name": "IWDGMode",
+          "type": "uint32_t",
+          "desc": "IWDG 模式: LL_FLASH_IWDG_MODE_HW / LL_FLASH_IWDG_MODE_SW"
+        },
+        {
+          "name": "SwdNrstMode",
+          "type": "uint32_t",
+          "desc": "SWD/NRST 引脚映射: LL_FLASH_SWD_*"
+        },
+        {
+          "name": "IWDGInStop",
+          "type": "uint32_t",
+          "desc": "IWDG 停止模式行为: LL_FLASH_IWDG_INSTOP_FREEZE / _ACTIVE"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "芯片不支持 IWDG_STOP 位时, 编译出的重载版本无 IWDGInStop 参数。"
+      ],
+      "file": "py32f002b_ll_flash.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_SetOPTR(FLASH_TypeDef *FLASHx,uint32_t BOREnable,uint32_t BORLevel,uint32_t IWDGMode,uint32_t SwdNrstMode, uint32_t IWDGInStop)\r\n{\r\n  MODIFY_REG(FLASHx->OPTR, (FLASH_OPTR_BOR_EN | FLASH_OPTR_BOR_LEV | FLASH_OPTR_IWDG_SW | FLASH_OPTR_SWD_MODE | FLASH_OPTR_NRST_MODE | FLASH_OPTR_IWDG_STOP), (BOREnable | BORLevel | IWDGMode | SwdNrstMode | IWDGInStop));\r\n}"
+    }
+  ],
+  "types": [
+    {
+      "name": "FLASH_EraseInitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t TypeErase; uint32_t PageAddress; uint32_t NbPages; uint32_t SectorAddress; uint32_t NbSectors; } FLASH_EraseInitTypeDef;",
+      "desc": "FLASH 擦除配置结构体, 作为 HAL_FLASH_Erase() / HAL_FLASH_Erase_IT() 的参数。",
+      "members": [
+        {
+          "name": "TypeErase",
+          "type": "uint32_t",
+          "desc": "擦除类型: FLASH_TYPEERASE_MASSERASE 全片 / FLASH_TYPEERASE_PAGEERASE 页 / FLASH_TYPEERASE_SECTORERASE 扇区"
+        },
+        {
+          "name": "PageAddress",
+          "type": "uint32_t",
+          "desc": "页擦除起始地址, 需在 FLASH_BASE 与 FLASH_END 之间"
+        },
+        {
+          "name": "NbPages",
+          "type": "uint32_t",
+          "desc": "要擦除的页数, 1 ~ (FLASH_PAGE_NB - 起始页号)"
+        },
+        {
+          "name": "SectorAddress",
+          "type": "uint32_t",
+          "desc": "扇区擦除起始地址, 需在 FLASH_BASE 与 FLASH_BANK1_END 之间"
+        },
+        {
+          "name": "NbSectors",
+          "type": "uint32_t",
+          "desc": "要擦除的扇区数, 1 ~ (FLASH_SECTOR_NB - 起始扇区号)"
+        }
+      ],
+      "file": "py32f002b_hal_flash.h"
+    },
+    {
+      "name": "FLASH_OBProgramInitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t OptionType; uint32_t WRPSector; uint32_t SDKStartAddr; uint32_t SDKEndAddr; uint32_t USERType; uint32_t USERConfig; } FLASH_OBProgramInitTypeDef;",
+      "desc": "FLASH 选项字节编程配置结构体, 作为 HAL_FLASH_OBProgram() / HAL_FLASH_OBGetConfig() 的参数。",
+      "members": [
+        {
+          "name": "OptionType",
+          "type": "uint32_t",
+          "desc": "要配置的选项字节类型: OPTIONBYTE_WRP / OPTIONBYTE_SDK / OPTIONBYTE_USER 的组合"
+        },
+        {
+          "name": "WRPSector",
+          "type": "uint32_t",
+          "desc": "写保护的扇区, 可取 OB_WRP_SECTOR_x / OB_WRP_Pages* 组合"
+        },
+        {
+          "name": "SDKStartAddr",
+          "type": "uint32_t",
+          "desc": "SDK 保护起始地址(写入 SDKR), 需为 2048 字节粒度整数倍"
+        },
+        {
+          "name": "SDKEndAddr",
+          "type": "uint32_t",
+          "desc": "SDK 保护结束地址(写入 SDKR), 需为 2048 字节粒度整数倍"
+        },
+        {
+          "name": "USERType",
+          "type": "uint32_t",
+          "desc": "要配置的用户选项字节类型: OB_USER_BOR_EN / OB_USER_BOR_LEV / OB_USER_IWDG_SW / OB_USER_SWD_NRST_MODE 等组合"
+        },
+        {
+          "name": "USERConfig",
+          "type": "uint32_t",
+          "desc": "用户选项字节的值: OB_BOR_* / OB_IWDG_* / OB_SWD_* 组合"
+        }
+      ],
+      "file": "py32f002b_hal_flash.h"
+    },
+    {
+      "name": "FLASH_OBBootProgramInitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t BOOTType; uint32_t BOOTSize; } FLASH_OBBootProgramInitTypeDef;",
+      "desc": "FLASH 启动选项字节配置结构体, 作为 HAL_FLASH_OBBOOTProgram() / HAL_FLASH_OBBOOTGetConfig() 的参数。",
+      "members": [
+        {
+          "name": "BOOTType",
+          "type": "uint32_t",
+          "desc": "启动模式: OB_BOOT_MODE_MAINFLASH / OB_BOOT_MODE_SRAM / OB_BOOT_MODE_LOADFLASH"
+        },
+        {
+          "name": "BOOTSize",
+          "type": "uint32_t",
+          "desc": "LoadFlash 启动区大小: OB_BOOT_SIZE_NONE / _1K / _2K / _3K / _4K"
+        }
+      ],
+      "file": "py32f002b_hal_flash.h"
+    },
+    {
+      "name": "FLASH_ProcessTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { HAL_LockTypeDef Lock; uint32_t ErrorCode; uint32_t ProcedureOnGoing; uint32_t Address; uint32_t PageOrSector; uint32_t NbPagesSectorsToErase; } FLASH_ProcessTypeDef;",
+      "desc": "FLASH 过程控制结构体(全局实例 pFlash), 记录锁状态、错误码与中断方式擦写流程的中间状态。",
+      "members": [
+        {
+          "name": "Lock",
+          "type": "HAL_LockTypeDef",
+          "desc": "FLASH 锁定对象"
+        },
+        {
+          "name": "ErrorCode",
+          "type": "uint32_t",
+          "desc": "FLASH 错误码"
+        },
+        {
+          "name": "ProcedureOnGoing",
+          "type": "uint32_t",
+          "desc": "记录中断方式下进行中的擦/写流程类型"
+        },
+        {
+          "name": "Address",
+          "type": "uint32_t",
+          "desc": "中断方式下保存的编程地址"
+        },
+        {
+          "name": "PageOrSector",
+          "type": "uint32_t",
+          "desc": "中断方式下当前正在擦除的页或扇区"
+        },
+        {
+          "name": "NbPagesSectorsToErase",
+          "type": "uint32_t",
+          "desc": "中断方式下剩余待擦除的页/扇区数"
+        }
+      ],
+      "file": "py32f002b_hal_flash.h"
+    },
+    {
+      "name": "FLASH_TypeDef",
+      "kind": "periph",
+      "def": "typedef struct { __IO uint32_t ACR; __IO uint32_t RESERVED1; __IO uint32_t KEYR; __IO uint32_t OPTKEYR; __IO uint32_t SR; __IO uint32_t CR; __IO uint32_t RESERVED2[2]; __IO uint32_t OPTR; __IO uint32_t SDKR; __IO uint32_t BTCR; __IO uint32_t WRPR; __IO uint32_t RESERVED3[24]; __IO uint32_t STCR; __IO uint32_t RESERVED4[27]; __IO uint32_t TS0; __IO uint32_t TS1; __IO uint32_t TS2P; __IO uint32_t TPS3; __IO uint32_t TS3; __IO uint32_t PERTPE; __IO uint32_t SMERTPE; __IO uint32_t PRGTPE; __IO uint32_t PRETPE; } FLASH_TypeDef;",
+      "desc": "FLASH 外设寄存器结构体。实例: FLASH。",
+      "members": [
+        {
+          "name": "ACR",
+          "type": "__IO uint32_t",
+          "desc": "访问控制寄存器(等待周期 LATENCY 等), 偏移 0x00"
+        },
+        {
+          "name": "KEYR",
+          "type": "__IO uint32_t",
+          "desc": "解锁键寄存器(写 FLASH_KEY1/KEY2 解锁), 偏移 0x08"
+        },
+        {
+          "name": "OPTKEYR",
+          "type": "__IO uint32_t",
+          "desc": "选项字节解锁键寄存器, 偏移 0x0C"
+        },
+        {
+          "name": "SR",
+          "type": "__IO uint32_t",
+          "desc": "状态寄存器(BSY 忙/EOP 结束/WRPERR/OPTVERR 错误标志), 偏移 0x10"
+        },
+        {
+          "name": "CR",
+          "type": "__IO uint32_t",
+          "desc": "控制寄存器(PG/PER/SER/MER/LOCK/OPTLOCK/中断使能/启动位等), 偏移 0x14"
+        },
+        {
+          "name": "OPTR",
+          "type": "__IO uint32_t",
+          "desc": "选项寄存器(用户选项字节: BOR/看门狗/引脚映射), 偏移 0x20"
+        },
+        {
+          "name": "SDKR",
+          "type": "__IO uint32_t",
+          "desc": "SDK 地址寄存器(保护区域起止地址), 偏移 0x24"
+        },
+        {
+          "name": "BTCR",
+          "type": "__IO uint32_t",
+          "desc": "启动控制寄存器(启动模式与启动区大小), 偏移 0x28"
+        },
+        {
+          "name": "WRPR",
+          "type": "__IO uint32_t",
+          "desc": "写保护寄存器, 偏移 0x2C"
+        },
+        {
+          "name": "STCR",
+          "type": "__IO uint32_t",
+          "desc": "睡眠时间配置寄存器, 偏移 0x90"
+        },
+        {
+          "name": "TS0",
+          "type": "__IO uint32_t",
+          "desc": "擦写时序配置寄存器 0, 偏移 0x100"
+        },
+        {
+          "name": "TS1",
+          "type": "__IO uint32_t",
+          "desc": "擦写时序配置寄存器 1, 偏移 0x104"
+        },
+        {
+          "name": "TS2P",
+          "type": "__IO uint32_t",
+          "desc": "擦写时序配置寄存器 TS2P, 偏移 0x108"
+        },
+        {
+          "name": "TPS3",
+          "type": "__IO uint32_t",
+          "desc": "擦写时序配置寄存器 TPS3, 偏移 0x10C"
+        },
+        {
+          "name": "TS3",
+          "type": "__IO uint32_t",
+          "desc": "擦写时序配置寄存器 3, 偏移 0x110"
+        },
+        {
+          "name": "PERTPE",
+          "type": "__IO uint32_t",
+          "desc": "页擦除时序参数寄存器, 偏移 0x114"
+        },
+        {
+          "name": "SMERTPE",
+          "type": "__IO uint32_t",
+          "desc": "全片擦除时序参数寄存器, 偏移 0x118"
+        },
+        {
+          "name": "PRGTPE",
+          "type": "__IO uint32_t",
+          "desc": "编程时序参数寄存器, 偏移 0x11C"
+        },
+        {
+          "name": "PRETPE",
+          "type": "__IO uint32_t",
+          "desc": "预擦除时序参数寄存器, 偏移 0x120"
+        }
+      ],
+      "file": "py32f002xx5.h"
+    }
+  ],
+  "consts": [
+    {
+      "name": "FLASH_BASE",
+      "value": "(0x08000000UL)",
+      "desc": "FLASH 基地址",
+      "group": "FLASH 存储参数",
+      "file": "py32f002xx5.h",
+      "src": "#define FLASH_BASE            (0x08000000UL)  /*!< FLASH base address */"
+    },
+    {
+      "name": "FLASH_END",
+      "value": "(0x08005FFFUL)",
+      "desc": "FLASH 结束地址(24KB)",
+      "group": "FLASH 存储参数",
+      "file": "py32f002xx5.h",
+      "src": "#define FLASH_END             (0x08005FFFUL)  /*!< FLASH end address */"
+    },
+    {
+      "name": "FLASH_SIZE",
+      "value": "(FLASH_END - FLASH_BASE + 1)",
+      "desc": "FLASH 总容量(24KB)",
+      "group": "FLASH 存储参数",
+      "file": "py32f002xx5.h",
+      "src": "#define FLASH_SIZE            (FLASH_END - FLASH_BASE + 1)"
+    },
+    {
+      "name": "FLASH_PAGE_SIZE",
+      "value": "0x00000080U",
+      "desc": "FLASH 页大小, 128 字节",
+      "group": "FLASH 存储参数",
+      "file": "py32f002xx5.h",
+      "src": "#define FLASH_PAGE_SIZE       0x00000080U     /*!< FLASH Page Size, 128 Bytes */"
+    },
+    {
+      "name": "FLASH_PAGE_NB",
+      "value": "(FLASH_SIZE / FLASH_PAGE_SIZE)",
+      "desc": "FLASH 总页数",
+      "group": "FLASH 存储参数",
+      "file": "py32f002xx5.h",
+      "src": "#define FLASH_PAGE_NB         (FLASH_SIZE / FLASH_PAGE_SIZE)"
+    },
+    {
+      "name": "FLASH_SECTOR_SIZE",
+      "value": "0x00001000U",
+      "desc": "FLASH 扇区大小, 4096 字节",
+      "group": "FLASH 存储参数",
+      "file": "py32f002xx5.h",
+      "src": "#define FLASH_SECTOR_SIZE     0x00001000U     /*!< FLASH Sector Size, 4096 Bytes */"
+    },
+    {
+      "name": "FLASH_SECTOR_NB",
+      "value": "(FLASH_SIZE / FLASH_SECTOR_SIZE)",
+      "desc": "FLASH 总扇区数",
+      "group": "FLASH 存储参数",
+      "file": "py32f002xx5.h",
+      "src": "#define FLASH_SECTOR_NB       (FLASH_SIZE / FLASH_SECTOR_SIZE)"
+    },
+    {
+      "name": "FLASH_LATENCY_0",
+      "value": "0x00000000UL",
+      "desc": "零等待周期",
+      "group": "FLASH 等待周期",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define FLASH_LATENCY_0                 0x00000000UL                                /*!< FLASH Zero wait state */"
+    },
+    {
+      "name": "FLASH_LATENCY_1",
+      "value": "FLASH_ACR_LATENCY",
+      "desc": "一个等待周期",
+      "group": "FLASH 等待周期",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define FLASH_LATENCY_1                 FLASH_ACR_LATENCY                           /*!< FLASH One wait state */"
+    },
+    {
+      "name": "FLASH_TYPEERASE_MASSERASE",
+      "value": "FLASH_CR_MER",
+      "desc": "全片擦除类型",
+      "group": "FLASH 擦除类型",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define FLASH_TYPEERASE_MASSERASE       FLASH_CR_MER  /*!<Flash mass erase activation*/"
+    },
+    {
+      "name": "FLASH_TYPEERASE_PAGEERASE",
+      "value": "FLASH_CR_PER",
+      "desc": "页擦除类型",
+      "group": "FLASH 擦除类型",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define FLASH_TYPEERASE_PAGEERASE       FLASH_CR_PER  /*!<Flash Pages erase activation*/"
+    },
+    {
+      "name": "FLASH_TYPEERASE_SECTORERASE",
+      "value": "FLASH_CR_SER",
+      "desc": "扇区擦除类型",
+      "group": "FLASH 擦除类型",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define FLASH_TYPEERASE_SECTORERASE     FLASH_CR_SER  /*!<Flash sectore erase activation*/"
+    },
+    {
+      "name": "FLASH_TYPEPROGRAM_PAGE",
+      "value": "FLASH_CR_PG",
+      "desc": "页编程类型(一次编程 128 字节)",
+      "group": "FLASH 编程类型",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define FLASH_TYPEPROGRAM_PAGE          FLASH_CR_PG  /*!<Program 128bytes at a specified address.*/"
+    },
+    {
+      "name": "FLASH_FLAG_BSY",
+      "value": "FLASH_SR_BSY",
+      "desc": "FLASH 忙标志",
+      "group": "FLASH 标志",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define FLASH_FLAG_BSY                  FLASH_SR_BSY      /*!< FLASH Operation Busy flag */"
+    },
+    {
+      "name": "FLASH_FLAG_OPTVERR",
+      "value": "FLASH_SR_OPTVERR",
+      "desc": "选项有效性错误标志",
+      "group": "FLASH 标志",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define FLASH_FLAG_OPTVERR              FLASH_SR_OPTVERR  /*!< FLASH Option validity error flag */"
+    },
+    {
+      "name": "FLASH_FLAG_WRPERR",
+      "value": "FLASH_SR_WRPERR",
+      "desc": "写保护错误标志",
+      "group": "FLASH 标志",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define FLASH_FLAG_WRPERR               FLASH_SR_WRPERR   /*!< FLASH Write protection error flag */"
+    },
+    {
+      "name": "FLASH_FLAG_EOP",
+      "value": "FLASH_SR_EOP",
+      "desc": "操作结束标志",
+      "group": "FLASH 标志",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define FLASH_FLAG_EOP                  FLASH_SR_EOP      /*!< FLASH End of operation flag */"
+    },
+    {
+      "name": "FLASH_FLAG_ALL_ERRORS",
+      "value": "(FLASH_FLAG_WRPERR | FLASH_FLAG_OPTVERR)",
+      "desc": "全部错误标志组合",
+      "group": "FLASH 标志",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define FLASH_FLAG_ALL_ERRORS           (FLASH_FLAG_WRPERR | FLASH_FLAG_OPTVERR)"
+    },
+    {
+      "name": "FLASH_IT_EOP",
+      "value": "FLASH_CR_EOPIE",
+      "desc": "操作结束中断源",
+      "group": "FLASH 中断",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define FLASH_IT_EOP                    FLASH_CR_EOPIE              /*!< End of FLASH Operation Interrupt source */"
+    },
+    {
+      "name": "FLASH_IT_OPERR",
+      "value": "FLASH_CR_ERRIE",
+      "desc": "错误中断源",
+      "group": "FLASH 中断",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define FLASH_IT_OPERR                  FLASH_CR_ERRIE              /*!< Error Interrupt source */"
+    },
+    {
+      "name": "HAL_FLASH_ERROR_NONE",
+      "value": "0x00000000U",
+      "desc": "无错误",
+      "group": "FLASH 错误码",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define HAL_FLASH_ERROR_NONE            0x00000000U"
+    },
+    {
+      "name": "HAL_FLASH_ERROR_WRP",
+      "value": "FLASH_FLAG_WRPERR",
+      "desc": "写保护错误",
+      "group": "FLASH 错误码",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define HAL_FLASH_ERROR_WRP             FLASH_FLAG_WRPERR"
+    },
+    {
+      "name": "HAL_FLASH_ERROR_OPTV",
+      "value": "FLASH_FLAG_OPTVERR",
+      "desc": "选项有效性错误",
+      "group": "FLASH 错误码",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define HAL_FLASH_ERROR_OPTV            FLASH_FLAG_OPTVERR"
+    },
+    {
+      "name": "FLASH_PROGRAM_ERASE_CLOCK_24MHZ",
+      "value": "0x00000004U",
+      "desc": "编程/擦除时钟 24MHz",
+      "group": "FLASH 编程擦除时钟",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define FLASH_PROGRAM_ERASE_CLOCK_24MHZ       0x00000004U           /*!< 24MHz */"
+    },
+    {
+      "name": "FLASH_PROGRAM_ERASE_CLOCK_48MHZ",
+      "value": "0x00000005U",
+      "desc": "编程/擦除时钟 48MHz(需支持 HSI 48M, 条件编译)",
+      "group": "FLASH 编程擦除时钟",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define FLASH_PROGRAM_ERASE_CLOCK_48MHZ       0x00000005U           /*!< 48MHz */"
+    },
+    {
+      "name": "OB_WRP_SECTOR_0",
+      "value": "((uint32_t)0x00000001U)",
+      "desc": "扇区 0 写保护",
+      "group": "FLASH 写保护",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_WRP_SECTOR_0            ((uint32_t)0x00000001U) /* Write protection of Sector0 */"
+    },
+    {
+      "name": "OB_WRP_SECTOR_1",
+      "value": "((uint32_t)0x00000002U)",
+      "desc": "扇区 1 写保护",
+      "group": "FLASH 写保护",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_WRP_SECTOR_1            ((uint32_t)0x00000002U) /* Write protection of Sector1 */"
+    },
+    {
+      "name": "OB_WRP_SECTOR_2",
+      "value": "((uint32_t)0x00000004U)",
+      "desc": "扇区 2 写保护",
+      "group": "FLASH 写保护",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_WRP_SECTOR_2            ((uint32_t)0x00000004U) /* Write protection of Sector2 */"
+    },
+    {
+      "name": "OB_WRP_SECTOR_3",
+      "value": "((uint32_t)0x00000008U)",
+      "desc": "扇区 3 写保护",
+      "group": "FLASH 写保护",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_WRP_SECTOR_3            ((uint32_t)0x00000008U) /* Write protection of Sector3 */"
+    },
+    {
+      "name": "OB_WRP_SECTOR_4",
+      "value": "((uint32_t)0x00000010U)",
+      "desc": "扇区 4 写保护",
+      "group": "FLASH 写保护",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_WRP_SECTOR_4            ((uint32_t)0x00000010U) /* Write protection of Sector4 */"
+    },
+    {
+      "name": "OB_WRP_SECTOR_5",
+      "value": "((uint32_t)0x00000020U)",
+      "desc": "扇区 5 写保护",
+      "group": "FLASH 写保护",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_WRP_SECTOR_5            ((uint32_t)0x00000020U) /* Write protection of Sector5 */"
+    },
+    {
+      "name": "OB_WRP_Pages0to31",
+      "value": "((uint32_t)0x00000001U)",
+      "desc": "写保护第 0~31 页",
+      "group": "FLASH 写保护",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_WRP_Pages0to31          ((uint32_t)0x00000001U) /* Write protection from page0   to page31 */"
+    },
+    {
+      "name": "OB_WRP_Pages32to63",
+      "value": "((uint32_t)0x00000002U)",
+      "desc": "写保护第 32~63 页",
+      "group": "FLASH 写保护",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_WRP_Pages32to63         ((uint32_t)0x00000002U) /* Write protection from page32  to page63 */"
+    },
+    {
+      "name": "OB_WRP_Pages64to95",
+      "value": "((uint32_t)0x00000004U)",
+      "desc": "写保护第 64~95 页",
+      "group": "FLASH 写保护",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_WRP_Pages64to95         ((uint32_t)0x00000004U) /* Write protection from page64  to page95 */"
+    },
+    {
+      "name": "OB_WRP_Pages96to127",
+      "value": "((uint32_t)0x00000008U)",
+      "desc": "写保护第 96~127 页",
+      "group": "FLASH 写保护",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_WRP_Pages96to127        ((uint32_t)0x00000008U) /* Write protection from page96  to page127 */"
+    },
+    {
+      "name": "OB_WRP_Pages128to159",
+      "value": "((uint32_t)0x00000010U)",
+      "desc": "写保护第 128~159 页",
+      "group": "FLASH 写保护",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_WRP_Pages128to159       ((uint32_t)0x00000010U) /* Write protection from page128 to page159 */"
+    },
+    {
+      "name": "OB_WRP_Pages160to191",
+      "value": "((uint32_t)0x00000020U)",
+      "desc": "写保护第 160~191 页",
+      "group": "FLASH 写保护",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_WRP_Pages160to191       ((uint32_t)0x00000020U) /* Write protection from page160 to page191 */"
+    },
+    {
+      "name": "OB_WRP_AllPages",
+      "value": "((uint32_t)0x0000003FU)",
+      "desc": "全部扇区写保护",
+      "group": "FLASH 写保护",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_WRP_AllPages            ((uint32_t)0x0000003FU) /*!< Write protection of all Sectors */"
+    },
+    {
+      "name": "OB_USER_BOR_EN",
+      "value": "FLASH_OPTR_BOR_EN",
+      "desc": "用户选项: BOR 使能位",
+      "group": "用户选项类型",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_USER_BOR_EN          FLASH_OPTR_BOR_EN"
+    },
+    {
+      "name": "OB_USER_BOR_LEV",
+      "value": "FLASH_OPTR_BOR_LEV",
+      "desc": "用户选项: BOR 电平位",
+      "group": "用户选项类型",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_USER_BOR_LEV         FLASH_OPTR_BOR_LEV"
+    },
+    {
+      "name": "OB_USER_IWDG_SW",
+      "value": "FLASH_OPTR_IWDG_SW",
+      "desc": "用户选项: IWDG 软/硬件模式位",
+      "group": "用户选项类型",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_USER_IWDG_SW         FLASH_OPTR_IWDG_SW"
+    },
+    {
+      "name": "OB_USER_SWD_NRST_MODE",
+      "value": "(FLASH_OPTR_SWD_MODE | FLASH_OPTR_NRST_MODE)",
+      "desc": "用户选项: SWD/NRST 引脚映射位",
+      "group": "用户选项类型",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_USER_SWD_NRST_MODE   (FLASH_OPTR_SWD_MODE | FLASH_OPTR_NRST_MODE)"
+    },
+    {
+      "name": "OB_USER_IWDG_STOP",
+      "value": "FLASH_OPTR_IWDG_STOP",
+      "desc": "用户选项: IWDG 停止模式行为位(条件编译)",
+      "group": "用户选项类型",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_USER_IWDG_STOP       FLASH_OPTR_IWDG_STOP"
+    },
+    {
+      "name": "OB_USER_ALL",
+      "value": "(OB_USER_BOR_EN | OB_USER_BOR_LEV | OB_USER_IWDG_SW | OB_USER_SWD_NRST_MODE[ | OB_USER_IWDG_STOP])",
+      "desc": "全部用户选项类型组合",
+      "group": "用户选项类型",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_USER_ALL             (OB_USER_BOR_EN  | OB_USER_BOR_LEV   | OB_USER_IWDG_SW | \\\r\n                                 OB_USER_SWD_NRST_MODE | OB_USER_IWDG_STOP)"
+    },
+    {
+      "name": "OB_BOR_DISABLE",
+      "value": "0x00000000U",
+      "desc": "BOR 复位使用默认阈值",
+      "group": "BOR 使能",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_BOR_DISABLE                  0x00000000U        /*!< BOR Reset set to default */"
+    },
+    {
+      "name": "OB_BOR_ENABLE",
+      "value": "FLASH_OPTR_BOR_EN",
+      "desc": "使用选项字节定义 BOR 阈值",
+      "group": "BOR 使能",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_BOR_ENABLE                   FLASH_OPTR_BOR_EN  /*!< Use option byte to define BOR thresholds */"
+    },
+    {
+      "name": "OB_BOR_LEVEL_1p7_1p8",
+      "value": "((uint32_t)0x0000U)",
+      "desc": "BOR 复位阈值 1.7V-1.8V",
+      "group": "BOR 电平",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_BOR_LEVEL_1p7_1p8    ((uint32_t)0x0000U)                                                              /*!< BOR Reset threshold levels for 1.7V - 1.8V VDD power supply    */"
+    },
+    {
+      "name": "OB_BOR_LEVEL_1p9_2p0",
+      "value": "((uint32_t)FLASH_OPTR_BOR_LEV_0)",
+      "desc": "BOR 复位阈值 1.9V-2.0V",
+      "group": "BOR 电平",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_BOR_LEVEL_1p9_2p0    ((uint32_t)FLASH_OPTR_BOR_LEV_0)                                                 /*!< BOR Reset threshold levels for 1.9V - 2.0V VDD power supply    */"
+    },
+    {
+      "name": "OB_BOR_LEVEL_2p1_2p2",
+      "value": "((uint32_t)FLASH_OPTR_BOR_LEV_1)",
+      "desc": "BOR 复位阈值 2.1V-2.2V",
+      "group": "BOR 电平",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_BOR_LEVEL_2p1_2p2    ((uint32_t)FLASH_OPTR_BOR_LEV_1)                                                 /*!< BOR Reset threshold levels for 2.1V - 2.2V VDD power supply    */"
+    },
+    {
+      "name": "OB_BOR_LEVEL_2p3_2p4",
+      "value": "((uint32_t)(FLASH_OPTR_BOR_LEV_0 | FLASH_OPTR_BOR_LEV_1))",
+      "desc": "BOR 复位阈值 2.3V-2.4V",
+      "group": "BOR 电平",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_BOR_LEVEL_2p3_2p4    ((uint32_t)(FLASH_OPTR_BOR_LEV_0 | FLASH_OPTR_BOR_LEV_1))                        /*!< BOR Reset threshold levels for 2.3V - 2.4V VDD power supply    */"
+    },
+    {
+      "name": "OB_BOR_LEVEL_2p5_2p6",
+      "value": "((uint32_t)FLASH_OPTR_BOR_LEV_2)",
+      "desc": "BOR 复位阈值 2.5V-2.6V",
+      "group": "BOR 电平",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_BOR_LEVEL_2p5_2p6    ((uint32_t)FLASH_OPTR_BOR_LEV_2)                                                 /*!< BOR Reset threshold levels for 2.5V - 2.6V VDD power supply    */"
+    },
+    {
+      "name": "OB_BOR_LEVEL_2p7_2p8",
+      "value": "((uint32_t)(FLASH_OPTR_BOR_LEV_0 | FLASH_OPTR_BOR_LEV_2))",
+      "desc": "BOR 复位阈值 2.7V-2.8V",
+      "group": "BOR 电平",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_BOR_LEVEL_2p7_2p8    ((uint32_t)(FLASH_OPTR_BOR_LEV_0 | FLASH_OPTR_BOR_LEV_2))                        /*!< BOR Reset threshold levels for 2.7V - 2.8V VDD power supply    */"
+    },
+    {
+      "name": "OB_BOR_LEVEL_2p9_3p0",
+      "value": "((uint32_t)(FLASH_OPTR_BOR_LEV_1 | FLASH_OPTR_BOR_LEV_2))",
+      "desc": "BOR 复位阈值 2.9V-3.0V",
+      "group": "BOR 电平",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_BOR_LEVEL_2p9_3p0    ((uint32_t)(FLASH_OPTR_BOR_LEV_1 | FLASH_OPTR_BOR_LEV_2))                        /*!< BOR Reset threshold levels for 2.9V - 3.0V VDD power supply    */"
+    },
+    {
+      "name": "OB_BOR_LEVEL_3p1_3p2",
+      "value": "((uint32_t)(FLASH_OPTR_BOR_LEV_0 | FLASH_OPTR_BOR_LEV_1 | FLASH_OPTR_BOR_LEV_2))",
+      "desc": "BOR 复位阈值 3.1V-3.2V",
+      "group": "BOR 电平",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_BOR_LEVEL_3p1_3p2    ((uint32_t)(FLASH_OPTR_BOR_LEV_0 | FLASH_OPTR_BOR_LEV_1 | FLASH_OPTR_BOR_LEV_2)) /*!< BOR Reset threshold levels for 3.1V - 3.2V VDD power supply    */"
+    },
+    {
+      "name": "OB_WRPSTATE_DISABLE",
+      "value": "((uint32_t)0x00U)",
+      "desc": "禁止所选扇区的写保护",
+      "group": "写保护状态",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_WRPSTATE_DISABLE        ((uint32_t)0x00U)  /*!<Disable the write protection of the desired sectors*/"
+    },
+    {
+      "name": "OB_WRPSTATE_ENABLE",
+      "value": "((uint32_t)0x01U)",
+      "desc": "使能所选扇区的写保护",
+      "group": "写保护状态",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_WRPSTATE_ENABLE         ((uint32_t)0x01U)  /*!<Enable the write protection of the desired sectors*/"
+    },
+    {
+      "name": "OB_IWDG_SW",
+      "value": "FLASH_OPTR_IWDG_SW",
+      "desc": "选择软件 IWDG",
+      "group": "IWDG 模式",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_IWDG_SW                     FLASH_OPTR_IWDG_SW  /*!< Software IWDG selected */"
+    },
+    {
+      "name": "OB_IWDG_HW",
+      "value": "0x00000000U",
+      "desc": "选择硬件 IWDG",
+      "group": "IWDG 模式",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_IWDG_HW                     0x00000000U         /*!< Hardware IWDG selected */"
+    },
+    {
+      "name": "OB_IWDG_STOP_FREEZE",
+      "value": "0x00000000U",
+      "desc": "STOP 模式下冻结 IWDG 计数器",
+      "group": "IWDG 停止模式",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_IWDG_STOP_FREEZE            0x00000000U  /*!< Freeze IWDG counter in STOP mode */"
+    },
+    {
+      "name": "OB_IWDG_STOP_ACTIVE",
+      "value": "((uint32_t)FLASH_OPTR_IWDG_STOP)",
+      "desc": "STOP 模式下 IWDG 继续计数(条件编译)",
+      "group": "IWDG 停止模式",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_IWDG_STOP_ACTIVE            ((uint32_t)FLASH_OPTR_IWDG_STOP) /*!< IWDG counter active in STOP mode */"
+    },
+    {
+      "name": "OB_SWD_PB6_NRST_PC0",
+      "value": "0x00000000U",
+      "desc": "PB6:SWD, PC0:NRST",
+      "group": "SWD/NRST 映射",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_SWD_PB6_NRST_PC0            0x00000000U                                         /*!< PB6:SWD,PC0:NRST */"
+    },
+    {
+      "name": "OB_SWD_PB6_GPIO_PC0",
+      "value": "FLASH_OPTR_NRST_MODE",
+      "desc": "PB6:SWD, PC0:GPIO",
+      "group": "SWD/NRST 映射",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_SWD_PB6_GPIO_PC0            FLASH_OPTR_NRST_MODE                                /*!< PB6:SWD,PC0:GPIO */"
+    },
+    {
+      "name": "OB_SWD_PC0_GPIO_PB6",
+      "value": "(FLASH_OPTR_NRST_MODE | FLASH_OPTR_SWD_MODE)",
+      "desc": "PC0:SWD, PB6:GPIO",
+      "group": "SWD/NRST 映射",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_SWD_PC0_GPIO_PB6           (FLASH_OPTR_NRST_MODE | FLASH_OPTR_SWD_MODE )        /*!< PC0:SWD,PB6:GPIO */"
+    },
+    {
+      "name": "OPTIONBYTE_WRP",
+      "value": "((uint32_t)0x01U)",
+      "desc": "选项字节类型: 写保护配置",
+      "group": "选项字节类型",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OPTIONBYTE_WRP            ((uint32_t)0x01U)  /*!<WRP option byte configuration*/"
+    },
+    {
+      "name": "OPTIONBYTE_SDK",
+      "value": "((uint32_t)0x02U)",
+      "desc": "选项字节类型: SDK 保护配置",
+      "group": "选项字节类型",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OPTIONBYTE_SDK            ((uint32_t)0x02U)  /*!<SDK option byte configuration*/"
+    },
+    {
+      "name": "OPTIONBYTE_USER",
+      "value": "((uint32_t)0x08U)",
+      "desc": "选项字节类型: 用户选项配置",
+      "group": "选项字节类型",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OPTIONBYTE_USER           ((uint32_t)0x08U)  /*!<USER option byte configuration*/"
+    },
+    {
+      "name": "OPTIONBYTE_ALL",
+      "value": "(OPTIONBYTE_WRP | OPTIONBYTE_SDK | OPTIONBYTE_USER)",
+      "desc": "全部选项字节类型组合",
+      "group": "选项字节类型",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OPTIONBYTE_ALL            (OPTIONBYTE_WRP  | \\\r\n                                   OPTIONBYTE_SDK  | \\\r\n                                   OPTIONBYTE_USER)"
+    },
+    {
+      "name": "OB_BOOT_MODE_MAINFLASH",
+      "value": "((uint32_t)0x00000000U)",
+      "desc": "从主 Flash 启动",
+      "group": "启动模式",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_BOOT_MODE_MAINFLASH    ((uint32_t)0x00000000U)                                       /*!< BOOT from MainFlash */"
+    },
+    {
+      "name": "OB_BOOT_MODE_SRAM",
+      "value": "((uint32_t)FLASH_BTCR_BOOT0)",
+      "desc": "从 SRAM 启动",
+      "group": "启动模式",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_BOOT_MODE_SRAM         ((uint32_t)FLASH_BTCR_BOOT0)                                  /*!< BOOT from SRAM */"
+    },
+    {
+      "name": "OB_BOOT_MODE_LOADFLASH",
+      "value": "((uint32_t)(FLASH_BTCR_BOOT0 | FLASH_BTCR_NBOOT1))",
+      "desc": "从 LoadFlash(系统存储器)启动",
+      "group": "启动模式",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_BOOT_MODE_LOADFLASH    ((uint32_t)(FLASH_BTCR_BOOT0 | FLASH_BTCR_NBOOT1))            /*!< BOOT From LOADFLASH */"
+    },
+    {
+      "name": "OB_BOOT_SIZE_NONE",
+      "value": "((uint32_t)0x00000000U)",
+      "desc": "LoadFlash 启动区大小: 0K",
+      "group": "启动区大小",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_BOOT_SIZE_NONE    ((uint32_t)0x00000000U)                                       /*!< LOAD FLASH SIZE :0K */"
+    },
+    {
+      "name": "OB_BOOT_SIZE_1K",
+      "value": "((uint32_t)FLASH_BTCR_BOOT_SIZE_0)",
+      "desc": "LoadFlash 启动区大小: 1K",
+      "group": "启动区大小",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_BOOT_SIZE_1K      ((uint32_t)FLASH_BTCR_BOOT_SIZE_0)                            /*!< LOAD FLASH SIZE :1K*/"
+    },
+    {
+      "name": "OB_BOOT_SIZE_2K",
+      "value": "((uint32_t)FLASH_BTCR_BOOT_SIZE_1)",
+      "desc": "LoadFlash 启动区大小: 2K",
+      "group": "启动区大小",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_BOOT_SIZE_2K      ((uint32_t)FLASH_BTCR_BOOT_SIZE_1)                            /*!< LOAD FLASH SIZE :2K*/"
+    },
+    {
+      "name": "OB_BOOT_SIZE_3K",
+      "value": "((uint32_t)FLASH_BTCR_BOOT_SIZE_0 | FLASH_BTCR_BOOT_SIZE_1)",
+      "desc": "LoadFlash 启动区大小: 3K",
+      "group": "启动区大小",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_BOOT_SIZE_3K      ((uint32_t)FLASH_BTCR_BOOT_SIZE_0 | FLASH_BTCR_BOOT_SIZE_1)   /*!< LOAD FLASH SIZE :3K*/"
+    },
+    {
+      "name": "OB_BOOT_SIZE_4K",
+      "value": "((uint32_t)FLASH_BTCR_BOOT_SIZE_2)",
+      "desc": "LoadFlash 启动区大小: 4K",
+      "group": "启动区大小",
+      "file": "py32f002b_hal_flash.h",
+      "src": "#define OB_BOOT_SIZE_4K      ((uint32_t)FLASH_BTCR_BOOT_SIZE_2)                            /*!< LOAD FLASH SIZE :4K*/"
+    },
+    {
+      "name": "LL_FLASH_BOR_DISABLE",
+      "value": "(0x00000000U)",
+      "desc": "BOR 复位禁止",
+      "group": "LL BOR 使能",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_BOR_DISABLE   (0x00000000U)                                                        /*!< BOR Reset Disable    */"
+    },
+    {
+      "name": "LL_FLASH_BOR_ENABLE",
+      "value": "(FLASH_OPTR_BOR_EN)",
+      "desc": "BOR 复位使能",
+      "group": "LL BOR 使能",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_BOR_ENABLE    (FLASH_OPTR_BOR_EN)                                                  /*!< BOR Reset Enable     */"
+    },
+    {
+      "name": "LL_FLASH_BOR_LEV0",
+      "value": "(0x00000000)",
+      "desc": "BOR 阈值 1.7V-1.8V",
+      "group": "LL BOR 电平",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_BOR_LEV0      (0x00000000)                                                         /*!< BOR Reset threshold levels for 1.7V - 1.8V VDD power supply    */"
+    },
+    {
+      "name": "LL_FLASH_BOR_LEV1",
+      "value": "(FLASH_OPTR_BOR_LEV_0)",
+      "desc": "BOR 阈值 1.9V-2.0V",
+      "group": "LL BOR 电平",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_BOR_LEV1      (                                              FLASH_OPTR_BOR_LEV_0) /*!< BOR Reset threshold levels for 1.9V - 2.0V VDD power supply    */"
+    },
+    {
+      "name": "LL_FLASH_BOR_LEV2",
+      "value": "(FLASH_OPTR_BOR_LEV_1)",
+      "desc": "BOR 阈值 2.1V-2.2V",
+      "group": "LL BOR 电平",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_BOR_LEV2      (                       FLASH_OPTR_BOR_LEV_1                       ) /*!< BOR Reset threshold levels for 2.1V - 2.2V VDD power supply    */"
+    },
+    {
+      "name": "LL_FLASH_BOR_LEV3",
+      "value": "(FLASH_OPTR_BOR_LEV_1 | FLASH_OPTR_BOR_LEV_0)",
+      "desc": "BOR 阈值 2.3V-2.4V",
+      "group": "LL BOR 电平",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_BOR_LEV3      (                       FLASH_OPTR_BOR_LEV_1 | FLASH_OPTR_BOR_LEV_0) /*!< BOR Reset threshold levels for 2.3V - 2.4V VDD power supply    */"
+    },
+    {
+      "name": "LL_FLASH_BOR_LEV4",
+      "value": "(FLASH_OPTR_BOR_LEV_2)",
+      "desc": "BOR 阈值 2.5V-2.6V",
+      "group": "LL BOR 电平",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_BOR_LEV4      (FLASH_OPTR_BOR_LEV_2                                              ) /*!< BOR Reset threshold levels for 2.5V - 2.6V VDD power supply    */"
+    },
+    {
+      "name": "LL_FLASH_BOR_LEV5",
+      "value": "(FLASH_OPTR_BOR_LEV_2 | FLASH_OPTR_BOR_LEV_0)",
+      "desc": "BOR 阈值 2.7V-2.8V",
+      "group": "LL BOR 电平",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_BOR_LEV5      (FLASH_OPTR_BOR_LEV_2                        | FLASH_OPTR_BOR_LEV_0) /*!< BOR Reset threshold levels for 2.7V - 2.8V VDD power supply    */"
+    },
+    {
+      "name": "LL_FLASH_BOR_LEV6",
+      "value": "(FLASH_OPTR_BOR_LEV_2 | FLASH_OPTR_BOR_LEV_1)",
+      "desc": "BOR 阈值 2.9V-3.0V",
+      "group": "LL BOR 电平",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_BOR_LEV6      (FLASH_OPTR_BOR_LEV_2 | FLASH_OPTR_BOR_LEV_1                       ) /*!< BOR Reset threshold levels for 2.9V - 3.0V VDD power supply    */"
+    },
+    {
+      "name": "LL_FLASH_BOR_LEV7",
+      "value": "(FLASH_OPTR_BOR_LEV_2 | FLASH_OPTR_BOR_LEV_1 | FLASH_OPTR_BOR_LEV_0)",
+      "desc": "BOR 阈值 3.1V-3.2V",
+      "group": "LL BOR 电平",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_BOR_LEV7      (FLASH_OPTR_BOR_LEV_2 | FLASH_OPTR_BOR_LEV_1 | FLASH_OPTR_BOR_LEV_0) /*!< BOR Reset threshold levels for 3.1V - 3.2V VDD power supply   */"
+    },
+    {
+      "name": "LL_FLASH_SWD_PB6_NRST_PC0",
+      "value": "(0x00000000U)",
+      "desc": "PB6:SWD, PC0:NRST",
+      "group": "LL SWD/NRST 映射",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SWD_PB6_NRST_PC0      (0x00000000U)                                         /*!< PB6:SWD,PC0:NRST */"
+    },
+    {
+      "name": "LL_FLASH_SWD_PB6_GPIO_PC0",
+      "value": "(FLASH_OPTR_NRST_MODE)",
+      "desc": "PB6:SWD, PC0:GPIO",
+      "group": "LL SWD/NRST 映射",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SWD_PB6_GPIO_PC0      (FLASH_OPTR_NRST_MODE)                                /*!< PB6:SWD,PC0:GPIO */"
+    },
+    {
+      "name": "LL_FLASH_SWD_PC0_GPIO_PB6",
+      "value": "(FLASH_OPTR_NRST_MODE | FLASH_OPTR_SWD_MODE)",
+      "desc": "PC0:SWD, PB6:GPIO",
+      "group": "LL SWD/NRST 映射",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SWD_PC0_GPIO_PB6      (FLASH_OPTR_NRST_MODE | FLASH_OPTR_SWD_MODE )         /*!< PC0:SWD,PB6:GPIO */"
+    },
+    {
+      "name": "LL_FLASH_IWDG_MODE_HW",
+      "value": "(0x00000000U)",
+      "desc": "硬件 IWDG",
+      "group": "LL IWDG 模式",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_IWDG_MODE_HW          (0x00000000U)                                         /*!< Hardware IWDG selected */"
+    },
+    {
+      "name": "LL_FLASH_IWDG_MODE_SW",
+      "value": "(FLASH_OPTR_IWDG_SW)",
+      "desc": "软件 IWDG",
+      "group": "LL IWDG 模式",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_IWDG_MODE_SW          (FLASH_OPTR_IWDG_SW)                                  /*!< Software IWDG selected */"
+    },
+    {
+      "name": "LL_FLASH_IWDG_INSTOP_FREEZE",
+      "value": "(0x00000000U)",
+      "desc": "STOP 模式冻结 IWDG 计数器",
+      "group": "LL IWDG 停止模式",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_IWDG_INSTOP_FREEZE    (0x00000000U)                                         /*!< Freeze IWDG counter in STOP mode */"
+    },
+    {
+      "name": "LL_FLASH_IWDG_INSTOP_ACTIVE",
+      "value": "(FLASH_OPTR_IWDG_STOP)",
+      "desc": "STOP 模式 IWDG 继续计数(条件编译)",
+      "group": "LL IWDG 停止模式",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_IWDG_INSTOP_ACTIVE    (FLASH_OPTR_IWDG_STOP)                                /*!< IWDG counter active in STOP mode */"
+    },
+    {
+      "name": "LL_FLASH_BOOTMODE_MAINFLASH",
+      "value": "(0x00000000U)",
+      "desc": "从主 Flash 启动",
+      "group": "LL 启动模式",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_BOOTMODE_MAINFLASH    (0x00000000U)                                         /*!< Main Flash start   */"
+    },
+    {
+      "name": "LL_FLASH_BOOTMODE_LOADFLASH",
+      "value": "(FLASH_BTCR_NBOOT1 | FLASH_BTCR_BOOT0)",
+      "desc": "从 LoadFlash 启动",
+      "group": "LL 启动模式",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_BOOTMODE_LOADFLASH    (FLASH_BTCR_NBOOT1 | FLASH_BTCR_BOOT0)                /*!< Load Flash start   */"
+    },
+    {
+      "name": "LL_FLASH_BOOTMODE_SRAM",
+      "value": "(FLASH_BTCR_BOOT0)",
+      "desc": "从 SRAM 启动",
+      "group": "LL 启动模式",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_BOOTMODE_SRAM         (FLASH_BTCR_BOOT0)                                    /*!< Sram start   */"
+    },
+    {
+      "name": "LL_FLASH_LOADFLASH_NONE",
+      "value": "(0x00000000U)",
+      "desc": "LoadFlash 大小: 无",
+      "group": "LL LoadFlash 大小",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_LOADFLASH_NONE        (0x00000000U)                                     /*!< LoadFlash size None */"
+    },
+    {
+      "name": "LL_FLASH_LOADFLASH_1K",
+      "value": "(FLASH_BTCR_BOOT_SIZE_0)",
+      "desc": "LoadFlash 大小: 1K",
+      "group": "LL LoadFlash 大小",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_LOADFLASH_1K          (FLASH_BTCR_BOOT_SIZE_0)                          /*!< LoadFlash size 1k   */"
+    },
+    {
+      "name": "LL_FLASH_LOADFLASH_2K",
+      "value": "(FLASH_BTCR_BOOT_SIZE_1)",
+      "desc": "LoadFlash 大小: 2K",
+      "group": "LL LoadFlash 大小",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_LOADFLASH_2K          (FLASH_BTCR_BOOT_SIZE_1)                          /*!< LoadFlash size 2k   */"
+    },
+    {
+      "name": "LL_FLASH_LOADFLASH_3K",
+      "value": "(FLASH_BTCR_BOOT_SIZE_1 | FLASH_BTCR_BOOT_SIZE_0)",
+      "desc": "LoadFlash 大小: 3K",
+      "group": "LL LoadFlash 大小",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_LOADFLASH_3K          (FLASH_BTCR_BOOT_SIZE_1 | FLASH_BTCR_BOOT_SIZE_0) /*!< LoadFlash size 3k   */"
+    },
+    {
+      "name": "LL_FLASH_LOADFLASH_4K",
+      "value": "(FLASH_BTCR_BOOT_SIZE_2)",
+      "desc": "LoadFlash 大小: 4K",
+      "group": "LL LoadFlash 大小",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_LOADFLASH_4K          (FLASH_BTCR_BOOT_SIZE_2)                          /*!< LoadFlash size 4k   */"
+    },
+    {
+      "name": "LL_FLASH_WRP_DISABLE",
+      "value": "((uint32_t)0x00000000)",
+      "desc": "写保护关闭",
+      "group": "LL 写保护",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_WRP_DISABLE           ((uint32_t)0x00000000)       /* Write protection disable */"
+    },
+    {
+      "name": "LL_FLASH_WRP_SECTOR_0",
+      "value": "((uint32_t)FLASH_WRPR_WRP_0)",
+      "desc": "扇区 0 写保护",
+      "group": "LL 写保护",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_WRP_SECTOR_0          ((uint32_t)FLASH_WRPR_WRP_0) /* Write protection of Sector0 */"
+    },
+    {
+      "name": "LL_FLASH_WRP_SECTOR_1",
+      "value": "((uint32_t)FLASH_WRPR_WRP_1)",
+      "desc": "扇区 1 写保护",
+      "group": "LL 写保护",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_WRP_SECTOR_1          ((uint32_t)FLASH_WRPR_WRP_1) /* Write protection of Sector1 */"
+    },
+    {
+      "name": "LL_FLASH_WRP_SECTOR_2",
+      "value": "((uint32_t)FLASH_WRPR_WRP_2)",
+      "desc": "扇区 2 写保护",
+      "group": "LL 写保护",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_WRP_SECTOR_2          ((uint32_t)FLASH_WRPR_WRP_2) /* Write protection of Sector2 */"
+    },
+    {
+      "name": "LL_FLASH_WRP_SECTOR_3",
+      "value": "((uint32_t)FLASH_WRPR_WRP_3)",
+      "desc": "扇区 3 写保护",
+      "group": "LL 写保护",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_WRP_SECTOR_3          ((uint32_t)FLASH_WRPR_WRP_3) /* Write protection of Sector3 */"
+    },
+    {
+      "name": "LL_FLASH_WRP_SECTOR_4",
+      "value": "((uint32_t)FLASH_WRPR_WRP_4)",
+      "desc": "扇区 4 写保护",
+      "group": "LL 写保护",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_WRP_SECTOR_4          ((uint32_t)FLASH_WRPR_WRP_4) /* Write protection of Sector4 */"
+    },
+    {
+      "name": "LL_FLASH_WRP_SECTOR_5",
+      "value": "((uint32_t)FLASH_WRPR_WRP_5)",
+      "desc": "扇区 5 写保护",
+      "group": "LL 写保护",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_WRP_SECTOR_5          ((uint32_t)FLASH_WRPR_WRP_5) /* Write protection of Sector5 */"
+    },
+    {
+      "name": "LL_FLASH_WRP_Pages0to31",
+      "value": "((uint32_t)FLASH_WRPR_WRP_0)",
+      "desc": "写保护第 0~31 页",
+      "group": "LL 写保护",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_WRP_Pages0to31        ((uint32_t)FLASH_WRPR_WRP_0) /* Write protection from page0   to page31 */"
+    },
+    {
+      "name": "LL_FLASH_WRP_Pages32to63",
+      "value": "((uint32_t)FLASH_WRPR_WRP_1)",
+      "desc": "写保护第 32~63 页",
+      "group": "LL 写保护",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_WRP_Pages32to63       ((uint32_t)FLASH_WRPR_WRP_1) /* Write protection from page32  to page63 */"
+    },
+    {
+      "name": "LL_FLASH_WRP_Pages64to95",
+      "value": "((uint32_t)FLASH_WRPR_WRP_2)",
+      "desc": "写保护第 64~95 页",
+      "group": "LL 写保护",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_WRP_Pages64to95       ((uint32_t)FLASH_WRPR_WRP_2) /* Write protection from page64  to page95 */"
+    },
+    {
+      "name": "LL_FLASH_WRP_Pages96to127",
+      "value": "((uint32_t)FLASH_WRPR_WRP_3)",
+      "desc": "写保护第 96~127 页",
+      "group": "LL 写保护",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_WRP_Pages96to127      ((uint32_t)FLASH_WRPR_WRP_3) /* Write protection from page96  to page127 */"
+    },
+    {
+      "name": "LL_FLASH_WRP_Pages128to159",
+      "value": "((uint32_t)FLASH_WRPR_WRP_4)",
+      "desc": "写保护第 128~159 页",
+      "group": "LL 写保护",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_WRP_Pages128to159     ((uint32_t)FLASH_WRPR_WRP_4) /* Write protection from page128 to page159 */"
+    },
+    {
+      "name": "LL_FLASH_WRP_Pages160to191",
+      "value": "((uint32_t)FLASH_WRPR_WRP_5)",
+      "desc": "写保护第 160~191 页",
+      "group": "LL 写保护",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_WRP_Pages160to191     ((uint32_t)FLASH_WRPR_WRP_5) /* Write protection from page160 to page191 */"
+    },
+    {
+      "name": "LL_FLASH_WRP_AllPages",
+      "value": "((uint32_t)0x0000003FU)",
+      "desc": "全部扇区写保护",
+      "group": "LL 写保护",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_WRP_AllPages          ((uint32_t)0x0000003FU)      /*!< Write protection of all Sectors */"
+    },
+    {
+      "name": "LL_FLASH_SDKSTARTADDRESS_0X08000000",
+      "value": "(0x00000000)",
+      "desc": "SDK 起始地址 0x08000000",
+      "group": "LL SDK 起始地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKSTARTADDRESS_0X08000000    (0x00000000)"
+    },
+    {
+      "name": "LL_FLASH_SDKSTARTADDRESS_0X08000800",
+      "value": "(FLASH_SDKR_SDK_STRT_0)",
+      "desc": "SDK 起始地址 0x08000800",
+      "group": "LL SDK 起始地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKSTARTADDRESS_0X08000800    (                                                                        FLASH_SDKR_SDK_STRT_0)"
+    },
+    {
+      "name": "LL_FLASH_SDKSTARTADDRESS_0X08001000",
+      "value": "(FLASH_SDKR_SDK_STRT_1)",
+      "desc": "SDK 起始地址 0x08001000",
+      "group": "LL SDK 起始地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKSTARTADDRESS_0X08001000    (                                                FLASH_SDKR_SDK_STRT_1                        )"
+    },
+    {
+      "name": "LL_FLASH_SDKSTARTADDRESS_0X08001800",
+      "value": "(FLASH_SDKR_SDK_STRT_1 | FLASH_SDKR_SDK_STRT_0)",
+      "desc": "SDK 起始地址 0x08001800",
+      "group": "LL SDK 起始地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKSTARTADDRESS_0X08001800    (                                                FLASH_SDKR_SDK_STRT_1 | FLASH_SDKR_SDK_STRT_0)"
+    },
+    {
+      "name": "LL_FLASH_SDKSTARTADDRESS_0X08002000",
+      "value": "(FLASH_SDKR_SDK_STRT_2)",
+      "desc": "SDK 起始地址 0x08002000",
+      "group": "LL SDK 起始地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKSTARTADDRESS_0X08002000    (                        FLASH_SDKR_SDK_STRT_2                                                )"
+    },
+    {
+      "name": "LL_FLASH_SDKSTARTADDRESS_0X08002800",
+      "value": "(FLASH_SDKR_SDK_STRT_2 | FLASH_SDKR_SDK_STRT_0)",
+      "desc": "SDK 起始地址 0x08002800",
+      "group": "LL SDK 起始地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKSTARTADDRESS_0X08002800    (                        FLASH_SDKR_SDK_STRT_2                         | FLASH_SDKR_SDK_STRT_0)"
+    },
+    {
+      "name": "LL_FLASH_SDKSTARTADDRESS_0X08003000",
+      "value": "(FLASH_SDKR_SDK_STRT_2 | FLASH_SDKR_SDK_STRT_1)",
+      "desc": "SDK 起始地址 0x08003000",
+      "group": "LL SDK 起始地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKSTARTADDRESS_0X08003000    (                        FLASH_SDKR_SDK_STRT_2 | FLASH_SDKR_SDK_STRT_1                        )"
+    },
+    {
+      "name": "LL_FLASH_SDKSTARTADDRESS_0X08003800",
+      "value": "(FLASH_SDKR_SDK_STRT_2 | FLASH_SDKR_SDK_STRT_1 | FLASH_SDKR_SDK_STRT_0)",
+      "desc": "SDK 起始地址 0x08003800",
+      "group": "LL SDK 起始地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKSTARTADDRESS_0X08003800    (                        FLASH_SDKR_SDK_STRT_2 | FLASH_SDKR_SDK_STRT_1 | FLASH_SDKR_SDK_STRT_0)"
+    },
+    {
+      "name": "LL_FLASH_SDKSTARTADDRESS_0X08004000",
+      "value": "(FLASH_SDKR_SDK_STRT_3)",
+      "desc": "SDK 起始地址 0x08004000",
+      "group": "LL SDK 起始地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKSTARTADDRESS_0X08004000    (FLASH_SDKR_SDK_STRT_3                                                                        )"
+    },
+    {
+      "name": "LL_FLASH_SDKSTARTADDRESS_0X08004800",
+      "value": "(FLASH_SDKR_SDK_STRT_3 | FLASH_SDKR_SDK_STRT_0)",
+      "desc": "SDK 起始地址 0x08004800",
+      "group": "LL SDK 起始地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKSTARTADDRESS_0X08004800    (FLASH_SDKR_SDK_STRT_3                                                 | FLASH_SDKR_SDK_STRT_0)"
+    },
+    {
+      "name": "LL_FLASH_SDKSTARTADDRESS_0X08005000",
+      "value": "(FLASH_SDKR_SDK_STRT_3 | FLASH_SDKR_SDK_STRT_1)",
+      "desc": "SDK 起始地址 0x08005000",
+      "group": "LL SDK 起始地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKSTARTADDRESS_0X08005000    (FLASH_SDKR_SDK_STRT_3                         | FLASH_SDKR_SDK_STRT_1                        )"
+    },
+    {
+      "name": "LL_FLASH_SDKSTARTADDRESS_0X08005800",
+      "value": "(FLASH_SDKR_SDK_STRT_3 | FLASH_SDKR_SDK_STRT_1 | FLASH_SDKR_SDK_STRT_0)",
+      "desc": "SDK 起始地址 0x08005800",
+      "group": "LL SDK 起始地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKSTARTADDRESS_0X08005800    (FLASH_SDKR_SDK_STRT_3                         | FLASH_SDKR_SDK_STRT_1 | FLASH_SDKR_SDK_STRT_0)"
+    },
+    {
+      "name": "LL_FLASH_SDKENDADDRESS_0X080007FF",
+      "value": "(0x00000000)",
+      "desc": "SDK 结束地址 0x080007FF",
+      "group": "LL SDK 结束地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKENDADDRESS_0X080007FF      (0x00000000)"
+    },
+    {
+      "name": "LL_FLASH_SDKENDADDRESS_0X08000FFF",
+      "value": "(FLASH_SDKR_SDK_END_0)",
+      "desc": "SDK 结束地址 0x08000FFF",
+      "group": "LL SDK 结束地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKENDADDRESS_0X08000FFF      (                                                                      FLASH_SDKR_SDK_END_0)"
+    },
+    {
+      "name": "LL_FLASH_SDKENDADDRESS_0X080017FF",
+      "value": "(FLASH_SDKR_SDK_END_1)",
+      "desc": "SDK 结束地址 0x080017FF",
+      "group": "LL SDK 结束地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKENDADDRESS_0X080017FF      (                                               FLASH_SDKR_SDK_END_1                       )"
+    },
+    {
+      "name": "LL_FLASH_SDKENDADDRESS_0X08001FFF",
+      "value": "(FLASH_SDKR_SDK_END_1 | FLASH_SDKR_SDK_END_0)",
+      "desc": "SDK 结束地址 0x08001FFF",
+      "group": "LL SDK 结束地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKENDADDRESS_0X08001FFF      (                                               FLASH_SDKR_SDK_END_1 | FLASH_SDKR_SDK_END_0)"
+    },
+    {
+      "name": "LL_FLASH_SDKENDADDRESS_0X080027FF",
+      "value": "(FLASH_SDKR_SDK_END_2)",
+      "desc": "SDK 结束地址 0x080027FF",
+      "group": "LL SDK 结束地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKENDADDRESS_0X080027FF      (                        FLASH_SDKR_SDK_END_2                                              )"
+    },
+    {
+      "name": "LL_FLASH_SDKENDADDRESS_0X08002FFF",
+      "value": "(FLASH_SDKR_SDK_END_2 | FLASH_SDKR_SDK_END_0)",
+      "desc": "SDK 结束地址 0x08002FFF",
+      "group": "LL SDK 结束地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKENDADDRESS_0X08002FFF      (                        FLASH_SDKR_SDK_END_2                        | FLASH_SDKR_SDK_END_0)"
+    },
+    {
+      "name": "LL_FLASH_SDKENDADDRESS_0X080037FF",
+      "value": "(FLASH_SDKR_SDK_END_2 | FLASH_SDKR_SDK_END_1)",
+      "desc": "SDK 结束地址 0x080037FF",
+      "group": "LL SDK 结束地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKENDADDRESS_0X080037FF      (                        FLASH_SDKR_SDK_END_2 | FLASH_SDKR_SDK_END_1                       )"
+    },
+    {
+      "name": "LL_FLASH_SDKENDADDRESS_0X08003FFF",
+      "value": "(FLASH_SDKR_SDK_END_2 | FLASH_SDKR_SDK_END_1 | FLASH_SDKR_SDK_END_0)",
+      "desc": "SDK 结束地址 0x08003FFF",
+      "group": "LL SDK 结束地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKENDADDRESS_0X08003FFF      (                        FLASH_SDKR_SDK_END_2 | FLASH_SDKR_SDK_END_1 | FLASH_SDKR_SDK_END_0)"
+    },
+    {
+      "name": "LL_FLASH_SDKENDADDRESS_0X080047FF",
+      "value": "(FLASH_SDKR_SDK_END_3)",
+      "desc": "SDK 结束地址 0x080047FF",
+      "group": "LL SDK 结束地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKENDADDRESS_0X080047FF      (FLASH_SDKR_SDK_END_3                                                                      )"
+    },
+    {
+      "name": "LL_FLASH_SDKENDADDRESS_0X08004FFF",
+      "value": "(FLASH_SDKR_SDK_END_3 | FLASH_SDKR_SDK_END_0)",
+      "desc": "SDK 结束地址 0x08004FFF",
+      "group": "LL SDK 结束地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKENDADDRESS_0X08004FFF      (FLASH_SDKR_SDK_END_3                                                | FLASH_SDKR_SDK_END_0)"
+    },
+    {
+      "name": "LL_FLASH_SDKENDADDRESS_0X080057FF",
+      "value": "(FLASH_SDKR_SDK_END_3 | FLASH_SDKR_SDK_END_1)",
+      "desc": "SDK 结束地址 0x080057FF",
+      "group": "LL SDK 结束地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKENDADDRESS_0X080057FF      (FLASH_SDKR_SDK_END_3                         | FLASH_SDKR_SDK_END_1                       )"
+    },
+    {
+      "name": "LL_FLASH_SDKENDADDRESS_0X08005FFF",
+      "value": "(FLASH_SDKR_SDK_END_3 | FLASH_SDKR_SDK_END_1 | FLASH_SDKR_SDK_END_0)",
+      "desc": "SDK 结束地址 0x08005FFF",
+      "group": "LL SDK 结束地址",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_SDKENDADDRESS_0X08005FFF      (FLASH_SDKR_SDK_END_3                         | FLASH_SDKR_SDK_END_1 | FLASH_SDKR_SDK_END_0)"
+    },
+    {
+      "name": "LL_FLASH_KEY1",
+      "value": "(FLASH_KEY1)",
+      "desc": "FLASH 解锁键 1(0x45670123)",
+      "group": "LL 解锁键",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_KEY1                  (FLASH_KEY1)"
+    },
+    {
+      "name": "LL_FLASH_KEY2",
+      "value": "(FLASH_KEY2)",
+      "desc": "FLASH 解锁键 2(0xCDEF89AB)",
+      "group": "LL 解锁键",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_KEY2                  (FLASH_KEY2)"
+    },
+    {
+      "name": "LL_FLASH_OPTKEY1",
+      "value": "(FLASH_OPTKEY1)",
+      "desc": "选项字节解锁键 1(0x08192A3B)",
+      "group": "LL 解锁键",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_OPTKEY1               (FLASH_OPTKEY1)"
+    },
+    {
+      "name": "LL_FLASH_OPTKEY2",
+      "value": "(FLASH_OPTKEY2)",
+      "desc": "选项字节解锁键 2(0x4C5D6E7F)",
+      "group": "LL 解锁键",
+      "file": "py32f002b_ll_flash.h",
+      "src": "#define LL_FLASH_OPTKEY2               (FLASH_OPTKEY2)"
+    }
+  ]
+}

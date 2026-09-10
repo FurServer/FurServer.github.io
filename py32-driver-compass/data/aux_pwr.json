@@ -1,0 +1,149 @@
+{
+  "module": "PWR",
+  "moduleId": "pwr",
+  "hal": [
+    {
+      "name": "IS_BIAS_CURRENTS_SOURCE",
+      "sig": "#define IS_BIAS_CURRENTS_SOURCE(SOURCE)          (((SOURCE) == PWR_BIAS_CURRENTS_FROM_FACTORY_BYTES) || \\\n                                                  ((SOURCE) == PWR_BIAS_CURRENTS_FROM_BIAS_CR))",
+      "brief": "校验主稳压器(MR)偏置电流源选择是否为出厂配置字节或 BIAS_CR 寄存器",
+      "params": [
+        {
+          "name": "SOURCE",
+          "type": "宏参数",
+          "desc": "待校验的偏置电流源选择(PWR_BIAS_CURRENTS_FROM_FACTORY_BYTES/PWR_BIAS_CURRENTS_FROM_BIAS_CR)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_pwr.h",
+      "kind": "macro",
+      "src": "#define IS_BIAS_CURRENTS_SOURCE(SOURCE)          (((SOURCE) == PWR_BIAS_CURRENTS_FROM_FACTORY_BYTES) || \\\r\n                                                  ((SOURCE) == PWR_BIAS_CURRENTS_FROM_BIAS_CR))"
+    },
+    {
+      "name": "IS_PWR_REGULATOR",
+      "sig": "#define IS_PWR_REGULATOR(REGULATOR)               (((REGULATOR) == PWR_MAINREGULATOR_ON)     || \\\n                                                   ((REGULATOR) == PWR_LOWPOWERREGULATOR_ON) || \\\n                                                   ((REGULATOR) == PWR_DEEPLOWPOWERREGULATOR_ON))",
+      "brief": "校验稳压器模式是否为主模式/低功耗模式/深度低功耗模式之一",
+      "params": [
+        {
+          "name": "REGULATOR",
+          "type": "宏参数",
+          "desc": "待校验的稳压器模式(PWR_MAINREGULATOR_ON/PWR_LOWPOWERREGULATOR_ON/PWR_DEEPLOWPOWERREGULATOR_ON)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_pwr.h",
+      "kind": "macro",
+      "src": "#define IS_PWR_REGULATOR(REGULATOR)               (((REGULATOR) == PWR_MAINREGULATOR_ON)     || \\\r\n                                                   ((REGULATOR) == PWR_LOWPOWERREGULATOR_ON) || \\\r\n                                                   ((REGULATOR) == PWR_DEEPLOWPOWERREGULATOR_ON))"
+    },
+    {
+      "name": "IS_PWR_SLEEP_ENTRY",
+      "sig": "#define IS_PWR_SLEEP_ENTRY(ENTRY)                 (((ENTRY) == PWR_SLEEPENTRY_WFI) || \\\n                                                   ((ENTRY) == PWR_SLEEPENTRY_WFE))",
+      "brief": "校验进入 Sleep 模式的方式是否为 WFI 或 WFE",
+      "params": [
+        {
+          "name": "ENTRY",
+          "type": "宏参数",
+          "desc": "待校验的睡眠进入方式(PWR_SLEEPENTRY_WFI/PWR_SLEEPENTRY_WFE)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_pwr.h",
+      "kind": "macro",
+      "src": "#define IS_PWR_SLEEP_ENTRY(ENTRY)                 (((ENTRY) == PWR_SLEEPENTRY_WFI) || \\\r\n                                                   ((ENTRY) == PWR_SLEEPENTRY_WFE))"
+    },
+    {
+      "name": "IS_PWR_SRAM_RETENTION_VOLT",
+      "sig": "#define IS_PWR_SRAM_RETENTION_VOLT(VOLT)          (((VOLT) == PWR_SRAM_RETENTION_VOLT_CTRL_LDO) || \\\n                                                   ((VOLT) == PWR_SRAM_RETENTION_VOLT_CTRL_LOW))",
+      "brief": "校验 SRAM 保持电压控制是否为与 LDO 输出相同或低电压",
+      "params": [
+        {
+          "name": "VOLT",
+          "type": "宏参数",
+          "desc": "待校验的 SRAM 保持电压控制(PWR_SRAM_RETENTION_VOLT_CTRL_LDO/PWR_SRAM_RETENTION_VOLT_CTRL_LOW)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_pwr.h",
+      "kind": "macro",
+      "src": "#define IS_PWR_SRAM_RETENTION_VOLT(VOLT)          (((VOLT) == PWR_SRAM_RETENTION_VOLT_CTRL_LDO) || \\\r\n                                                   ((VOLT) == PWR_SRAM_RETENTION_VOLT_CTRL_LOW))"
+    },
+    {
+      "name": "IS_PWR_STOP_ENTRY",
+      "sig": "#define IS_PWR_STOP_ENTRY(ENTRY)                  (((ENTRY) == PWR_STOPENTRY_WFI) || \\\n                                                   ((ENTRY) == PWR_STOPENTRY_WFE))",
+      "brief": "校验进入 Stop 模式的方式是否为 WFI 或 WFE",
+      "params": [
+        {
+          "name": "ENTRY",
+          "type": "宏参数",
+          "desc": "待校验的停止进入方式(PWR_STOPENTRY_WFI/PWR_STOPENTRY_WFE)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_pwr.h",
+      "kind": "macro",
+      "src": "#define IS_PWR_STOP_ENTRY(ENTRY)                  (((ENTRY) == PWR_STOPENTRY_WFI) || \\\r\n                                                   ((ENTRY) == PWR_STOPENTRY_WFE))"
+    },
+    {
+      "name": "IS_PWR_WAKEUP_FLASH_DELAY",
+      "sig": "#define IS_PWR_WAKEUP_FLASH_DELAY(DELAY)          (((DELAY) == PWR_WAKEUP_FLASH_DELAY_0US) || \\\n                                                   ((DELAY) == PWR_WAKEUP_FLASH_DELAY_2US) || \\\n                                                   ((DELAY) == PWR_WAKEUP_FLASH_DELAY_3US) || \\\n                                                   ((DELAY) == PWR_WAKEUP_FLASH_DELAY_5US))",
+      "brief": "校验从 Stop 模式唤醒时的 Flash 启动延时配置是否为 0/2/3/5 μs 之一",
+      "params": [
+        {
+          "name": "DELAY",
+          "type": "宏参数",
+          "desc": "待校验的唤醒延时配置(PWR_WAKEUP_FLASH_DELAY_0US/2US/3US/5US)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_pwr.h",
+      "kind": "macro",
+      "src": "#define IS_PWR_WAKEUP_FLASH_DELAY(DELAY)          (((DELAY) == PWR_WAKEUP_FLASH_DELAY_0US) || \\\r\n                                                   ((DELAY) == PWR_WAKEUP_FLASH_DELAY_2US) || \\\r\n                                                   ((DELAY) == PWR_WAKEUP_FLASH_DELAY_3US) || \\\r\n                                                   ((DELAY) == PWR_WAKEUP_FLASH_DELAY_5US))"
+    },
+    {
+      "name": "IS_PWR_WAKEUP_HSIEN_TIMING",
+      "sig": "#define IS_PWR_WAKEUP_HSIEN_TIMING(TIMING)        (((TIMING) == PWR_WAKEUP_HSIEN_AFTER_MR) || \\\n                                                   ((TIMING) == PWR_WAKEUP_HSIEN_IMMEDIATE))",
+      "brief": "校验 Stop 唤醒后 HSI 使能时序是否为主稳压器稳定后使能或立即使能",
+      "params": [
+        {
+          "name": "TIMING",
+          "type": "宏参数",
+          "desc": "待校验的 HSI 使能时序(PWR_WAKEUP_HSIEN_AFTER_MR/PWR_WAKEUP_HSIEN_IMMEDIATE)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_pwr.h",
+      "kind": "macro",
+      "src": "#define IS_PWR_WAKEUP_HSIEN_TIMING(TIMING)        (((TIMING) == PWR_WAKEUP_HSIEN_AFTER_MR) || \\\r\n                                                   ((TIMING) == PWR_WAKEUP_HSIEN_IMMEDIATE))"
+    }
+  ],
+  "ll": [],
+  "types": [],
+  "consts": []
+}

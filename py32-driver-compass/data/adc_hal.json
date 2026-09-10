@@ -1,0 +1,2043 @@
+{
+  "module": "ADC",
+  "moduleId": "adc",
+  "intro": "模数转换器(ADC): 12/10/8/6 位可配置分辨率, 单次/连续/扫描转换, 可编程采样时间, 外部触发(定时器/EXTI), DMA 请求, 模拟看门狗, 内部通道(VrefInt/温度传感器/1/3VCCA), 基准电压缓冲与自动校准。含 HAL 库(py32f002b_hal_adc.c/.h)与 LL 库(py32f002b_ll_adc.c/.h)。",
+  "files": [
+    "py32f002b_hal_adc.c",
+    "py32f002b_hal_adc.h",
+    "py32f002b_ll_adc.c",
+    "py32f002b_ll_adc.h",
+    "py32f002xx5.h"
+  ],
+  "hal": [
+    {
+      "name": "HAL_ADC_Init",
+      "sig": "HAL_StatusTypeDef HAL_ADC_Init(ADC_HandleTypeDef* hadc)",
+      "brief": "根据 ADC_InitTypeDef 结构体参数初始化 ADC 外设与规则组(时钟分频、分辨率、数据对齐、扫描/连续模式、触发源、溢出行为、采样时间等)。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针, 含 Init 配置结构体"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 参数/状态错误"
+      },
+      "notes": [
+        "前提: ADC 时钟需先在 RCC 层配置(APB 时钟或 HSI 时钟), 参考 HAL_ADC_MspInit() 中注释示例。",
+        "支持在线更新参数: 仅当从复位状态进入时调用 HAL_ADC_MspInit(); 后续调用只更新 ADC_InitTypeDef 中参数, 不重复配置 MSP; 需重新配置 MSP 时应先调用 HAL_ADC_DeInit()。",
+        "参数更新受 ADC 状态约束, 时钟分频等参数只能在 ADC 禁止时修改。"
+      ],
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_ADC_Init(ADC_HandleTypeDef* hadc)\r\n{\r\n  HAL_StatusTypeDef tmp_hal_status = HAL_OK;\r\n  uint32_t tmpCFGR1 = 0U;\r\n\r\n  /* Check ADC handle */\r\n  if(hadc == NULL)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(hadc->Instance));\r\n  assert_param(IS_ADC_CLOCKPRESCALER(hadc->Init.ClockPrescaler));\r\n  assert_param(IS_ADC_RESOLUTION(hadc->Init.Resolution));\r\n  assert_param(IS_ADC_DATA_ALIGN(hadc->Init.DataAlign));\r\n  assert_param(IS_ADC_SCAN_MODE(hadc->Init.ScanConvMode));\r\n  assert_param(IS_FUNCTIONAL_STATE(hadc->Init.ContinuousConvMode));\r\n  assert_param(IS_FUNCTIONAL_STATE(hadc->Init.DiscontinuousConvMode));\r\n  assert_param(IS_ADC_EXTTRIG_EDGE(hadc->Init.ExternalTrigConvEdge));\r\n  assert_param(IS_ADC_EXTTRIG(hadc->Init.ExternalTrigConv));\r\n  assert_param(IS_ADC_EOC_SELECTION(hadc->Init.EOCSelection));\r\n  assert_param(IS_ADC_OVERRUN(hadc->Init.Overrun));\r\n  assert_param(IS_FUNCTIONAL_STATE(hadc->Init.LowPowerAutoWait));\r\n\r\n  /* As prerequisite, into HAL_ADC_MspInit(), ADC clock must be configured    */\r\n  /* at RCC top level depending on both possible clock sources:               */\r\n  /* APB clock or HSI clock.                                                  */\r\n  /* Refer to header of this file for more details on clock enabling procedure*/\r\n\r\n  /* Actions performed only if ADC is coming from state reset:                */\r\n  /* - Initialization of ADC MSP                                              */\r\n  /* - ADC voltage regulator enable                                           */\r\n  if (hadc->State == HAL_ADC_STATE_RESET)\r\n  {\r\n    /* Initialize ADC error code */\r\n    ADC_CLEAR_ERRORCODE(hadc);\r\n\r\n    /* Allocate lock resource and initialize it */\r\n    hadc->Lock = HAL_UNLOCKED;\r\n\r\n#if (USE_HAL_ADC_REGISTER_CALLBACKS == 1)\r\n    /* Init the ADC Callback settings */\r\n    hadc->ConvCpltCallback              = HAL_ADC_ConvCpltCallback;                 /* Legacy weak callback */\r\n    hadc->ConvHalfCpltCallback          = HAL_ADC_ConvHalfCpltCallback;             /* Legacy weak callback */\r\n    hadc->LevelOutOfWindowCallback      = HAL_ADC_LevelOutOfWindowCallback;         /* Legacy weak callback */\r\n    hadc->ErrorCallback                 = HAL_ADC_ErrorCallback;                    /* Legacy weak callback */\r\n\r\n    if (hadc->MspInitCallback == NULL)\r\n    {\r\n      hadc->MspInitCallback = HAL_ADC_MspInit; /* Legacy weak MspInit  */\r\n    }\r\n\r\n    /* Init the low level hardware */\r\n    hadc->MspInitCallback(hadc);\r\n#else\r\n    /* Init the low level hardware */\r\n    HAL_ADC_MspInit(hadc);\r\n#endif /* USE_HAL_ADC_REGISTER_CALLBACKS */\r\n  }\r\n\r\n  /* Configuration of ADC parameters if previous preliminary actions are      */\r\n  /* correctly completed.                                                     */\r\n  /* and if there is no conversion on going on regular group (ADC can be      */\r\n  /* enabled anyway, in case of call of this function to update a parameter   */\r\n  /* on the fly).                                                             */\r\n  if (HAL_IS_BIT_CLR(hadc->State, HAL_ADC_STATE_ERROR_INTERNAL) &&\r\n      (tmp_hal_status == HAL_OK)                                &&\r\n      (ADC_IS_CONVERSION_ONGOING_REGULAR(hadc) == RESET)          )\r\n  {\r\n    /* Set ADC state */\r\n    ADC_STATE_CLR_SET(hadc->State,\r\n                      HAL_ADC_STATE_REG_BUSY,\r\n                      HAL_ADC_STATE_BUSY_INTERNAL);\r\n\r\n    /* Parameters update conditioned to ADC state:                            */\r\n    /* Parameters that can be updated only when ADC is disabled:              */\r\n    /*  - ADC clock mode                                                      */\r\n    /*  - ADC clock prescaler                                                 */\r\n    /*  - ADC resolution                                                      */\r\n    if (ADC_IS_ENABLE(hadc) == RESET)\r\n    {\r\n      /* Some parameters of this register are not reset, since they are set   */\r\n      /* by other functions and must be kept in case of usage of this         */\r\n      /* function on the fly (update of a parameter of ADC_InitTypeDef        */\r\n      /* without needing to reconfigure all other ADC groups/channels         */\r\n      /* parameters):                                                         */\r\n      /*   - internal measurement paths: temperature sensor, Vref       */\r\n      /*     (set into HAL_ADC_ConfigChannel() )                              */\r\n\r\n      /* Configuration of ADC resolution                                      */\r\n      MODIFY_REG(hadc->Instance->CFGR1,\r\n                 ADC_CFGR1_RESSEL,\r\n                 hadc->Init.Resolution );\r\n\r\n      /* Configuration of ADC clock mode: clock source AHB or HSI with        */\r\n      /* selectable prescaler                                                 */\r\n      MODIFY_REG(hadc->Instance->CFGR2,\r\n                 ADC_CFGR2_CKMODE,\r\n                 hadc->Init.ClockPrescaler );\r\n    }\r\n\r\n    /* Configuration of ADC:                                                  */\r\n    /*  - discontinuous mode                                                  */\r\n    /*  - LowPowerAutoWait mode                                               */\r\n    /*  - continuous conversion mode                                          */\r\n    /*  - overrun                                                             */\r\n    /*  - external trigger to start conversion                                */\r\n    /*  - external trigger polarity                                           */\r\n    /*  - data alignment                                                      */\r\n    /*  - resolution                                                          */\r\n    /*  - scan direction                                                      */\r\n    /*  - DMA continuous request                                              */  \r\n    hadc->Instance->CFGR1 &= ~( ADC_CFGR1_DISCEN  |\r\n                                ADC_CFGR1_CONT    |\r\n                                ADC_CFGR1_OVRMOD  |\r\n                                ADC_CFGR1_EXTSEL  |\r\n                                ADC_CFGR1_EXTEN   |\r\n                                ADC_CFGR1_ALIGN   |\r\n                                ADC_CFGR1_SCANDIR );\r\n\r\n    tmpCFGR1 |= (ADC_CFGR1_AUTOWAIT((uint32_t)hadc->Init.LowPowerAutoWait)        |\r\n                 ADC_CFGR1_CONTINUOUS((uint32_t)hadc->Init.ContinuousConvMode)    |\r\n                 ADC_CFGR1_OVERRUN(hadc->Init.Overrun)                            |\r\n                 hadc->Init.DataAlign                                             |\r\n                 ADC_SCANDIR(hadc->Init.ScanConvMode) );\r\n\r\n\r\n    /* Enable discontinuous mode only if continuous mode is disabled */\r\n    if (hadc->Init.DiscontinuousConvMode == ENABLE)\r\n    {\r\n      if (hadc->Init.ContinuousConvMode == DISABLE)\r\n      {\r\n        /* Enable the selected ADC group regular discontinuous mode */\r\n        tmpCFGR1 |= ADC_CFGR1_DISCEN;\r\n      }\r\n      else\r\n      {\r\n        /* ADC regular group discontinuous was intended to be enabled,        */\r\n        /* but ADC regular group modes continuous and sequencer discontinuous */\r\n        /* cannot be enabled simultaneously.                                  */\r\n\r\n        /* Update ADC state machine to error */\r\n        SET_BIT(hadc->State, HAL_ADC_STATE_ERROR_CONFIG);\r\n\r\n        /* Set ADC error code to ADC IP internal error */\r\n        SET_BIT(hadc->ErrorCode, HAL_ADC_ERROR_INTERNAL);\r\n      }\r\n    }\r\n\r\n    /* Enable external trigger if trigger selection is different of software  */\r\n    /* start.                                                                 */\r\n    /* Note: This configuration keeps the hardware feature of parameter       */\r\n    /*       ExternalTrigConvEdge \"trigger edge none\" equivalent to           */\r\n    /*       software start.                                                  */\r\n    if (hadc->Init.ExternalTrigConv != ADC_SOFTWARE_START)\r\n    {\r\n      tmpCFGR1 |= ( hadc->Init.ExternalTrigConv    |\r\n                    hadc->Init.ExternalTrigConvEdge );\r\n    }\r\n\r\n    /* Update ADC configuration register with previous settings */\r\n    hadc->Instance->CFGR1 |= tmpCFGR1;\r\n\r\n    /* Channel sampling time configuration */\r\n    /* Management of parameters \"SamplingTimeCommon\" and \"SamplingTime\"       */\r\n    /* (obsolete): sampling time set in this function if parameter            */\r\n    /*  \"SamplingTimeCommon\" has been set to a valid sampling time.           */\r\n    /* Otherwise, sampling time is set into ADC channel initialization        */\r\n    /* structure with parameter \"SamplingTime\" (obsolete).                    */\r\n    if (IS_ADC_SAMPLE_TIME(hadc->Init.SamplingTimeCommon))\r\n    {\r\n      /* Channel sampling time configuration */\r\n      /* Clear the old sample time */\r\n      hadc->Instance->SMPR &= ~(ADC_SMPR_SMP);\r\n\r\n      /* Set the new sample time */\r\n      hadc->Instance->SMPR |= ADC_SMPR_SET(hadc->Init.SamplingTimeCommon);\r\n    }\r\n\r\n    /* Check back that ADC registers have effectively been configured to      */\r\n    /* ensure of no potential problem of ADC core IP clocking.                */\r\n    /* Check through register CFGR1 (excluding analog watchdog configuration: */\r\n    /* set into separate dedicated function, and bits of ADC resolution set   */\r\n    /* out of temporary variable 'tmpCFGR1').                                 */\r\n    if ((hadc->Instance->CFGR1 & ~(ADC_CFGR1_AWDCH | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL | ADC_CFGR1_RESSEL))\r\n        == tmpCFGR1)\r\n    {\r\n      /* Set ADC error code to none */\r\n      ADC_CLEAR_ERRORCODE(hadc);\r\n\r\n      /* Set the ADC state */\r\n      ADC_STATE_CLR_SET(hadc->State,\r\n                        HAL_ADC_STATE_BUSY_INTERNAL,\r\n                        HAL_ADC_STATE_READY);\r\n    }\r\n    else\r\n    {\r\n      /* Update ADC state machine to error */\r\n      ADC_STATE_CLR_SET(hadc->State,\r\n                        HAL_ADC_STATE_BUSY_INTERNAL,\r\n                        HAL_ADC_STATE_ERROR_INTERNAL);\r\n\r\n      /* Set ADC error code to ADC IP internal error */\r\n      SET_BIT(hadc->ErrorCode, HAL_ADC_ERROR_INTERNAL);\r\n\r\n      tmp_hal_status = HAL_ERROR;\r\n    }\r\n\r\n  }\r\n  else\r\n  {\r\n    /* Update ADC state machine to error */\r\n    SET_BIT(hadc->State, HAL_ADC_STATE_ERROR_INTERNAL);\r\n\r\n    tmp_hal_status = HAL_ERROR;\r\n  }\r\n\r\n  /* Return function status */\r\n  return tmp_hal_status;\r\n}"
+    },
+    {
+      "name": "HAL_ADC_DeInit",
+      "sig": "HAL_StatusTypeDef HAL_ADC_DeInit(ADC_HandleTypeDef* hadc)",
+      "brief": "将 ADC 外设寄存器恢复为复位默认值, 并反初始化 ADC MSP。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败"
+      },
+      "notes": [
+        "多个 ADC 共享同一公共寄存器组时, 仅当所有共享 ADC 均禁止时才复位公共寄存器; 否则跳过公共寄存器复位且不报错。"
+      ],
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_ADC_DeInit(ADC_HandleTypeDef* hadc)\r\n{\r\n  HAL_StatusTypeDef tmp_hal_status = HAL_OK;\r\n\r\n  /* Check ADC handle */\r\n  if(hadc == NULL)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(hadc->Instance));\r\n\r\n  /* Set ADC state */\r\n  SET_BIT(hadc->State, HAL_ADC_STATE_BUSY_INTERNAL);\r\n\r\n  /* Stop potential conversion on going, on regular group */\r\n  tmp_hal_status = ADC_ConversionStop(hadc);\r\n\r\n  /* Disable ADC peripheral if conversions are effectively stopped */\r\n  if (tmp_hal_status == HAL_OK)\r\n  {\r\n    /* Disable the ADC peripheral */\r\n    tmp_hal_status = ADC_Disable(hadc);\r\n\r\n    /* Check if ADC is effectively disabled */\r\n    if (tmp_hal_status != HAL_ERROR)\r\n    {\r\n      /* Change ADC state */\r\n      hadc->State = HAL_ADC_STATE_READY;\r\n    }\r\n  }\r\n\r\n  /* Configuration of ADC parameters if previous preliminary actions are      */\r\n  /* correctly completed.                                                     */\r\n  if (tmp_hal_status != HAL_ERROR)\r\n  {\r\n\r\n    /* ========== Reset ADC registers ========== */\r\n    /* Reset register IER */\r\n    __HAL_ADC_DISABLE_IT(hadc, (ADC_IT_AWD   | ADC_IT_OVR  |\r\n                                ADC_IT_EOS   | ADC_IT_EOC  |\r\n                                ADC_IT_EOSMP  ) );\r\n\r\n    /* Reset register ISR */\r\n    __HAL_ADC_CLEAR_FLAG(hadc, (ADC_FLAG_AWD   | ADC_FLAG_OVR  |\r\n                                ADC_FLAG_EOS   | ADC_FLAG_EOC  |\r\n                                ADC_FLAG_EOSMP  ) );\r\n\r\n    /* Reset register CR */\r\n    /* Bits ADC_CR_ADCAL, ADC_CR_ADSTP, ADC_CR_ADSTART are in access mode     */\r\n    /* \"read-set\": no direct reset applicable.                                */\r\n\r\n    hadc->Instance->CR &= ~(ADC_CR_VREFBUFF_SEL | ADC_CR_VREF_BUFFERE);\r\n    \r\n    \r\n    /* Reset register CFGR1 */\r\n    hadc->Instance->CFGR1 &= ~(ADC_CFGR1_AWDCH   | ADC_CFGR1_AWDEN  | ADC_CFGR1_AWDSGL | ADC_CFGR1_DISCEN |\r\n                               /*ADC_CFGR1_AUTOFF  |*/ ADC_CFGR1_WAIT   | ADC_CFGR1_CONT   | ADC_CFGR1_OVRMOD |\r\n                               ADC_CFGR1_EXTEN   | ADC_CFGR1_EXTSEL | ADC_CFGR1_ALIGN  | ADC_CFGR1_RESSEL    |\r\n                               ADC_CFGR1_SCANDIR                       );\r\n\r\n\r\n    /* Reset register CFGR2 */\r\n    /* Note: Update of ADC clock mode is conditioned to ADC state disabled:   */\r\n    /*       already done above.                                              */\r\n    hadc->Instance->CFGR2 &= ~ADC_CFGR2_CKMODE;\r\n\r\n    /* Reset register SMPR */\r\n    hadc->Instance->SMPR &= ~ADC_SMPR_SMP;\r\n\r\n    /* Reset register TR */\r\n    hadc->Instance->TR &= ~(ADC_TR_HT | ADC_TR_LT);\r\n\r\n#if defined(ADC_CHSELR_CHSEL10)\r\n    /* Reset register CHSELR */\r\n    hadc->Instance->CHSELR &= ~(ADC_CHSELR_CHSEL10 | ADC_CHSELR_CHSEL9  | ADC_CHSELR_CHSEL8  |\r\n                                ADC_CHSELR_CHSEL7  | ADC_CHSELR_CHSEL6  | ADC_CHSELR_CHSEL5  | ADC_CHSELR_CHSEL4  |\r\n                                ADC_CHSELR_CHSEL3  | ADC_CHSELR_CHSEL2  | ADC_CHSELR_CHSEL1  | ADC_CHSELR_CHSEL0   );\r\n#else\r\n    /* Reset register CHSELR */\r\n    hadc->Instance->CHSELR &= ~(ADC_CHSELR_CHSEL9  | ADC_CHSELR_CHSEL8  |\r\n                                ADC_CHSELR_CHSEL7  | ADC_CHSELR_CHSEL6  | ADC_CHSELR_CHSEL5  | ADC_CHSELR_CHSEL4  |\r\n                                ADC_CHSELR_CHSEL3  | ADC_CHSELR_CHSEL2  | ADC_CHSELR_CHSEL1  | ADC_CHSELR_CHSEL0   );\r\n#endif\r\n\r\n    /* Reset register DR */\r\n    /* bits in access mode read only, no direct reset applicable*/\r\n\r\n    /* Reset register CCR */\r\n    ADC->CCR &= ~(ADC_CCR_ALL);\r\n\r\n    /* ========== Hard reset ADC peripheral ========== */\r\n    /* Performs a global reset of the entire ADC peripheral: ADC state is     */\r\n    /* forced to a similar state after device power-on.                       */\r\n    /* If needed, copy-paste and uncomment the following reset code into      */\r\n    /* function \"void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)\":              */\r\n    /*                                                                        */\r\n    /*  __HAL_RCC_ADC1_FORCE_RESET()                                                  */\r\n    /*  __HAL_RCC_ADC1_RELEASE_RESET()                                                */\r\n\r\n#if (USE_HAL_ADC_REGISTER_CALLBACKS == 1)\r\n    if (hadc->MspDeInitCallback == NULL)\r\n    {\r\n      hadc->MspDeInitCallback = HAL_ADC_MspDeInit; /* Legacy weak MspDeInit  */\r\n    }\r\n\r\n    /* DeInit the low level hardware */\r\n    hadc->MspDeInitCallback(hadc);\r\n#else\r\n    /* DeInit the low level hardware */\r\n    HAL_ADC_MspDeInit(hadc);\r\n#endif /* USE_HAL_ADC_REGISTER_CALLBACKS */\r\n\r\n    /* Set ADC error code to none */\r\n    ADC_CLEAR_ERRORCODE(hadc);\r\n\r\n    /* Set ADC state */\r\n    hadc->State = HAL_ADC_STATE_RESET;\r\n  }\r\n\r\n  /* Process unlocked */\r\n  __HAL_UNLOCK(hadc);\r\n\r\n  /* Return function status */\r\n  return tmp_hal_status;\r\n}"
+    },
+    {
+      "name": "HAL_ADC_MspInit",
+      "sig": "void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)",
+      "brief": "ADC 底层硬件(MSP)初始化弱定义空函数: 用户在应用文件中重写以实现 ADC 时钟、引脚与中断等底层配置。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "__weak void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hadc);\r\n\r\n  /* NOTE : This function should not be modified. When the callback is needed,\r\n            function HAL_ADC_MspInit must be implemented in the user file.\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_ADC_MspDeInit",
+      "sig": "void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)",
+      "brief": "ADC 底层硬件(MSP)反初始化弱定义空函数: 用户在应用文件中重写。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "__weak void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hadc);\r\n\r\n  /* NOTE : This function should not be modified. When the callback is needed,\r\n            function HAL_ADC_MspDeInit must be implemented in the user file.\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_ADC_RegisterCallback",
+      "sig": "HAL_StatusTypeDef HAL_ADC_RegisterCallback(ADC_HandleTypeDef *hadc, HAL_ADC_CallbackIDTypeDef CallbackID, pADC_CallbackTypeDef pCallback)",
+      "brief": "注册用户自定义 ADC 回调函数以取代库内弱定义回调(需定义 USE_HAL_ADC_REGISTER_CALLBACKS=1)。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        },
+        {
+          "name": "CallbackID",
+          "type": "HAL_ADC_CallbackIDTypeDef",
+          "desc": "要注册的回调 ID, 可取 HAL_ADC_CONVERSION_COMPLETE_CB_ID / CONVERSION_HALF_CB_ID / LEVEL_OUT_OF_WINDOW_1_CB_ID / ERROR_CB_ID / MSPINIT_CB_ID / MSPDEINIT_CB_ID"
+        },
+        {
+          "name": "pCallback",
+          "type": "pADC_CallbackTypeDef",
+          "desc": "回调函数指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 回调为空或句柄状态不允许"
+      },
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_ADC_RegisterCallback(ADC_HandleTypeDef *hadc, HAL_ADC_CallbackIDTypeDef CallbackID, pADC_CallbackTypeDef pCallback)\r\n{\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  if (pCallback == NULL)\r\n  {\r\n    /* Update the error code */\r\n    hadc->ErrorCode |= HAL_ADC_ERROR_INVALID_CALLBACK;\r\n\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  if ((hadc->State & HAL_ADC_STATE_READY) != 0)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_ADC_CONVERSION_COMPLETE_CB_ID :\r\n      hadc->ConvCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_ADC_CONVERSION_HALF_CB_ID :\r\n      hadc->ConvHalfCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_ADC_LEVEL_OUT_OF_WINDOW_1_CB_ID :\r\n      hadc->LevelOutOfWindowCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_ADC_ERROR_CB_ID :\r\n      hadc->ErrorCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_ADC_MSPINIT_CB_ID :\r\n      hadc->MspInitCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_ADC_MSPDEINIT_CB_ID :\r\n      hadc->MspDeInitCallback = pCallback;\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      hadc->ErrorCode |= HAL_ADC_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status = HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else if (HAL_ADC_STATE_RESET == hadc->State)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_ADC_MSPINIT_CB_ID :\r\n      hadc->MspInitCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_ADC_MSPDEINIT_CB_ID :\r\n      hadc->MspDeInitCallback = pCallback;\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      hadc->ErrorCode |= HAL_ADC_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status = HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else\r\n  {\r\n    /* Update the error code */\r\n    hadc->ErrorCode |= HAL_ADC_ERROR_INVALID_CALLBACK;\r\n\r\n    /* Return error status */\r\n    status =  HAL_ERROR;\r\n  }\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_ADC_UnRegisterCallback",
+      "sig": "HAL_StatusTypeDef HAL_ADC_UnRegisterCallback(ADC_HandleTypeDef *hadc, HAL_ADC_CallbackIDTypeDef CallbackID)",
+      "brief": "注销用户自定义 ADC 回调, 恢复为库内弱定义回调(需定义 USE_HAL_ADC_REGISTER_CALLBACKS=1)。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        },
+        {
+          "name": "CallbackID",
+          "type": "HAL_ADC_CallbackIDTypeDef",
+          "desc": "要注销的回调 ID(取值同 HAL_ADC_RegisterCallback)"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 句柄状态不允许"
+      },
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_ADC_UnRegisterCallback(ADC_HandleTypeDef *hadc, HAL_ADC_CallbackIDTypeDef CallbackID)\r\n{\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  if ((hadc->State & HAL_ADC_STATE_READY) != 0)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_ADC_CONVERSION_COMPLETE_CB_ID :\r\n      hadc->ConvCpltCallback = HAL_ADC_ConvCpltCallback;\r\n      break;\r\n\r\n    case HAL_ADC_CONVERSION_HALF_CB_ID :\r\n      hadc->ConvHalfCpltCallback = HAL_ADC_ConvHalfCpltCallback;\r\n      break;\r\n\r\n    case HAL_ADC_LEVEL_OUT_OF_WINDOW_1_CB_ID :\r\n      hadc->LevelOutOfWindowCallback = HAL_ADC_LevelOutOfWindowCallback;\r\n      break;\r\n\r\n    case HAL_ADC_ERROR_CB_ID :\r\n      hadc->ErrorCallback = HAL_ADC_ErrorCallback;\r\n      break;\r\n\r\n    case HAL_ADC_MSPINIT_CB_ID :\r\n      hadc->MspInitCallback = HAL_ADC_MspInit; /* Legacy weak MspInit              */\r\n      break;\r\n\r\n    case HAL_ADC_MSPDEINIT_CB_ID :\r\n      hadc->MspDeInitCallback = HAL_ADC_MspDeInit; /* Legacy weak MspDeInit            */\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      hadc->ErrorCode |= HAL_ADC_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else if (HAL_ADC_STATE_RESET == hadc->State)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_ADC_MSPINIT_CB_ID :\r\n      hadc->MspInitCallback = HAL_ADC_MspInit;                   /* Legacy weak MspInit              */\r\n      break;\r\n\r\n    case HAL_ADC_MSPDEINIT_CB_ID :\r\n      hadc->MspDeInitCallback = HAL_ADC_MspDeInit;               /* Legacy weak MspDeInit            */\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      hadc->ErrorCode |= HAL_ADC_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else\r\n  {\r\n    /* Update the error code */\r\n    hadc->ErrorCode |= HAL_ADC_ERROR_INVALID_CALLBACK;\r\n\r\n    /* Return error status */\r\n    status =  HAL_ERROR;\r\n  }\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_ADC_Start",
+      "sig": "HAL_StatusTypeDef HAL_ADC_Start(ADC_HandleTypeDef* hadc)",
+      "brief": "使能 ADC 并启动规则组转换: 软件启动则立即开始, 外部触发则等待触发事件。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 已有转换正在进行; HAL_ERROR 使能失败"
+      },
+      "notes": [
+        "本函数不使能任何中断(轮询模式)。"
+      ],
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_ADC_Start(ADC_HandleTypeDef* hadc)\r\n{\r\n  HAL_StatusTypeDef tmp_hal_status = HAL_OK;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(hadc->Instance));\r\n\r\n  /* Perform ADC enable and conversion start if no conversion is on going */\r\n  if (ADC_IS_CONVERSION_ONGOING_REGULAR(hadc) == RESET)\r\n  {\r\n    /* Process locked */\r\n    __HAL_LOCK(hadc);\r\n\r\n    /* Enable the ADC peripheral */\r\n    tmp_hal_status = ADC_Enable(hadc);\r\n\r\n    /* Start conversion if ADC is effectively enabled */\r\n    if (tmp_hal_status == HAL_OK)\r\n    {\r\n      /* Set ADC state                                                        */\r\n      /* - Clear state bitfield related to regular group conversion results   */\r\n      /* - Set state bitfield related to regular operation                    */\r\n      ADC_STATE_CLR_SET(hadc->State,\r\n                        HAL_ADC_STATE_READY | HAL_ADC_STATE_REG_EOC | HAL_ADC_STATE_REG_OVR | HAL_ADC_STATE_REG_EOSMP,\r\n                        HAL_ADC_STATE_REG_BUSY);\r\n\r\n      /* Reset ADC all error code fields */\r\n      ADC_CLEAR_ERRORCODE(hadc);\r\n\r\n      /* Process unlocked */\r\n      /* Unlock before starting ADC conversions: in case of potential         */\r\n      /* interruption, to let the process to ADC IRQ Handler.                 */\r\n      __HAL_UNLOCK(hadc);\r\n\r\n      /* Clear regular group conversion flag and overrun flag */\r\n      /* (To ensure of no unknown state from potential previous ADC           */\r\n      /* operations)                                                          */\r\n      __HAL_ADC_CLEAR_FLAG(hadc, (ADC_FLAG_EOC | ADC_FLAG_EOS | ADC_FLAG_OVR));\r\n\r\n      /* Enable conversion of regular group.                                  */\r\n      /* If software start has been selected, conversion starts immediately.  */\r\n      /* If external trigger has been selected, conversion will start at next */\r\n      /* trigger event.                                                       */\r\n      hadc->Instance->CR |= ADC_CR_ADSTART;\r\n    }\r\n  }\r\n  else\r\n  {\r\n    tmp_hal_status = HAL_BUSY;\r\n  }\r\n\r\n  /* Return function status */\r\n  return tmp_hal_status;\r\n}"
+    },
+    {
+      "name": "HAL_ADC_Stop",
+      "sig": "HAL_StatusTypeDef HAL_ADC_Stop(ADC_HandleTypeDef* hadc)",
+      "brief": "停止规则组转换并禁止 ADC 外设。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 停止/禁止失败"
+      },
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_ADC_Stop(ADC_HandleTypeDef* hadc)\r\n{\r\n  HAL_StatusTypeDef tmp_hal_status = HAL_OK;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(hadc->Instance));\r\n\r\n  /* Process locked */\r\n  __HAL_LOCK(hadc);\r\n\r\n  /* 1. Stop potential conversion on going, on regular group */\r\n  tmp_hal_status = ADC_ConversionStop(hadc);\r\n\r\n  /* Disable ADC peripheral if conversions are effectively stopped */\r\n  if (tmp_hal_status == HAL_OK)\r\n  {\r\n    /* 2. Disable the ADC peripheral */\r\n    tmp_hal_status = ADC_Disable(hadc);\r\n\r\n    /* Check if ADC is effectively disabled */\r\n    if (tmp_hal_status == HAL_OK)\r\n    {\r\n      /* Set ADC state */\r\n      ADC_STATE_CLR_SET(hadc->State,\r\n                        HAL_ADC_STATE_REG_BUSY,\r\n                        HAL_ADC_STATE_READY);\r\n    }\r\n  }\r\n\r\n  /* Process unlocked */\r\n  __HAL_UNLOCK(hadc);\r\n\r\n  /* Return function status */\r\n  return tmp_hal_status;\r\n}"
+    },
+    {
+      "name": "HAL_ADC_PollForConversion",
+      "sig": "HAL_StatusTypeDef HAL_ADC_PollForConversion(ADC_HandleTypeDef* hadc, uint32_t Timeout)",
+      "brief": "轮询等待规则组转换完成(EOC/EOS 标志置位)。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        },
+        {
+          "name": "Timeout",
+          "type": "uint32_t",
+          "desc": "超时值(毫秒), HAL_MAX_DELAY 表示无限等待"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 转换完成; HAL_TIMEOUT 超时; HAL_ERROR 配置错误(DMA 模式轮询单次转换)"
+      },
+      "notes": [
+        "本函数会清除 EOC/EOS 标志; 例外: 使能低功耗自动等待(LowPowerAutoWait)时不清除标志, 直到用 HAL_ADC_GetValue() 读取数据。",
+        "不能在 DMA 模式且 EOCSelection=ADC_EOC_SINGLE_CONV 的组合下轮询单次转换(DMA 会复位 EOC 标志)。"
+      ],
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_ADC_PollForConversion(ADC_HandleTypeDef* hadc, uint32_t Timeout)\r\n{\r\n  uint32_t tickstart;\r\n  uint32_t tmp_Flag_EOC;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(hadc->Instance));\r\n\r\n  /* If end of conversion selected to end of sequence */\r\n  if (hadc->Init.EOCSelection == ADC_EOC_SEQ_CONV)\r\n  {\r\n    tmp_Flag_EOC = ADC_FLAG_EOS;\r\n  }\r\n  /* If end of conversion selected to end of each conversion */\r\n  else /* ADC_EOC_SINGLE_CONV */\r\n  {\r\n    /* Verification that ADC configuration is compliant with polling for      */\r\n    /* each conversion:                                                       */\r\n    /* Particular case is ADC configured in DMA mode and ADC sequencer with   */\r\n    /* several ranks and polling for end of each conversion.                  */\r\n    /* For code simplicity sake, this particular case is generalized to       */\r\n    /* ADC configured in DMA mode and and polling for end of each conversion. */\r\n#if (defined(DMA) || defined(DMA1))\r\n    if (HAL_IS_BIT_SET(hadc->Instance->CFGR1, ADC_CFGR1_DMAEN))\r\n    {\r\n      /* Update ADC state machine to error */\r\n      SET_BIT(hadc->State, HAL_ADC_STATE_ERROR_CONFIG);\r\n\r\n      /* Process unlocked */\r\n      __HAL_UNLOCK(hadc);\r\n\r\n      return HAL_ERROR;\r\n    }\r\n    else\r\n    {\r\n#endif\r\n    tmp_Flag_EOC = (ADC_FLAG_EOC | ADC_FLAG_EOS);\r\n#if (defined(DMA) || defined(DMA1))\r\n    }\r\n#endif\r\n  }\r\n\r\n  /* Get tick count */\r\n  tickstart = HAL_GetTick();\r\n\r\n  /* Wait until End of Conversion flag is raised */\r\n  while(HAL_IS_BIT_CLR(hadc->Instance->ISR, tmp_Flag_EOC))\r\n  {\r\n    /* Check if timeout is disabled (set to infinite wait) */\r\n    if(Timeout != HAL_MAX_DELAY)\r\n    {\r\n      if((Timeout == 0) || ((HAL_GetTick()-tickstart) > Timeout))\r\n      {\r\n        /* Update ADC state machine to timeout */\r\n        SET_BIT(hadc->State, HAL_ADC_STATE_TIMEOUT);\r\n\r\n        /* Process unlocked */\r\n        __HAL_UNLOCK(hadc);\r\n\r\n        return HAL_TIMEOUT;\r\n      }\r\n    }\r\n  }\r\n\r\n  /* Update ADC state machine */\r\n  SET_BIT(hadc->State, HAL_ADC_STATE_REG_EOC);\r\n\r\n  /* Determine whether any further conversion upcoming on group regular       */\r\n  /* by external trigger, continuous mode or scan sequence on going.          */\r\n  if(ADC_IS_SOFTWARE_START_REGULAR(hadc)        &&\r\n      (hadc->Init.ContinuousConvMode == DISABLE)   )\r\n  {\r\n    /* If End of Sequence is reached, disable interrupts */\r\n    if( __HAL_ADC_GET_FLAG(hadc, ADC_FLAG_EOS) )\r\n    {\r\n      /* Allowed to modify bits ADC_IT_EOC/ADC_IT_EOS only if bit             */\r\n      /* ADSTART==0 (no conversion on going)                                  */\r\n      if (ADC_IS_CONVERSION_ONGOING_REGULAR(hadc) == RESET)\r\n      {\r\n        /* Disable ADC end of single conversion interrupt on group regular */\r\n        /* Note: Overrun interrupt was enabled with EOC interrupt in          */\r\n        /* HAL_Start_IT(), but is not disabled here because can be used       */\r\n        /* by overrun IRQ process below.                                      */\r\n        __HAL_ADC_DISABLE_IT(hadc, ADC_IT_EOC | ADC_IT_EOS);\r\n\r\n        /* Set ADC state */\r\n        ADC_STATE_CLR_SET(hadc->State,\r\n                          HAL_ADC_STATE_REG_BUSY,\r\n                          HAL_ADC_STATE_READY);\r\n      }\r\n      else\r\n      {\r\n        /* Change ADC state to error state */\r\n        SET_BIT(hadc->State, HAL_ADC_STATE_ERROR_CONFIG);\r\n\r\n        /* Set ADC error code to ADC IP internal error */\r\n        SET_BIT(hadc->ErrorCode, HAL_ADC_ERROR_INTERNAL);\r\n      }\r\n    }\r\n  }\r\n\r\n  /* Clear end of conversion flag of regular group if low power feature       */\r\n  /* \"LowPowerAutoWait \" is disabled, to not interfere with this feature      */\r\n  /* until data register is read using function HAL_ADC_GetValue().           */\r\n  if (hadc->Init.LowPowerAutoWait == DISABLE)\r\n  {\r\n    /* Clear regular group conversion flag */\r\n    __HAL_ADC_CLEAR_FLAG(hadc, (ADC_FLAG_EOC | ADC_FLAG_EOS));\r\n  }\r\n\r\n  /* Return ADC state */\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_ADC_PollForEvent",
+      "sig": "HAL_StatusTypeDef HAL_ADC_PollForEvent(ADC_HandleTypeDef* hadc, uint32_t EventType, uint32_t Timeout)",
+      "brief": "轮询等待 ADC 事件: 模拟看门狗(电平越窗)或数据溢出。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        },
+        {
+          "name": "EventType",
+          "type": "uint32_t",
+          "desc": "事件类型: ADC_AWD_EVENT(模拟看门狗) / ADC_OVR_EVENT(溢出)"
+        },
+        {
+          "name": "Timeout",
+          "type": "uint32_t",
+          "desc": "超时值(毫秒), HAL_MAX_DELAY 表示无限等待"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 事件发生; HAL_TIMEOUT 超时"
+      },
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_ADC_PollForEvent(ADC_HandleTypeDef* hadc, uint32_t EventType, uint32_t Timeout)\r\n{\r\n  uint32_t tickstart=0;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(hadc->Instance));\r\n  assert_param(IS_ADC_EVENT_TYPE(EventType));\r\n\r\n  /* Get tick count */\r\n  tickstart = HAL_GetTick();\r\n\r\n  /* Check selected event flag */\r\n  while(__HAL_ADC_GET_FLAG(hadc, EventType) == RESET)\r\n  {\r\n    /* Check if timeout is disabled (set to infinite wait) */\r\n    if(Timeout != HAL_MAX_DELAY)\r\n    {\r\n      if((Timeout == 0U) || ((HAL_GetTick()-tickstart) > Timeout))\r\n      {\r\n        /* Update ADC state machine to timeout */\r\n        SET_BIT(hadc->State, HAL_ADC_STATE_TIMEOUT);\r\n\r\n        /* Process unlocked */\r\n        __HAL_UNLOCK(hadc);\r\n\r\n        return HAL_TIMEOUT;\r\n      }\r\n    }\r\n  }\r\n\r\n  switch(EventType)\r\n  {\r\n  /* Analog watchdog (level out of window) event */\r\n  case ADC_AWD_EVENT:\r\n    /* Set ADC state */\r\n    SET_BIT(hadc->State, HAL_ADC_STATE_AWD1);\r\n\r\n    /* Clear ADC analog watchdog flag */\r\n    __HAL_ADC_CLEAR_FLAG(hadc, ADC_FLAG_AWD);\r\n    break;\r\n\r\n  /* Overrun event */\r\n  default: /* Case ADC_OVR_EVENT */\r\n    /* If overrun is set to overwrite previous data, overrun event is not     */\r\n    /* considered as an error.                                                */\r\n    /* (cf ref manual \"Managing conversions without using the DMA and without */\r\n    /* overrun \")                                                             */\r\n    if (hadc->Init.Overrun == ADC_OVR_DATA_PRESERVED)\r\n    {\r\n      /* Set ADC state */\r\n      SET_BIT(hadc->State, HAL_ADC_STATE_REG_OVR);\r\n\r\n      /* Set ADC error code to overrun */\r\n      SET_BIT(hadc->ErrorCode, HAL_ADC_ERROR_OVR);\r\n    }\r\n\r\n    /* Clear ADC Overrun flag */\r\n    __HAL_ADC_CLEAR_FLAG(hadc, ADC_FLAG_OVR);\r\n    break;\r\n  }\r\n\r\n  /* Return ADC state */\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_ADC_Start_IT",
+      "sig": "HAL_StatusTypeDef HAL_ADC_Start_IT(ADC_HandleTypeDef* hadc)",
+      "brief": "使能 ADC 并启动规则组转换, 同时使能 EOC/EOS(依 EOCSelection)与溢出中断。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 已有转换正在进行; HAL_ERROR 使能失败"
+      },
+      "notes": [
+        "各中断有独立回调: HAL_ADC_ConvCpltCallback() 与 HAL_ADC_ErrorCallback() 等。"
+      ],
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_ADC_Start_IT(ADC_HandleTypeDef* hadc)\r\n{\r\n  HAL_StatusTypeDef tmp_hal_status = HAL_OK;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(hadc->Instance));\r\n\r\n  /* Perform ADC enable and conversion start if no conversion is on going */\r\n  if (ADC_IS_CONVERSION_ONGOING_REGULAR(hadc) == RESET)\r\n  {\r\n    /* Process locked */\r\n    __HAL_LOCK(hadc);\r\n\r\n    /* Enable the ADC peripheral */\r\n    tmp_hal_status = ADC_Enable(hadc);\r\n\r\n    /* Start conversion if ADC is effectively enabled */\r\n    if (tmp_hal_status == HAL_OK)\r\n    {\r\n      /* Set ADC state                                                        */\r\n      /* - Clear state bitfield related to regular group conversion results   */\r\n      /* - Set state bitfield related to regular operation                    */\r\n      ADC_STATE_CLR_SET(hadc->State,\r\n                        HAL_ADC_STATE_READY | HAL_ADC_STATE_REG_EOC | HAL_ADC_STATE_REG_OVR | HAL_ADC_STATE_REG_EOSMP,\r\n                        HAL_ADC_STATE_REG_BUSY);\r\n\r\n      /* Reset ADC all error code fields */\r\n      ADC_CLEAR_ERRORCODE(hadc);\r\n\r\n      /* Process unlocked */\r\n      /* Unlock before starting ADC conversions: in case of potential         */\r\n      /* interruption, to let the process to ADC IRQ Handler.                 */\r\n      __HAL_UNLOCK(hadc);\r\n\r\n      /* Clear regular group conversion flag and overrun flag */\r\n      /* (To ensure of no unknown state from potential previous ADC           */\r\n      /* operations)                                                          */\r\n      __HAL_ADC_CLEAR_FLAG(hadc, (ADC_FLAG_EOC | ADC_FLAG_EOS | ADC_FLAG_OVR));\r\n\r\n      /* Enable ADC end of conversion interrupt */\r\n      /* Enable ADC overrun interrupt */\r\n      switch(hadc->Init.EOCSelection)\r\n      {\r\n      case ADC_EOC_SEQ_CONV:\r\n        __HAL_ADC_DISABLE_IT(hadc, ADC_IT_EOC);\r\n        __HAL_ADC_ENABLE_IT(hadc, (ADC_IT_EOS | ADC_IT_OVR));\r\n        break;\r\n      /* case ADC_EOC_SINGLE_CONV */\r\n      default:\r\n        __HAL_ADC_ENABLE_IT(hadc, (ADC_IT_EOC | ADC_IT_EOS | ADC_IT_OVR));\r\n        break;\r\n      }\r\n\r\n      /* Enable conversion of regular group.                                  */\r\n      /* If software start has been selected, conversion starts immediately.  */\r\n      /* If external trigger has been selected, conversion will start at next */\r\n      /* trigger event.                                                       */\r\n      hadc->Instance->CR |= ADC_CR_ADSTART;\r\n    }\r\n  }\r\n  else\r\n  {\r\n    tmp_hal_status = HAL_BUSY;\r\n  }\r\n\r\n  /* Return function status */\r\n  return tmp_hal_status;\r\n}"
+    },
+    {
+      "name": "HAL_ADC_Stop_IT",
+      "sig": "HAL_StatusTypeDef HAL_ADC_Stop_IT(ADC_HandleTypeDef* hadc)",
+      "brief": "停止规则组转换, 禁止转换完成/溢出中断并禁止 ADC 外设。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_ADC_Stop_IT(ADC_HandleTypeDef* hadc)\r\n{\r\n  HAL_StatusTypeDef tmp_hal_status = HAL_OK;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(hadc->Instance));\r\n\r\n  /* Process locked */\r\n  __HAL_LOCK(hadc);\r\n\r\n  /* 1. Stop potential conversion on going, on regular group */\r\n  tmp_hal_status = ADC_ConversionStop(hadc);\r\n\r\n  /* Disable ADC peripheral if conversions are effectively stopped */\r\n  if (tmp_hal_status == HAL_OK)\r\n  {\r\n    /* Disable ADC end of conversion interrupt for regular group */\r\n    /* Disable ADC overrun interrupt */\r\n    __HAL_ADC_DISABLE_IT(hadc, (ADC_IT_EOC | ADC_IT_EOS | ADC_IT_OVR));\r\n\r\n    /* 2. Disable the ADC peripheral */\r\n    tmp_hal_status = ADC_Disable(hadc);\r\n\r\n    /* Check if ADC is effectively disabled */\r\n    if (tmp_hal_status == HAL_OK)\r\n    {\r\n      /* Set ADC state */\r\n      ADC_STATE_CLR_SET(hadc->State,\r\n                        HAL_ADC_STATE_REG_BUSY,\r\n                        HAL_ADC_STATE_READY);\r\n    }\r\n  }\r\n\r\n  /* Process unlocked */\r\n  __HAL_UNLOCK(hadc);\r\n\r\n  /* Return function status */\r\n  return tmp_hal_status;\r\n}"
+    },
+    {
+      "name": "HAL_ADC_GetValue",
+      "sig": "uint32_t HAL_ADC_GetValue(ADC_HandleTypeDef* hadc)",
+      "brief": "读取规则组转换结果(数据寄存器 DR)。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "规则组转换数据(与分辨率和对齐方式相关)"
+      },
+      "notes": [
+        "读 DR 会自动清除 EOC 标志; EOS 标志不会被本函数清除。"
+      ],
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "uint32_t HAL_ADC_GetValue(ADC_HandleTypeDef* hadc)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(hadc->Instance));\r\n\r\n  /* Note: EOC flag is not cleared here by software because automatically     */\r\n  /*       cleared by hardware when reading register DR.                      */\r\n\r\n  /* Return ADC converted value */\r\n  return hadc->Instance->DR;\r\n}"
+    },
+    {
+      "name": "HAL_ADC_IRQHandler",
+      "sig": "void HAL_ADC_IRQHandler(ADC_HandleTypeDef* hadc)",
+      "brief": "ADC 中断服务处理函数: 检测 EOC/EOS、模拟看门狗与溢出标志, 清除标志并调用对应回调。应在 ADC_IRQHandler() 中断服务程序中调用。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "void HAL_ADC_IRQHandler(ADC_HandleTypeDef* hadc)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(hadc->Instance));\r\n  assert_param(IS_FUNCTIONAL_STATE(hadc->Init.ContinuousConvMode));\r\n  assert_param(IS_ADC_EOC_SELECTION(hadc->Init.EOCSelection));\r\n\r\n  /* ========== Check End of Conversion flag for regular group ========== */\r\n  if( (__HAL_ADC_GET_FLAG(hadc, ADC_FLAG_EOC) && __HAL_ADC_GET_IT_SOURCE(hadc, ADC_IT_EOC)) ||\r\n      (__HAL_ADC_GET_FLAG(hadc, ADC_FLAG_EOS) && __HAL_ADC_GET_IT_SOURCE(hadc, ADC_IT_EOS))   )\r\n  {\r\n    /* Update state machine on conversion status if not in error state */\r\n    if (HAL_IS_BIT_CLR(hadc->State, HAL_ADC_STATE_ERROR_INTERNAL))\r\n    {\r\n      /* Set ADC state */\r\n      SET_BIT(hadc->State, HAL_ADC_STATE_REG_EOC);\r\n    }\r\n\r\n    /* Determine whether any further conversion upcoming on group regular     */\r\n    /* by external trigger, continuous mode or scan sequence on going.        */\r\n    if(ADC_IS_SOFTWARE_START_REGULAR(hadc)        &&\r\n        (hadc->Init.ContinuousConvMode == DISABLE)   )\r\n    {\r\n      /* If End of Sequence is reached, disable interrupts */\r\n      if( __HAL_ADC_GET_FLAG(hadc, ADC_FLAG_EOS) )\r\n      {\r\n        /* Allowed to modify bits ADC_IT_EOC/ADC_IT_EOS only if bit           */\r\n        /* ADSTART==0 (no conversion on going)                                */\r\n        if (ADC_IS_CONVERSION_ONGOING_REGULAR(hadc) == RESET)\r\n        {\r\n          /* Disable ADC end of single conversion interrupt on group regular */\r\n          /* Note: Overrun interrupt was enabled with EOC interrupt in        */\r\n          /* HAL_Start_IT(), but is not disabled here because can be used     */\r\n          /* by overrun IRQ process below.                                    */\r\n          __HAL_ADC_DISABLE_IT(hadc, ADC_IT_EOC | ADC_IT_EOS);\r\n\r\n          /* Set ADC state */\r\n          ADC_STATE_CLR_SET(hadc->State,\r\n                            HAL_ADC_STATE_REG_BUSY,\r\n                            HAL_ADC_STATE_READY);\r\n        }\r\n        else\r\n        {\r\n          /* Change ADC state to error state */\r\n          SET_BIT(hadc->State, HAL_ADC_STATE_ERROR_CONFIG);\r\n\r\n          /* Set ADC error code to ADC IP internal error */\r\n          SET_BIT(hadc->ErrorCode, HAL_ADC_ERROR_INTERNAL);\r\n        }\r\n      }\r\n    }\r\n\r\n    /* Note: into callback, to determine if conversion has been triggered     */\r\n    /*       from EOC or EOS, possibility to use:                             */\r\n    /*        \" if( __HAL_ADC_GET_FLAG(&hadc, ADC_FLAG_EOS)) \"                */\r\n#if (USE_HAL_ADC_REGISTER_CALLBACKS == 1)\r\n    hadc->ConvCpltCallback(hadc);\r\n#else\r\n    HAL_ADC_ConvCpltCallback(hadc);\r\n#endif /* USE_HAL_ADC_REGISTER_CALLBACKS */\r\n\r\n\r\n    /* Clear regular group conversion flag */\r\n    /* Note: in case of overrun set to ADC_OVR_DATA_PRESERVED, end of         */\r\n    /*       conversion flags clear induces the release of the preserved data.*/\r\n    /*       Therefore, if the preserved data value is needed, it must be     */\r\n    /*       read preliminarily into HAL_ADC_ConvCpltCallback().              */\r\n    __HAL_ADC_CLEAR_FLAG(hadc, (ADC_FLAG_EOC | ADC_FLAG_EOS) );\r\n  }\r\n\r\n  /* ========== Check Analog watchdog flags ========== */\r\n  if(__HAL_ADC_GET_FLAG(hadc, ADC_FLAG_AWD) && __HAL_ADC_GET_IT_SOURCE(hadc, ADC_IT_AWD))\r\n  {\r\n    /* Set ADC state */\r\n    SET_BIT(hadc->State, HAL_ADC_STATE_AWD1);\r\n\r\n#if (USE_HAL_ADC_REGISTER_CALLBACKS == 1)\r\n    hadc->LevelOutOfWindowCallback(hadc);\r\n#else\r\n    HAL_ADC_LevelOutOfWindowCallback(hadc);\r\n#endif /* USE_HAL_ADC_REGISTER_CALLBACKS */\r\n\r\n    /* Clear ADC Analog watchdog flag */\r\n    __HAL_ADC_CLEAR_FLAG(hadc, ADC_FLAG_AWD);\r\n\r\n  }\r\n\r\n\r\n  /* ========== Check Overrun flag ========== */\r\n  if(__HAL_ADC_GET_FLAG(hadc, ADC_FLAG_OVR) && __HAL_ADC_GET_IT_SOURCE(hadc, ADC_IT_OVR))\r\n  {\r\n    /* If overrun is set to overwrite previous data (default setting),        */\r\n    /* overrun event is not considered as an error.                           */\r\n    /* (cf ref manual \"Managing conversions without using the DMA and without */\r\n    /* overrun \")                                                             */\r\n    /* Exception for usage with DMA overrun event always considered as an     */\r\n    /* error.                                                                 */\r\n#if (defined(DMA) || defined(DMA1))    \r\n    if ((hadc->Init.Overrun == ADC_OVR_DATA_PRESERVED)            ||\r\n        HAL_IS_BIT_SET(hadc->Instance->CFGR1, ADC_CFGR1_DMAEN)  )\r\n#else\r\n    if (hadc->Init.Overrun == ADC_OVR_DATA_PRESERVED)\r\n#endif\r\n    {\r\n      /* Set ADC error code to overrun */\r\n      SET_BIT(hadc->ErrorCode, HAL_ADC_ERROR_OVR);\r\n\r\n      /* Clear ADC overrun flag */\r\n      __HAL_ADC_CLEAR_FLAG(hadc, ADC_FLAG_OVR);\r\n\r\n#if (USE_HAL_ADC_REGISTER_CALLBACKS == 1)\r\n      hadc->ErrorCallback(hadc);\r\n#else\r\n      HAL_ADC_ErrorCallback(hadc);\r\n#endif /* USE_HAL_ADC_REGISTER_CALLBACKS */\r\n    }\r\n\r\n    /* Clear the Overrun flag */\r\n    __HAL_ADC_CLEAR_FLAG(hadc, ADC_FLAG_OVR);\r\n  }\r\n\r\n}"
+    },
+    {
+      "name": "HAL_ADC_ConvCpltCallback",
+      "sig": "void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)",
+      "brief": "规则组转换完成回调(弱定义空函数): 非阻塞模式下由 HAL_ADC_IRQHandler() 自动调用, 用户在应用中重写。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "__weak void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hadc);\r\n\r\n  /* NOTE : This function should not be modified. When the callback is needed,\r\n            function HAL_ADC_ConvCpltCallback must be implemented in the user file.\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_ADC_ConvHalfCpltCallback",
+      "sig": "void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)",
+      "brief": "规则组转换 DMA 半传输回调(弱定义空函数), 用户在应用中重写。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "__weak void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hadc);\r\n\r\n  /* NOTE : This function should not be modified. When the callback is needed,\r\n            function HAL_ADC_ConvHalfCpltCallback must be implemented in the user file.\r\n  */\r\n}"
+    },
+    {
+      "name": "HAL_ADC_LevelOutOfWindowCallback",
+      "sig": "void HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef* hadc)",
+      "brief": "模拟看门狗(电平越窗)回调(弱定义空函数): 非阻塞模式下由 HAL_ADC_IRQHandler() 自动调用, 用户在应用中重写。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "__weak void HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef* hadc)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hadc);\r\n\r\n  /* NOTE : This function should not be modified. When the callback is needed,\r\n            function HAL_ADC_LevelOoutOfWindowCallback must be implemented in the user file.\r\n  */\r\n}"
+    },
+    {
+      "name": "HAL_ADC_ErrorCallback",
+      "sig": "void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)",
+      "brief": "ADC 错误回调(弱定义空函数): 中断或 DMA 模式出错时调用, 用户在应用中重写。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "__weak void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hadc);\r\n\r\n  /* NOTE : This function should not be modified. When the callback is needed,\r\n            function HAL_ADC_ErrorCallback must be implemented in the user file.\r\n  */\r\n}"
+    },
+    {
+      "name": "HAL_ADC_ConfigChannel",
+      "sig": "HAL_StatusTypeDef HAL_ADC_ConfigChannel(ADC_HandleTypeDef* hadc, ADC_ChannelConfTypeDef* sConfig)",
+      "brief": "将指定通道加入(或移出)规则组序列, 并配置采样时间。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        },
+        {
+          "name": "sConfig",
+          "type": "ADC_ChannelConfTypeDef *",
+          "desc": "通道配置结构体, 含 Channel/Rank/SamplingTime"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 规则组转换正在进行无法更新"
+      },
+      "notes": [
+        "支持在线更新: 后续调用可在线修改通道配置, 无需复位 ADC。",
+        "内部通道(VrefInt/TempSensor)选中时自动使能 CCR 中对应测量通路; 温度传感器需等待稳定时间(约 10us)。",
+        "Rank 取 ADC_RANK_NONE 时将该通道从序列中移除。"
+      ],
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_ADC_ConfigChannel(ADC_HandleTypeDef* hadc, ADC_ChannelConfTypeDef* sConfig)\r\n{\r\n  HAL_StatusTypeDef tmp_hal_status = HAL_OK;\r\n  __IO uint32_t wait_loop_index = 0U;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(hadc->Instance));\r\n  assert_param(IS_ADC_CHANNEL(sConfig->Channel));\r\n  assert_param(IS_ADC_RANK(sConfig->Rank));\r\n\r\n  if (! IS_ADC_SAMPLE_TIME(hadc->Init.SamplingTimeCommon))\r\n  {\r\n    assert_param(IS_ADC_SAMPLE_TIME(sConfig->SamplingTime));\r\n  }\r\n\r\n  /* Process locked */\r\n  __HAL_LOCK(hadc);\r\n\r\n  /* Parameters update conditioned to ADC state:                              */\r\n  /* Parameters that can be updated when ADC is disabled or enabled without   */\r\n  /* conversion on going on regular group:                                    */\r\n  /*  - Channel number                                                        */\r\n  /*  - Channel sampling time                                                 */\r\n  /*  - Management of internal measurement channels: VrefInt/TempSensor  */\r\n  if (ADC_IS_CONVERSION_ONGOING_REGULAR(hadc) == RESET)\r\n  {\r\n    /* Configure channel: depending on rank setting, add it or remove it from */\r\n    /* ADC conversion sequencer.                                              */\r\n    if (sConfig->Rank != ADC_RANK_NONE)\r\n    {\r\n      /* Regular sequence configuration */\r\n      /* Set the channel selection register from the selected channel */\r\n      hadc->Instance->CHSELR |= ADC_CHSELR_CHANNEL(sConfig->Channel);\r\n\r\n      /* Channel sampling time configuration */\r\n      /* Management of parameters \"SamplingTimeCommon\" and \"SamplingTime\"     */\r\n      /* (obsolete): sampling time set in this function with                  */\r\n      /* parameter \"SamplingTime\" (obsolete) only if not already set into     */\r\n      /* ADC initialization structure with parameter \"SamplingTimeCommon\".    */\r\n      if (! IS_ADC_SAMPLE_TIME(hadc->Init.SamplingTimeCommon))\r\n      {\r\n        /* Modify sampling time if needed (not needed in case of reoccurrence */\r\n        /* for several channels programmed consecutively into the sequencer)  */\r\n        if (sConfig->SamplingTime != ADC_GET_SAMPLINGTIME(hadc))\r\n        {\r\n          /* Channel sampling time configuration */\r\n          /* Clear the old sample time */\r\n          hadc->Instance->SMPR &= ~(ADC_SMPR_SMP);\r\n\r\n          /* Set the new sample time */\r\n          hadc->Instance->SMPR |= ADC_SMPR_SET(sConfig->SamplingTime);\r\n        }\r\n      }\r\n\r\n      /* Management of internal measurement channels: VrefInt/TempSensor */\r\n      /* internal measurement paths enable: If internal channel selected,     */\r\n      /* enable dedicated internal buffers and path.                          */\r\n      /* Note: these internal measurement paths can be disabled using         */\r\n      /*       HAL_ADC_DeInit() or removing the channel from sequencer with   */\r\n      /*       channel configuration parameter \"Rank\".                        */\r\n      if(ADC_IS_CHANNEL_INTERNAL(sConfig->Channel))\r\n      {\r\n        /* If Channel_8 is selected, enable Temp. sensor measurement path. */\r\n        /* If Channel_9 is selected, enable VREFINT measurement path. */\r\n\r\n        ADC->CCR |= ADC_CHANNEL_INTERNAL_PATH(sConfig->Channel);\r\n\r\n        /* If Temp. sensor is selected, wait for stabilization delay */\r\n        if (sConfig->Channel == ADC_CHANNEL_TEMPSENSOR)\r\n        {\r\n          /* Delay for temperature sensor stabilization time */\r\n          /* Compute number of CPU cycles to wait for */\r\n          wait_loop_index = (ADC_TEMPSENSOR_DELAY_US * (SystemCoreClock / 1000000U));\r\n          while(wait_loop_index != 0U)\r\n          {\r\n            wait_loop_index--;\r\n          }\r\n        }\r\n      }\r\n    }\r\n    else\r\n    {\r\n      /* Regular sequence configuration */\r\n      /* Reset the channel selection register from the selected channel */\r\n      hadc->Instance->CHSELR &= ~ADC_CHSELR_CHANNEL(sConfig->Channel);\r\n\r\n      /* Management of internal measurement channels: VrefInt/TempSensor */\r\n      /* internal measurement paths disable: If internal channel selected,    */\r\n      /* disable dedicated internal buffers and path.                         */\r\n      if(ADC_IS_CHANNEL_INTERNAL(sConfig->Channel))\r\n      {\r\n        ADC->CCR &= ~ADC_CHANNEL_INTERNAL_PATH(sConfig->Channel);\r\n      }\r\n    }\r\n  }\r\n\r\n  /* If a conversion is on going on regular group, no update on regular       */\r\n  /* channel could be done on neither of the channel configuration structure  */\r\n  /* parameters.                                                              */\r\n  else\r\n  {\r\n    /* Update ADC state machine to error */\r\n    SET_BIT(hadc->State, HAL_ADC_STATE_ERROR_CONFIG);\r\n\r\n    tmp_hal_status = HAL_ERROR;\r\n  }\r\n\r\n  /* Process unlocked */\r\n  __HAL_UNLOCK(hadc);\r\n\r\n  /* Return function status */\r\n  return tmp_hal_status;\r\n}"
+    },
+    {
+      "name": "HAL_ADC_ConfigVrefBuf",
+      "sig": "HAL_StatusTypeDef HAL_ADC_ConfigVrefBuf(ADC_HandleTypeDef* hadc, uint32_t VrefBuf)",
+      "brief": "配置 ADC 基准电压缓冲(VrefBuf)输出: VCCA 直连或 1.5V/2.048V/2.5V 内部基准。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        },
+        {
+          "name": "VrefBuf",
+          "type": "uint32_t",
+          "desc": "基准选择: ADC_VREFBUF_VCCA / ADC_VREFBUF_1P5V / ADC_VREFBUF_2P048V / ADC_VREFBUF_2P5V"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 参数错误"
+      },
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_ADC_ConfigVrefBuf(ADC_HandleTypeDef* hadc, uint32_t VrefBuf)\r\n{ \r\n  HAL_StatusTypeDef tmp_hal_status = HAL_OK;\r\n \r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(hadc->Instance));\r\n  assert_param(IS_ADC_VREFBUF(VrefBuf));\r\n \r\n  /* Process locked */\r\n  __HAL_LOCK(hadc);\r\n  \r\n  MODIFY_REG(hadc->Instance->CR, ADC_CR_VREF_BUFFERE | ADC_CR_VREFBUFF_SEL ,VrefBuf);\r\n  \r\n  if(VrefBuf != ADC_VREFBUF_VCCA)\r\n  {\r\n    SET_BIT(ADC->CCR,ADC_CCR_VREFEN);\r\n  }\r\n  /* Process unlocked */\r\n  __HAL_UNLOCK(hadc);\r\n  \r\n  /* Return function status */\r\n  return tmp_hal_status;\r\n}"
+    },
+    {
+      "name": "HAL_ADC_AnalogWDGConfig",
+      "sig": "HAL_StatusTypeDef HAL_ADC_AnalogWDGConfig(ADC_HandleTypeDef* hadc, ADC_AnalogWDGConfTypeDef* AnalogWDGConfig)",
+      "brief": "配置模拟看门狗: 监测模式(单通道/全部通道/禁止)、被监测通道、高/低阈值与中断模式。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        },
+        {
+          "name": "AnalogWDGConfig",
+          "type": "ADC_AnalogWDGConfTypeDef *",
+          "desc": "看门狗配置结构体, 含 WatchdogMode/Channel/ITMode/HighThreshold/LowThreshold"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 参数越界或转换正在进行"
+      },
+      "notes": [
+        "阈值按所选分辨率左对齐到 bit 11(12 位分辨率时不偏移)。",
+        "支持在线修改配置。"
+      ],
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_ADC_AnalogWDGConfig(ADC_HandleTypeDef* hadc, ADC_AnalogWDGConfTypeDef* AnalogWDGConfig)\r\n{\r\n  HAL_StatusTypeDef tmp_hal_status = HAL_OK;\r\n\r\n  uint32_t tmpAWDHighThresholdShifted;\r\n  uint32_t tmpAWDLowThresholdShifted;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(hadc->Instance));\r\n  assert_param(IS_ADC_ANALOG_WATCHDOG_MODE(AnalogWDGConfig->WatchdogMode));\r\n  assert_param(IS_FUNCTIONAL_STATE(AnalogWDGConfig->ITMode));\r\n\r\n  /* Verify if threshold is within the selected ADC resolution */\r\n  assert_param(IS_ADC_RANGE(ADC_GET_RESOLUTION(hadc), AnalogWDGConfig->HighThreshold));\r\n  assert_param(IS_ADC_RANGE(ADC_GET_RESOLUTION(hadc), AnalogWDGConfig->LowThreshold));\r\n\r\n  if(AnalogWDGConfig->WatchdogMode == ADC_ANALOGWATCHDOG_SINGLE_REG)\r\n  {\r\n    assert_param(IS_ADC_CHANNEL(AnalogWDGConfig->Channel));\r\n  }\r\n\r\n  /* Process locked */\r\n  __HAL_LOCK(hadc);\r\n\r\n  /* Parameters update conditioned to ADC state:                              */\r\n  /* Parameters that can be updated when ADC is disabled or enabled without   */\r\n  /* conversion on going on regular group:                                    */\r\n  /*  - Analog watchdog channels                                              */\r\n  /*  - Analog watchdog thresholds                                            */\r\n  if (ADC_IS_CONVERSION_ONGOING_REGULAR(hadc) == RESET)\r\n  {\r\n    /* Configuration of analog watchdog:                                      */\r\n    /*  - Set the analog watchdog enable mode: one or overall group of        */\r\n    /*    channels.                                                           */\r\n    /*  - Set the Analog watchdog channel (is not used if watchdog            */\r\n    /*    mode \"all channels\": ADC_CFGR_AWD1SGL=0).                           */\r\n    hadc->Instance->CFGR1 &= ~( ADC_CFGR1_AWDSGL |\r\n                                ADC_CFGR1_AWDEN  |\r\n                                ADC_CFGR1_AWDCH   );\r\n\r\n    hadc->Instance->CFGR1 |= ( AnalogWDGConfig->WatchdogMode            |\r\n                               ADC_CFGR_AWDCH(AnalogWDGConfig->Channel)  );\r\n\r\n    /* Shift the offset in function of the selected ADC resolution: Thresholds*/\r\n    /* have to be left-aligned on bit 11, the LSB (right bits) are set to 0   */\r\n    tmpAWDHighThresholdShifted = ADC_AWD1THRESHOLD_SHIFT_RESOLUTION(hadc, AnalogWDGConfig->HighThreshold);\r\n    tmpAWDLowThresholdShifted  = ADC_AWD1THRESHOLD_SHIFT_RESOLUTION(hadc, AnalogWDGConfig->LowThreshold);\r\n\r\n    /* Set the high and low thresholds */\r\n    hadc->Instance->TR &= ~(ADC_TR_HT | ADC_TR_LT);\r\n    hadc->Instance->TR |=  ( ADC_TRX_HIGHTHRESHOLD (tmpAWDHighThresholdShifted) |\r\n                             tmpAWDLowThresholdShifted                           );\r\n\r\n    /* Clear the ADC Analog watchdog flag (in case of left enabled by         */\r\n    /* previous ADC operations) to be ready to use for HAL_ADC_IRQHandler()   */\r\n    /* or HAL_ADC_PollForEvent().                                             */\r\n    __HAL_ADC_CLEAR_FLAG(hadc, ADC_IT_AWD);\r\n\r\n    /* Configure ADC Analog watchdog interrupt */\r\n    if(AnalogWDGConfig->ITMode == ENABLE)\r\n    {\r\n      /* Enable the ADC Analog watchdog interrupt */\r\n      __HAL_ADC_ENABLE_IT(hadc, ADC_IT_AWD);\r\n    }\r\n    else\r\n    {\r\n      /* Disable the ADC Analog watchdog interrupt */\r\n      __HAL_ADC_DISABLE_IT(hadc, ADC_IT_AWD);\r\n    }\r\n\r\n  }\r\n  /* If a conversion is on going on regular group, no update could be done    */\r\n  /* on neither of the AWD configuration structure parameters.                */\r\n  else\r\n  {\r\n    /* Update ADC state machine to error */\r\n    SET_BIT(hadc->State, HAL_ADC_STATE_ERROR_CONFIG);\r\n\r\n    tmp_hal_status = HAL_ERROR;\r\n  }\r\n\r\n\r\n  /* Process unlocked */\r\n  __HAL_UNLOCK(hadc);\r\n\r\n  /* Return function status */\r\n  return tmp_hal_status;\r\n}"
+    },
+    {
+      "name": "HAL_ADC_GetState",
+      "sig": "uint32_t HAL_ADC_GetState(ADC_HandleTypeDef* hadc)",
+      "brief": "返回 ADC 状态机(位域), 需与 HAL_ADC_STATE_* 位逐一比较。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "ADC 状态位域, 如 HAL_ADC_STATE_REG_BUSY / HAL_ADC_STATE_AWD1"
+      },
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "uint32_t HAL_ADC_GetState(ADC_HandleTypeDef* hadc)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(hadc->Instance));\r\n\r\n  /* Return ADC state */\r\n  return hadc->State;\r\n}"
+    },
+    {
+      "name": "HAL_ADC_GetError",
+      "sig": "uint32_t HAL_ADC_GetError(ADC_HandleTypeDef *hadc)",
+      "brief": "返回 ADC 错误码。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "错误码, 对应 HAL_ADC_ERROR_*"
+      },
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "uint32_t HAL_ADC_GetError(ADC_HandleTypeDef *hadc)\r\n{\r\n  return hadc->ErrorCode;\r\n}"
+    },
+    {
+      "name": "HAL_ADC_Calibration_Start",
+      "sig": "HAL_StatusTypeDef HAL_ADC_Calibration_Start(ADC_HandleTypeDef* hadc)",
+      "brief": "执行 ADC 自动自校准(偏移校准)。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 校准完成; HAL_ERROR 校准超时或 ADC 未禁止"
+      },
+      "notes": [
+        "前提: ADC 必须处于禁止状态(在 HAL_ADC_Start() 之前或 HAL_ADC_Stop() 之后执行)。",
+        "校准完成后可用 HAL_ADC_GetValue() 读取校准因子(DR[6:0], 7 位)。"
+      ],
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_ADC_Calibration_Start(ADC_HandleTypeDef* hadc)\r\n{\r\n  HAL_StatusTypeDef tmp_hal_status = HAL_OK;\r\n  uint32_t tickstart = 0U;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(hadc->Instance));\r\n\r\n  /* Process locked */\r\n  __HAL_LOCK(hadc);\r\n\r\n  /* Calibration prerequisite: ADC must be disabled. */\r\n  if (ADC_IS_ENABLE(hadc) == RESET)\r\n  {\r\n    /* Set ADC state */\r\n    ADC_STATE_CLR_SET(hadc->State,\r\n                      HAL_ADC_STATE_REG_BUSY,\r\n                      HAL_ADC_STATE_BUSY_INTERNAL);\r\n\r\n    /* Start ADC calibration */\r\n    hadc->Instance->CR |= ADC_CR_ADCAL;\r\n\r\n    tickstart = HAL_GetTick();\r\n\r\n    /* Wait for calibration completion */\r\n    while(HAL_IS_BIT_SET(hadc->Instance->CR, ADC_CR_ADCAL))\r\n    {\r\n      if((HAL_GetTick() - tickstart) > ADC_CALIBRATION_TIMEOUT)\r\n      {\r\n        /* Update ADC state machine to error */\r\n        ADC_STATE_CLR_SET(hadc->State,\r\n                          HAL_ADC_STATE_BUSY_INTERNAL,\r\n                          HAL_ADC_STATE_ERROR_INTERNAL);\r\n\r\n        /* Process unlocked */\r\n        __HAL_UNLOCK(hadc);\r\n\r\n        return HAL_ERROR;\r\n      }\r\n    }\r\n    /* Set ADC state */\r\n    ADC_STATE_CLR_SET(hadc->State,\r\n                      HAL_ADC_STATE_BUSY_INTERNAL,\r\n                      HAL_ADC_STATE_RESET);\r\n  }\r\n  else\r\n  {\r\n    /* Update ADC state machine to error */\r\n    SET_BIT(hadc->State, HAL_ADC_STATE_ERROR_CONFIG);\r\n\r\n    tmp_hal_status = HAL_ERROR;\r\n  }\r\n\r\n  /* Process unlocked */\r\n  __HAL_UNLOCK(hadc);\r\n\r\n  /* Return function status */\r\n  return tmp_hal_status;\r\n}"
+    },
+    {
+      "name": "HAL_ADC_Calibration_SetAndStart",
+      "sig": "HAL_StatusTypeDef HAL_ADC_Calibration_SetAndStart(ADC_HandleTypeDef* hadc,uint32_t CalibSamplingTime,uint32_t CalibSelection)",
+      "brief": "设置校准采样时间与校准选择(仅偏移 / 偏移+电容)后执行 ADC 自动自校准。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        },
+        {
+          "name": "CalibSamplingTime",
+          "type": "uint32_t",
+          "desc": "校准采样时间: ADC_CALIBSAMPLETIME_1CYCLE / 2CYCLES / 4CYCLES / 8CYCLES"
+        },
+        {
+          "name": "CalibSelection",
+          "type": "uint32_t",
+          "desc": "校准选择: ADC_CALIBSELECTION_ONLYOFFSET / ADC_CALIBSELECTION_OFFSET_CAPACITANCE"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 校准完成; HAL_ERROR 校准超时或 ADC 未禁止"
+      },
+      "notes": [
+        "前提: ADC 必须处于禁止状态。"
+      ],
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_ADC_Calibration_SetAndStart(ADC_HandleTypeDef* hadc,uint32_t CalibSamplingTime,uint32_t CalibSelection) \r\n{\r\n  HAL_StatusTypeDef tmp_hal_status = HAL_OK;\r\n  uint32_t tickstart = 0U;\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(hadc->Instance));\r\n  assert_param(IS_ADC_CALIBRATION_SAMPLETIME(CalibSamplingTime));\r\n  assert_param(IS_ADC_CALIBRATION_SELECTION(CalibSelection));\r\n\r\n  /* Process locked */\r\n  __HAL_LOCK(hadc);\r\n\r\n  /* Calibration prerequisite: ADC must be disabled. */\r\n  if (ADC_IS_ENABLE(hadc) == RESET)\r\n  {\r\n    /* Set ADC state */\r\n    ADC_STATE_CLR_SET(hadc->State,\r\n                      HAL_ADC_STATE_REG_BUSY,\r\n                      HAL_ADC_STATE_BUSY_INTERNAL);\r\n    \r\n    hadc->Instance->CCSR &= ~( ADC_CCSR_CALSMP | ADC_CCSR_CALSEL  );\r\n    hadc->Instance->CCSR |= ( CalibSamplingTime | CalibSelection );\r\n\r\n    /* Start ADC calibration */\r\n    hadc->Instance->CR |= ADC_CR_ADCAL;\r\n\r\n    tickstart = HAL_GetTick();\r\n\r\n    /* Wait for calibration completion */\r\n    while(HAL_IS_BIT_SET(hadc->Instance->CR, ADC_CR_ADCAL))\r\n    {\r\n      if((HAL_GetTick() - tickstart) > ADC_CALIBRATION_TIMEOUT)\r\n      {\r\n        /* Update ADC state machine to error */\r\n        ADC_STATE_CLR_SET(hadc->State,\r\n                          HAL_ADC_STATE_BUSY_INTERNAL,\r\n                          HAL_ADC_STATE_ERROR_INTERNAL);\r\n\r\n        /* Process unlocked */\r\n        __HAL_UNLOCK(hadc);\r\n\r\n        return HAL_ERROR;\r\n      }\r\n    }\r\n\r\n    /* Set ADC state */\r\n    ADC_STATE_CLR_SET(hadc->State,\r\n                      HAL_ADC_STATE_BUSY_INTERNAL,\r\n                      HAL_ADC_STATE_RESET);\r\n  }\r\n  else\r\n  {\r\n    /* Update ADC state machine to error */\r\n    SET_BIT(hadc->State, HAL_ADC_STATE_ERROR_CONFIG);\r\n\r\n    tmp_hal_status = HAL_ERROR;\r\n  }\r\n\r\n  /* Process unlocked */\r\n  __HAL_UNLOCK(hadc);\r\n\r\n  /* Return function status */\r\n  return tmp_hal_status;\r\n}"
+    },
+    {
+      "name": "HAL_ADC_Calibration_GetStatus",
+      "sig": "HAL_ADCCalibStatusTypeDef HAL_ADC_Calibration_GetStatus(ADC_HandleTypeDef* hadc)",
+      "brief": "获取 ADC 校准状态(通过 CCSR 寄存器 CALON/OFFSUC/CAPSUC 位判断)。",
+      "params": [
+        {
+          "name": "hadc",
+          "type": "ADC_HandleTypeDef *",
+          "desc": "ADC 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_ADCCalibStatusTypeDef",
+        "desc": "HAL_ADCCALIBOK 校准成功; HAL_ADCCALIBERROR / HAL_ADCCALIBOFFFAIL / HAL_ADCCALIBCAPFAIL 相应失败"
+      },
+      "file": "py32f002b_hal_adc.c",
+      "kind": "function",
+      "src": "HAL_ADCCalibStatusTypeDef HAL_ADC_Calibration_GetStatus(ADC_HandleTypeDef* hadc) \r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_ADC_ALL_INSTANCE(hadc->Instance));\r\n  \r\n  ADC_STATE_CLR_SET(hadc->State,\r\n                      HAL_ADC_STATE_READY,\r\n                      HAL_ADC_STATE_BUSY_INTERNAL);\r\n  \r\n  /* Check CALON Status */\r\n  if(READ_BIT(hadc->Instance->CCSR, ADC_CCSR_CALON) == ADC_CCSR_CALON)\r\n  {\r\n    ADC_STATE_CLR_SET(hadc->State,\r\n                          HAL_ADC_STATE_BUSY_INTERNAL,\r\n                          HAL_ADC_STATE_ERROR_INTERNAL);       \r\n        \r\n    return HAL_ADCCALIBERROR;      \r\n  }\r\n \r\n  /* Check OFFSUC Status */\r\n  if(READ_BIT(hadc->Instance->CCSR, ADC_CCSR_OFFSUC) != ADC_CCSR_OFFSUC)\r\n  {    \r\n    ADC_STATE_CLR_SET(hadc->State,\r\n                          HAL_ADC_STATE_BUSY_INTERNAL,\r\n                          HAL_ADC_STATE_ERROR_INTERNAL);    \r\n        \r\n    return HAL_ADCCALIBOFFFAIL;      \r\n  }\r\n  /* Check CAPSUC Status */\r\n  if(READ_BIT(hadc->Instance->CCSR, ADC_CCSR_CALSEL) == ADC_CCSR_CALSEL)\r\n  {\r\n    if(READ_BIT(hadc->Instance->CCSR, ADC_CCSR_CAPSUC) != ADC_CCSR_CAPSUC)\r\n    {\r\n      ADC_STATE_CLR_SET(hadc->State,\r\n                          HAL_ADC_STATE_BUSY_INTERNAL,\r\n                          HAL_ADC_STATE_ERROR_INTERNAL);\r\n               \r\n      return HAL_ADCCALIBCAPFAIL;     \r\n    }\r\n  }\r\n  \r\n  ADC_STATE_CLR_SET(hadc->State,\r\n                      HAL_ADC_STATE_BUSY_INTERNAL,\r\n                      HAL_ADC_STATE_READY);\r\n\r\n  /* Return function status */\r\n  return HAL_ADCCALIBOK;         \r\n}"
+    },
+    {
+      "name": "__HAL_ADC_ENABLE",
+      "sig": "#define __HAL_ADC_ENABLE(__HANDLE__)                                           \\\r\n  ((__HANDLE__)->Instance->CR |= ADC_CR_ADEN)",
+      "brief": "宏: 使能 ADC 外设(置位 CR 寄存器 ADEN 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "ADC 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define __HAL_ADC_ENABLE(__HANDLE__)                                           \\\r\n  ((__HANDLE__)->Instance->CR |= ADC_CR_ADEN)"
+    },
+    {
+      "name": "__HAL_ADC_DISABLE",
+      "sig": "#define __HAL_ADC_DISABLE(__HANDLE__)                                          \\\r\n  do{                                                                          \\\r\n      (__HANDLE__)->Instance->CR |= ADC_CR_ADDIS;                              \\\r\n      __HAL_ADC_CLEAR_FLAG((__HANDLE__), (ADC_FLAG_EOSMP));                    \\\r\n  } while(0)",
+      "brief": "宏: 禁止 ADC 外设(置位 CR 寄存器 ADDIS 位, 并清除 EOSMP 标志)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "ADC 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define __HAL_ADC_DISABLE(__HANDLE__)                                          \\\r\n  do{                                                                          \\\r\n      (__HANDLE__)->Instance->CR |= ADC_CR_ADDIS;                              \\\r\n      __HAL_ADC_CLEAR_FLAG((__HANDLE__), (ADC_FLAG_EOSMP));                    \\\r\n  } while(0)"
+    },
+    {
+      "name": "__HAL_ADC_ENABLE_IT",
+      "sig": "#define __HAL_ADC_ENABLE_IT(__HANDLE__, __INTERRUPT__)                         \\\r\n  (((__HANDLE__)->Instance->IER) |= (__INTERRUPT__))",
+      "brief": "宏: 使能 ADC 中断源(写入 IER 寄存器)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "ADC 句柄"
+        },
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "中断源组合: ADC_IT_EOC / ADC_IT_EOS / ADC_IT_AWD / ADC_IT_OVR / ADC_IT_EOSMP"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define __HAL_ADC_ENABLE_IT(__HANDLE__, __INTERRUPT__)                         \\\r\n  (((__HANDLE__)->Instance->IER) |= (__INTERRUPT__))"
+    },
+    {
+      "name": "__HAL_ADC_DISABLE_IT",
+      "sig": "#define __HAL_ADC_DISABLE_IT(__HANDLE__, __INTERRUPT__)                        \\\r\n  (((__HANDLE__)->Instance->IER) &= ~(__INTERRUPT__))",
+      "brief": "宏: 禁止 ADC 中断源(清除 IER 寄存器对应位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "ADC 句柄"
+        },
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "中断源组合: ADC_IT_EOC / ADC_IT_EOS / ADC_IT_AWD / ADC_IT_OVR / ADC_IT_EOSMP"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define __HAL_ADC_DISABLE_IT(__HANDLE__, __INTERRUPT__)                        \\\r\n  (((__HANDLE__)->Instance->IER) &= ~(__INTERRUPT__))"
+    },
+    {
+      "name": "__HAL_ADC_GET_IT_SOURCE",
+      "sig": "#define __HAL_ADC_GET_IT_SOURCE(__HANDLE__, __INTERRUPT__)                     \\\r\n  (((__HANDLE__)->Instance->IER & (__INTERRUPT__)) == (__INTERRUPT__))",
+      "brief": "宏: 查询指定 ADC 中断源是否已使能。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "ADC 句柄"
+        },
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "中断源: ADC_IT_EOC / ADC_IT_EOS / ADC_IT_AWD / ADC_IT_OVR / ADC_IT_EOSMP"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "中断使能状态(SET 或 RESET)"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define __HAL_ADC_GET_IT_SOURCE(__HANDLE__, __INTERRUPT__)                     \\\r\n  (((__HANDLE__)->Instance->IER & (__INTERRUPT__)) == (__INTERRUPT__))"
+    },
+    {
+      "name": "__HAL_ADC_GET_FLAG",
+      "sig": "#define __HAL_ADC_GET_FLAG(__HANDLE__, __FLAG__)                               \\\r\n  ((((__HANDLE__)->Instance->ISR) & (__FLAG__)) == (__FLAG__))",
+      "brief": "宏: 查询指定 ADC 标志是否置位。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "ADC 句柄"
+        },
+        {
+          "name": "__FLAG__",
+          "type": "宏参数",
+          "desc": "标志: ADC_FLAG_EOC / ADC_FLAG_EOS / ADC_FLAG_AWD / ADC_FLAG_OVR / ADC_FLAG_EOSMP"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志状态(置位为 1, 否则 0)"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define __HAL_ADC_GET_FLAG(__HANDLE__, __FLAG__)                               \\\r\n  ((((__HANDLE__)->Instance->ISR) & (__FLAG__)) == (__FLAG__))"
+    },
+    {
+      "name": "__HAL_ADC_CLEAR_FLAG",
+      "sig": "#define __HAL_ADC_CLEAR_FLAG(__HANDLE__, __FLAG__)                             \\\r\n  (((__HANDLE__)->Instance->ISR) = (__FLAG__))",
+      "brief": "宏: 清除 ADC 挂起标志(ISR 写 1 清除)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "ADC 句柄"
+        },
+        {
+          "name": "__FLAG__",
+          "type": "宏参数",
+          "desc": "标志组合: ADC_FLAG_EOC / ADC_FLAG_EOS / ADC_FLAG_AWD / ADC_FLAG_OVR / ADC_FLAG_EOSMP"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define __HAL_ADC_CLEAR_FLAG(__HANDLE__, __FLAG__)                             \\\r\n  (((__HANDLE__)->Instance->ISR) = (__FLAG__))"
+    },
+    {
+      "name": "__HAL_ADC_RESET_HANDLE_STATE",
+      "sig": "#define __HAL_ADC_RESET_HANDLE_STATE(__HANDLE__)                               \\\r\n  do{                                                                          \\\r\n     (__HANDLE__)->State = HAL_ADC_STATE_RESET;                                \\\r\n     (__HANDLE__)->MspInitCallback = NULL;                                     \\\r\n     (__HANDLE__)->MspDeInitCallback = NULL;                                   \\\r\n    } while(0)",
+      "brief": "宏: 复位 ADC 句柄状态为 HAL_ADC_STATE_RESET(定义 USE_HAL_ADC_REGISTER_CALLBACKS 时同时清空 Msp 回调指针)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "ADC 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define __HAL_ADC_RESET_HANDLE_STATE(__HANDLE__)                               \\\r\n  do{                                                                          \\\r\n     (__HANDLE__)->State = HAL_ADC_STATE_RESET;                                \\\r\n     (__HANDLE__)->MspInitCallback = NULL;                                     \\\r\n     (__HANDLE__)->MspDeInitCallback = NULL;                                   \\\r\n    } while(0)"
+    }
+  ],
+  "ll": [],
+  "types": [
+    {
+      "name": "ADC_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t ClockPrescaler; uint32_t Resolution; uint32_t DataAlign; uint32_t ScanConvMode; uint32_t EOCSelection; FunctionalState LowPowerAutoWait; FunctionalState ContinuousConvMode; FunctionalState DiscontinuousConvMode; uint32_t ExternalTrigConv; uint32_t ExternalTrigConvEdge; FunctionalState DMAContinuousRequests; uint32_t Overrun; uint32_t SamplingTimeCommon; } ADC_InitTypeDef;",
+      "desc": "ADC 初始化与规则组配置结构体, 作为 HAL_ADC_Init() 的参数; 各参数更新受 ADC 状态约束。",
+      "members": [
+        {
+          "name": "ClockPrescaler",
+          "type": "uint32_t",
+          "desc": "ADC 时钟源与分频, 可取 ADC_CLOCK_SYNC_PCLK_DIVx / ADC_CLOCK_ASYNC_HSI_DIVx(只能在 ADC 禁止时修改)"
+        },
+        {
+          "name": "Resolution",
+          "type": "uint32_t",
+          "desc": "分辨率, 可取 ADC_RESOLUTION_12B / 10B / 8B / 6B"
+        },
+        {
+          "name": "DataAlign",
+          "type": "uint32_t",
+          "desc": "数据对齐, 可取 ADC_DATAALIGN_RIGHT / LEFT"
+        },
+        {
+          "name": "ScanConvMode",
+          "type": "uint32_t",
+          "desc": "规则组序列器: 单通道为单次转换, 多通道为序列扫描(可取 ADC_SCAN_DIRECTION_FORWARD / BACKWARD / ADC_SCAN_ENABLE)"
+        },
+        {
+          "name": "EOCSelection",
+          "type": "uint32_t",
+          "desc": "EOC 标志选择: ADC_EOC_SINGLE_CONV(每次转换) / ADC_EOC_SEQ_CONV(整序列)"
+        },
+        {
+          "name": "LowPowerAutoWait",
+          "type": "FunctionalState",
+          "desc": "低功耗自动等待: 只有读取上次转换数据后才启动新转换(勿与中断/DMA 模式同用)"
+        },
+        {
+          "name": "ContinuousConvMode",
+          "type": "FunctionalState",
+          "desc": "连续转换模式: ENABLE 连续 / DISABLE 单次"
+        },
+        {
+          "name": "DiscontinuousConvMode",
+          "type": "FunctionalState",
+          "desc": "不连续转换模式: 序列按每次一个 rank 分段(仅扫描模式有效, 与连续模式互斥)"
+        },
+        {
+          "name": "ExternalTrigConv",
+          "type": "uint32_t",
+          "desc": "外部触发源: ADC_EXTERNALTRIGCONV_T1_TRGO / T1_CC4 / ADC_SOFTWARE_START"
+        },
+        {
+          "name": "ExternalTrigConvEdge",
+          "type": "uint32_t",
+          "desc": "外部触发边沿: ADC_EXTERNALTRIGCONVEDGE_NONE / RISING / FALLING / RISINGFALLING"
+        },
+        {
+          "name": "DMAContinuousRequests",
+          "type": "FunctionalState",
+          "desc": "DMA 连续请求: ENABLE 连续传输(需 DMA 循环模式) / DISABLE 单次传输(定义 DMA 时存在)"
+        },
+        {
+          "name": "Overrun",
+          "type": "uint32_t",
+          "desc": "溢出行为: ADC_OVR_DATA_PRESERVED 保留 / ADC_OVR_DATA_OVERWRITTEN 覆盖"
+        },
+        {
+          "name": "SamplingTimeCommon",
+          "type": "uint32_t",
+          "desc": "各通道公共采样时间, 单位 ADC 时钟周期, 可取 ADC_SAMPLETIME_3CYCLES_5 .. 239CYCLES_5"
+        }
+      ],
+      "file": "py32f002b_hal_adc.h"
+    },
+    {
+      "name": "ADC_ChannelConfTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t Channel; uint32_t Rank; uint32_t SamplingTime; } ADC_ChannelConfTypeDef;",
+      "desc": "ADC 规则组通道配置结构体, 作为 HAL_ADC_ConfigChannel() 的参数。",
+      "members": [
+        {
+          "name": "Channel",
+          "type": "uint32_t",
+          "desc": "要配置的通道, 可取 ADC_CHANNEL_0 .. 10 / ADC_CHANNEL_TEMPSENSOR / ADC_CHANNEL_VREFINT"
+        },
+        {
+          "name": "Rank",
+          "type": "uint32_t",
+          "desc": "加入/移出序列: ADC_RANK_CHANNEL_NUMBER 加入(rank 固定为通道号) / ADC_RANK_NONE 移出"
+        },
+        {
+          "name": "SamplingTime",
+          "type": "uint32_t",
+          "desc": "采样时间(已废弃, 建议用 Init.SamplingTimeCommon); 影响整个规则组, 可取 ADC_SAMPLETIME_*"
+        }
+      ],
+      "file": "py32f002b_hal_adc.h"
+    },
+    {
+      "name": "ADC_AnalogWDGConfTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t WatchdogMode; uint32_t Channel; FunctionalState ITMode; uint32_t HighThreshold; uint32_t LowThreshold; } ADC_AnalogWDGConfTypeDef;",
+      "desc": "ADC 模拟看门狗配置结构体, 作为 HAL_ADC_AnalogWDGConfig() 的参数。",
+      "members": [
+        {
+          "name": "WatchdogMode",
+          "type": "uint32_t",
+          "desc": "监测模式: ADC_ANALOGWATCHDOG_NONE / SINGLE_REG(单通道) / ALL_REG(全部通道)"
+        },
+        {
+          "name": "Channel",
+          "type": "uint32_t",
+          "desc": "被监测通道(仅单通道模式有效), 可取 ADC_CHANNEL_*"
+        },
+        {
+          "name": "ITMode",
+          "type": "FunctionalState",
+          "desc": "中断模式: ENABLE 使能看门狗中断 / DISABLE 轮询"
+        },
+        {
+          "name": "HighThreshold",
+          "type": "uint32_t",
+          "desc": "高阈值: 依分辨率取 0x000~0xFFF(12 位) / 0x3FF(10 位) / 0xFF(8 位) / 0x3F(6 位)"
+        },
+        {
+          "name": "LowThreshold",
+          "type": "uint32_t",
+          "desc": "低阈值: 取值范围同 HighThreshold"
+        }
+      ],
+      "file": "py32f002b_hal_adc.h"
+    },
+    {
+      "name": "ADC_HandleTypeDef",
+      "kind": "struct",
+      "def": "typedef struct __ADC_HandleTypeDef { ADC_TypeDef *Instance; ADC_InitTypeDef Init; DMA_HandleTypeDef *DMA_Handle; HAL_LockTypeDef Lock; __IO uint32_t State; __IO uint32_t ErrorCode; void (*ConvCpltCallback)(...); void (*ConvHalfCpltCallback)(...); void (*LevelOutOfWindowCallback)(...); void (*ErrorCallback)(...); void (*MspInitCallback)(...); void (*MspDeInitCallback)(...); } ADC_HandleTypeDef;",
+      "desc": "ADC 句柄结构体: 含外设实例指针、初始化参数、DMA 句柄、锁定对象、状态位域、错误码与回调函数指针。",
+      "members": [
+        {
+          "name": "Instance",
+          "type": "ADC_TypeDef *",
+          "desc": "ADC 外设寄存器基地址指针"
+        },
+        {
+          "name": "Init",
+          "type": "ADC_InitTypeDef",
+          "desc": "ADC 初始化参数"
+        },
+        {
+          "name": "DMA_Handle",
+          "type": "DMA_HandleTypeDef *",
+          "desc": "DMA 句柄指针(定义 DMA 时存在)"
+        },
+        {
+          "name": "Lock",
+          "type": "HAL_LockTypeDef",
+          "desc": "ADC 锁定对象"
+        },
+        {
+          "name": "State",
+          "type": "__IO uint32_t",
+          "desc": "ADC 状态位域(HAL_ADC_STATE_*)"
+        },
+        {
+          "name": "ErrorCode",
+          "type": "__IO uint32_t",
+          "desc": "ADC 错误码(HAL_ADC_ERROR_*)"
+        },
+        {
+          "name": "ConvCpltCallback",
+          "type": "void (*)(struct __ADC_HandleTypeDef *)",
+          "desc": "转换完成回调(定义 USE_HAL_ADC_REGISTER_CALLBACKS 时存在)"
+        },
+        {
+          "name": "ConvHalfCpltCallback",
+          "type": "void (*)(struct __ADC_HandleTypeDef *)",
+          "desc": "DMA 半传输回调(同上)"
+        },
+        {
+          "name": "LevelOutOfWindowCallback",
+          "type": "void (*)(struct __ADC_HandleTypeDef *)",
+          "desc": "模拟看门狗回调(同上)"
+        },
+        {
+          "name": "ErrorCallback",
+          "type": "void (*)(struct __ADC_HandleTypeDef *)",
+          "desc": "错误回调(同上)"
+        },
+        {
+          "name": "MspInitCallback",
+          "type": "void (*)(struct __ADC_HandleTypeDef *)",
+          "desc": "MSP 初始化回调(同上)"
+        },
+        {
+          "name": "MspDeInitCallback",
+          "type": "void (*)(struct __ADC_HandleTypeDef *)",
+          "desc": "MSP 反初始化回调(同上)"
+        }
+      ],
+      "file": "py32f002b_hal_adc.h"
+    },
+    {
+      "name": "HAL_ADC_CallbackIDTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_ADC_CONVERSION_COMPLETE_CB_ID = 0x00U, HAL_ADC_CONVERSION_HALF_CB_ID = 0x01U, HAL_ADC_LEVEL_OUT_OF_WINDOW_1_CB_ID = 0x02U, HAL_ADC_ERROR_CB_ID = 0x03U, HAL_ADC_INJ_CONVERSION_COMPLETE_CB_ID = 0x04U, HAL_ADC_MSPINIT_CB_ID = 0x09U, HAL_ADC_MSPDEINIT_CB_ID = 0x0AU } HAL_ADC_CallbackIDTypeDef;",
+      "desc": "ADC 回调 ID 枚举, 用于 HAL_ADC_RegisterCallback() / HAL_ADC_UnRegisterCallback() 选择回调(需定义 USE_HAL_ADC_REGISTER_CALLBACKS=1)。",
+      "members": [
+        {
+          "name": "HAL_ADC_CONVERSION_COMPLETE_CB_ID",
+          "value": "0x00U",
+          "desc": "转换完成回调 ID"
+        },
+        {
+          "name": "HAL_ADC_CONVERSION_HALF_CB_ID",
+          "value": "0x01U",
+          "desc": "转换 DMA 半传输回调 ID"
+        },
+        {
+          "name": "HAL_ADC_LEVEL_OUT_OF_WINDOW_1_CB_ID",
+          "value": "0x02U",
+          "desc": "模拟看门狗 1 回调 ID"
+        },
+        {
+          "name": "HAL_ADC_ERROR_CB_ID",
+          "value": "0x03U",
+          "desc": "错误回调 ID"
+        },
+        {
+          "name": "HAL_ADC_INJ_CONVERSION_COMPLETE_CB_ID",
+          "value": "0x04U",
+          "desc": "注入组转换完成回调 ID(本芯片无注入组, 保留)"
+        },
+        {
+          "name": "HAL_ADC_MSPINIT_CB_ID",
+          "value": "0x09U",
+          "desc": "MSP 初始化回调 ID"
+        },
+        {
+          "name": "HAL_ADC_MSPDEINIT_CB_ID",
+          "value": "0x0AU",
+          "desc": "MSP 反初始化回调 ID"
+        }
+      ],
+      "file": "py32f002b_hal_adc.h"
+    },
+    {
+      "name": "HAL_ADCCalibStatusTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_ADCCALIBOK = 0x00U, HAL_ADCCALIBERROR = 0x01U, HAL_ADCCALIBOFFFAIL = 0x02U, HAL_ADCCALIBCAPFAIL = 0x03U } HAL_ADCCalibStatusTypeDef;",
+      "desc": "ADC 校准状态枚举, 为 HAL_ADC_Calibration_GetStatus() 的返回值。",
+      "members": [
+        {
+          "name": "HAL_ADCCALIBOK",
+          "value": "0x00U",
+          "desc": "校准成功"
+        },
+        {
+          "name": "HAL_ADCCALIBERROR",
+          "value": "0x01U",
+          "desc": "校准错误(校准仍在进行)"
+        },
+        {
+          "name": "HAL_ADCCALIBOFFFAIL",
+          "value": "0x02U",
+          "desc": "偏移校准失败"
+        },
+        {
+          "name": "HAL_ADCCALIBCAPFAIL",
+          "value": "0x03U",
+          "desc": "电容校准失败"
+        }
+      ],
+      "file": "py32f002b_hal_adc.h"
+    },
+    {
+      "name": "pADC_CallbackTypeDef",
+      "kind": "typedef",
+      "def": "typedef void (*pADC_CallbackTypeDef)(ADC_HandleTypeDef *hadc);",
+      "desc": "ADC 回调函数指针类型: 指向以 ADC 句柄为唯一参数的 void 函数(需定义 USE_HAL_ADC_REGISTER_CALLBACKS=1)。",
+      "members": [],
+      "file": "py32f002b_hal_adc.h"
+    },
+    {
+      "name": "ADC_TypeDef",
+      "kind": "periph",
+      "def": "typedef struct { __IO uint32_t ISR; __IO uint32_t IER; __IO uint32_t CR; __IO uint32_t CFGR1; __IO uint32_t CFGR2; __IO uint32_t SMPR; __IO uint32_t RESERVED1[2]; __IO uint32_t TR; __IO uint32_t RESERVED2; __IO uint32_t CHSELR; __IO uint32_t RESERVED3[5]; __IO uint32_t DR; __IO uint32_t CCSR; } ADC_TypeDef;",
+      "desc": "ADC 外设寄存器结构体。实例: ADC1(基地址 0x40012400)。",
+      "members": [
+        {
+          "name": "ISR",
+          "type": "__IO uint32_t",
+          "desc": "中断与状态寄存器(偏移 0x00): EOC/EOS/OVR/EOSMP/AWD 标志"
+        },
+        {
+          "name": "IER",
+          "type": "__IO uint32_t",
+          "desc": "中断使能寄存器(偏移 0x04)"
+        },
+        {
+          "name": "CR",
+          "type": "__IO uint32_t",
+          "desc": "控制寄存器(偏移 0x08): ADEN/ADDIS/ADSTART/ADSTP/ADCAL/VREF 缓冲控制"
+        },
+        {
+          "name": "CFGR1",
+          "type": "__IO uint32_t",
+          "desc": "配置寄存器 1(偏移 0x0C): 分辨率/对齐/扫描/连续/触发/看门狗/溢出"
+        },
+        {
+          "name": "CFGR2",
+          "type": "__IO uint32_t",
+          "desc": "配置寄存器 2(偏移 0x10): 时钟模式 CKMODE"
+        },
+        {
+          "name": "SMPR",
+          "type": "__IO uint32_t",
+          "desc": "采样时间寄存器(偏移 0x14)"
+        },
+        {
+          "name": "TR",
+          "type": "__IO uint32_t",
+          "desc": "模拟看门狗 1 阈值寄存器(偏移 0x20): HT/LT"
+        },
+        {
+          "name": "CHSELR",
+          "type": "__IO uint32_t",
+          "desc": "规则组序列器通道选择寄存器(偏移 0x28): CHSEL0..10"
+        },
+        {
+          "name": "DR",
+          "type": "__IO uint32_t",
+          "desc": "规则组数据寄存器(偏移 0x40, 只读)"
+        },
+        {
+          "name": "CCSR",
+          "type": "__IO uint32_t",
+          "desc": "校准配置与状态寄存器(偏移 0x44): CALSMP/CALSEL/CALON/OFFSUC/CAPSUC"
+        }
+      ],
+      "file": "py32f002xx5.h"
+    },
+    {
+      "name": "ADC_Common_TypeDef",
+      "kind": "periph",
+      "def": "typedef struct { __IO uint32_t CCR; } ADC_Common_TypeDef;",
+      "desc": "ADC 公共寄存器结构体。实例: ADC1_COMMON / ADC(基地址 0x40012708, ADC1 基地址 + 0x308); 存放 VrefInt 与温度传感器使能位。",
+      "members": [
+        {
+          "name": "CCR",
+          "type": "__IO uint32_t",
+          "desc": "公共配置寄存器: VREFEN(VrefInt 使能) / TSEN(温度传感器使能)"
+        }
+      ],
+      "file": "py32f002xx5.h"
+    }
+  ],
+  "consts": [
+    {
+      "name": "HAL_ADC_ERROR_NONE",
+      "value": "(0x00U)",
+      "desc": "无错误",
+      "group": "ADC 错误码",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_ERROR_NONE        (0x00U)   /*!< No error                                              */"
+    },
+    {
+      "name": "HAL_ADC_ERROR_INTERNAL",
+      "value": "(0x01U)",
+      "desc": "ADC 内部错误(时钟/使能/状态异常)",
+      "group": "ADC 错误码",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_ERROR_INTERNAL    (0x01U)   /*!< ADC IP internal error: if problem of clocking,"
+    },
+    {
+      "name": "HAL_ADC_ERROR_OVR",
+      "value": "(0x02U)",
+      "desc": "数据溢出错误",
+      "group": "ADC 错误码",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_ERROR_OVR         (0x02U)   /*!< Overrun error                                         */"
+    },
+    {
+      "name": "HAL_ADC_ERROR_DMA",
+      "value": "(0x04U)",
+      "desc": "DMA 传输错误(定义 DMA 时存在)",
+      "group": "ADC 错误码",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_ERROR_DMA         (0x04U)   /*!< DMA transfer error                                    */"
+    },
+    {
+      "name": "HAL_ADC_ERROR_INVALID_CALLBACK",
+      "value": "(0x10U)",
+      "desc": "无效回调错误(定义 USE_HAL_ADC_REGISTER_CALLBACKS 时存在)",
+      "group": "ADC 错误码",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_ERROR_INVALID_CALLBACK  (0x10U)   /*!< Invalid Callback error */"
+    },
+    {
+      "name": "HAL_ADC_STATE_RESET",
+      "value": "(0x00000000U)",
+      "desc": "ADC 未初始化或已禁止",
+      "group": "ADC 状态",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_STATE_RESET             (0x00000000U)    /*!< ADC not yet initialized or disabled */"
+    },
+    {
+      "name": "HAL_ADC_STATE_READY",
+      "value": "(0x00000001U)",
+      "desc": "ADC 就绪可用",
+      "group": "ADC 状态",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_STATE_READY             (0x00000001U)    /*!< ADC peripheral ready for use */"
+    },
+    {
+      "name": "HAL_ADC_STATE_BUSY_INTERNAL",
+      "value": "(0x00000002U)",
+      "desc": "ADC 忙于内部处理(初始化/校准)",
+      "group": "ADC 状态",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_STATE_BUSY_INTERNAL     (0x00000002U)    /*!< ADC is busy to internal process (initialization, calibration) */"
+    },
+    {
+      "name": "HAL_ADC_STATE_TIMEOUT",
+      "value": "(0x00000004U)",
+      "desc": "超时发生",
+      "group": "ADC 状态",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_STATE_TIMEOUT           (0x00000004U)    /*!< TimeOut occurrence */"
+    },
+    {
+      "name": "HAL_ADC_STATE_ERROR_INTERNAL",
+      "value": "(0x00000010U)",
+      "desc": "内部错误发生",
+      "group": "ADC 状态",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_STATE_ERROR_INTERNAL    (0x00000010U)    /*!< Internal error occurrence */"
+    },
+    {
+      "name": "HAL_ADC_STATE_ERROR_CONFIG",
+      "value": "(0x00000020U)",
+      "desc": "配置错误发生",
+      "group": "ADC 状态",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_STATE_ERROR_CONFIG      (0x00000020U)    /*!< Configuration error occurrence */"
+    },
+    {
+      "name": "HAL_ADC_STATE_ERROR_DMA",
+      "value": "(0x00000040U)",
+      "desc": "DMA 错误发生",
+      "group": "ADC 状态",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_STATE_ERROR_DMA         (0x00000040U)    /*!< DMA error occurrence */"
+    },
+    {
+      "name": "HAL_ADC_STATE_REG_BUSY",
+      "value": "(0x00000100U)",
+      "desc": "规则组转换正在进行(连续/外部触发/自动上电等)",
+      "group": "ADC 状态",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_STATE_REG_BUSY          (0x00000100U)    /*!< A conversion on group regular is ongoing or can occur (either by continuous mode,"
+    },
+    {
+      "name": "HAL_ADC_STATE_REG_EOC",
+      "value": "(0x00000200U)",
+      "desc": "规则组转换数据可用",
+      "group": "ADC 状态",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_STATE_REG_EOC           (0x00000200U)    /*!< Conversion data available on group regular */"
+    },
+    {
+      "name": "HAL_ADC_STATE_REG_OVR",
+      "value": "(0x00000400U)",
+      "desc": "规则组溢出发生",
+      "group": "ADC 状态",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_STATE_REG_OVR           (0x00000400U)    /*!< Overrun occurrence */"
+    },
+    {
+      "name": "HAL_ADC_STATE_REG_EOSMP",
+      "value": "(0x00000800U)",
+      "desc": "规则组采样结束状态位",
+      "group": "ADC 状态",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_STATE_REG_EOSMP         (0x00000800U)"
+    },
+    {
+      "name": "HAL_ADC_STATE_INJ_BUSY",
+      "value": "(0x00001000U)",
+      "desc": "注入组转换进行中(本芯片无注入组, 保留)",
+      "group": "ADC 状态",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_STATE_INJ_BUSY          (0x00001000U)"
+    },
+    {
+      "name": "HAL_ADC_STATE_INJ_EOC",
+      "value": "(0x00002000U)",
+      "desc": "注入组转换数据可用(保留)",
+      "group": "ADC 状态",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_STATE_INJ_EOC           (0x00002000U)"
+    },
+    {
+      "name": "HAL_ADC_STATE_INJ_JQOVF",
+      "value": "(0x00004000U)",
+      "desc": "注入组队列溢出(保留)",
+      "group": "ADC 状态",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_STATE_INJ_JQOVF         (0x00004000U)"
+    },
+    {
+      "name": "HAL_ADC_STATE_AWD1",
+      "value": "(0x00010000U)",
+      "desc": "模拟看门狗 1 越窗发生",
+      "group": "ADC 状态",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_STATE_AWD1              (0x00010000U)    /*!< Out-of-window occurrence of analog watchdog 1 */"
+    },
+    {
+      "name": "HAL_ADC_STATE_AWD2",
+      "value": "(0x00020000U)",
+      "desc": "模拟看门狗 2 状态位(保留)",
+      "group": "ADC 状态",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_STATE_AWD2              (0x00020000U)"
+    },
+    {
+      "name": "HAL_ADC_STATE_AWD3",
+      "value": "(0x00040000U)",
+      "desc": "模拟看门狗 3 状态位(保留)",
+      "group": "ADC 状态",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_STATE_AWD3              (0x00040000U)"
+    },
+    {
+      "name": "HAL_ADC_STATE_MULTIMODE_SLAVE",
+      "value": "(0x00100000U)",
+      "desc": "多 ADC 模式从机状态位(保留)",
+      "group": "ADC 状态",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_STATE_MULTIMODE_SLAVE   (0x00100000U)"
+    },
+    {
+      "name": "HAL_ADC_TSCAL1",
+      "value": "(*(uint32_t *)(0x1fff0114))",
+      "desc": "温度刻度 1 校准值(出厂烧录于系统存储区)",
+      "group": "温度刻度校准",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_TSCAL1                  (*(uint32_t *)(0x1fff0114))  /*!< Temperature Scale1 */"
+    },
+    {
+      "name": "HAL_ADC_TSCAL2",
+      "value": "(*(uint32_t *)(0x1fff0118))",
+      "desc": "温度刻度 2 校准值(出厂烧录于系统存储区)",
+      "group": "温度刻度校准",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define HAL_ADC_TSCAL2                  (*(uint32_t *)(0x1fff0118))  /*!< Temperature Scale2 */"
+    },
+    {
+      "name": "ADC_CLOCK_SYNC_PCLK_DIV1",
+      "value": "(0x00000000U)",
+      "desc": "ADC 同步时钟, APB 时钟 1 分频",
+      "group": "时钟分频",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CLOCK_SYNC_PCLK_DIV1      (0x00000000U)                                                               /*!< ADC synchronous clock derived from APB clock divided by a prescaler of 1 */"
+    },
+    {
+      "name": "ADC_CLOCK_SYNC_PCLK_DIV2",
+      "value": "((uint32_t)ADC_CFGR2_CKMODE_0)",
+      "desc": "ADC 同步时钟, APB 时钟 2 分频",
+      "group": "时钟分频",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CLOCK_SYNC_PCLK_DIV2      ((uint32_t)ADC_CFGR2_CKMODE_0)                                              /*!< ADC synchronous clock derived from APB clock divided by a prescaler of 2 */"
+    },
+    {
+      "name": "ADC_CLOCK_SYNC_PCLK_DIV4",
+      "value": "((uint32_t)ADC_CFGR2_CKMODE_1)",
+      "desc": "ADC 同步时钟, APB 时钟 4 分频",
+      "group": "时钟分频",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CLOCK_SYNC_PCLK_DIV4      ((uint32_t)ADC_CFGR2_CKMODE_1)                                              /*!< ADC synchronous clock derived from APB clock divided by a prescaler of 4 */"
+    },
+    {
+      "name": "ADC_CLOCK_SYNC_PCLK_DIV8",
+      "value": "((uint32_t)(ADC_CFGR2_CKMODE_0 | ADC_CFGR2_CKMODE_1))",
+      "desc": "ADC 同步时钟, APB 时钟 8 分频",
+      "group": "时钟分频",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CLOCK_SYNC_PCLK_DIV8      ((uint32_t)(ADC_CFGR2_CKMODE_0 | ADC_CFGR2_CKMODE_1))                       /*!< ADC synchronous clock derived from APB clock divided by a prescaler of 8 */"
+    },
+    {
+      "name": "ADC_CLOCK_SYNC_PCLK_DIV16",
+      "value": "((uint32_t)ADC_CFGR2_CKMODE_2)",
+      "desc": "ADC 同步时钟, APB 时钟 16 分频",
+      "group": "时钟分频",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CLOCK_SYNC_PCLK_DIV16     ((uint32_t)ADC_CFGR2_CKMODE_2)                                              /*!< ADC synchronous clock derived from APB clock divided by a prescaler of 16 */"
+    },
+    {
+      "name": "ADC_CLOCK_SYNC_PCLK_DIV32",
+      "value": "((uint32_t)(ADC_CFGR2_CKMODE_0 | ADC_CFGR2_CKMODE_2))",
+      "desc": "ADC 同步时钟, APB 时钟 32 分频",
+      "group": "时钟分频",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CLOCK_SYNC_PCLK_DIV32     ((uint32_t)(ADC_CFGR2_CKMODE_0 | ADC_CFGR2_CKMODE_2))                       /*!< ADC synchronous clock derived from APB clock divided by a prescaler of 32 */"
+    },
+    {
+      "name": "ADC_CLOCK_SYNC_PCLK_DIV64",
+      "value": "((uint32_t)(ADC_CFGR2_CKMODE_1 | ADC_CFGR2_CKMODE_2))",
+      "desc": "ADC 同步时钟, APB 时钟 64 分频",
+      "group": "时钟分频",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CLOCK_SYNC_PCLK_DIV64     ((uint32_t)(ADC_CFGR2_CKMODE_1 | ADC_CFGR2_CKMODE_2))                       /*!< ADC synchronous clock derived from APB clock divided by a prescaler of 64 */"
+    },
+    {
+      "name": "ADC_CLOCK_ASYNC_HSI_DIV1",
+      "value": "((uint32_t)ADC_CFGR2_CKMODE_3)",
+      "desc": "ADC 异步时钟, 专用 HSI(14MHz) 1 分频",
+      "group": "时钟分频",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CLOCK_ASYNC_HSI_DIV1      ((uint32_t)ADC_CFGR2_CKMODE_3)                                              /*!< ADC asynchronous clock derived from ADC dedicated HSI */"
+    },
+    {
+      "name": "ADC_CLOCK_ASYNC_HSI_DIV2",
+      "value": "((uint32_t)(ADC_CFGR2_CKMODE_0 | ADC_CFGR2_CKMODE_3))",
+      "desc": "ADC 异步时钟, HSI 2 分频",
+      "group": "时钟分频",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CLOCK_ASYNC_HSI_DIV2      ((uint32_t)(ADC_CFGR2_CKMODE_0 | ADC_CFGR2_CKMODE_3))                       /*!< ADC asynchronous clock derived from HSI clock divided by a prescaler of 2 */"
+    },
+    {
+      "name": "ADC_CLOCK_ASYNC_HSI_DIV4",
+      "value": "((uint32_t)(ADC_CFGR2_CKMODE_1 | ADC_CFGR2_CKMODE_3))",
+      "desc": "ADC 异步时钟, HSI 4 分频",
+      "group": "时钟分频",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CLOCK_ASYNC_HSI_DIV4      ((uint32_t)(ADC_CFGR2_CKMODE_1 | ADC_CFGR2_CKMODE_3))                       /*!< ADC asynchronous clock derived from HSI clock divided by a prescaler of 4 */"
+    },
+    {
+      "name": "ADC_CLOCK_ASYNC_HSI_DIV8",
+      "value": "((uint32_t)(ADC_CFGR2_CKMODE_0 | ADC_CFGR2_CKMODE_1 | ADC_CFGR2_CKMODE_3))",
+      "desc": "ADC 异步时钟, HSI 8 分频",
+      "group": "时钟分频",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CLOCK_ASYNC_HSI_DIV8      ((uint32_t)(ADC_CFGR2_CKMODE_0 | ADC_CFGR2_CKMODE_1 | ADC_CFGR2_CKMODE_3))  /*!< ADC asynchronous clock derived from HSI clock divided by a prescaler of 8 */"
+    },
+    {
+      "name": "ADC_CLOCK_ASYNC_HSI_DIV16",
+      "value": "((uint32_t)(ADC_CFGR2_CKMODE_2 | ADC_CFGR2_CKMODE_3))",
+      "desc": "ADC 异步时钟, HSI 16 分频",
+      "group": "时钟分频",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CLOCK_ASYNC_HSI_DIV16     ((uint32_t)(ADC_CFGR2_CKMODE_2 | ADC_CFGR2_CKMODE_3))                       /*!< ADC asynchronous clock derived from HSI clock divided by a prescaler of 16 */"
+    },
+    {
+      "name": "ADC_CLOCK_ASYNC_HSI_DIV32",
+      "value": "((uint32_t)(ADC_CFGR2_CKMODE_0 | ADC_CFGR2_CKMODE_2 | ADC_CFGR2_CKMODE_3))",
+      "desc": "ADC 异步时钟, HSI 32 分频",
+      "group": "时钟分频",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CLOCK_ASYNC_HSI_DIV32     ((uint32_t)(ADC_CFGR2_CKMODE_0 | ADC_CFGR2_CKMODE_2 | ADC_CFGR2_CKMODE_3))  /*!< ADC asynchronous clock derived from HSI clock divided by a prescaler of 32 */"
+    },
+    {
+      "name": "ADC_CLOCK_ASYNC_HSI_DIV64",
+      "value": "((uint32_t)(ADC_CFGR2_CKMODE_1 | ADC_CFGR2_CKMODE_2 | ADC_CFGR2_CKMODE_3))",
+      "desc": "ADC 异步时钟, HSI 64 分频",
+      "group": "时钟分频",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CLOCK_ASYNC_HSI_DIV64     ((uint32_t)(ADC_CFGR2_CKMODE_1 | ADC_CFGR2_CKMODE_2 | ADC_CFGR2_CKMODE_3))  /*!< ADC asynchronous clock derived from HSI clock divided by a prescaler of 64 */"
+    },
+    {
+      "name": "ADC_RESOLUTION_12B",
+      "value": "(0x00000000U)",
+      "desc": "12 位分辨率",
+      "group": "分辨率",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_RESOLUTION_12B      (0x00000000U)                       /*!<  ADC 12-bit resolution */"
+    },
+    {
+      "name": "ADC_RESOLUTION_10B",
+      "value": "((uint32_t)ADC_CFGR1_RESSEL_0)",
+      "desc": "10 位分辨率",
+      "group": "分辨率",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_RESOLUTION_10B      ((uint32_t)ADC_CFGR1_RESSEL_0)      /*!<  ADC 10-bit resolution */"
+    },
+    {
+      "name": "ADC_RESOLUTION_8B",
+      "value": "((uint32_t)ADC_CFGR1_RESSEL_1)",
+      "desc": "8 位分辨率",
+      "group": "分辨率",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_RESOLUTION_8B       ((uint32_t)ADC_CFGR1_RESSEL_1)      /*!<  ADC 8-bit resolution */"
+    },
+    {
+      "name": "ADC_RESOLUTION_6B",
+      "value": "((uint32_t)ADC_CFGR1_RESSEL)",
+      "desc": "6 位分辨率",
+      "group": "分辨率",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_RESOLUTION_6B       ((uint32_t)ADC_CFGR1_RESSEL)        /*!<  ADC 6-bit resolution */"
+    },
+    {
+      "name": "ADC_DATAALIGN_RIGHT",
+      "value": "(0x00000000U)",
+      "desc": "数据右对齐(对齐到 DR 的 bit0)",
+      "group": "数据对齐",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_DATAALIGN_RIGHT      (0x00000000U)"
+    },
+    {
+      "name": "ADC_DATAALIGN_LEFT",
+      "value": "((uint32_t)ADC_CFGR1_ALIGN)",
+      "desc": "数据左对齐(对齐到 DR 的 bit15)",
+      "group": "数据对齐",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_DATAALIGN_LEFT       ((uint32_t)ADC_CFGR1_ALIGN)"
+    },
+    {
+      "name": "ADC_SCAN_DIRECTION_FORWARD",
+      "value": "(0x00000001U)",
+      "desc": "扫描方向正向: 从通道 0 到通道 10",
+      "group": "扫描模式",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_SCAN_DIRECTION_FORWARD        (0x00000001U)        /*!< Scan direction forward: from channel 0 to channel 10 */"
+    },
+    {
+      "name": "ADC_SCAN_DIRECTION_BACKWARD",
+      "value": "(0x00000002U)",
+      "desc": "扫描方向反向: 从通道 10 到通道 0",
+      "group": "扫描模式",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_SCAN_DIRECTION_BACKWARD       (0x00000002U)        /*!< Scan direction backward: from channel 10 to channel 0 */"
+    },
+    {
+      "name": "ADC_SCAN_ENABLE",
+      "value": "ADC_SCAN_DIRECTION_FORWARD",
+      "desc": "使能扫描模式(等价于正向扫描)",
+      "group": "扫描模式",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_SCAN_ENABLE         ADC_SCAN_DIRECTION_FORWARD"
+    },
+    {
+      "name": "ADC_EXTERNALTRIGCONVEDGE_NONE",
+      "value": "(0x00000000U)",
+      "desc": "无外部触发边沿(禁止外部触发)",
+      "group": "触发边沿",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_EXTERNALTRIGCONVEDGE_NONE           (0x00000000U)"
+    },
+    {
+      "name": "ADC_EXTERNALTRIGCONVEDGE_RISING",
+      "value": "((uint32_t)ADC_CFGR1_EXTEN_0)",
+      "desc": "上升沿触发",
+      "group": "触发边沿",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_EXTERNALTRIGCONVEDGE_RISING         ((uint32_t)ADC_CFGR1_EXTEN_0)"
+    },
+    {
+      "name": "ADC_EXTERNALTRIGCONVEDGE_FALLING",
+      "value": "((uint32_t)ADC_CFGR1_EXTEN_1)",
+      "desc": "下降沿触发",
+      "group": "触发边沿",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_EXTERNALTRIGCONVEDGE_FALLING        ((uint32_t)ADC_CFGR1_EXTEN_1)"
+    },
+    {
+      "name": "ADC_EXTERNALTRIGCONVEDGE_RISINGFALLING",
+      "value": "((uint32_t)ADC_CFGR1_EXTEN)",
+      "desc": "上升/下降沿均触发",
+      "group": "触发边沿",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_EXTERNALTRIGCONVEDGE_RISINGFALLING  ((uint32_t)ADC_CFGR1_EXTEN)"
+    },
+    {
+      "name": "ADC_EOC_SINGLE_CONV",
+      "value": "((uint32_t) ADC_ISR_EOC)",
+      "desc": "EOC 标志选择: 每次转换结束",
+      "group": "EOC 选择",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_EOC_SINGLE_CONV         ((uint32_t) ADC_ISR_EOC)"
+    },
+    {
+      "name": "ADC_EOC_SEQ_CONV",
+      "value": "((uint32_t) ADC_ISR_EOSEQ)",
+      "desc": "EOC 标志选择: 整序列转换结束",
+      "group": "EOC 选择",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_EOC_SEQ_CONV            ((uint32_t) ADC_ISR_EOSEQ)"
+    },
+    {
+      "name": "ADC_OVR_DATA_OVERWRITTEN",
+      "value": "(0x00000000U)",
+      "desc": "溢出时新数据覆盖旧数据",
+      "group": "溢出行为",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_OVR_DATA_OVERWRITTEN            (0x00000000U)"
+    },
+    {
+      "name": "ADC_OVR_DATA_PRESERVED",
+      "value": "(0x00000001U)",
+      "desc": "溢出时保留旧数据",
+      "group": "溢出行为",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_OVR_DATA_PRESERVED              (0x00000001U)"
+    },
+    {
+      "name": "ADC_RANK_CHANNEL_NUMBER",
+      "value": "(0x00001000U)",
+      "desc": "使能所选通道的 rank, rank 固定为通道号(通道 0 对应 rank0 等)",
+      "group": "通道序列",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_RANK_CHANNEL_NUMBER                 (0x00001000U)  /*!< Enable the rank of the selected channels. Number of ranks in the sequence is defined by number of channels enabled, rank of each channel is defined by channel number (channel 0 fixed on rank 0, channel 1 fixed on rank1, ...) */"
+    },
+    {
+      "name": "ADC_RANK_NONE",
+      "value": "(0x00001001U)",
+      "desc": "将所选通道从序列器中移出",
+      "group": "通道序列",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_RANK_NONE                           (0x00001001U)  /*!< Disable the selected rank (selected channel) from sequencer */"
+    },
+    {
+      "name": "ADC_SAMPLETIME_3CYCLES_5",
+      "value": "(0x10000000U)",
+      "desc": "采样时间 3.5 个 ADC 时钟周期",
+      "group": "采样时间",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_SAMPLETIME_3CYCLES_5      (0x10000000U)                                  /*!< Sampling time 3.5 ADC clock cycles */"
+    },
+    {
+      "name": "ADC_SAMPLETIME_5CYCLES_5",
+      "value": "((uint32_t) ADC_SMPR_SMP_0)",
+      "desc": "采样时间 5.5 个 ADC 时钟周期",
+      "group": "采样时间",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_SAMPLETIME_5CYCLES_5      ((uint32_t) ADC_SMPR_SMP_0)                    /*!< Sampling time 5.5 ADC clock cycles */"
+    },
+    {
+      "name": "ADC_SAMPLETIME_7CYCLES_5",
+      "value": "((uint32_t) ADC_SMPR_SMP_1)",
+      "desc": "采样时间 7.5 个 ADC 时钟周期",
+      "group": "采样时间",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_SAMPLETIME_7CYCLES_5      ((uint32_t) ADC_SMPR_SMP_1)                    /*!< Sampling time 7.5 ADC clock cycles */"
+    },
+    {
+      "name": "ADC_SAMPLETIME_13CYCLES_5",
+      "value": "((uint32_t) (ADC_SMPR_SMP_1 | ADC_SMPR_SMP_0))",
+      "desc": "采样时间 13.5 个 ADC 时钟周期",
+      "group": "采样时间",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_SAMPLETIME_13CYCLES_5     ((uint32_t) (ADC_SMPR_SMP_1 | ADC_SMPR_SMP_0)) /*!< Sampling time 13.5 ADC clock cycles */"
+    },
+    {
+      "name": "ADC_SAMPLETIME_28CYCLES_5",
+      "value": "((uint32_t) ADC_SMPR_SMP_2)",
+      "desc": "采样时间 28.5 个 ADC 时钟周期",
+      "group": "采样时间",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_SAMPLETIME_28CYCLES_5     ((uint32_t) ADC_SMPR_SMP_2)                    /*!< Sampling time 28.5 ADC clock cycles */"
+    },
+    {
+      "name": "ADC_SAMPLETIME_41CYCLES_5",
+      "value": "((uint32_t) (ADC_SMPR_SMP_2 | ADC_SMPR_SMP_0))",
+      "desc": "采样时间 41.5 个 ADC 时钟周期",
+      "group": "采样时间",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_SAMPLETIME_41CYCLES_5     ((uint32_t) (ADC_SMPR_SMP_2 | ADC_SMPR_SMP_0)) /*!< Sampling time 41.5 ADC clock cycles */"
+    },
+    {
+      "name": "ADC_SAMPLETIME_134CYCLES_5",
+      "value": "((uint32_t)(ADC_SMPR_SMP_2 | ADC_SMPR_SMP_1))",
+      "desc": "采样时间 134.5 个 ADC 时钟周期",
+      "group": "采样时间",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_SAMPLETIME_134CYCLES_5    ((uint32_t)(ADC_SMPR_SMP_2 | ADC_SMPR_SMP_1))  /*!< Sampling time 134.5 ADC clock cycles */"
+    },
+    {
+      "name": "ADC_SAMPLETIME_239CYCLES_5",
+      "value": "((uint32_t) ADC_SMPR_SMP)",
+      "desc": "采样时间 239.5 个 ADC 时钟周期",
+      "group": "采样时间",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_SAMPLETIME_239CYCLES_5    ((uint32_t) ADC_SMPR_SMP)                      /*!< Sampling time 239.5 ADC clock cycles */"
+    },
+    {
+      "name": "ADC_VREFBUF_VCCA",
+      "value": "(0x00000000U)",
+      "desc": "基准缓冲输出: 直接使用 VCCA",
+      "group": "基准电压缓冲",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_VREFBUF_VCCA      (0x00000000U)                                              /*!< VREFBUF VCCA */"
+    },
+    {
+      "name": "ADC_VREFBUF_1P5V",
+      "value": "((uint32_t)(ADC_CR_VREF_BUFFERE))",
+      "desc": "基准缓冲输出: 1.5V",
+      "group": "基准电压缓冲",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_VREFBUF_1P5V      ((uint32_t)(ADC_CR_VREF_BUFFERE))                          /*!< VREFBUF 1.5V */"
+    },
+    {
+      "name": "ADC_VREFBUF_2P048V",
+      "value": "((uint32_t)(ADC_CR_VREF_BUFFERE | ADC_CR_VREFBUFF_SEL_0))",
+      "desc": "基准缓冲输出: 2.048V",
+      "group": "基准电压缓冲",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_VREFBUF_2P048V    ((uint32_t)(ADC_CR_VREF_BUFFERE | ADC_CR_VREFBUFF_SEL_0))  /*!< VREFBUF 2.048V */"
+    },
+    {
+      "name": "ADC_VREFBUF_2P5V",
+      "value": "((uint32_t)(ADC_CR_VREF_BUFFERE | ADC_CR_VREFBUFF_SEL_1))",
+      "desc": "基准缓冲输出: 2.5V",
+      "group": "基准电压缓冲",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_VREFBUF_2P5V      ((uint32_t)(ADC_CR_VREF_BUFFERE | ADC_CR_VREFBUFF_SEL_1))  /*!< VREFBUF 2.5V */"
+    },
+    {
+      "name": "ADC_ANALOGWATCHDOG_NONE",
+      "value": "( 0x00000000U)",
+      "desc": "禁止模拟看门狗",
+      "group": "模拟看门狗模式",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_ANALOGWATCHDOG_NONE                 ( 0x00000000U)"
+    },
+    {
+      "name": "ADC_ANALOGWATCHDOG_SINGLE_REG",
+      "value": "((uint32_t)(ADC_CFGR1_AWDSGL | ADC_CFGR1_AWDEN))",
+      "desc": "监测单个规则组通道",
+      "group": "模拟看门狗模式",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_ANALOGWATCHDOG_SINGLE_REG           ((uint32_t)(ADC_CFGR1_AWDSGL | ADC_CFGR1_AWDEN))"
+    },
+    {
+      "name": "ADC_ANALOGWATCHDOG_ALL_REG",
+      "value": "((uint32_t) ADC_CFGR1_AWDEN)",
+      "desc": "监测规则组全部通道",
+      "group": "模拟看门狗模式",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_ANALOGWATCHDOG_ALL_REG              ((uint32_t) ADC_CFGR1_AWDEN)"
+    },
+    {
+      "name": "ADC_AWD_EVENT",
+      "value": "((uint32_t)ADC_FLAG_AWD)",
+      "desc": "模拟看门狗事件(用于 HAL_ADC_PollForEvent)",
+      "group": "事件类型",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_AWD_EVENT              ((uint32_t)ADC_FLAG_AWD)  /*!< ADC Analog watchdog 1 event */"
+    },
+    {
+      "name": "ADC_OVR_EVENT",
+      "value": "((uint32_t)ADC_FLAG_OVR)",
+      "desc": "溢出事件(用于 HAL_ADC_PollForEvent)",
+      "group": "事件类型",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_OVR_EVENT              ((uint32_t)ADC_FLAG_OVR)  /*!< ADC overrun event */"
+    },
+    {
+      "name": "ADC_IT_AWD",
+      "value": "ADC_IER_AWDIE",
+      "desc": "模拟看门狗中断源",
+      "group": "中断源",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_IT_AWD           ADC_IER_AWDIE      /*!< ADC Analog watchdog interrupt source */"
+    },
+    {
+      "name": "ADC_IT_OVR",
+      "value": "ADC_IER_OVRIE",
+      "desc": "溢出中断源",
+      "group": "中断源",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_IT_OVR           ADC_IER_OVRIE      /*!< ADC overrun interrupt source */"
+    },
+    {
+      "name": "ADC_IT_EOS",
+      "value": "ADC_IER_EOSEQIE",
+      "desc": "规则序列转换结束中断源",
+      "group": "中断源",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_IT_EOS           ADC_IER_EOSEQIE    /*!< ADC End of Regular sequence of Conversions interrupt source */"
+    },
+    {
+      "name": "ADC_IT_EOC",
+      "value": "ADC_IER_EOCIE",
+      "desc": "规则单次转换结束中断源",
+      "group": "中断源",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_IT_EOC           ADC_IER_EOCIE      /*!< ADC End of Regular Conversion interrupt source */"
+    },
+    {
+      "name": "ADC_IT_EOSMP",
+      "value": "ADC_IER_EOSMPIE",
+      "desc": "采样结束中断源",
+      "group": "中断源",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_IT_EOSMP         ADC_IER_EOSMPIE    /*!< ADC End of Sampling interrupt source */"
+    },
+    {
+      "name": "ADC_FLAG_AWD",
+      "value": "ADC_ISR_AWD",
+      "desc": "模拟看门狗标志",
+      "group": "标志",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_FLAG_AWD           ADC_ISR_AWD      /*!< ADC Analog watchdog flag */"
+    },
+    {
+      "name": "ADC_FLAG_OVR",
+      "value": "ADC_ISR_OVR",
+      "desc": "溢出标志",
+      "group": "标志",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_FLAG_OVR           ADC_ISR_OVR      /*!< ADC overrun flag */"
+    },
+    {
+      "name": "ADC_FLAG_EOS",
+      "value": "ADC_ISR_EOSEQ",
+      "desc": "规则序列转换结束标志",
+      "group": "标志",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_FLAG_EOS           ADC_ISR_EOSEQ    /*!< ADC End of Regular sequence of Conversions flag */"
+    },
+    {
+      "name": "ADC_FLAG_EOC",
+      "value": "ADC_ISR_EOC",
+      "desc": "规则单次转换结束标志",
+      "group": "标志",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_FLAG_EOC           ADC_ISR_EOC      /*!< ADC End of Regular Conversion flag */"
+    },
+    {
+      "name": "ADC_FLAG_EOSMP",
+      "value": "ADC_ISR_EOSMP",
+      "desc": "采样结束标志",
+      "group": "标志",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_FLAG_EOSMP         ADC_ISR_EOSMP    /*!< ADC End of Sampling flag */"
+    },
+    {
+      "name": "ADC_CALIBSAMPLETIME_1CYCLE",
+      "value": "(0x00000000U)",
+      "desc": "校准采样时间 1 个 ADC 时钟周期",
+      "group": "校准采样时间",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CALIBSAMPLETIME_1CYCLE      (0x00000000U)                                         /*!< Calibration Sampling time 1 ADC clock cycle */"
+    },
+    {
+      "name": "ADC_CALIBSAMPLETIME_2CYCLES",
+      "value": "((uint32_t) ADC_CCSR_CALSMP_0)",
+      "desc": "校准采样时间 2 个 ADC 时钟周期",
+      "group": "校准采样时间",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CALIBSAMPLETIME_2CYCLES     ((uint32_t) ADC_CCSR_CALSMP_0)                        /*!< Calibration Sampling time 2 ADC clock cycles */"
+    },
+    {
+      "name": "ADC_CALIBSAMPLETIME_4CYCLES",
+      "value": "((uint32_t) ADC_CCSR_CALSMP_1)",
+      "desc": "校准采样时间 4 个 ADC 时钟周期",
+      "group": "校准采样时间",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CALIBSAMPLETIME_4CYCLES     ((uint32_t) ADC_CCSR_CALSMP_1)                        /*!< Calibration Sampling time 4 ADC clock cycles */"
+    },
+    {
+      "name": "ADC_CALIBSAMPLETIME_8CYCLES",
+      "value": "((uint32_t) (ADC_CCSR_CALSMP_1 | ADC_CCSR_CALSMP_0))",
+      "desc": "校准采样时间 8 个 ADC 时钟周期",
+      "group": "校准采样时间",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CALIBSAMPLETIME_8CYCLES     ((uint32_t) (ADC_CCSR_CALSMP_1 | ADC_CCSR_CALSMP_0))  /*!< Calibration Sampling time 8 ADC clock cycles */"
+    },
+    {
+      "name": "ADC_CALIBSELECTION_ONLYOFFSET",
+      "value": "(0x00000000U)",
+      "desc": "仅校准偏移(OFFSET)",
+      "group": "校准选择",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CALIBSELECTION_ONLYOFFSET              (0x00000000U)                         /*!< Calibration Selection Only Offset*/"
+    },
+    {
+      "name": "ADC_CALIBSELECTION_OFFSET_CAPACITANCE",
+      "value": "((uint32_t) ADC_CCSR_CALSEL)",
+      "desc": "校准偏移与电容(OFFSET+CAPACITANCE)",
+      "group": "校准选择",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CALIBSELECTION_OFFSET_CAPACITANCE      ((uint32_t) ADC_CCSR_CALSEL)          /*!< Calibration Selection Offset and CAPACITANCE */"
+    },
+    {
+      "name": "ADC_CHANNEL_0",
+      "value": "(0x00000000U)",
+      "desc": "ADC 外部通道 0(IN0)",
+      "group": "ADC 通道",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CHANNEL_0           (0x00000000U)"
+    },
+    {
+      "name": "ADC_CHANNEL_1",
+      "value": "(0x00000001U)",
+      "desc": "ADC 外部通道 1(IN1)",
+      "group": "ADC 通道",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CHANNEL_1           (0x00000001U)"
+    },
+    {
+      "name": "ADC_CHANNEL_2",
+      "value": "(0x00000002U)",
+      "desc": "ADC 外部通道 2(IN2)",
+      "group": "ADC 通道",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CHANNEL_2           (0x00000002U)"
+    },
+    {
+      "name": "ADC_CHANNEL_3",
+      "value": "(0x00000003U)",
+      "desc": "ADC 外部通道 3(IN3)",
+      "group": "ADC 通道",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CHANNEL_3           (0x00000003U)"
+    },
+    {
+      "name": "ADC_CHANNEL_4",
+      "value": "(0x00000004U)",
+      "desc": "ADC 外部通道 4(IN4)",
+      "group": "ADC 通道",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CHANNEL_4           (0x00000004U)"
+    },
+    {
+      "name": "ADC_CHANNEL_5",
+      "value": "(0x00000005U)",
+      "desc": "ADC 外部通道 5(IN5)",
+      "group": "ADC 通道",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CHANNEL_5           (0x00000005U)"
+    },
+    {
+      "name": "ADC_CHANNEL_6",
+      "value": "(0x00000006U)",
+      "desc": "ADC 外部通道 6(IN6)",
+      "group": "ADC 通道",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CHANNEL_6           (0x00000006U)"
+    },
+    {
+      "name": "ADC_CHANNEL_7",
+      "value": "(0x00000007U)",
+      "desc": "ADC 外部通道 7(IN7)",
+      "group": "ADC 通道",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CHANNEL_7           (0x00000007U)"
+    },
+    {
+      "name": "ADC_CHANNEL_8",
+      "value": "(0x00000008U)",
+      "desc": "ADC 外部通道 8(IN8)",
+      "group": "ADC 通道",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CHANNEL_8           (0x00000008U)"
+    },
+    {
+      "name": "ADC_CHANNEL_9",
+      "value": "(0x00000009U)",
+      "desc": "ADC 外部通道 9(IN9)",
+      "group": "ADC 通道",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CHANNEL_9           (0x00000009U)"
+    },
+    {
+      "name": "ADC_CHANNEL_10",
+      "value": "(0x0000000AU)",
+      "desc": "ADC 外部通道 10(IN10, 定义 ADC_CHSELR_CHSEL10 时存在)",
+      "group": "ADC 通道",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CHANNEL_10          (0x0000000AU)"
+    },
+    {
+      "name": "ADC_CHANNEL_TEMPSENSOR",
+      "value": "ADC_CHANNEL_8",
+      "desc": "内部温度传感器通道(复用通道 8)",
+      "group": "ADC 通道",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CHANNEL_TEMPSENSOR  ADC_CHANNEL_8"
+    },
+    {
+      "name": "ADC_CHANNEL_VREFINT",
+      "value": "ADC_CHANNEL_9",
+      "desc": "内部电压基准 VrefInt 通道(复用通道 9)",
+      "group": "ADC 通道",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CHANNEL_VREFINT     ADC_CHANNEL_9"
+    },
+    {
+      "name": "ADC_CHANNEL_VCCA",
+      "value": "ADC_CHANNEL_10",
+      "desc": "内部 1/3VCCA 通道(复用通道 10, 定义 ADC_CHSELR_CHSEL10 时存在)",
+      "group": "ADC 通道",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_CHANNEL_VCCA        ADC_CHANNEL_10"
+    },
+    {
+      "name": "ADC_EXTERNALTRIGCONV_T1_TRGO",
+      "value": "ADC1_2_EXTERNALTRIG_T1_TRGO",
+      "desc": "外部触发源: TIM1 TRGO",
+      "group": "外部触发源",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_EXTERNALTRIGCONV_T1_TRGO        ADC1_2_EXTERNALTRIG_T1_TRGO"
+    },
+    {
+      "name": "ADC_EXTERNALTRIGCONV_T1_CC4",
+      "value": "ADC1_2_EXTERNALTRIG_T1_CC4",
+      "desc": "外部触发源: TIM1 通道 4 事件",
+      "group": "外部触发源",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_EXTERNALTRIGCONV_T1_CC4         ADC1_2_EXTERNALTRIG_T1_CC4"
+    },
+    {
+      "name": "ADC_SOFTWARE_START",
+      "value": "(ADC_CFGR1_EXTSEL + 1U)",
+      "desc": "软件启动转换(禁止外部触发)",
+      "group": "外部触发源",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_SOFTWARE_START                  (ADC_CFGR1_EXTSEL + 1U)"
+    },
+    {
+      "name": "ADC_VREFBUF_1P5",
+      "value": "(((*(uint16_t *)(0x1FFF002E)) & 0xf) + ... *1000)",
+      "desc": "1.5V 基准出厂校准电压值(读系统存储区, 单位 mV)",
+      "group": "出厂校准电压",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_VREFBUF_1P5    (((*(uint16_t *)(0x1FFF002E))       & 0xf)        + \\\r\n                            ((*(uint16_t *)(0x1FFF002E) >> 4 ) & 0xf) * 10   + \\\r\n                            ((*(uint16_t *)(0x1FFF002E) >> 8 ) & 0xf) * 100  + \\\r\n                            ((*(uint16_t *)(0x1FFF002E) >> 12) & 0xf) * 1000)"
+    },
+    {
+      "name": "ADC_VREFBUF_2P048",
+      "value": "(((*(uint16_t *)(0x1FFF0032)) & 0xf) + ... *1000)",
+      "desc": "2.048V 基准出厂校准电压值(读系统存储区, 单位 mV)",
+      "group": "出厂校准电压",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_VREFBUF_2P048  (((*(uint16_t *)(0x1FFF0032))       & 0xf)        + \\\r\n                            ((*(uint16_t *)(0x1FFF0032) >> 4 ) & 0xf) * 10   + \\\r\n                            ((*(uint16_t *)(0x1FFF0032) >> 8 ) & 0xf) * 100  + \\\r\n                            ((*(uint16_t *)(0x1FFF0032) >> 12) & 0xf) * 1000)"
+    },
+    {
+      "name": "ADC_VREFBUF_2P5",
+      "value": "(((*(uint16_t *)(0x1FFF0036)) & 0xf) + ... *1000)",
+      "desc": "2.5V 基准出厂校准电压值(读系统存储区, 单位 mV)",
+      "group": "出厂校准电压",
+      "file": "py32f002b_hal_adc.h",
+      "src": "#define ADC_VREFBUF_2P5    (((*(uint16_t *)(0x1FFF0036))       & 0xf)        + \\\r\n                            ((*(uint16_t *)(0x1FFF0036) >> 4 ) & 0xf) * 10   + \\\r\n                            ((*(uint16_t *)(0x1FFF0036) >> 8 ) & 0xf) * 100  + \\\r\n                            ((*(uint16_t *)(0x1FFF0036) >> 12) & 0xf) * 1000)"
+    }
+  ]
+}

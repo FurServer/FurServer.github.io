@@ -1,0 +1,1762 @@
+{
+  "module": "I2C",
+  "moduleId": "i2c",
+  "intro": "I2C 外设 LL 库: 寄存器级配置(外设使能、时钟延展、广播呼叫、自身地址、外设时钟频率、占空比、速度模式、上升时间、时钟周期、速度一键配置)、中断管理、标志查询/清除、数据管理(复位、应答、起始/停止条件、POS 位、方向、收发 8 位数据)以及初始化/反初始化(需定义 USE_FULL_LL_DRIVER)。",
+  "files": [
+    "py32f002b_ll_i2c.c",
+    "py32f002b_ll_i2c.h"
+  ],
+  "ll": [
+    {
+      "name": "LL_I2C_Enable",
+      "sig": "void LL_I2C_Enable(I2C_TypeDef *I2Cx)",
+      "brief": "使能 I2C 外设(置位 CR1 的 PE 位)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_Enable(I2C_TypeDef *I2Cx)\r\n{\r\n  SET_BIT(I2Cx->CR1, I2C_CR1_PE);\r\n}"
+    },
+    {
+      "name": "LL_I2C_Disable",
+      "sig": "void LL_I2C_Disable(I2C_TypeDef *I2Cx)",
+      "brief": "禁止 I2C 外设(清零 CR1 的 PE 位)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_Disable(I2C_TypeDef *I2Cx)\r\n{\r\n  CLEAR_BIT(I2Cx->CR1, I2C_CR1_PE);\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsEnabled",
+      "sig": "uint32_t LL_I2C_IsEnabled(I2C_TypeDef *I2Cx)",
+      "brief": "查询 I2C 外设是否已使能。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsEnabled(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->CR1, I2C_CR1_PE) == (I2C_CR1_PE));\r\n}"
+    },
+    {
+      "name": "LL_I2C_EnableClockStretching",
+      "sig": "void LL_I2C_EnableClockStretching(I2C_TypeDef *I2Cx)",
+      "brief": "使能时钟延展(清零 CR1 的 NOSTRETCH 位)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "该位只能在 I2C 禁止(PE=0)时编程。"
+      ],
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_EnableClockStretching(I2C_TypeDef *I2Cx)\r\n{\r\n  CLEAR_BIT(I2Cx->CR1, I2C_CR1_NOSTRETCH);\r\n}"
+    },
+    {
+      "name": "LL_I2C_DisableClockStretching",
+      "sig": "void LL_I2C_DisableClockStretching(I2C_TypeDef *I2Cx)",
+      "brief": "禁止时钟延展(置位 CR1 的 NOSTRETCH 位)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "该位只能在 I2C 禁止(PE=0)时编程。"
+      ],
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_DisableClockStretching(I2C_TypeDef *I2Cx)\r\n{\r\n  SET_BIT(I2Cx->CR1, I2C_CR1_NOSTRETCH);\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsEnabledClockStretching",
+      "sig": "uint32_t LL_I2C_IsEnabledClockStretching(I2C_TypeDef *I2Cx)",
+      "brief": "查询时钟延展是否已使能。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsEnabledClockStretching(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->CR1, I2C_CR1_NOSTRETCH) != (I2C_CR1_NOSTRETCH));\r\n}"
+    },
+    {
+      "name": "LL_I2C_EnableGeneralCall",
+      "sig": "void LL_I2C_EnableGeneralCall(I2C_TypeDef *I2Cx)",
+      "brief": "使能广播呼叫: 地址 0x00 将被应答。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_EnableGeneralCall(I2C_TypeDef *I2Cx)\r\n{\r\n  SET_BIT(I2Cx->CR1, I2C_CR1_ENGC);\r\n}"
+    },
+    {
+      "name": "LL_I2C_DisableGeneralCall",
+      "sig": "void LL_I2C_DisableGeneralCall(I2C_TypeDef *I2Cx)",
+      "brief": "禁止广播呼叫: 地址 0x00 将被 NACK。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_DisableGeneralCall(I2C_TypeDef *I2Cx)\r\n{\r\n  CLEAR_BIT(I2Cx->CR1, I2C_CR1_ENGC);\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsEnabledGeneralCall",
+      "sig": "uint32_t LL_I2C_IsEnabledGeneralCall(I2C_TypeDef *I2Cx)",
+      "brief": "查询广播呼叫是否已使能。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsEnabledGeneralCall(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->CR1, I2C_CR1_ENGC) == (I2C_CR1_ENGC));\r\n}"
+    },
+    {
+      "name": "LL_I2C_SetOwnAddress1",
+      "sig": "void LL_I2C_SetOwnAddress1(I2C_TypeDef *I2Cx, uint32_t OwnAddress1, uint32_t OwnAddrSize)",
+      "brief": "设置本机自身地址 1(写入 OAR1 寄存器的 ADD1_7 位段)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        },
+        {
+          "name": "OwnAddress1",
+          "type": "uint32_t",
+          "desc": "自身地址, 取值 0x00 ~ 0x3FF"
+        },
+        {
+          "name": "OwnAddrSize",
+          "type": "uint32_t",
+          "desc": "本实现未使用, 可传 0"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_SetOwnAddress1(I2C_TypeDef *I2Cx, uint32_t OwnAddress1, uint32_t OwnAddrSize)\r\n{\r\n  (void)OwnAddrSize;\r\n  MODIFY_REG(I2Cx->OAR1, I2C_OAR1_ADD1_7, OwnAddress1);\r\n}"
+    },
+    {
+      "name": "LL_I2C_SetPeriphClock",
+      "sig": "void LL_I2C_SetPeriphClock(I2C_TypeDef *I2Cx, uint32_t PeriphClock)",
+      "brief": "配置外设时钟频率(写入 CR2 的 FREQ 位段, 单位 MHz)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        },
+        {
+          "name": "PeriphClock",
+          "type": "uint32_t",
+          "desc": "外设时钟频率(Hz)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_SetPeriphClock(I2C_TypeDef *I2Cx, uint32_t PeriphClock)\r\n{\r\n  MODIFY_REG(I2Cx->CR2, I2C_CR2_FREQ, __LL_I2C_FREQ_HZ_TO_MHZ(PeriphClock));\r\n}"
+    },
+    {
+      "name": "LL_I2C_GetPeriphClock",
+      "sig": "uint32_t LL_I2C_GetPeriphClock(I2C_TypeDef *I2Cx)",
+      "brief": "读取已配置的外设时钟频率。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "外设时钟频率(Hz)"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_GetPeriphClock(I2C_TypeDef *I2Cx)\r\n{\r\n  return (uint32_t)(__LL_I2C_FREQ_MHZ_TO_HZ(READ_BIT(I2Cx->CR2, I2C_CR2_FREQ)));\r\n}"
+    },
+    {
+      "name": "LL_I2C_SetDutyCycle",
+      "sig": "void LL_I2C_SetDutyCycle(I2C_TypeDef *I2Cx, uint32_t DutyCycle)",
+      "brief": "配置快速模式占空比(写入 CCR 的 DUTY 位)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        },
+        {
+          "name": "DutyCycle",
+          "type": "uint32_t",
+          "desc": "占空比: LL_I2C_DUTYCYCLE_2 / LL_I2C_DUTYCYCLE_16_9"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_SetDutyCycle(I2C_TypeDef *I2Cx, uint32_t DutyCycle)\r\n{\r\n  MODIFY_REG(I2Cx->CCR, I2C_CCR_DUTY, DutyCycle);\r\n}"
+    },
+    {
+      "name": "LL_I2C_GetDutyCycle",
+      "sig": "uint32_t LL_I2C_GetDutyCycle(I2C_TypeDef *I2Cx)",
+      "brief": "读取快速模式占空比配置。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "占空比: LL_I2C_DUTYCYCLE_2 / LL_I2C_DUTYCYCLE_16_9"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_GetDutyCycle(I2C_TypeDef *I2Cx)\r\n{\r\n  return (uint32_t)(READ_BIT(I2Cx->CCR, I2C_CCR_DUTY));\r\n}"
+    },
+    {
+      "name": "LL_I2C_SetClockSpeedMode",
+      "sig": "void LL_I2C_SetClockSpeedMode(I2C_TypeDef *I2Cx, uint32_t ClockSpeedMode)",
+      "brief": "配置主模式时钟速度范围(写入 CCR 的 FS 位)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        },
+        {
+          "name": "ClockSpeedMode",
+          "type": "uint32_t",
+          "desc": "速度范围: LL_I2C_CLOCK_SPEED_STANDARD_MODE / LL_I2C_CLOCK_SPEED_FAST_MODE"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_SetClockSpeedMode(I2C_TypeDef *I2Cx, uint32_t ClockSpeedMode)\r\n{\r\n  MODIFY_REG(I2Cx->CCR, I2C_CCR_FS, ClockSpeedMode);\r\n}"
+    },
+    {
+      "name": "LL_I2C_GetClockSpeedMode",
+      "sig": "uint32_t LL_I2C_GetClockSpeedMode(I2C_TypeDef *I2Cx)",
+      "brief": "读取主模式时钟速度范围配置。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "速度范围: LL_I2C_CLOCK_SPEED_STANDARD_MODE / LL_I2C_CLOCK_SPEED_FAST_MODE"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_GetClockSpeedMode(I2C_TypeDef *I2Cx)\r\n{\r\n  return (uint32_t)(READ_BIT(I2Cx->CCR, I2C_CCR_FS));\r\n}"
+    },
+    {
+      "name": "LL_I2C_SetRiseTime",
+      "sig": "void LL_I2C_SetRiseTime(I2C_TypeDef *I2Cx, uint32_t RiseTime)",
+      "brief": "配置 SCL/SDA 上升时间(写入 TRISE 寄存器)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        },
+        {
+          "name": "RiseTime",
+          "type": "uint32_t",
+          "desc": "上升时间, 取值 0x02 ~ 0x3F"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "只能在 I2C 禁止(PE=0)时编程。"
+      ],
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_SetRiseTime(I2C_TypeDef *I2Cx, uint32_t RiseTime)\r\n{\r\n  MODIFY_REG(I2Cx->TRISE, I2C_TRISE_TRISE, RiseTime);\r\n}"
+    },
+    {
+      "name": "LL_I2C_GetRiseTime",
+      "sig": "uint32_t LL_I2C_GetRiseTime(I2C_TypeDef *I2Cx)",
+      "brief": "读取 SCL/SDA 上升时间配置。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "上升时间值(0x02 ~ 0x3F)"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_GetRiseTime(I2C_TypeDef *I2Cx)\r\n{\r\n  return (uint32_t)(READ_BIT(I2Cx->TRISE, I2C_TRISE_TRISE));\r\n}"
+    },
+    {
+      "name": "LL_I2C_SetClockPeriod",
+      "sig": "void LL_I2C_SetClockPeriod(I2C_TypeDef *I2Cx, uint32_t ClockPeriod)",
+      "brief": "配置 SCL 高/低电平周期(写入 CCR 的 CCR 位段)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        },
+        {
+          "name": "ClockPeriod",
+          "type": "uint32_t",
+          "desc": "时钟周期值, 0x004 ~ 0xFFF(快速 DUTY 模式下最小 0x001)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "只能在 I2C 禁止(PE=0)时编程。"
+      ],
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_SetClockPeriod(I2C_TypeDef *I2Cx, uint32_t ClockPeriod)\r\n{\r\n  MODIFY_REG(I2Cx->CCR, I2C_CCR_CCR, ClockPeriod);\r\n}"
+    },
+    {
+      "name": "LL_I2C_GetClockPeriod",
+      "sig": "uint32_t LL_I2C_GetClockPeriod(I2C_TypeDef *I2Cx)",
+      "brief": "读取 SCL 高/低电平周期配置。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "时钟周期值(0x004 ~ 0xFFF)"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_GetClockPeriod(I2C_TypeDef *I2Cx)\r\n{\r\n  return (uint32_t)(READ_BIT(I2Cx->CCR, I2C_CCR_CCR));\r\n}"
+    },
+    {
+      "name": "LL_I2C_ConfigSpeed",
+      "sig": "void LL_I2C_ConfigSpeed(I2C_TypeDef *I2Cx, uint32_t PeriphClock, uint32_t ClockSpeed, uint32_t DutyCycle)",
+      "brief": "一键配置 SCL 速度: 同时设置外设时钟频率(CR2 FREQ)、上升时间(TRISE)与 CCR 的速度模式/占空比/周期值。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        },
+        {
+          "name": "PeriphClock",
+          "type": "uint32_t",
+          "desc": "外设时钟频率(Hz)"
+        },
+        {
+          "name": "ClockSpeed",
+          "type": "uint32_t",
+          "desc": "目标通信速度, 必须低于 400kHz"
+        },
+        {
+          "name": "DutyCycle",
+          "type": "uint32_t",
+          "desc": "快速模式占空比: LL_I2C_DUTYCYCLE_2 / LL_I2C_DUTYCYCLE_16_9"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "只能在 I2C 禁止(PE=0)时编程。"
+      ],
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_ConfigSpeed(I2C_TypeDef *I2Cx, uint32_t PeriphClock, uint32_t ClockSpeed,\r\n                                        uint32_t DutyCycle)\r\n{\r\n  register uint32_t freqrange = 0x0U;\r\n  register uint32_t clockconfig = 0x0U;\r\n\r\n  /* Compute frequency range */\r\n  freqrange = __LL_I2C_FREQ_HZ_TO_MHZ(PeriphClock);\r\n\r\n  /* Configure I2Cx: Frequency range register */\r\n  MODIFY_REG(I2Cx->CR2, I2C_CR2_FREQ, freqrange);\r\n\r\n  /* Configure I2Cx: Rise Time register */\r\n  MODIFY_REG(I2Cx->TRISE, I2C_TRISE_TRISE, __LL_I2C_RISE_TIME(freqrange, ClockSpeed));\r\n\r\n  /* Configure Speed mode, Duty Cycle and Clock control register value */\r\n  if (ClockSpeed > LL_I2C_MAX_SPEED_STANDARD)\r\n  {\r\n    /* Set Speed mode at fast and duty cycle for Clock Speed request in fast clock range */\r\n    clockconfig = LL_I2C_CLOCK_SPEED_FAST_MODE                                          | \\\r\n                  __LL_I2C_SPEED_FAST_TO_CCR(PeriphClock, ClockSpeed, DutyCycle)        | \\\r\n                  DutyCycle;\r\n  }\r\n  else\r\n  {\r\n    /* Set Speed mode at standard for Clock Speed request in standard clock range */\r\n    clockconfig = LL_I2C_CLOCK_SPEED_STANDARD_MODE                                      | \\\r\n                  __LL_I2C_SPEED_STANDARD_TO_CCR(PeriphClock, ClockSpeed);\r\n  }\r\n\r\n  /* Configure I2Cx: Clock control register */\r\n  MODIFY_REG(I2Cx->CCR, (I2C_CCR_FS | I2C_CCR_DUTY | I2C_CCR_CCR), clockconfig);\r\n}"
+    },
+    {
+      "name": "LL_I2C_EnableIT_TX",
+      "sig": "void LL_I2C_EnableIT_TX(I2C_TypeDef *I2Cx)",
+      "brief": "使能 TXE(发送缓冲空)中断: 置位 ITEVTEN 与 ITBUFEN。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_EnableIT_TX(I2C_TypeDef *I2Cx)\r\n{\r\n  SET_BIT(I2Cx->CR2, I2C_CR2_ITEVTEN | I2C_CR2_ITBUFEN);\r\n}"
+    },
+    {
+      "name": "LL_I2C_DisableIT_TX",
+      "sig": "void LL_I2C_DisableIT_TX(I2C_TypeDef *I2Cx)",
+      "brief": "禁止 TXE(发送缓冲空)中断: 清零 ITEVTEN 与 ITBUFEN。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_DisableIT_TX(I2C_TypeDef *I2Cx)\r\n{\r\n  CLEAR_BIT(I2Cx->CR2, I2C_CR2_ITEVTEN | I2C_CR2_ITBUFEN);\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsEnabledIT_TX",
+      "sig": "uint32_t LL_I2C_IsEnabledIT_TX(I2C_TypeDef *I2Cx)",
+      "brief": "查询 TXE 中断是否已使能。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsEnabledIT_TX(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->CR2, I2C_CR2_ITEVTEN | I2C_CR2_ITBUFEN) == (I2C_CR2_ITEVTEN | I2C_CR2_ITBUFEN));\r\n}"
+    },
+    {
+      "name": "LL_I2C_EnableIT_RX",
+      "sig": "void LL_I2C_EnableIT_RX(I2C_TypeDef *I2Cx)",
+      "brief": "使能 RXNE(接收缓冲非空)中断: 置位 ITEVTEN 与 ITBUFEN。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_EnableIT_RX(I2C_TypeDef *I2Cx)\r\n{\r\n  SET_BIT(I2Cx->CR2, I2C_CR2_ITEVTEN | I2C_CR2_ITBUFEN);\r\n}"
+    },
+    {
+      "name": "LL_I2C_DisableIT_RX",
+      "sig": "void LL_I2C_DisableIT_RX(I2C_TypeDef *I2Cx)",
+      "brief": "禁止 RXNE(接收缓冲非空)中断: 清零 ITEVTEN 与 ITBUFEN。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_DisableIT_RX(I2C_TypeDef *I2Cx)\r\n{\r\n  CLEAR_BIT(I2Cx->CR2, I2C_CR2_ITEVTEN | I2C_CR2_ITBUFEN);\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsEnabledIT_RX",
+      "sig": "uint32_t LL_I2C_IsEnabledIT_RX(I2C_TypeDef *I2Cx)",
+      "brief": "查询 RXNE 中断是否已使能。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsEnabledIT_RX(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->CR2, I2C_CR2_ITEVTEN | I2C_CR2_ITBUFEN) == (I2C_CR2_ITEVTEN | I2C_CR2_ITBUFEN));\r\n}"
+    },
+    {
+      "name": "LL_I2C_EnableIT_EVT",
+      "sig": "void LL_I2C_EnableIT_EVT(I2C_TypeDef *I2Cx)",
+      "brief": "使能事件中断(SB/ADDR/STOPF/BTF; RXNE/TXE 需同时使能缓冲中断)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_EnableIT_EVT(I2C_TypeDef *I2Cx)\r\n{\r\n  SET_BIT(I2Cx->CR2, I2C_CR2_ITEVTEN);\r\n}"
+    },
+    {
+      "name": "LL_I2C_DisableIT_EVT",
+      "sig": "void LL_I2C_DisableIT_EVT(I2C_TypeDef *I2Cx)",
+      "brief": "禁止事件中断。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_DisableIT_EVT(I2C_TypeDef *I2Cx)\r\n{\r\n  CLEAR_BIT(I2Cx->CR2, I2C_CR2_ITEVTEN);\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsEnabledIT_EVT",
+      "sig": "uint32_t LL_I2C_IsEnabledIT_EVT(I2C_TypeDef *I2Cx)",
+      "brief": "查询事件中断是否已使能。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsEnabledIT_EVT(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->CR2, I2C_CR2_ITEVTEN) == (I2C_CR2_ITEVTEN));\r\n}"
+    },
+    {
+      "name": "LL_I2C_EnableIT_BUF",
+      "sig": "void LL_I2C_EnableIT_BUF(I2C_TypeDef *I2Cx)",
+      "brief": "使能缓冲中断(RXNE/TXE; 需同时使能事件中断才生效)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_EnableIT_BUF(I2C_TypeDef *I2Cx)\r\n{\r\n  SET_BIT(I2Cx->CR2, I2C_CR2_ITBUFEN);\r\n}"
+    },
+    {
+      "name": "LL_I2C_DisableIT_BUF",
+      "sig": "void LL_I2C_DisableIT_BUF(I2C_TypeDef *I2Cx)",
+      "brief": "禁止缓冲中断。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_DisableIT_BUF(I2C_TypeDef *I2Cx)\r\n{\r\n  CLEAR_BIT(I2Cx->CR2, I2C_CR2_ITBUFEN);\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsEnabledIT_BUF",
+      "sig": "uint32_t LL_I2C_IsEnabledIT_BUF(I2C_TypeDef *I2Cx)",
+      "brief": "查询缓冲中断是否已使能。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsEnabledIT_BUF(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->CR2, I2C_CR2_ITBUFEN) == (I2C_CR2_ITBUFEN));\r\n}"
+    },
+    {
+      "name": "LL_I2C_EnableIT_ERR",
+      "sig": "void LL_I2C_EnableIT_ERR(I2C_TypeDef *I2Cx)",
+      "brief": "使能错误中断(BERR/ARLO/AF/OVR)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_EnableIT_ERR(I2C_TypeDef *I2Cx)\r\n{\r\n  SET_BIT(I2Cx->CR2, I2C_CR2_ITERREN);\r\n}"
+    },
+    {
+      "name": "LL_I2C_DisableIT_ERR",
+      "sig": "void LL_I2C_DisableIT_ERR(I2C_TypeDef *I2Cx)",
+      "brief": "禁止错误中断。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_DisableIT_ERR(I2C_TypeDef *I2Cx)\r\n{\r\n  CLEAR_BIT(I2Cx->CR2, I2C_CR2_ITERREN);\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsEnabledIT_ERR",
+      "sig": "uint32_t LL_I2C_IsEnabledIT_ERR(I2C_TypeDef *I2Cx)",
+      "brief": "查询错误中断是否已使能。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsEnabledIT_ERR(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->CR2, I2C_CR2_ITERREN) == (I2C_CR2_ITERREN));\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsActiveFlag_TXE",
+      "sig": "uint32_t LL_I2C_IsActiveFlag_TXE(I2C_TypeDef *I2Cx)",
+      "brief": "查询发送数据寄存器空(TXE)标志: 置位表示发送寄存器空, 可写入下一字节。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsActiveFlag_TXE(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->SR1, I2C_SR1_TXE) == (I2C_SR1_TXE));\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsActiveFlag_BTF",
+      "sig": "uint32_t LL_I2C_IsActiveFlag_BTF(I2C_TypeDef *I2Cx)",
+      "brief": "查询字节传输完成(BTF)标志: 置位表示数据字节传输成功。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsActiveFlag_BTF(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->SR1, I2C_SR1_BTF) == (I2C_SR1_BTF));\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsActiveFlag_RXNE",
+      "sig": "uint32_t LL_I2C_IsActiveFlag_RXNE(I2C_TypeDef *I2Cx)",
+      "brief": "查询接收数据寄存器非空(RXNE)标志: 置位表示已收到数据可读取。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsActiveFlag_RXNE(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->SR1, I2C_SR1_RXNE) == (I2C_SR1_RXNE));\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsActiveFlag_SB",
+      "sig": "uint32_t LL_I2C_IsActiveFlag_SB(I2C_TypeDef *I2Cx)",
+      "brief": "查询起始位(SB)标志(主模式): 置位表示已产生起始条件。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsActiveFlag_SB(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->SR1, I2C_SR1_SB) == (I2C_SR1_SB));\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsActiveFlag_ADDR",
+      "sig": "uint32_t LL_I2C_IsActiveFlag_ADDR(I2C_TypeDef *I2Cx)",
+      "brief": "查询地址已发送/地址匹配(ADDR)标志: 主模式下地址完全发出, 从模式下收到的从机地址与使能地址匹配。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsActiveFlag_ADDR(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->SR1, I2C_SR1_ADDR) == (I2C_SR1_ADDR));\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsActiveFlag_AF",
+      "sig": "uint32_t LL_I2C_IsActiveFlag_AF(I2C_TypeDef *I2Cx)",
+      "brief": "查询应答失败(AF)标志: 置位表示字节发送后收到 NACK。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsActiveFlag_AF(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->SR1, I2C_SR1_AF) == (I2C_SR1_AF));\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsActiveFlag_STOP",
+      "sig": "uint32_t LL_I2C_IsActiveFlag_STOP(I2C_TypeDef *I2Cx)",
+      "brief": "查询停止检测(STOPF)标志(从模式): 置位表示检测到停止条件。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsActiveFlag_STOP(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->SR1, I2C_SR1_STOPF) == (I2C_SR1_STOPF));\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsActiveFlag_BERR",
+      "sig": "uint32_t LL_I2C_IsActiveFlag_BERR(I2C_TypeDef *I2Cx)",
+      "brief": "查询总线错误(BERR)标志: 置位表示检测到错位的起始或停止条件。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsActiveFlag_BERR(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->SR1, I2C_SR1_BERR) == (I2C_SR1_BERR));\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsActiveFlag_ARLO",
+      "sig": "uint32_t LL_I2C_IsActiveFlag_ARLO(I2C_TypeDef *I2Cx)",
+      "brief": "查询仲裁丢失(ARLO)标志: 置位表示仲裁失败。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsActiveFlag_ARLO(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->SR1, I2C_SR1_ARLO) == (I2C_SR1_ARLO));\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsActiveFlag_OVR",
+      "sig": "uint32_t LL_I2C_IsActiveFlag_OVR(I2C_TypeDef *I2Cx)",
+      "brief": "查询溢出/下溢(OVR)标志: 置位表示发生溢出/下溢错误(时钟延展被禁止时)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsActiveFlag_OVR(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->SR1, I2C_SR1_OVR) == (I2C_SR1_OVR));\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsActiveFlag_BUSY",
+      "sig": "uint32_t LL_I2C_IsActiveFlag_BUSY(I2C_TypeDef *I2Cx)",
+      "brief": "查询总线忙(BUSY)标志: 置位表示检测到起始条件, 总线被占用。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsActiveFlag_BUSY(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->SR2, I2C_SR2_BUSY) == (I2C_SR2_BUSY));\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsActiveFlag_GENCALL",
+      "sig": "uint32_t LL_I2C_IsActiveFlag_GENCALL(I2C_TypeDef *I2Cx)",
+      "brief": "查询广播呼叫地址接收(GENCALL)标志(从模式): 置位表示收到广播呼叫地址。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位为 1, 否则 0"
+      },
+      "notes": [
+        "该状态在停止条件或重复起始条件后由硬件清除。"
+      ],
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsActiveFlag_GENCALL(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->SR2, I2C_SR2_GENCALL) == (I2C_SR2_GENCALL));\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsActiveFlag_MSL",
+      "sig": "uint32_t LL_I2C_IsActiveFlag_MSL(I2C_TypeDef *I2Cx)",
+      "brief": "查询主/从(MSL)标志: 置位表示处于主模式。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志置位(主模式)为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsActiveFlag_MSL(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->SR2, I2C_SR2_MSL) == (I2C_SR2_MSL));\r\n}"
+    },
+    {
+      "name": "LL_I2C_ClearFlag_ADDR",
+      "sig": "void LL_I2C_ClearFlag_ADDR(I2C_TypeDef *I2Cx)",
+      "brief": "清除地址匹配(ADDR)标志(读 SR1 后再读 SR2)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_ClearFlag_ADDR(I2C_TypeDef *I2Cx)\r\n{\r\n  __IO uint32_t tmpreg;\r\n  tmpreg = I2Cx->SR1;\r\n  (void) tmpreg;\r\n  tmpreg = I2Cx->SR2;\r\n  (void) tmpreg;\r\n}"
+    },
+    {
+      "name": "LL_I2C_ClearFlag_AF",
+      "sig": "void LL_I2C_ClearFlag_AF(I2C_TypeDef *I2Cx)",
+      "brief": "清除应答失败(AF)标志。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_ClearFlag_AF(I2C_TypeDef *I2Cx)\r\n{\r\n  CLEAR_BIT(I2Cx->SR1, I2C_SR1_AF);\r\n}"
+    },
+    {
+      "name": "LL_I2C_ClearFlag_STOP",
+      "sig": "void LL_I2C_ClearFlag_STOP(I2C_TypeDef *I2Cx)",
+      "brief": "清除停止检测(STOPF)标志(读 SR1 后写 CR1 的 PE 位)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_ClearFlag_STOP(I2C_TypeDef *I2Cx)\r\n{\r\n  __IO uint32_t tmpreg;\r\n  tmpreg = I2Cx->SR1;\r\n  (void) tmpreg;\r\n  SET_BIT(I2Cx->CR1, I2C_CR1_PE);\r\n}"
+    },
+    {
+      "name": "LL_I2C_ClearFlag_BERR",
+      "sig": "void LL_I2C_ClearFlag_BERR(I2C_TypeDef *I2Cx)",
+      "brief": "清除总线错误(BERR)标志。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_ClearFlag_BERR(I2C_TypeDef *I2Cx)\r\n{\r\n  CLEAR_BIT(I2Cx->SR1, I2C_SR1_BERR);\r\n}"
+    },
+    {
+      "name": "LL_I2C_ClearFlag_ARLO",
+      "sig": "void LL_I2C_ClearFlag_ARLO(I2C_TypeDef *I2Cx)",
+      "brief": "清除仲裁丢失(ARLO)标志。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_ClearFlag_ARLO(I2C_TypeDef *I2Cx)\r\n{\r\n  CLEAR_BIT(I2Cx->SR1, I2C_SR1_ARLO);\r\n}"
+    },
+    {
+      "name": "LL_I2C_ClearFlag_OVR",
+      "sig": "void LL_I2C_ClearFlag_OVR(I2C_TypeDef *I2Cx)",
+      "brief": "清除溢出/下溢(OVR)标志。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_ClearFlag_OVR(I2C_TypeDef *I2Cx)\r\n{\r\n  CLEAR_BIT(I2Cx->SR1, I2C_SR1_OVR);\r\n}"
+    },
+    {
+      "name": "LL_I2C_EnableReset",
+      "sig": "void LL_I2C_EnableReset(I2C_TypeDef *I2Cx)",
+      "brief": "使能 I2C 外设软件复位(置位 CR1 的 SWRST 位)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_EnableReset(I2C_TypeDef *I2Cx)\r\n{\r\n  SET_BIT(I2Cx->CR1, I2C_CR1_SWRST);\r\n}"
+    },
+    {
+      "name": "LL_I2C_DisableReset",
+      "sig": "void LL_I2C_DisableReset(I2C_TypeDef *I2Cx)",
+      "brief": "禁止 I2C 外设软件复位(清零 CR1 的 SWRST 位)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_DisableReset(I2C_TypeDef *I2Cx)\r\n{\r\n  CLEAR_BIT(I2Cx->CR1, I2C_CR1_SWRST);\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsResetEnabled",
+      "sig": "uint32_t LL_I2C_IsResetEnabled(I2C_TypeDef *I2Cx)",
+      "brief": "查询 I2C 外设是否处于软件复位状态。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "复位状态为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsResetEnabled(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->CR1, I2C_CR1_SWRST) == (I2C_CR1_SWRST));\r\n}"
+    },
+    {
+      "name": "LL_I2C_AcknowledgeNextData",
+      "sig": "void LL_I2C_AcknowledgeNextData(I2C_TypeDef *I2Cx, uint32_t TypeAcknowledge)",
+      "brief": "配置在地址匹配码或下一接收字节之后产生 ACK 或 NACK(主/从模式均可用)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        },
+        {
+          "name": "TypeAcknowledge",
+          "type": "uint32_t",
+          "desc": "应答类型: LL_I2C_ACK / LL_I2C_NACK"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_AcknowledgeNextData(I2C_TypeDef *I2Cx, uint32_t TypeAcknowledge)\r\n{\r\n  MODIFY_REG(I2Cx->CR1, I2C_CR1_ACK, TypeAcknowledge);\r\n}"
+    },
+    {
+      "name": "LL_I2C_GenerateStartCondition",
+      "sig": "void LL_I2C_GenerateStartCondition(I2C_TypeDef *I2Cx)",
+      "brief": "产生起始(START)或重启(RESTART)条件(置位 CR1 的 START 位)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "总线忙或处于从模式时也可置位 START。"
+      ],
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_GenerateStartCondition(I2C_TypeDef *I2Cx)\r\n{\r\n  SET_BIT(I2Cx->CR1, I2C_CR1_START);\r\n}"
+    },
+    {
+      "name": "LL_I2C_GenerateStopCondition",
+      "sig": "void LL_I2C_GenerateStopCondition(I2C_TypeDef *I2Cx)",
+      "brief": "在当前字节传输后产生停止(STOP)条件(置位 CR1 的 STOP 位, 主模式)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_GenerateStopCondition(I2C_TypeDef *I2Cx)\r\n{\r\n  SET_BIT(I2Cx->CR1, I2C_CR1_STOP);\r\n}"
+    },
+    {
+      "name": "LL_I2C_EnableBitPOS",
+      "sig": "void LL_I2C_EnableBitPOS(I2C_TypeDef *I2Cx)",
+      "brief": "使能 POS 位(主/主机模式): ACK 位控制下一接收字节的 (N)ACK。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_EnableBitPOS(I2C_TypeDef *I2Cx)\r\n{\r\n  SET_BIT(I2Cx->CR1, I2C_CR1_POS);\r\n}"
+    },
+    {
+      "name": "LL_I2C_DisableBitPOS",
+      "sig": "void LL_I2C_DisableBitPOS(I2C_TypeDef *I2Cx)",
+      "brief": "禁止 POS 位(主/主机模式): ACK 位控制当前接收字节的 (N)ACK。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_DisableBitPOS(I2C_TypeDef *I2Cx)\r\n{\r\n  CLEAR_BIT(I2Cx->CR1, I2C_CR1_POS);\r\n}"
+    },
+    {
+      "name": "LL_I2C_IsEnabledBitPOS",
+      "sig": "uint32_t LL_I2C_IsEnabledBitPOS(I2C_TypeDef *I2Cx)",
+      "brief": "查询 POS 位是否已使能。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能为 1, 否则 0"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_IsEnabledBitPOS(I2C_TypeDef *I2Cx)\r\n{\r\n  return (READ_BIT(I2Cx->CR1, I2C_CR1_POS) == (I2C_CR1_POS));\r\n}"
+    },
+    {
+      "name": "LL_I2C_GetTransferDirection",
+      "sig": "uint32_t LL_I2C_GetTransferDirection(I2C_TypeDef *I2Cx)",
+      "brief": "读取当前传输方向(TRA 位, 以外设视角)。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_I2C_DIRECTION_WRITE(写传输) / LL_I2C_DIRECTION_READ(读传输)"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_I2C_GetTransferDirection(I2C_TypeDef *I2Cx)\r\n{\r\n  return (uint32_t)(READ_BIT(I2Cx->SR2, I2C_SR2_TRA));\r\n}"
+    },
+    {
+      "name": "LL_I2C_ReceiveData8",
+      "sig": "uint8_t LL_I2C_ReceiveData8(I2C_TypeDef *I2Cx)",
+      "brief": "从数据寄存器(DR)读取接收到的 8 位数据。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint8_t",
+        "desc": "接收数据(0x0 ~ 0xFF)"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint8_t LL_I2C_ReceiveData8(I2C_TypeDef *I2Cx)\r\n{\r\n  return (uint8_t)(READ_BIT(I2Cx->DR, I2C_DR_DR));\r\n}"
+    },
+    {
+      "name": "LL_I2C_TransmitData8",
+      "sig": "void LL_I2C_TransmitData8(I2C_TypeDef *I2Cx, uint8_t Data)",
+      "brief": "向数据寄存器(DR)写入待发送的 8 位数据。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        },
+        {
+          "name": "Data",
+          "type": "uint8_t",
+          "desc": "要发送的数据(0x0 ~ 0xFF)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_I2C_TransmitData8(I2C_TypeDef *I2Cx, uint8_t Data)\r\n{\r\n  MODIFY_REG(I2Cx->DR, I2C_DR_DR, Data);\r\n}"
+    },
+    {
+      "name": "LL_I2C_Init",
+      "sig": "uint32_t LL_I2C_Init(I2C_TypeDef *I2Cx, LL_I2C_InitTypeDef *I2C_InitStruct)",
+      "brief": "根据 LL_I2C_InitTypeDef 结构体初始化 I2C 寄存器(禁止外设后配置速度/自身地址/应答, 再重新使能)。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        },
+        {
+          "name": "I2C_InitStruct",
+          "type": "LL_I2C_InitTypeDef *",
+          "desc": "指向配置结构体的指针, 含 ClockSpeed/DutyCycle/OwnAddress1/TypeAcknowledge"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "SUCCESS 成功; ERROR 失败"
+      },
+      "file": "py32f002b_ll_i2c.c",
+      "kind": "function",
+      "src": "uint32_t LL_I2C_Init(I2C_TypeDef *I2Cx, LL_I2C_InitTypeDef *I2C_InitStruct)\r\n{\r\n  LL_RCC_ClocksTypeDef rcc_clocks;\r\n\r\n  /* Check the I2C Instance I2Cx */\r\n  assert_param(IS_I2C_ALL_INSTANCE(I2Cx));\r\n\r\n  /* Check the I2C parameters from I2C_InitStruct */\r\n  assert_param(IS_LL_I2C_CLOCK_SPEED(I2C_InitStruct->ClockSpeed));\r\n  assert_param(IS_LL_I2C_DUTY_CYCLE(I2C_InitStruct->DutyCycle));\r\n  assert_param(IS_LL_I2C_OWN_ADDRESS1(I2C_InitStruct->OwnAddress1));\r\n  assert_param(IS_LL_I2C_TYPE_ACKNOWLEDGE(I2C_InitStruct->TypeAcknowledge));\r\n\r\n  /* Disable the selected I2Cx Peripheral */\r\n  LL_I2C_Disable(I2Cx);\r\n\r\n  /* Retrieve Clock frequencies */\r\n  LL_RCC_GetSystemClocksFreq(&rcc_clocks);\r\n\r\n  /*---------------------------- I2Cx SCL Clock Speed Configuration ------------\r\n   * Configure the SCL speed :\r\n   * - ClockSpeed: I2C_CR2_FREQ[5:0], I2C_TRISE_TRISE[5:0], I2C_CCR_FS,\r\n   *           and I2C_CCR_CCR[11:0] bits\r\n   * - DutyCycle: I2C_CCR_DUTY[7:0] bits\r\n   */\r\n  LL_I2C_ConfigSpeed(I2Cx, rcc_clocks.PCLK1_Frequency, I2C_InitStruct->ClockSpeed, I2C_InitStruct->DutyCycle);\r\n\r\n  /*---------------------------- I2Cx OAR1 Configuration -----------------------\r\n   * Disable, Configure and Enable I2Cx device own address 1 with parameters :\r\n   * - OwnAddress1:  I2C_OAR1_ADD[9:8], I2C_OAR1_ADD[7:1] and I2C_OAR1_ADD0 bits\r\n   * - OwnAddrSize:  I2C_OAR1_ADDMODE bit\r\n   */\r\n  LL_I2C_SetOwnAddress1(I2Cx, I2C_InitStruct->OwnAddress1, 0);\r\n\r\n  /* Enable the selected I2Cx Peripheral */\r\n  LL_I2C_Enable(I2Cx);\r\n\r\n  /*---------------------------- I2Cx CR2 Configuration ------------------------\r\n   * Configure the ACKnowledge or Non ACKnowledge condition\r\n   * after the address receive match code or next received byte with parameter :\r\n   * - TypeAcknowledge: I2C_CR2_NACK bit\r\n   */\r\n  LL_I2C_AcknowledgeNextData(I2Cx, I2C_InitStruct->TypeAcknowledge);\r\n\r\n  return SUCCESS;\r\n}"
+    },
+    {
+      "name": "LL_I2C_DeInit",
+      "sig": "uint32_t LL_I2C_DeInit(I2C_TypeDef *I2Cx)",
+      "brief": "将 I2C 寄存器恢复为复位默认值(通过 APB1 外设时钟强制/释放复位)。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "I2Cx",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "SUCCESS 成功; ERROR 失败(实例无效)"
+      },
+      "file": "py32f002b_ll_i2c.c",
+      "kind": "function",
+      "src": "uint32_t LL_I2C_DeInit(I2C_TypeDef *I2Cx)\r\n{\r\n  ErrorStatus status = SUCCESS;\r\n\r\n  /* Check the I2C Instance I2Cx */\r\n  assert_param(IS_I2C_ALL_INSTANCE(I2Cx));\r\n\r\n  if (I2Cx == I2C1)\r\n  {\r\n    /* Force reset of I2C clock */\r\n    LL_APB1_GRP1_ForceReset(LL_APB1_GRP1_PERIPH_I2C1);\r\n\r\n    /* Release reset of I2C clock */\r\n    LL_APB1_GRP1_ReleaseReset(LL_APB1_GRP1_PERIPH_I2C1);\r\n  }\r\n  else\r\n  {\r\n    status = ERROR;\r\n  }\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "LL_I2C_StructInit",
+      "sig": "void LL_I2C_StructInit(LL_I2C_InitTypeDef *I2C_InitStruct)",
+      "brief": "将 LL_I2C_InitTypeDef 结构体各成员填充为默认值(ClockSpeed=5000, DutyCycle=LL_I2C_DUTYCYCLE_2, OwnAddress1=0, TypeAcknowledge=LL_I2C_NACK)。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "I2C_InitStruct",
+          "type": "LL_I2C_InitTypeDef *",
+          "desc": "指向要填充的结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_i2c.c",
+      "kind": "function",
+      "src": "void LL_I2C_StructInit(LL_I2C_InitTypeDef *I2C_InitStruct)\r\n{\r\n  /* Set I2C_InitStruct fields to default values */\r\n  I2C_InitStruct->ClockSpeed      = 5000U;\r\n  I2C_InitStruct->DutyCycle       = LL_I2C_DUTYCYCLE_2;\r\n  I2C_InitStruct->OwnAddress1     = 0U;\r\n  I2C_InitStruct->TypeAcknowledge = LL_I2C_NACK;\r\n}"
+    },
+    {
+      "name": "LL_I2C_WriteReg",
+      "sig": "#define LL_I2C_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG(__INSTANCE__->__REG__, (__VALUE__))",
+      "brief": "宏: 向 I2C 指定寄存器写入值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "I2C 实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要写入的寄存器(如 CR1/CR2/OAR1/DR/SR1/SR2/CCR/TRISE)"
+        },
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "要写入的值"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "macro",
+      "src": "#define LL_I2C_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG(__INSTANCE__->__REG__, (__VALUE__))"
+    },
+    {
+      "name": "LL_I2C_ReadReg",
+      "sig": "#define LL_I2C_ReadReg(__INSTANCE__, __REG__) READ_REG(__INSTANCE__->__REG__)",
+      "brief": "宏: 读取 I2C 指定寄存器的值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "I2C 实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要读取的寄存器(如 CR1/CR2/OAR1/DR/SR1/SR2/CCR/TRISE)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "寄存器值"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "macro",
+      "src": "#define LL_I2C_ReadReg(__INSTANCE__, __REG__) READ_REG(__INSTANCE__->__REG__)"
+    }
+  ],
+  "types": [
+    {
+      "name": "LL_I2C_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t ClockSpeed; uint32_t DutyCycle; uint32_t OwnAddress1; uint32_t TypeAcknowledge; } LL_I2C_InitTypeDef;",
+      "desc": "LL 库 I2C 初始化配置结构体, 作为 LL_I2C_Init() 的参数(需定义 USE_FULL_LL_DRIVER)。",
+      "members": [
+        {
+          "name": "ClockSpeed",
+          "type": "uint32_t",
+          "desc": "通信时钟频率(Hz), 必须低于 400kHz"
+        },
+        {
+          "name": "DutyCycle",
+          "type": "uint32_t",
+          "desc": "快速模式占空比: LL_I2C_DUTYCYCLE_2 / LL_I2C_DUTYCYCLE_16_9"
+        },
+        {
+          "name": "OwnAddress1",
+          "type": "uint32_t",
+          "desc": "本机自身地址 1, 取值 0x00 ~ 0x3FF"
+        },
+        {
+          "name": "TypeAcknowledge",
+          "type": "uint32_t",
+          "desc": "地址匹配码或下一接收字节后的应答类型: LL_I2C_ACK / LL_I2C_NACK"
+        }
+      ],
+      "file": "py32f002b_ll_i2c.h"
+    },
+    {
+      "name": "I2C_TypeDef",
+      "kind": "periph",
+      "def": "typedef struct { __IO uint32_t CR1; __IO uint32_t CR2; __IO uint32_t OAR1; __IO uint32_t DR; __IO uint32_t SR1; __IO uint32_t SR2; __IO uint32_t CCR; __IO uint32_t TRISE; } I2C_TypeDef;",
+      "desc": "I2C 外设寄存器结构体(传统 I2C 接口)。实例: I2C1(旧代码别名 I2C)。",
+      "members": [
+        {
+          "name": "CR1",
+          "type": "__IO uint32_t",
+          "desc": "控制寄存器 1(PE/ENGC/NOSTRETCH/START/STOP/ACK/POS/SWRST)"
+        },
+        {
+          "name": "CR2",
+          "type": "__IO uint32_t",
+          "desc": "控制寄存器 2(FREQ 外设时钟频率, ITERREN/ITEVTEN/ITBUFEN 中断使能)"
+        },
+        {
+          "name": "OAR1",
+          "type": "__IO uint32_t",
+          "desc": "自身地址寄存器 1(ADD1_7 接口地址)"
+        },
+        {
+          "name": "DR",
+          "type": "__IO uint32_t",
+          "desc": "数据寄存器(8 位收发数据)"
+        },
+        {
+          "name": "SR1",
+          "type": "__IO uint32_t",
+          "desc": "状态寄存器 1(SB/ADDR/BTF/STOPF/RXNE/TXE/BERR/ARLO/AF/OVR/PECERR)"
+        },
+        {
+          "name": "SR2",
+          "type": "__IO uint32_t",
+          "desc": "状态寄存器 2(MSL/BUSY/TRA/GENCALL)"
+        },
+        {
+          "name": "CCR",
+          "type": "__IO uint32_t",
+          "desc": "时钟控制寄存器(CCR 周期, DUTY 占空比, FS 快速模式选择)"
+        },
+        {
+          "name": "TRISE",
+          "type": "__IO uint32_t",
+          "desc": "上升时间寄存器(TRISE 最大上升时间)"
+        }
+      ],
+      "file": "py32f002xx5.h"
+    }
+  ],
+  "consts": [
+    {
+      "name": "LL_I2C_SR1_SB",
+      "value": "I2C_SR1_SB",
+      "desc": "起始位标志(主模式)",
+      "group": "LL I2C 标志",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_SR1_SB                       I2C_SR1_SB              /*!< Start Bit (master mode)                   */"
+    },
+    {
+      "name": "LL_I2C_SR1_ADDR",
+      "value": "I2C_SR1_ADDR",
+      "desc": "地址已发送(主模式)/地址匹配(从模式)标志",
+      "group": "LL I2C 标志",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_SR1_ADDR                     I2C_SR1_ADDR            /*!< Address sent (master mode) or"
+    },
+    {
+      "name": "LL_I2C_SR1_BTF",
+      "value": "I2C_SR1_BTF",
+      "desc": "字节传输完成标志",
+      "group": "LL I2C 标志",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_SR1_BTF                      I2C_SR1_BTF             /*!< Byte Transfer Finished flag               */"
+    },
+    {
+      "name": "LL_I2C_SR1_STOPF",
+      "value": "I2C_SR1_STOPF",
+      "desc": "停止检测标志(从模式)",
+      "group": "LL I2C 标志",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_SR1_STOPF                    I2C_SR1_STOPF           /*!< Stop detection flag (slave mode)          */"
+    },
+    {
+      "name": "LL_I2C_SR1_RXNE",
+      "value": "I2C_SR1_RXNE",
+      "desc": "接收数据寄存器非空标志",
+      "group": "LL I2C 标志",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_SR1_RXNE                     I2C_SR1_RXNE            /*!< Data register not empty (receivers)       */"
+    },
+    {
+      "name": "LL_I2C_SR1_TXE",
+      "value": "I2C_SR1_TXE",
+      "desc": "发送数据寄存器空标志",
+      "group": "LL I2C 标志",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_SR1_TXE                      I2C_SR1_TXE             /*!< Data register empty (transmitters)        */"
+    },
+    {
+      "name": "LL_I2C_SR1_BERR",
+      "value": "I2C_SR1_BERR",
+      "desc": "总线错误标志",
+      "group": "LL I2C 标志",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_SR1_BERR                     I2C_SR1_BERR            /*!< Bus error                                 */"
+    },
+    {
+      "name": "LL_I2C_SR1_ARLO",
+      "value": "I2C_SR1_ARLO",
+      "desc": "仲裁丢失标志",
+      "group": "LL I2C 标志",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_SR1_ARLO                     I2C_SR1_ARLO            /*!< Arbitration lost                          */"
+    },
+    {
+      "name": "LL_I2C_SR1_AF",
+      "value": "I2C_SR1_AF",
+      "desc": "应答失败标志",
+      "group": "LL I2C 标志",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_SR1_AF                       I2C_SR1_AF              /*!< Acknowledge failure flag                  */"
+    },
+    {
+      "name": "LL_I2C_SR1_OVR",
+      "value": "I2C_SR1_OVR",
+      "desc": "溢出/下溢标志",
+      "group": "LL I2C 标志",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_SR1_OVR                      I2C_SR1_OVR             /*!< Overrun/Underrun                          */"
+    },
+    {
+      "name": "LL_I2C_SR2_MSL",
+      "value": "I2C_SR2_MSL",
+      "desc": "主/从标志",
+      "group": "LL I2C 标志",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_SR2_MSL                      I2C_SR2_MSL             /*!< Master/Slave flag                         */"
+    },
+    {
+      "name": "LL_I2C_SR2_BUSY",
+      "value": "I2C_SR2_BUSY",
+      "desc": "总线忙标志",
+      "group": "LL I2C 标志",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_SR2_BUSY                     I2C_SR2_BUSY            /*!< Bus busy flag                             */"
+    },
+    {
+      "name": "LL_I2C_SR2_TRA",
+      "value": "I2C_SR2_TRA",
+      "desc": "发送/接收方向标志",
+      "group": "LL I2C 标志",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_SR2_TRA                      I2C_SR2_TRA             /*!< Transmitter/receiver direction            */"
+    },
+    {
+      "name": "LL_I2C_SR2_GENCALL",
+      "value": "I2C_SR2_GENCALL",
+      "desc": "广播呼叫地址标志(从模式)",
+      "group": "LL I2C 标志",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_SR2_GENCALL                  I2C_SR2_GENCALL         /*!< General call address (Slave mode)         */"
+    },
+    {
+      "name": "LL_I2C_CR2_ITEVTEN",
+      "value": "I2C_CR2_ITEVTEN",
+      "desc": "事件中断使能",
+      "group": "LL I2C 中断源",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_CR2_ITEVTEN                  I2C_CR2_ITEVTEN         /*!< Events interrupts enable */"
+    },
+    {
+      "name": "LL_I2C_CR2_ITBUFEN",
+      "value": "I2C_CR2_ITBUFEN",
+      "desc": "缓冲中断使能",
+      "group": "LL I2C 中断源",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_CR2_ITBUFEN                  I2C_CR2_ITBUFEN         /*!< Buffer interrupts enable */"
+    },
+    {
+      "name": "LL_I2C_CR2_ITERREN",
+      "value": "I2C_CR2_ITERREN",
+      "desc": "错误中断使能",
+      "group": "LL I2C 中断源",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_CR2_ITERREN                  I2C_CR2_ITERREN         /*!< Error interrupts enable  */"
+    },
+    {
+      "name": "LL_I2C_DUTYCYCLE_2",
+      "value": "0x00000000U",
+      "desc": "快速模式 Tlow/Thigh = 2",
+      "group": "LL I2C 占空比",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_DUTYCYCLE_2                  0x00000000U             /*!< I2C fast mode Tlow/Thigh = 2        */"
+    },
+    {
+      "name": "LL_I2C_DUTYCYCLE_16_9",
+      "value": "I2C_CCR_DUTY",
+      "desc": "快速模式 Tlow/Thigh = 16/9",
+      "group": "LL I2C 占空比",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_DUTYCYCLE_16_9               I2C_CCR_DUTY            /*!< I2C fast mode Tlow/Thigh = 16/9     */"
+    },
+    {
+      "name": "LL_I2C_CLOCK_SPEED_STANDARD_MODE",
+      "value": "0x00000000U",
+      "desc": "主模式时钟速度范围为标准模式",
+      "group": "LL I2C 时钟速度模式",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_CLOCK_SPEED_STANDARD_MODE    0x00000000U             /*!< Master clock speed range is standard mode */"
+    },
+    {
+      "name": "LL_I2C_CLOCK_SPEED_FAST_MODE",
+      "value": "I2C_CCR_FS",
+      "desc": "主模式时钟速度范围为快速模式",
+      "group": "LL I2C 时钟速度模式",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_CLOCK_SPEED_FAST_MODE        I2C_CCR_FS              /*!< Master clock speed range is fast mode     */"
+    },
+    {
+      "name": "LL_I2C_ACK",
+      "value": "I2C_CR1_ACK",
+      "desc": "当前接收字节后发送 ACK",
+      "group": "LL I2C 应答",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_ACK                          I2C_CR1_ACK             /*!< ACK is sent after current received byte. */"
+    },
+    {
+      "name": "LL_I2C_NACK",
+      "value": "0x00000000U",
+      "desc": "当前接收字节后发送 NACK",
+      "group": "LL I2C 应答",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_NACK                         0x00000000U             /*!< NACK is sent after current received byte.*/"
+    },
+    {
+      "name": "LL_I2C_DIRECTION_WRITE",
+      "value": "I2C_SR2_TRA",
+      "desc": "总线处于写传输",
+      "group": "LL I2C 传输方向",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_DIRECTION_WRITE              I2C_SR2_TRA             /*!< Bus is in write transfer */"
+    },
+    {
+      "name": "LL_I2C_DIRECTION_READ",
+      "value": "0x00000000U",
+      "desc": "总线处于读传输",
+      "group": "LL I2C 传输方向",
+      "file": "py32f002b_ll_i2c.h",
+      "src": "#define LL_I2C_DIRECTION_READ               0x00000000U             /*!< Bus is in read transfer  */"
+    }
+  ]
+}

@@ -1,0 +1,909 @@
+{
+  "module": "ADC",
+  "moduleId": "adc",
+  "intro": "ADC LL 库常量(EC 组): 标志/中断/内部通路/时钟/分辨率/对齐/低功耗/通道/基准电压/触发/连续模式/溢出/扫描/不连续/采样时间/模拟看门狗/校准/硬件延时等全部 LL_ADC_* 定义。与 adc_ll.json 同属一个模块。",
+  "files": [
+    "py32f002b_ll_adc.h"
+  ],
+  "hal": [],
+  "ll": [],
+  "types": [],
+  "consts": [
+    {
+      "name": "LL_ADC_FLAG_EOC",
+      "value": "ADC_ISR_EOC",
+      "desc": "规则组单次转换结束标志",
+      "group": "LL_ADC 标志",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_FLAG_EOC                    ADC_ISR_EOC        /*!< ADC flag ADC group regular end of unitary conversion */"
+    },
+    {
+      "name": "LL_ADC_FLAG_EOS",
+      "value": "ADC_ISR_EOSEQ",
+      "desc": "规则序列转换结束标志",
+      "group": "LL_ADC 标志",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_FLAG_EOS                    ADC_ISR_EOSEQ      /*!< ADC flag ADC group regular end of sequence conversions */"
+    },
+    {
+      "name": "LL_ADC_FLAG_OVR",
+      "value": "ADC_ISR_OVR",
+      "desc": "规则组溢出标志",
+      "group": "LL_ADC 标志",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_FLAG_OVR                    ADC_ISR_OVR        /*!< ADC flag ADC group regular overrun */"
+    },
+    {
+      "name": "LL_ADC_FLAG_EOSMP",
+      "value": "ADC_ISR_EOSMP",
+      "desc": "规则组采样结束标志",
+      "group": "LL_ADC 标志",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_FLAG_EOSMP                  ADC_ISR_EOSMP      /*!< ADC flag ADC group regular end of sampling phase */"
+    },
+    {
+      "name": "LL_ADC_FLAG_AWD",
+      "value": "ADC_ISR_AWD",
+      "desc": "模拟看门狗 1 标志",
+      "group": "LL_ADC 标志",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_FLAG_AWD                    ADC_ISR_AWD        /*!< ADC flag ADC analog watchdog 1 */"
+    },
+    {
+      "name": "LL_ADC_IT_EOC",
+      "value": "ADC_IER_EOCIE",
+      "desc": "规则组单次转换结束中断源",
+      "group": "LL_ADC 中断",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_IT_EOC                      ADC_IER_EOCIE      /*!< ADC interruption ADC group regular end of unitary conversion */"
+    },
+    {
+      "name": "LL_ADC_IT_EOS",
+      "value": "ADC_IER_EOSEQIE",
+      "desc": "规则序列转换结束中断源",
+      "group": "LL_ADC 中断",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_IT_EOS                      ADC_IER_EOSEQIE    /*!< ADC interruption ADC group regular end of sequence conversions */"
+    },
+    {
+      "name": "LL_ADC_IT_OVR",
+      "value": "ADC_IER_OVRIE",
+      "desc": "规则组溢出中断源",
+      "group": "LL_ADC 中断",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_IT_OVR                      ADC_IER_OVRIE      /*!< ADC interruption ADC group regular overrun */"
+    },
+    {
+      "name": "LL_ADC_IT_EOSMP",
+      "value": "ADC_IER_EOSMPIE",
+      "desc": "规则组采样结束中断源",
+      "group": "LL_ADC 中断",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_IT_EOSMP                    ADC_IER_EOSMPIE    /*!< ADC interruption ADC group regular end of sampling phase */"
+    },
+    {
+      "name": "LL_ADC_IT_AWD",
+      "value": "ADC_IER_AWDIE",
+      "desc": "模拟看门狗 1 中断源",
+      "group": "LL_ADC 中断",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_IT_AWD                      ADC_IER_AWDIE      /*!< ADC interruption ADC analog watchdog 1 */"
+    },
+    {
+      "name": "LL_ADC_PATH_INTERNAL_NONE",
+      "value": "(0x00000000U)",
+      "desc": "内部测量通路全部禁止",
+      "group": "LL_ADC 内部通路",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_PATH_INTERNAL_NONE          (0x00000000U)          /*!< ADC measurement pathes all disabled */"
+    },
+    {
+      "name": "LL_ADC_PATH_INTERNAL_VREFINT",
+      "value": "(ADC_CCR_VREFEN)",
+      "desc": "VrefInt 内部测量通路",
+      "group": "LL_ADC 内部通路",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_PATH_INTERNAL_VREFINT       (ADC_CCR_VREFEN)       /*!< ADC measurement path to internal channel VrefInt */"
+    },
+    {
+      "name": "LL_ADC_PATH_INTERNAL_TEMPSENSOR",
+      "value": "(ADC_CCR_TSEN)",
+      "desc": "温度传感器内部测量通路",
+      "group": "LL_ADC 内部通路",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_PATH_INTERNAL_TEMPSENSOR    (ADC_CCR_TSEN)         /*!< ADC measurement path to internal channel temperature sensor */"
+    },
+    {
+      "name": "LL_ADC_CLOCK_SYNC_PCLK_DIV1",
+      "value": "(0x00000000U)",
+      "desc": "ADC 同步时钟, APB 时钟 1 分频",
+      "group": "LL_ADC 时钟源",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CLOCK_SYNC_PCLK_DIV1        (0x00000000U)                                                                        /*!< ADC synchronous clock derived from APB clock divided by a prescaler of 1 */"
+    },
+    {
+      "name": "LL_ADC_CLOCK_SYNC_PCLK_DIV2",
+      "value": "(ADC_CFGR2_CKMODE_0)",
+      "desc": "ADC 同步时钟, APB 时钟 2 分频",
+      "group": "LL_ADC 时钟源",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CLOCK_SYNC_PCLK_DIV2        (ADC_CFGR2_CKMODE_0                                                               )  /*!< ADC synchronous clock derived from APB clock divided by a prescaler of 2 */"
+    },
+    {
+      "name": "LL_ADC_CLOCK_SYNC_PCLK_DIV4",
+      "value": "(ADC_CFGR2_CKMODE_1)",
+      "desc": "ADC 同步时钟, APB 时钟 4 分频",
+      "group": "LL_ADC 时钟源",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CLOCK_SYNC_PCLK_DIV4        (                     ADC_CFGR2_CKMODE_1                                          )  /*!< ADC synchronous clock derived from APB clock divided by a prescaler of 4 */"
+    },
+    {
+      "name": "LL_ADC_CLOCK_SYNC_PCLK_DIV8",
+      "value": "(ADC_CFGR2_CKMODE_0 | ADC_CFGR2_CKMODE_1)",
+      "desc": "ADC 同步时钟, APB 时钟 8 分频",
+      "group": "LL_ADC 时钟源",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CLOCK_SYNC_PCLK_DIV8        (ADC_CFGR2_CKMODE_0 | ADC_CFGR2_CKMODE_1                                          )  /*!< ADC synchronous clock derived from APB clock divided by a prescaler of 8 */"
+    },
+    {
+      "name": "LL_ADC_CLOCK_SYNC_PCLK_DIV16",
+      "value": "(ADC_CFGR2_CKMODE_2)",
+      "desc": "ADC 同步时钟, APB 时钟 16 分频",
+      "group": "LL_ADC 时钟源",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CLOCK_SYNC_PCLK_DIV16       (                                          ADC_CFGR2_CKMODE_2                     )  /*!< ADC synchronous clock derived from APB clock divided by a prescaler of 16 */"
+    },
+    {
+      "name": "LL_ADC_CLOCK_SYNC_PCLK_DIV32",
+      "value": "(ADC_CFGR2_CKMODE_0 | ADC_CFGR2_CKMODE_2)",
+      "desc": "ADC 同步时钟, APB 时钟 32 分频",
+      "group": "LL_ADC 时钟源",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CLOCK_SYNC_PCLK_DIV32       (ADC_CFGR2_CKMODE_0                      | ADC_CFGR2_CKMODE_2                     )  /*!< ADC synchronous clock derived from APB clock divided by a prescaler of 32 */"
+    },
+    {
+      "name": "LL_ADC_CLOCK_SYNC_PCLK_DIV64",
+      "value": "(ADC_CFGR2_CKMODE_1 | ADC_CFGR2_CKMODE_2)",
+      "desc": "ADC 同步时钟, APB 时钟 64 分频",
+      "group": "LL_ADC 时钟源",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CLOCK_SYNC_PCLK_DIV64       (                     ADC_CFGR2_CKMODE_1 | ADC_CFGR2_CKMODE_2                     )  /*!< ADC synchronous clock derived from APB clock divided by a prescaler of 64 */"
+    },
+    {
+      "name": "LL_ADC_CLOCK_ASYNC_HSI_DIV1",
+      "value": "(ADC_CFGR2_CKMODE_3)",
+      "desc": "ADC 异步时钟, 专用 HSI 1 分频",
+      "group": "LL_ADC 时钟源",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CLOCK_ASYNC_HSI_DIV1        (                                                               ADC_CFGR2_CKMODE_3)  /*!< ADC asynchronous clock derived from HSI clock divided by a prescaler of 1 */"
+    },
+    {
+      "name": "LL_ADC_CLOCK_ASYNC_HSI_DIV2",
+      "value": "(ADC_CFGR2_CKMODE_0 | ADC_CFGR2_CKMODE_3)",
+      "desc": "ADC 异步时钟, HSI 2 分频",
+      "group": "LL_ADC 时钟源",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CLOCK_ASYNC_HSI_DIV2        (ADC_CFGR2_CKMODE_0                                           | ADC_CFGR2_CKMODE_3)  /*!< ADC asynchronous clock derived from HSI clock divided by a prescaler of 2 */"
+    },
+    {
+      "name": "LL_ADC_CLOCK_ASYNC_HSI_DIV4",
+      "value": "(ADC_CFGR2_CKMODE_1 | ADC_CFGR2_CKMODE_3)",
+      "desc": "ADC 异步时钟, HSI 4 分频",
+      "group": "LL_ADC 时钟源",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CLOCK_ASYNC_HSI_DIV4        (                     ADC_CFGR2_CKMODE_1                      | ADC_CFGR2_CKMODE_3)  /*!< ADC asynchronous clock derived from HSI clock divided by a prescaler of 4 */"
+    },
+    {
+      "name": "LL_ADC_CLOCK_ASYNC_HSI_DIV8",
+      "value": "(ADC_CFGR2_CKMODE_0 | ADC_CFGR2_CKMODE_1 | ADC_CFGR2_CKMODE_3)",
+      "desc": "ADC 异步时钟, HSI 8 分频",
+      "group": "LL_ADC 时钟源",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CLOCK_ASYNC_HSI_DIV8        (ADC_CFGR2_CKMODE_0 | ADC_CFGR2_CKMODE_1                      | ADC_CFGR2_CKMODE_3)  /*!< ADC asynchronous clock derived from HSI clock divided by a prescaler of 8 */"
+    },
+    {
+      "name": "LL_ADC_CLOCK_ASYNC_HSI_DIV16",
+      "value": "(ADC_CFGR2_CKMODE_2 | ADC_CFGR2_CKMODE_3)",
+      "desc": "ADC 异步时钟, HSI 16 分频",
+      "group": "LL_ADC 时钟源",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CLOCK_ASYNC_HSI_DIV16       (                                          ADC_CFGR2_CKMODE_2 | ADC_CFGR2_CKMODE_3)  /*!< ADC asynchronous clock derived from HSI clock divided by a prescaler of 16 */"
+    },
+    {
+      "name": "LL_ADC_CLOCK_ASYNC_HSI_DIV32",
+      "value": "(ADC_CFGR2_CKMODE_0 | ADC_CFGR2_CKMODE_2 | ADC_CFGR2_CKMODE_3)",
+      "desc": "ADC 异步时钟, HSI 32 分频",
+      "group": "LL_ADC 时钟源",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CLOCK_ASYNC_HSI_DIV32       (ADC_CFGR2_CKMODE_0 |                      ADC_CFGR2_CKMODE_2 | ADC_CFGR2_CKMODE_3)  /*!< ADC asynchronous clock derived from HSI clock divided by a prescaler of 32 */"
+    },
+    {
+      "name": "LL_ADC_CLOCK_ASYNC_HSI_DIV64",
+      "value": "(ADC_CFGR2_CKMODE_1 | ADC_CFGR2_CKMODE_2 | ADC_CFGR2_CKMODE_3)",
+      "desc": "ADC 异步时钟, HSI 64 分频",
+      "group": "LL_ADC 时钟源",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CLOCK_ASYNC_HSI_DIV64       (                     ADC_CFGR2_CKMODE_1 | ADC_CFGR2_CKMODE_2 | ADC_CFGR2_CKMODE_3)  /*!< ADC asynchronous clock derived from HSI clock divided by a prescaler of 64 */"
+    },
+    {
+      "name": "LL_ADC_RESOLUTION_12B",
+      "value": "(0x00000000U)",
+      "desc": "12 位分辨率",
+      "group": "LL_ADC 分辨率",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_RESOLUTION_12B              (0x00000000U)                             /*!< ADC resolution 12 bits */"
+    },
+    {
+      "name": "LL_ADC_RESOLUTION_10B",
+      "value": "(ADC_CFGR1_RESSEL_0)",
+      "desc": "10 位分辨率",
+      "group": "LL_ADC 分辨率",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_RESOLUTION_10B              (ADC_CFGR1_RESSEL_0)                      /*!< ADC resolution 10 bits */"
+    },
+    {
+      "name": "LL_ADC_RESOLUTION_8B",
+      "value": "(ADC_CFGR1_RESSEL_1)",
+      "desc": "8 位分辨率",
+      "group": "LL_ADC 分辨率",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_RESOLUTION_8B               (ADC_CFGR1_RESSEL_1)                      /*!< ADC resolution  8 bits */"
+    },
+    {
+      "name": "LL_ADC_RESOLUTION_6B",
+      "value": "(ADC_CFGR1_RESSEL_1 | ADC_CFGR1_RESSEL_0)",
+      "desc": "6 位分辨率",
+      "group": "LL_ADC 分辨率",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_RESOLUTION_6B               (ADC_CFGR1_RESSEL_1 | ADC_CFGR1_RESSEL_0) /*!< ADC resolution  6 bits */"
+    },
+    {
+      "name": "LL_ADC_DATA_ALIGN_RIGHT",
+      "value": "(0x00000000U)",
+      "desc": "数据右对齐(对齐到数据寄存器 bit0)",
+      "group": "LL_ADC 数据对齐",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_DATA_ALIGN_RIGHT            (0x00000000U)                             /*!< ADC conversion data alignment: right aligned (alignment on data register LSB bit 0)*/"
+    },
+    {
+      "name": "LL_ADC_DATA_ALIGN_LEFT",
+      "value": "(ADC_CFGR1_ALIGN)",
+      "desc": "数据左对齐(对齐到数据寄存器 bit15)",
+      "group": "LL_ADC 数据对齐",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_DATA_ALIGN_LEFT             (ADC_CFGR1_ALIGN)                         /*!< ADC conversion data alignment: left aligned (aligment on data register MSB bit 15)*/"
+    },
+    {
+      "name": "LL_ADC_LP_MODE_NONE",
+      "value": "(0x00000000U)",
+      "desc": "无低功耗模式",
+      "group": "LL_ADC 低功耗",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_LP_MODE_NONE                (0x00000000U)                             /*!< No ADC low power mode activated */"
+    },
+    {
+      "name": "LL_ADC_LP_AUTOWAIT",
+      "value": "(ADC_CFGR1_WAIT)",
+      "desc": "低功耗自动等待: 读取上次转换数据后才执行新转换",
+      "group": "LL_ADC 低功耗",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_LP_AUTOWAIT                 (ADC_CFGR1_WAIT)                          /*!< ADC low power mode auto delay: Dynamic low power mode, ADC conversions are performed only when necessary (when previous ADC conversion data is read). See description with function @ref LL_ADC_SetLowPowerMode(). */"
+    },
+    {
+      "name": "LL_ADC_GROUP_REGULAR",
+      "value": "(0x00000001U)",
+      "desc": "规则组",
+      "group": "LL_ADC 组",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_GROUP_REGULAR               (0x00000001U)                             /*!< ADC group regular */"
+    },
+    {
+      "name": "LL_ADC_CHANNEL_0",
+      "value": "(ADC_CHANNEL_0_NUMBER | ADC_CHANNEL_0_BITFIELD)",
+      "desc": "外部通道 0(IN0)",
+      "group": "LL_ADC 通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CHANNEL_0                   (ADC_CHANNEL_0_NUMBER  | ADC_CHANNEL_0_BITFIELD ) /*!< ADC external channel (channel connected to GPIO pin) ADCx_IN0  */"
+    },
+    {
+      "name": "LL_ADC_CHANNEL_1",
+      "value": "(ADC_CHANNEL_1_NUMBER | ADC_CHANNEL_1_BITFIELD)",
+      "desc": "外部通道 1(IN1)",
+      "group": "LL_ADC 通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CHANNEL_1                   (ADC_CHANNEL_1_NUMBER  | ADC_CHANNEL_1_BITFIELD ) /*!< ADC external channel (channel connected to GPIO pin) ADCx_IN1  */"
+    },
+    {
+      "name": "LL_ADC_CHANNEL_2",
+      "value": "(ADC_CHANNEL_2_NUMBER | ADC_CHANNEL_2_BITFIELD)",
+      "desc": "外部通道 2(IN2)",
+      "group": "LL_ADC 通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CHANNEL_2                   (ADC_CHANNEL_2_NUMBER  | ADC_CHANNEL_2_BITFIELD ) /*!< ADC external channel (channel connected to GPIO pin) ADCx_IN2  */"
+    },
+    {
+      "name": "LL_ADC_CHANNEL_3",
+      "value": "(ADC_CHANNEL_3_NUMBER | ADC_CHANNEL_3_BITFIELD)",
+      "desc": "外部通道 3(IN3)",
+      "group": "LL_ADC 通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CHANNEL_3                   (ADC_CHANNEL_3_NUMBER  | ADC_CHANNEL_3_BITFIELD ) /*!< ADC external channel (channel connected to GPIO pin) ADCx_IN3  */"
+    },
+    {
+      "name": "LL_ADC_CHANNEL_4",
+      "value": "(ADC_CHANNEL_4_NUMBER | ADC_CHANNEL_4_BITFIELD)",
+      "desc": "外部通道 4(IN4)",
+      "group": "LL_ADC 通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CHANNEL_4                   (ADC_CHANNEL_4_NUMBER  | ADC_CHANNEL_4_BITFIELD ) /*!< ADC external channel (channel connected to GPIO pin) ADCx_IN4  */"
+    },
+    {
+      "name": "LL_ADC_CHANNEL_5",
+      "value": "(ADC_CHANNEL_5_NUMBER | ADC_CHANNEL_5_BITFIELD)",
+      "desc": "外部通道 5(IN5)",
+      "group": "LL_ADC 通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CHANNEL_5                   (ADC_CHANNEL_5_NUMBER  | ADC_CHANNEL_5_BITFIELD ) /*!< ADC external channel (channel connected to GPIO pin) ADCx_IN5  */"
+    },
+    {
+      "name": "LL_ADC_CHANNEL_6",
+      "value": "(ADC_CHANNEL_6_NUMBER | ADC_CHANNEL_6_BITFIELD)",
+      "desc": "外部通道 6(IN6)",
+      "group": "LL_ADC 通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CHANNEL_6                   (ADC_CHANNEL_6_NUMBER  | ADC_CHANNEL_6_BITFIELD ) /*!< ADC external channel (channel connected to GPIO pin) ADCx_IN6  */"
+    },
+    {
+      "name": "LL_ADC_CHANNEL_7",
+      "value": "(ADC_CHANNEL_7_NUMBER | ADC_CHANNEL_7_BITFIELD)",
+      "desc": "外部通道 7(IN7)",
+      "group": "LL_ADC 通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CHANNEL_7                   (ADC_CHANNEL_7_NUMBER  | ADC_CHANNEL_7_BITFIELD ) /*!< ADC external channel (channel connected to GPIO pin) ADCx_IN7  */"
+    },
+    {
+      "name": "LL_ADC_CHANNEL_8",
+      "value": "(ADC_CHANNEL_8_NUMBER | ADC_CHANNEL_8_BITFIELD)",
+      "desc": "外部通道 8(IN8)",
+      "group": "LL_ADC 通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CHANNEL_8                   (ADC_CHANNEL_8_NUMBER  | ADC_CHANNEL_8_BITFIELD )"
+    },
+    {
+      "name": "LL_ADC_CHANNEL_9",
+      "value": "(ADC_CHANNEL_9_NUMBER | ADC_CHANNEL_9_BITFIELD)",
+      "desc": "外部通道 9(IN9)",
+      "group": "LL_ADC 通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CHANNEL_9                   (ADC_CHANNEL_9_NUMBER  | ADC_CHANNEL_9_BITFIELD )"
+    },
+    {
+      "name": "LL_ADC_CHANNEL_10",
+      "value": "(ADC_CHANNEL_10_NUMBER | ADC_CHANNEL_10_BITFIELD)",
+      "desc": "外部通道 10(IN10, 定义 ADC_CHSELR_CHSEL10 时存在)",
+      "group": "LL_ADC 通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CHANNEL_10                  (ADC_CHANNEL_10_NUMBER | ADC_CHANNEL_10_BITFIELD)"
+    },
+    {
+      "name": "LL_ADC_CHANNEL_TEMPSENSOR",
+      "value": "(LL_ADC_CHANNEL_8 | ADC_CHANNEL_ID_INTERNAL_CH)",
+      "desc": "内部通道: 温度传感器",
+      "group": "LL_ADC 通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CHANNEL_TEMPSENSOR          (LL_ADC_CHANNEL_8 | ADC_CHANNEL_ID_INTERNAL_CH)  /*!< ADC internal channel connected to Temperature sensor. */"
+    },
+    {
+      "name": "LL_ADC_CHANNEL_VREFINT",
+      "value": "(LL_ADC_CHANNEL_9 | ADC_CHANNEL_ID_INTERNAL_CH)",
+      "desc": "内部通道: 电压基准 VrefInt",
+      "group": "LL_ADC 通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CHANNEL_VREFINT             (LL_ADC_CHANNEL_9 | ADC_CHANNEL_ID_INTERNAL_CH)  /*!< ADC internal channel connected to VrefInt: Internal voltage reference. */"
+    },
+    {
+      "name": "LL_ADC_CHANNEL_1_3VCCA",
+      "value": "(LL_ADC_CHANNEL_10 | ADC_CHANNEL_ID_INTERNAL_CH)",
+      "desc": "内部通道: 1/3VCCA(定义 ADC_CHSELR_CHSEL10 时存在)",
+      "group": "LL_ADC 通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CHANNEL_1_3VCCA             (LL_ADC_CHANNEL_10 | ADC_CHANNEL_ID_INTERNAL_CH) /*!< ADC internal channel connected to 1/3VCCA: Internal voltage reference. */"
+    },
+    {
+      "name": "LL_ADC_VREFBUF_1P5V",
+      "value": "(0x00000000U)",
+      "desc": "VrefBuffer 输出 1.5V",
+      "group": "LL_ADC 基准电压",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_VREFBUF_1P5V      (0x00000000U)            /*!< VREFBUF Output voltage 1.5V. */"
+    },
+    {
+      "name": "LL_ADC_VREFBUF_2P048V",
+      "value": "(ADC_CR_VREFBUFF_SEL_0)",
+      "desc": "VrefBuffer 输出 2.048V",
+      "group": "LL_ADC 基准电压",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_VREFBUF_2P048V    (ADC_CR_VREFBUFF_SEL_0)  /*!< VREFBUF 2.048V */"
+    },
+    {
+      "name": "LL_ADC_VREFBUF_2P5V",
+      "value": "(ADC_CR_VREFBUFF_SEL_1)",
+      "desc": "VrefBuffer 输出 2.5V",
+      "group": "LL_ADC 基准电压",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_VREFBUF_2P5V      (ADC_CR_VREFBUFF_SEL_1)  /*!< VREFBUF 2.5V */"
+    },
+    {
+      "name": "LL_ADC_REG_TRIG_SOFTWARE",
+      "value": "(0x00000000U)",
+      "desc": "规则组触发源: 软件启动",
+      "group": "LL_ADC 触发源",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_REG_TRIG_SOFTWARE           (0x00000000U)                                                             /*!< ADC group regular conversion trigger internal: SW start. */"
+    },
+    {
+      "name": "LL_ADC_REG_TRIG_EXT_TIM1_TRGO",
+      "value": "(ADC_REG_TRIG_EXT_EDGE_DEFAULT)",
+      "desc": "规则组触发源: TIM1 TRGO(默认上升沿)",
+      "group": "LL_ADC 触发源",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_REG_TRIG_EXT_TIM1_TRGO      (                                          ADC_REG_TRIG_EXT_EDGE_DEFAULT) /*!< ADC group regular conversion trigger from external IP: TIM1 TRGO. Trigger edge set to rising edge (default setting). */"
+    },
+    {
+      "name": "LL_ADC_REG_TRIG_EXT_TIM1_CH4",
+      "value": "(ADC_CFGR1_EXTSEL_0 | ADC_REG_TRIG_EXT_EDGE_DEFAULT)",
+      "desc": "规则组触发源: TIM1 通道 4 事件(默认上升沿)",
+      "group": "LL_ADC 触发源",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_REG_TRIG_EXT_TIM1_CH4       (                     ADC_CFGR1_EXTSEL_0 | ADC_REG_TRIG_EXT_EDGE_DEFAULT) /*!< ADC group regular conversion trigger from external IP: TIM1 channel 4 event (capture compare: input capture or output capture). Trigger edge set to rising edge (default setting). */"
+    },
+    {
+      "name": "LL_ADC_REG_TRIG_EXT_RISING",
+      "value": "(ADC_CFGR1_EXTEN_0)",
+      "desc": "规则组触发极性: 上升沿",
+      "group": "LL_ADC 触发极性",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_REG_TRIG_EXT_RISING         (                    ADC_CFGR1_EXTEN_0) /*!< ADC group regular conversion trigger polarity set to rising edge */"
+    },
+    {
+      "name": "LL_ADC_REG_TRIG_EXT_FALLING",
+      "value": "(ADC_CFGR1_EXTEN_1)",
+      "desc": "规则组触发极性: 下降沿",
+      "group": "LL_ADC 触发极性",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_REG_TRIG_EXT_FALLING        (ADC_CFGR1_EXTEN_1                    ) /*!< ADC group regular conversion trigger polarity set to falling edge */"
+    },
+    {
+      "name": "LL_ADC_REG_TRIG_EXT_RISINGFALLING",
+      "value": "(ADC_CFGR1_EXTEN_1 | ADC_CFGR1_EXTEN_0)",
+      "desc": "规则组触发极性: 上升/下降沿均触发",
+      "group": "LL_ADC 触发极性",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_REG_TRIG_EXT_RISINGFALLING  (ADC_CFGR1_EXTEN_1 | ADC_CFGR1_EXTEN_0) /*!< ADC group regular conversion trigger polarity set to both rising and falling edges */"
+    },
+    {
+      "name": "LL_ADC_REG_CONV_SINGLE",
+      "value": "(0x00000000U)",
+      "desc": "规则组单次转换模式(每触发一次转换一次)",
+      "group": "LL_ADC 连续模式",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_REG_CONV_SINGLE             (0x00000000U)                           /*!< ADC conversions are performed in single mode: one conversion per trigger */"
+    },
+    {
+      "name": "LL_ADC_REG_CONV_CONTINUOUS",
+      "value": "(ADC_CFGR1_CONT)",
+      "desc": "规则组连续转换模式(首次触发后自动连续)",
+      "group": "LL_ADC 连续模式",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_REG_CONV_CONTINUOUS         (ADC_CFGR1_CONT)                        /*!< ADC conversions are performed in continuous mode: after the first trigger, following conversions launched successively automatically */"
+    },
+    {
+      "name": "LL_ADC_REG_OVR_DATA_PRESERVED",
+      "value": "(0x00000000U)",
+      "desc": "规则组溢出时保留旧数据",
+      "group": "LL_ADC 溢出行为",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_REG_OVR_DATA_PRESERVED      (0x00000000U)                           /*!< ADC group regular behavior in case of overrun: data preserved */"
+    },
+    {
+      "name": "LL_ADC_REG_OVR_DATA_OVERWRITTEN",
+      "value": "(ADC_CFGR1_OVRMOD)",
+      "desc": "规则组溢出时新数据覆盖旧数据",
+      "group": "LL_ADC 溢出行为",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_REG_OVR_DATA_OVERWRITTEN    (ADC_CFGR1_OVRMOD)                      /*!< ADC group regular behavior in case of overrun: data overwritten */"
+    },
+    {
+      "name": "LL_ADC_REG_SEQ_SCAN_DIR_FORWARD",
+      "value": "(0x00000000U)",
+      "desc": "规则组扫描方向正向(通道号小到大)",
+      "group": "LL_ADC 扫描方向",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_REG_SEQ_SCAN_DIR_FORWARD    (0x00000000U)                           /*!< ADC group regular sequencer scan direction forward: from lowest channel number to highest channel number (scan of all ranks, ADC conversion of ranks with channels enabled in sequencer).*/"
+    },
+    {
+      "name": "LL_ADC_REG_SEQ_SCAN_DIR_BACKWARD",
+      "value": "(ADC_CFGR1_SCANDIR)",
+      "desc": "规则组扫描方向反向(通道号大到小)",
+      "group": "LL_ADC 扫描方向",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_REG_SEQ_SCAN_DIR_BACKWARD   (ADC_CFGR1_SCANDIR)                     /*!< ADC group regular sequencer scan direction backward: from highest channel number to lowest channel number (scan of all ranks, ADC conversion of ranks with channels enabled in sequencer) */"
+    },
+    {
+      "name": "LL_ADC_REG_SEQ_DISCONT_DISABLE",
+      "value": "(0x00000000U)",
+      "desc": "规则组序列不连续模式禁止",
+      "group": "LL_ADC 不连续模式",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_REG_SEQ_DISCONT_DISABLE     (0x00000000U)                           /*!< ADC group regular sequencer discontinuous mode disable */"
+    },
+    {
+      "name": "LL_ADC_REG_SEQ_DISCONT_1RANK",
+      "value": "(ADC_CFGR1_DISCEN)",
+      "desc": "规则组序列不连续模式: 每 rank 中断一次",
+      "group": "LL_ADC 不连续模式",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_REG_SEQ_DISCONT_1RANK       (ADC_CFGR1_DISCEN)                      /*!< ADC group regular sequencer discontinuous mode enable with sequence interruption every rank */"
+    },
+    {
+      "name": "LL_ADC_SAMPLINGTIME_3CYCLES_5",
+      "value": "(0x00000000U)",
+      "desc": "采样时间 3.5 个 ADC 时钟周期",
+      "group": "LL_ADC 采样时间",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_SAMPLINGTIME_3CYCLES_5      (0x00000000U)                                         /*!< Sampling time 3.5 ADC clock cycles */"
+    },
+    {
+      "name": "LL_ADC_SAMPLINGTIME_5CYCLES_5",
+      "value": "(ADC_SMPR_SMP_0)",
+      "desc": "采样时间 5.5 个 ADC 时钟周期",
+      "group": "LL_ADC 采样时间",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_SAMPLINGTIME_5CYCLES_5      (                                  ADC_SMPR_SMP_0)    /*!< Sampling time 5.5 ADC clock cycles */"
+    },
+    {
+      "name": "LL_ADC_SAMPLINGTIME_7CYCLES_5",
+      "value": "(ADC_SMPR_SMP_1)",
+      "desc": "采样时间 7.5 个 ADC 时钟周期",
+      "group": "LL_ADC 采样时间",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_SAMPLINGTIME_7CYCLES_5      (                 ADC_SMPR_SMP_1                 )    /*!< Sampling time 7.5 ADC clock cycles */"
+    },
+    {
+      "name": "LL_ADC_SAMPLINGTIME_13CYCLES_5",
+      "value": "(ADC_SMPR_SMP_1 | ADC_SMPR_SMP_0)",
+      "desc": "采样时间 13.5 个 ADC 时钟周期",
+      "group": "LL_ADC 采样时间",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_SAMPLINGTIME_13CYCLES_5     (                 ADC_SMPR_SMP_1 | ADC_SMPR_SMP_0)    /*!< Sampling time 13.5 ADC clock cycles */"
+    },
+    {
+      "name": "LL_ADC_SAMPLINGTIME_28CYCLES_5",
+      "value": "(ADC_SMPR_SMP_2)",
+      "desc": "采样时间 28.5 个 ADC 时钟周期",
+      "group": "LL_ADC 采样时间",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_SAMPLINGTIME_28CYCLES_5     (ADC_SMPR_SMP_2                                  )    /*!< Sampling time 28.5 ADC clock cycles */"
+    },
+    {
+      "name": "LL_ADC_SAMPLINGTIME_41CYCLES_5",
+      "value": "(ADC_SMPR_SMP_2 | ADC_SMPR_SMP_0)",
+      "desc": "采样时间 41.5 个 ADC 时钟周期",
+      "group": "LL_ADC 采样时间",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_SAMPLINGTIME_41CYCLES_5     (ADC_SMPR_SMP_2                  | ADC_SMPR_SMP_0)    /*!< Sampling time 41.5 ADC clock cycles */"
+    },
+    {
+      "name": "LL_ADC_SAMPLINGTIME_134CYCLES_5",
+      "value": "(ADC_SMPR_SMP_2 | ADC_SMPR_SMP_1)",
+      "desc": "采样时间 134.5 个 ADC 时钟周期",
+      "group": "LL_ADC 采样时间",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_SAMPLINGTIME_134CYCLES_5    (ADC_SMPR_SMP_2 | ADC_SMPR_SMP_1                 )    /*!< Sampling time 134.5 ADC clock cycles */"
+    },
+    {
+      "name": "LL_ADC_SAMPLINGTIME_239CYCLES_5",
+      "value": "(ADC_SMPR_SMP_2 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_0)",
+      "desc": "采样时间 239.5 个 ADC 时钟周期",
+      "group": "LL_ADC 采样时间",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_SAMPLINGTIME_239CYCLES_5    (ADC_SMPR_SMP_2 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_0)    /*!< Sampling time 239.5 ADC clock cycles */"
+    },
+    {
+      "name": "LL_ADC_AWD",
+      "value": "(ADC_AWD_CR1_CHANNEL_MASK | ADC_AWD_CR1_REGOFFSET)",
+      "desc": "模拟看门狗 1 编号",
+      "group": "LL_ADC 看门狗编号",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD                        (ADC_AWD_CR1_CHANNEL_MASK  | ADC_AWD_CR1_REGOFFSET)    /*!< ADC analog watchdog number 1 */"
+    },
+    {
+      "name": "LL_ADC_AWD_DISABLE",
+      "value": "(0x00000000U)",
+      "desc": "模拟看门狗监测禁止",
+      "group": "LL_ADC 看门狗通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD_DISABLE                 (0x00000000U)                                                                              /*!< ADC analog watchdog monitoring disabled */"
+    },
+    {
+      "name": "LL_ADC_AWD_ALL_CHANNELS_REG",
+      "value": "(ADC_CFGR1_AWDEN)",
+      "desc": "监测规则组全部通道",
+      "group": "LL_ADC 看门狗通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD_ALL_CHANNELS_REG        (                                            ADC_CFGR1_AWDEN                   )   /*!< ADC analog watchdog monitoring of all channels, converted by group regular only */"
+    },
+    {
+      "name": "LL_ADC_AWD_CHANNEL_1_REG",
+      "value": "((LL_ADC_CHANNEL_0 & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)",
+      "desc": "监测规则组外部通道 1(IN1)",
+      "group": "LL_ADC 看门狗通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD_CHANNEL_1_REG           ((LL_ADC_CHANNEL_0  & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)   /*!< ADC analog watchdog monitoring of ADC external channel (channel connected to GPIO pin) ADCx_IN1, converted by group regular only */"
+    },
+    {
+      "name": "LL_ADC_AWD_CHANNEL_2_REG",
+      "value": "((LL_ADC_CHANNEL_1 & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)",
+      "desc": "监测规则组外部通道 2(IN2)",
+      "group": "LL_ADC 看门狗通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD_CHANNEL_2_REG           ((LL_ADC_CHANNEL_1  & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)   /*!< ADC analog watchdog monitoring of ADC external channel (channel connected to GPIO pin) ADCx_IN2, converted by group regular only */"
+    },
+    {
+      "name": "LL_ADC_AWD_CHANNEL_3_REG",
+      "value": "((LL_ADC_CHANNEL_2 & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)",
+      "desc": "监测规则组外部通道 3(IN3)",
+      "group": "LL_ADC 看门狗通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD_CHANNEL_3_REG           ((LL_ADC_CHANNEL_2  & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)   /*!< ADC analog watchdog monitoring of ADC external channel (channel connected to GPIO pin) ADCx_IN3, converted by group regular only */"
+    },
+    {
+      "name": "LL_ADC_AWD_CHANNEL_4_REG",
+      "value": "((LL_ADC_CHANNEL_3 & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)",
+      "desc": "监测规则组外部通道 4(IN4)",
+      "group": "LL_ADC 看门狗通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD_CHANNEL_4_REG           ((LL_ADC_CHANNEL_3  & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)   /*!< ADC analog watchdog monitoring of ADC external channel (channel connected to GPIO pin) ADCx_IN4, converted by group regular only */"
+    },
+    {
+      "name": "LL_ADC_AWD_CHANNEL_5_REG",
+      "value": "((LL_ADC_CHANNEL_4 & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)",
+      "desc": "监测规则组外部通道 5(IN5)",
+      "group": "LL_ADC 看门狗通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD_CHANNEL_5_REG           ((LL_ADC_CHANNEL_4  & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)   /*!< ADC analog watchdog monitoring of ADC external channel (channel connected to GPIO pin) ADCx_IN5, converted by group regular only */"
+    },
+    {
+      "name": "LL_ADC_AWD_CHANNEL_6_REG",
+      "value": "((LL_ADC_CHANNEL_5 & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)",
+      "desc": "监测规则组外部通道 6(IN6)",
+      "group": "LL_ADC 看门狗通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD_CHANNEL_6_REG           ((LL_ADC_CHANNEL_5  & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)   /*!< ADC analog watchdog monitoring of ADC external channel (channel connected to GPIO pin) ADCx_IN6, converted by group regular only */"
+    },
+    {
+      "name": "LL_ADC_AWD_CHANNEL_7_REG",
+      "value": "((LL_ADC_CHANNEL_6 & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)",
+      "desc": "监测规则组外部通道 7(IN7)",
+      "group": "LL_ADC 看门狗通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD_CHANNEL_7_REG           ((LL_ADC_CHANNEL_6  & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)   /*!< ADC analog watchdog monitoring of ADC external channel (channel connected to GPIO pin) ADCx_IN7, converted by group regular only */"
+    },
+    {
+      "name": "LL_ADC_AWD_CHANNEL_8_REG",
+      "value": "((LL_ADC_CHANNEL_7 & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)",
+      "desc": "监测规则组外部通道 8(IN8)",
+      "group": "LL_ADC 看门狗通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD_CHANNEL_8_REG           ((LL_ADC_CHANNEL_7  & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)   /*!< ADC analog watchdog monitoring of ADC external channel (channel connected to GPIO pin) ADCx_IN8, converted by group regular only */"
+    },
+    {
+      "name": "LL_ADC_AWD_CHANNEL_9_REG",
+      "value": "((LL_ADC_CHANNEL_8 & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)",
+      "desc": "监测规则组外部通道 9(IN9)",
+      "group": "LL_ADC 看门狗通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD_CHANNEL_9_REG           ((LL_ADC_CHANNEL_8  & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)   /*!< ADC analog watchdog monitoring of ADC external channel (channel connected to GPIO pin) ADCx_IN9, converted by group regular only */"
+    },
+    {
+      "name": "LL_ADC_AWD_CHANNEL_10_REG",
+      "value": "((LL_ADC_CHANNEL_9 & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)",
+      "desc": "监测规则组外部通道 10(IN10, 定义 ADC_CHSELR_CHSEL10 时存在; 原注释写 IN11, 疑为笔误)",
+      "group": "LL_ADC 看门狗通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD_CHANNEL_10_REG          ((LL_ADC_CHANNEL_9  & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)   /*!< ADC analog watchdog monitoring of ADC external channel (channel connected to GPIO pin) ADCx_IN11, converted by group regular only */"
+    },
+    {
+      "name": "LL_ADC_AWD_CH_TEMPSENSOR_REG",
+      "value": "((LL_ADC_CHANNEL_7 & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)",
+      "desc": "监测内部温度传感器通道(规则组)",
+      "group": "LL_ADC 看门狗通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD_CH_TEMPSENSOR_REG       ((LL_ADC_CHANNEL_7  & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)   /*!< ADC analog watchdog monitoring of ADC internal channel connected to Temperature sensor, converted by group regular only */"
+    },
+    {
+      "name": "LL_ADC_AWD_CH_VREFINT_REG",
+      "value": "((LL_ADC_CHANNEL_8 & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)",
+      "desc": "监测内部 VrefInt 通道(规则组)",
+      "group": "LL_ADC 看门狗通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD_CH_VREFINT_REG          ((LL_ADC_CHANNEL_8  & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)   /*!< ADC analog watchdog monitoring of ADC internal channel connected to VrefInt: Internal voltage reference, converted by group regular only */"
+    },
+    {
+      "name": "LL_ADC_AWD_CH_1_3VCCA_REG",
+      "value": "((LL_ADC_CHANNEL_9 & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)",
+      "desc": "监测内部 1/3VCCA 通道(规则组, 定义 ADC_CHSELR_CHSEL10 时存在)",
+      "group": "LL_ADC 看门狗通道",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD_CH_1_3VCCA_REG          ((LL_ADC_CHANNEL_9  & ADC_CHANNEL_ID_MASK) | ADC_CFGR1_AWDEN | ADC_CFGR1_AWDSGL)   /*!< ADC analog watchdog monitoring of ADC internal channel connected to VrefInt: Internal voltage reference, converted by group regular only */"
+    },
+    {
+      "name": "LL_ADC_AWD_THRESHOLD_HIGH",
+      "value": "(ADC_TR_HT)",
+      "desc": "看门狗高阈值选择",
+      "group": "LL_ADC 看门狗阈值",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD_THRESHOLD_HIGH          (ADC_TR_HT            )     /*!< ADC analog watchdog threshold high */"
+    },
+    {
+      "name": "LL_ADC_AWD_THRESHOLD_LOW",
+      "value": "(ADC_TR_LT)",
+      "desc": "看门狗低阈值选择",
+      "group": "LL_ADC 看门狗阈值",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD_THRESHOLD_LOW           (            ADC_TR_LT)     /*!< ADC analog watchdog threshold low */"
+    },
+    {
+      "name": "LL_ADC_AWD_THRESHOLDS_HIGH_LOW",
+      "value": "(ADC_TR_HT | ADC_TR_LT)",
+      "desc": "看门狗高低阈值拼接选择",
+      "group": "LL_ADC 看门狗阈值",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_AWD_THRESHOLDS_HIGH_LOW     (ADC_TR_HT | ADC_TR_LT)     /*!< ADC analog watchdog both thresholds high and low concatenated into the same data */"
+    },
+    {
+      "name": "LL_ADC_CAL_SAMPLINGTIME_1CYCLE",
+      "value": "(0x00000000U)",
+      "desc": "校准采样时间 1 个 ADC 时钟周期",
+      "group": "LL_ADC 校准采样时间",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CAL_SAMPLINGTIME_1CYCLE     (0x00000000U)                              /*!< CAL Sampling time 1 ADC clock cycle */"
+    },
+    {
+      "name": "LL_ADC_CAL_SAMPLINGTIME_2CYCLES",
+      "value": "(ADC_CCSR_CALSMP_0)",
+      "desc": "校准采样时间 2 个 ADC 时钟周期",
+      "group": "LL_ADC 校准采样时间",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CAL_SAMPLINGTIME_2CYCLES    (                    ADC_CCSR_CALSMP_0)    /*!< CAL Sampling time 2 ADC clock cycles */"
+    },
+    {
+      "name": "LL_ADC_CAL_SAMPLINGTIME_4CYCLES",
+      "value": "(ADC_CCSR_CALSMP_1)",
+      "desc": "校准采样时间 4 个 ADC 时钟周期",
+      "group": "LL_ADC 校准采样时间",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CAL_SAMPLINGTIME_4CYCLES    (ADC_CCSR_CALSMP_1                    )    /*!< CAL Sampling time 4 ADC clock cycles */"
+    },
+    {
+      "name": "LL_ADC_CAL_SAMPLINGTIME_8CYCLES",
+      "value": "(ADC_CCSR_CALSMP_1 | ADC_CCSR_CALSMP_0)",
+      "desc": "校准采样时间 8 个 ADC 时钟周期",
+      "group": "LL_ADC 校准采样时间",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CAL_SAMPLINGTIME_8CYCLES    (ADC_CCSR_CALSMP_1 | ADC_CCSR_CALSMP_0)    /*!< CAL Sampling time 8 ADC clock cycles */"
+    },
+    {
+      "name": "LL_ADC_CAL_MODE_OFFSET",
+      "value": "(0x00000000U)",
+      "desc": "校准模式: 仅校准偏移(OFFSET)",
+      "group": "LL_ADC 校准模式",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CAL_MODE_OFFSET                (0x00000000U)                          /*!< ADC calibration mode selection only OFFSET */"
+    },
+    {
+      "name": "LL_ADC_CAL_MODE_OFFSET_CAPACITANCE",
+      "value": "ADC_CCSR_CALSEL",
+      "desc": "校准模式: 校准偏移与电容(OFFSET+CAPACITANCE)",
+      "group": "LL_ADC 校准模式",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CAL_MODE_OFFSET_CAPACITANCE    ADC_CCSR_CALSEL                        /*!< ADC calibration mode selection OFFSET AND CAPACITANCE */"
+    },
+    {
+      "name": "LL_ADC_CAL_OFFSET_STATUS_FAIL",
+      "value": "(0x00000000)",
+      "desc": "校准偏移状态: 失败",
+      "group": "LL_ADC 校准状态",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CAL_OFFSET_STATUS_FAIL          (0x00000000)          /*!< ADC calibration status OFFSET FAIL */"
+    },
+    {
+      "name": "LL_ADC_CAL_OFFSET_STATUS_SUCCESS",
+      "value": "(ADC_CCSR_OFFSUC)",
+      "desc": "校准偏移状态: 成功",
+      "group": "LL_ADC 校准状态",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CAL_OFFSET_STATUS_SUCCESS       (ADC_CCSR_OFFSUC)     /*!< ADC calibration status OFFSET SUCCESS */"
+    },
+    {
+      "name": "LL_ADC_CAL_CAPACITANCE_STATUS_FAIL",
+      "value": "(0x00000000)",
+      "desc": "校准电容状态: 失败",
+      "group": "LL_ADC 校准状态",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CAL_CAPACITANCE_STATUS_FAIL     (0x00000000)          /*!< ADC calibration status CAPACITANCE FAIL */"
+    },
+    {
+      "name": "LL_ADC_CAL_CAPACITANCE_STATUS_SUCCESS",
+      "value": "(ADC_CCSR_CAPSUC)",
+      "desc": "校准电容状态: 成功",
+      "group": "LL_ADC 校准状态",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CAL_CAPACITANCE_STATUS_SUCCESS  (ADC_CCSR_CAPSUC)     /*!< ADC calibration status CAPACITANCE SUCCESS */"
+    },
+    {
+      "name": "LL_ADC_DELAY_VREFINT_STAB_US",
+      "value": "(10U)",
+      "desc": "VrefInt 稳定时间延时(单位 us)",
+      "group": "LL_ADC 硬件延时",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_DELAY_VREFINT_STAB_US       (  10U)  /*!< Delay for internal voltage reference stabilization time */"
+    },
+    {
+      "name": "LL_ADC_DELAY_TEMPSENSOR_STAB_US",
+      "value": "(10U)",
+      "desc": "温度传感器稳定时间延时(单位 us)",
+      "group": "LL_ADC 硬件延时",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_DELAY_TEMPSENSOR_STAB_US    (  10U)  /*!< Delay for temperature sensor stabilization time */"
+    },
+    {
+      "name": "LL_ADC_DELAY_CALIB_ENABLE_ADC_CYCLES",
+      "value": "( 4U)",
+      "desc": "校准结束到 ADC 使能所需延时(单位 ADC 时钟周期)",
+      "group": "LL_ADC 硬件延时",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_DELAY_CALIB_ENABLE_ADC_CYCLES ( 4U)  /*!< Delay required between ADC end of calibration and ADC enable */"
+    },
+    {
+      "name": "LL_ADC_DELAY_CALIB_ENABLE_CPU_CYCLES",
+      "value": "(LL_ADC_DELAY_CALIB_ENABLE_ADC_CYCLES * 64)",
+      "desc": "校准结束到 ADC 使能所需延时(单位 CPU 周期估算)",
+      "group": "LL_ADC 硬件延时",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_DELAY_CALIB_ENABLE_CPU_CYCLES  (LL_ADC_DELAY_CALIB_ENABLE_ADC_CYCLES * 64)"
+    },
+    {
+      "name": "LL_ADC_CALIBRATION_TIMEOUT_CPU_CYCLES",
+      "value": "( 1000U)",
+      "desc": "校准超时值(单位 CPU 周期)",
+      "group": "LL_ADC 硬件延时",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_CALIBRATION_TIMEOUT_CPU_CYCLES ( 1000U)"
+    },
+    {
+      "name": "LL_ADC_VREFBUF_1P5",
+      "value": "(((*(uint16_t *)(0x1FFF002E)) & 0xf) + ... *1000)",
+      "desc": "1.5V 基准出厂校准电压值(读系统存储区, 单位 mV)",
+      "group": "LL_ADC 出厂校准电压",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_VREFBUF_1P5    (((*(uint16_t *)(0x1FFF002E))       & 0xf)        + \\\r\n                               ((*(uint16_t *)(0x1FFF002E) >> 4 ) & 0xf) * 10   + \\\r\n                               ((*(uint16_t *)(0x1FFF002E) >> 8 ) & 0xf) * 100  + \\\r\n                               ((*(uint16_t *)(0x1FFF002E) >> 12) & 0xf) * 1000)"
+    },
+    {
+      "name": "LL_ADC_VREFBUF_2P048",
+      "value": "(((*(uint16_t *)(0x1FFF0032)) & 0xf) + ... *1000)",
+      "desc": "2.048V 基准出厂校准电压值(读系统存储区, 单位 mV)",
+      "group": "LL_ADC 出厂校准电压",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_VREFBUF_2P048  (((*(uint16_t *)(0x1FFF0032))       & 0xf)        + \\\r\n                               ((*(uint16_t *)(0x1FFF0032) >> 4 ) & 0xf) * 10   + \\\r\n                               ((*(uint16_t *)(0x1FFF0032) >> 8 ) & 0xf) * 100  + \\\r\n                               ((*(uint16_t *)(0x1FFF0032) >> 12) & 0xf) * 1000)"
+    },
+    {
+      "name": "LL_ADC_VREFBUF_2P5",
+      "value": "(((*(uint16_t *)(0x1FFF0036)) & 0xf) + ... *1000)",
+      "desc": "2.5V 基准出厂校准电压值(读系统存储区, 单位 mV)",
+      "group": "LL_ADC 出厂校准电压",
+      "file": "py32f002b_ll_adc.h",
+      "src": "#define LL_ADC_VREFBUF_2P5    (((*(uint16_t *)(0x1FFF0036))       & 0xf)        + \\\r\n                               ((*(uint16_t *)(0x1FFF0036) >> 4 ) & 0xf) * 10   + \\\r\n                               ((*(uint16_t *)(0x1FFF0036) >> 8 ) & 0xf) * 100  + \\\r\n                               ((*(uint16_t *)(0x1FFF0036) >> 12) & 0xf) * 1000)"
+    }
+  ]
+}

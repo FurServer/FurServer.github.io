@@ -1,0 +1,1691 @@
+{
+  "registers": [
+    {
+      "name": "ACR",
+      "candidates": [
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x00",
+          "desc": "FLASH Access Control register",
+          "zh": "FLASH 访问控制寄存器"
+        }
+      ],
+      "zh": "FLASH 访问控制寄存器（FLASH）"
+    },
+    {
+      "name": "AFR",
+      "candidates": [
+        {
+          "periph": "GPIO_TypeDef",
+          "offset": "0x20",
+          "desc": "GPIO alternate function registers",
+          "zh": "GPIO 复用功能寄存器"
+        }
+      ],
+      "note": "手册分为两个寄存器: AFRL(offset 0x20, AFSEL0~7) 与 AFRH(offset 0x24, AFSEL8~15), 芯片头为 AFR[2] 数组(别名映射: AFRL/AFRH -> AFR); 复位值 0x00000000; AFSELy[2:0]: 000:AF0 ~ 111:AF7",
+      "zh": "GPIO 复用功能寄存器（GPIO）"
+    },
+    {
+      "name": "AHBENR",
+      "candidates": [
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x38",
+          "desc": "RCC AHB peripherals clock enable register",
+          "zh": "AHB 外设时钟使能寄存器"
+        }
+      ],
+      "zh": "AHB 外设时钟使能寄存器（RCC）"
+    },
+    {
+      "name": "AHBRSTR",
+      "candidates": [
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x28",
+          "desc": "RCC AHB peripherals reset register",
+          "zh": "AHB 外设复位寄存器"
+        }
+      ],
+      "zh": "AHB 外设复位寄存器（RCC）"
+    },
+    {
+      "name": "AIRCR",
+      "zh": "应用中断与复位控制寄存器（SCB）",
+      "candidates": [
+        {
+          "periph": "SCB_Type",
+          "offset": "0x0C",
+          "zh": "应用中断与复位控制寄存器",
+          "desc": "应用中断与复位控制寄存器: VECTKEY(写 0x5FA)/VECTKEYSTAT/ENDIANESS/SYSRESETREQ/VECTCLRACTIVE; SCB 基址 0xE000ED00"
+        }
+      ]
+    },
+    {
+      "name": "APBENR1",
+      "candidates": [
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x3C",
+          "desc": "RCC APB peripherals clock enable register1",
+          "zh": "APB 外设时钟使能寄存器1"
+        }
+      ],
+      "zh": "APB 外设时钟使能寄存器1（RCC）"
+    },
+    {
+      "name": "APBENR2",
+      "candidates": [
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x40",
+          "desc": "RCC APB peripherals clock enable register2",
+          "zh": "APB 外设时钟使能寄存器2"
+        }
+      ],
+      "zh": "APB 外设时钟使能寄存器2（RCC）"
+    },
+    {
+      "name": "APBFZ1",
+      "candidates": [
+        {
+          "periph": "DBGMCU_TypeDef",
+          "offset": "0x08",
+          "desc": "Debug APB freeze register 1",
+          "zh": "DBG APB 冻结寄存器1"
+        }
+      ],
+      "zh": "DBG APB 冻结寄存器1（DBGMCU）"
+    },
+    {
+      "name": "APBFZ2",
+      "candidates": [
+        {
+          "periph": "DBGMCU_TypeDef",
+          "offset": "0x0C",
+          "desc": "Debug APB freeze register 2",
+          "zh": "DBG APB 冻结寄存器2"
+        }
+      ],
+      "zh": "DBG APB 冻结寄存器2（DBGMCU）"
+    },
+    {
+      "name": "APBRSTR1",
+      "candidates": [
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x2C",
+          "desc": "RCC APB peripherals reset register 1",
+          "zh": "APB 外设复位寄存器1"
+        }
+      ],
+      "zh": "APB 外设复位寄存器1（RCC）"
+    },
+    {
+      "name": "APBRSTR2",
+      "candidates": [
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x30",
+          "desc": "RCC APB peripherals reset register 2",
+          "zh": "APB 外设复位寄存器2"
+        }
+      ],
+      "zh": "APB 外设复位寄存器2（RCC）"
+    },
+    {
+      "name": "ARR",
+      "candidates": [
+        {
+          "periph": "LPTIM_TypeDef",
+          "offset": "0x18",
+          "desc": "LPTIM Autoreload register",
+          "zh": "自动重装载寄存器"
+        },
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x2C",
+          "desc": "TIM auto-reload register",
+          "zh": "自动重装载寄存器"
+        }
+      ],
+      "zh": "自动重装载寄存器（LPTIM / TIM）"
+    },
+    {
+      "name": "BDCR",
+      "candidates": [
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x5C",
+          "desc": "RCC Backup Domain Control Register",
+          "zh": "RCC 域控制寄存器"
+        }
+      ],
+      "zh": "RCC 域控制寄存器（RCC）"
+    },
+    {
+      "name": "BDTR",
+      "candidates": [
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x44",
+          "desc": "TIM break and dead-time register",
+          "zh": "刹车和死区寄存器"
+        }
+      ],
+      "zh": "刹车和死区寄存器（TIM）"
+    },
+    {
+      "name": "BRR",
+      "candidates": [
+        {
+          "periph": "GPIO_TypeDef",
+          "offset": "0x28",
+          "desc": "GPIO Bit Reset register",
+          "zh": "GPIO 端口位复位寄存器"
+        },
+        {
+          "periph": "USART_TypeDef",
+          "offset": "0x08",
+          "desc": "USART Baud rate register",
+          "zh": "波特率寄存器"
+        }
+      ],
+      "note": "GPIO: offset 0x28, 复位值 0x00000000, 只写(读出为0), BRy=1 清除对应 ODRy 位; USART: offset 0x08 波特率寄存器",
+      "zh": "GPIO 端口位复位寄存器（GPIO）；波特率寄存器（USART）"
+    },
+    {
+      "name": "BSRR",
+      "candidates": [
+        {
+          "periph": "GPIO_TypeDef",
+          "offset": "0x18",
+          "desc": "GPIO port bit set/reset  register",
+          "zh": "GPIO 端口位设置/复位寄存器"
+        }
+      ],
+      "note": "Address offset 0x18; 复位值 0x00000000; 只写(读出为0); BSy(15:0) 置位 / BRy(31:16) 复位对应 ODRy; 注: 同时置位 BSy 与 BRy 时 BSy 优先",
+      "zh": "GPIO 端口位设置/复位寄存器（GPIO）"
+    },
+    {
+      "name": "BTCR",
+      "candidates": [
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x28",
+          "desc": "FLASH boot control                                 Address offset: 0x28",
+          "zh": "FLASH 启动控制"
+        }
+      ],
+      "zh": "FLASH 启动控制（FLASH）"
+    },
+    {
+      "name": "CALIB",
+      "zh": "SysTick 校准寄存器（SysTick）",
+      "candidates": [
+        {
+          "periph": "SysTick_Type",
+          "offset": "0x0C",
+          "zh": "SysTick 校准寄存器",
+          "desc": "SysTick 校准寄存器(只读): TENMS/SKEW/NOREF; SysTick 基址 0xE000E010"
+        }
+      ]
+    },
+    {
+      "name": "CCER",
+      "candidates": [
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x20",
+          "desc": "TIM capture/compare enable register",
+          "zh": "捕获/比较使能寄存器"
+        }
+      ],
+      "zh": "捕获/比较使能寄存器（TIM）"
+    },
+    {
+      "name": "CCIPR",
+      "candidates": [
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x54",
+          "desc": "RCC Peripherals Independent Clocks Configuration Register",
+          "zh": "外设独立时钟配置寄存器"
+        }
+      ],
+      "zh": "外设独立时钟配置寄存器（RCC）"
+    },
+    {
+      "name": "CCMR1",
+      "candidates": [
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x18",
+          "desc": "TIM capture/compare mode register 1",
+          "zh": "捕获/比较模式寄存器1"
+        }
+      ],
+      "zh": "捕获/比较模式寄存器1（TIM）"
+    },
+    {
+      "name": "CCMR2",
+      "candidates": [
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x1C",
+          "desc": "TIM capture/compare mode register 2",
+          "zh": "捕获/比较模式寄存器2"
+        }
+      ],
+      "zh": "捕获/比较模式寄存器2（TIM）"
+    },
+    {
+      "name": "CCR",
+      "candidates": [
+        {
+          "periph": "ADC_Common_TypeDef",
+          "offset": "0x00",
+          "desc": "ADC common configuration register",
+          "zh": "通用配置寄存器"
+        },
+        {
+          "periph": "I2C_TypeDef",
+          "offset": "0x1C",
+          "desc": "I2C Clock control register",
+          "zh": "I2C 时钟控制寄存器"
+        },
+        {
+          "periph": "SCB_Type",
+          "offset": "0x14",
+          "zh": "配置控制寄存器",
+          "desc": "配置控制寄存器: STKALIGN/UNALIGN_TRP; SCB 基址 0xE000ED00"
+        }
+      ],
+      "zh": "通用配置寄存器（ADC_Common）；I2C 时钟控制寄存器（I2C）；配置控制寄存器（SCB）"
+    },
+    {
+      "name": "CCR1",
+      "candidates": [
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x34",
+          "desc": "TIM capture/compare register 1",
+          "zh": "捕获/比较寄存器1"
+        }
+      ],
+      "zh": "捕获/比较寄存器1（TIM）"
+    },
+    {
+      "name": "CCR2",
+      "candidates": [
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x38",
+          "desc": "TIM capture/compare register 2",
+          "zh": "捕获/比较寄存器2"
+        }
+      ],
+      "zh": "捕获/比较寄存器2（TIM）"
+    },
+    {
+      "name": "CCR3",
+      "candidates": [
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x3C",
+          "desc": "TIM capture/compare register 3",
+          "zh": "捕获/比较寄存器3"
+        }
+      ],
+      "zh": "捕获/比较寄存器3（TIM）"
+    },
+    {
+      "name": "CCR4",
+      "candidates": [
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x40",
+          "desc": "TIM capture/compare register 4",
+          "zh": "捕获/比较寄存器4"
+        }
+      ],
+      "zh": "捕获/比较寄存器4（TIM）"
+    },
+    {
+      "name": "CCSR",
+      "candidates": [
+        {
+          "periph": "ADC_TypeDef",
+          "offset": "0x44",
+          "desc": "ADC calibration configuration&status register  Address offset: 0x44",
+          "zh": "校准配置和状态寄存器"
+        }
+      ],
+      "zh": "校准配置和状态寄存器（ADC）"
+    },
+    {
+      "name": "CFGR",
+      "candidates": [
+        {
+          "periph": "LPTIM_TypeDef",
+          "offset": "0x0C",
+          "desc": "LPTIM Configuration register",
+          "zh": "配置寄存器"
+        },
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x08",
+          "desc": "RCC Regulated Domain Clocks Configuration Register",
+          "zh": "时钟配置寄存器"
+        }
+      ],
+      "zh": "配置寄存器（LPTIM）；时钟配置寄存器（RCC）"
+    },
+    {
+      "name": "CFGR1",
+      "candidates": [
+        {
+          "periph": "ADC_TypeDef",
+          "offset": "0x0C",
+          "desc": "ADC configuration register 1",
+          "zh": "配置寄存器1"
+        },
+        {
+          "periph": "SYSCFG_TypeDef",
+          "offset": "0x00",
+          "desc": "SYSCFG configuration register 1",
+          "zh": "配置寄存器1"
+        }
+      ],
+      "zh": "配置寄存器1（ADC / SYSCFG）"
+    },
+    {
+      "name": "CFGR2",
+      "candidates": [
+        {
+          "periph": "ADC_TypeDef",
+          "offset": "0x10",
+          "desc": "ADC configuration register 2",
+          "zh": "配置寄存器2"
+        },
+        {
+          "periph": "SYSCFG_TypeDef",
+          "offset": "0x18",
+          "desc": "SYSCFG configuration register 2",
+          "zh": "配置寄存器2"
+        }
+      ],
+      "zh": "配置寄存器2（ADC / SYSCFG）"
+    },
+    {
+      "name": "CHSELR",
+      "candidates": [
+        {
+          "periph": "ADC_TypeDef",
+          "offset": "0x28",
+          "desc": "ADC group regular sequencer register",
+          "zh": "通道选择寄存器"
+        }
+      ],
+      "zh": "通道选择寄存器（ADC）"
+    },
+    {
+      "name": "CICR",
+      "candidates": [
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x20",
+          "desc": "RCC Clock Interrupt Clear Register",
+          "zh": "时钟中断清除寄存器"
+        }
+      ],
+      "zh": "时钟中断清除寄存器（RCC）"
+    },
+    {
+      "name": "CIER",
+      "candidates": [
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x18",
+          "desc": "RCC Clock Interrupt Enable Register",
+          "zh": "时钟中断使能寄存器"
+        }
+      ],
+      "zh": "时钟中断使能寄存器（RCC）"
+    },
+    {
+      "name": "CIFR",
+      "candidates": [
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x1C",
+          "desc": "RCC Clock Interrupt Flag Register",
+          "zh": "时钟中断标志寄存器"
+        }
+      ],
+      "zh": "时钟中断标志寄存器（RCC）"
+    },
+    {
+      "name": "CNT",
+      "candidates": [
+        {
+          "periph": "LPTIM_TypeDef",
+          "offset": "0x1C",
+          "desc": "LPTIM Counter register",
+          "zh": "计数寄存器"
+        },
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x24",
+          "desc": "TIM counter register",
+          "zh": "计数器"
+        }
+      ],
+      "zh": "计数寄存器（LPTIM）；计数器（TIM）"
+    },
+    {
+      "name": "CPUID",
+      "zh": "CPUID 基寄存器（SCB）",
+      "candidates": [
+        {
+          "periph": "SCB_Type",
+          "offset": "0x00",
+          "zh": "CPUID 基寄存器",
+          "desc": "CPUID 基寄存器(只读): 含 IMPLEMENTER/VARIANT/ARCHITECTURE/PARTNO/REVISION; SCB 基址 0xE000ED00"
+        }
+      ]
+    },
+    {
+      "name": "CR",
+      "candidates": [
+        {
+          "periph": "ADC_TypeDef",
+          "offset": "0x08",
+          "desc": "ADC control register",
+          "zh": "控制寄存器"
+        },
+        {
+          "periph": "CRC_TypeDef",
+          "offset": "0x08",
+          "desc": "CRC Control register",
+          "zh": "控制寄存器"
+        },
+        {
+          "periph": "DBGMCU_TypeDef",
+          "offset": "0x04",
+          "desc": "Debug configuration register",
+          "zh": "调试MCU 配置寄存器"
+        },
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x14",
+          "desc": "FLASH Control register",
+          "zh": "控制寄存器"
+        },
+        {
+          "periph": "LPTIM_TypeDef",
+          "offset": "0x10",
+          "desc": "LPTIM Control register",
+          "zh": "控制寄存器"
+        },
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x00",
+          "desc": "RCC Clock Sources Control Register",
+          "zh": "时钟控制寄存器"
+        }
+      ],
+      "zh": "控制寄存器（ADC / CRC / FLASH / LPTIM）；调试MCU 配置寄存器（DBGMCU）；时钟控制寄存器（RCC）"
+    },
+    {
+      "name": "CR1",
+      "candidates": [
+        {
+          "periph": "I2C_TypeDef",
+          "offset": "0x00",
+          "desc": "I2C Control register1",
+          "zh": "I2C 控制寄存器1"
+        },
+        {
+          "periph": "PWR_TypeDef",
+          "offset": "0x00",
+          "desc": "PWR Power Control Register 1",
+          "zh": "电源控制寄存器1"
+        },
+        {
+          "periph": "SPI_TypeDef",
+          "offset": "0x00",
+          "desc": "SPI Control register 1",
+          "zh": "控制寄存器1"
+        },
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x00",
+          "desc": "TIM control register 1",
+          "zh": "控制寄存器1"
+        },
+        {
+          "periph": "USART_TypeDef",
+          "offset": "0x0C",
+          "desc": "USART     Control  register 1",
+          "zh": "控制寄存器1"
+        }
+      ],
+      "zh": "I2C 控制寄存器1（I2C）；电源控制寄存器1（PWR）；控制寄存器1（SPI / TIM / USART）"
+    },
+    {
+      "name": "CR2",
+      "candidates": [
+        {
+          "periph": "I2C_TypeDef",
+          "offset": "0x04",
+          "desc": "I2C Control register2",
+          "zh": "I2C 控制寄存器2"
+        },
+        {
+          "periph": "SPI_TypeDef",
+          "offset": "0x04",
+          "desc": "SPI Control register 2",
+          "zh": "控制寄存器2"
+        },
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x04",
+          "desc": "TIM control register 2",
+          "zh": "控制寄存器2"
+        },
+        {
+          "periph": "USART_TypeDef",
+          "offset": "0x10",
+          "desc": "USART     Control  register 2",
+          "zh": "控制寄存器2"
+        }
+      ],
+      "zh": "I2C 控制寄存器2（I2C）；控制寄存器2（SPI / TIM / USART）"
+    },
+    {
+      "name": "CR3",
+      "candidates": [
+        {
+          "periph": "USART_TypeDef",
+          "offset": "0x14",
+          "desc": "USART     Control  register 3",
+          "zh": "控制寄存器3"
+        }
+      ],
+      "zh": "控制寄存器3（USART）"
+    },
+    {
+      "name": "CSR",
+      "candidates": [
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x60",
+          "desc": "RCC Unregulated Domain Clock Control and Status Register",
+          "zh": "控制/状态寄存器"
+        },
+        {
+          "periph": "COMP_TypeDef",
+          "offset": "0x00",
+          "desc": "COMP control and status register",
+          "zh": "控制和状态寄存器"
+        }
+      ],
+      "note": "RCC_CSR: 复位标志位[30:25] 由 POR 复位, LSION 位由系统复位, PINRST_FLTDIS 不受系统复位影响",
+      "zh": "控制/状态寄存器（RCC）；控制和状态寄存器（COMP）"
+    },
+    {
+      "name": "CSR_EVEN",
+      "candidates": [
+        {
+          "periph": "COMP_Common_TypeDef",
+          "offset": "0x10",
+          "desc": "COMP control and status register located in register of comparator instance even, used for bits common to several COMP instances",
+          "zh": "COMP 控制与状态寄存器"
+        }
+      ],
+      "zh": "COMP 控制与状态寄存器（COMP_Common）"
+    },
+    {
+      "name": "CSR_ODD",
+      "candidates": [
+        {
+          "periph": "COMP_Common_TypeDef",
+          "offset": "0x00",
+          "desc": "COMP control and status register located in register of comparator instance odd, used for bits common to several COMP instances",
+          "zh": "COMP 控制与状态寄存器"
+        }
+      ],
+      "zh": "COMP 控制与状态寄存器（COMP_Common）"
+    },
+    {
+      "name": "CTRL",
+      "zh": "SysTick 控制与状态寄存器（SysTick）",
+      "candidates": [
+        {
+          "periph": "SysTick_Type",
+          "offset": "0x00",
+          "zh": "SysTick 控制与状态寄存器",
+          "desc": "SysTick 控制与状态寄存器: ENABLE/TICKINT/CLKSOURCE/COUNTFLAG; SysTick 基址 0xE000E010"
+        }
+      ]
+    },
+    {
+      "name": "DIER",
+      "candidates": [
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x0C",
+          "desc": "TIM interrupt enable register",
+          "zh": "中断使能寄存器"
+        }
+      ],
+      "zh": "中断使能寄存器（TIM）"
+    },
+    {
+      "name": "DR",
+      "candidates": [
+        {
+          "periph": "ADC_TypeDef",
+          "offset": "0x40",
+          "desc": "ADC group regular data register",
+          "zh": "数据寄存器"
+        },
+        {
+          "periph": "CRC_TypeDef",
+          "offset": "0x00",
+          "desc": "CRC Data register",
+          "zh": "数据寄存器"
+        },
+        {
+          "periph": "I2C_TypeDef",
+          "offset": "0x10",
+          "desc": "I2C Data register",
+          "zh": "I2C 数据寄存器"
+        },
+        {
+          "periph": "SPI_TypeDef",
+          "offset": "0x0C",
+          "desc": "SPI data register",
+          "zh": "数据寄存器"
+        },
+        {
+          "periph": "USART_TypeDef",
+          "offset": "0x04",
+          "desc": "USART Data register",
+          "zh": "数据寄存器"
+        }
+      ],
+      "zh": "数据寄存器（ADC / CRC / SPI / USART）；I2C 数据寄存器（I2C）"
+    },
+    {
+      "name": "ECSCR",
+      "candidates": [
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x10",
+          "desc": "RCC External clock source control register",
+          "zh": "外部时钟源控制寄存器"
+        }
+      ],
+      "zh": "外部时钟源控制寄存器（RCC）"
+    },
+    {
+      "name": "EGR",
+      "candidates": [
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x14",
+          "desc": "TIM event generation register",
+          "zh": "事件产生寄存器"
+        }
+      ],
+      "zh": "事件产生寄存器（TIM）"
+    },
+    {
+      "name": "EMR",
+      "candidates": [
+        {
+          "periph": "EXTI_TypeDef",
+          "offset": "0x84",
+          "desc": "EXTI Event Mask Register",
+          "zh": "事件屏蔽寄存器"
+        }
+      ],
+      "zh": "事件屏蔽寄存器（EXTI）"
+    },
+    {
+      "name": "EXTICR",
+      "candidates": [
+        {
+          "periph": "EXTI_TypeDef",
+          "offset": "0x60",
+          "desc": "EXTI External Interrupt Configuration Register,            0x60 -- 0x68",
+          "zh": "外部中断选择寄存器1/2"
+        }
+      ],
+      "zh": "外部中断选择寄存器1/2（EXTI）"
+    },
+    {
+      "name": "FR",
+      "candidates": [
+        {
+          "periph": "COMP_TypeDef",
+          "offset": "0x04",
+          "desc": "COMP filter register",
+          "zh": "滤波寄存器"
+        }
+      ],
+      "zh": "滤波寄存器（COMP）"
+    },
+    {
+      "name": "FR_EVEN",
+      "candidates": [
+        {
+          "periph": "COMP_Common_TypeDef",
+          "offset": "0x14",
+          "desc": "(芯片头未附注释)",
+          "zh": "COMP 滤波寄存器"
+        }
+      ],
+      "zh": "COMP 滤波寄存器（COMP_Common）"
+    },
+    {
+      "name": "FR_ODD",
+      "candidates": [
+        {
+          "periph": "COMP_Common_TypeDef",
+          "offset": "0x04",
+          "desc": "(芯片头未附注释)",
+          "zh": "COMP 滤波寄存器"
+        }
+      ],
+      "zh": "COMP 滤波寄存器（COMP_Common）"
+    },
+    {
+      "name": "FTSR",
+      "candidates": [
+        {
+          "periph": "EXTI_TypeDef",
+          "offset": "0x04",
+          "desc": "EXTI Falling Trigger Selection Register 1",
+          "zh": "下降沿触发选择寄存器"
+        }
+      ],
+      "zh": "下降沿触发选择寄存器（EXTI）"
+    },
+    {
+      "name": "GPIO_ENS",
+      "candidates": [
+        {
+          "periph": "SYSCFG_TypeDef",
+          "offset": "0x1C",
+          "desc": "GPIO Filter Enable",
+          "zh": "GPIO 滤波使能"
+        }
+      ],
+      "zh": "GPIO 滤波使能（SYSCFG）"
+    },
+    {
+      "name": "ICER",
+      "zh": "中断使能清除寄存器（NVIC）",
+      "candidates": [
+        {
+          "periph": "NVIC_Type",
+          "offset": "0x80",
+          "zh": "中断使能清除寄存器",
+          "desc": "中断清除使能寄存器数组 ICER[1]: [0] 写 1 禁能对应外部中断; NVIC 基址 0xE000E100"
+        }
+      ]
+    },
+    {
+      "name": "ICPR",
+      "zh": "中断挂起清除寄存器（NVIC）",
+      "candidates": [
+        {
+          "periph": "NVIC_Type",
+          "offset": "0x180",
+          "zh": "中断挂起清除寄存器",
+          "desc": "中断清除挂起寄存器数组 ICPR[1]: [0] 写 1 清除对应外部中断挂起; NVIC 基址 0xE000E100"
+        }
+      ]
+    },
+    {
+      "name": "ICR",
+      "candidates": [
+        {
+          "periph": "LPTIM_TypeDef",
+          "offset": "0x04",
+          "desc": "LPTIM Interrupt Clear register",
+          "zh": "中断清除寄存器"
+        }
+      ],
+      "zh": "中断清除寄存器（LPTIM）"
+    },
+    {
+      "name": "ICSCR",
+      "candidates": [
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x04",
+          "desc": "RCC Internal Clock Sources Calibration Register",
+          "zh": "内部时钟源校准寄存器"
+        }
+      ],
+      "zh": "内部时钟源校准寄存器（RCC）"
+    },
+    {
+      "name": "ICSR",
+      "zh": "中断控制与状态寄存器（SCB）",
+      "candidates": [
+        {
+          "periph": "SCB_Type",
+          "offset": "0x04",
+          "zh": "中断控制与状态寄存器",
+          "desc": "中断控制与状态寄存器: VECTACTIVE/VECTPENDING/ISRPENDING/ISRPREEMPT/PENDSTSET/PENDSTCLR/PENDSVSET/PENDSVCLR/NMIPENDSET; SCB 基址 0xE000ED00"
+        }
+      ]
+    },
+    {
+      "name": "IDCODE",
+      "candidates": [
+        {
+          "periph": "DBGMCU_TypeDef",
+          "offset": "0x00",
+          "desc": "MCU device ID code",
+          "zh": "DBG 设备 ID 代码寄存器"
+        }
+      ],
+      "zh": "DBG 设备 ID 代码寄存器（DBGMCU）"
+    },
+    {
+      "name": "IDR",
+      "candidates": [
+        {
+          "periph": "CRC_TypeDef",
+          "offset": "0x04",
+          "desc": "CRC Independent data register",
+          "zh": "独立数据寄存器"
+        },
+        {
+          "periph": "GPIO_TypeDef",
+          "offset": "0x10",
+          "desc": "GPIO port input data register",
+          "zh": "GPIO 端口输入数据寄存器"
+        }
+      ],
+      "note": "GPIO: Address offset 0x10, 复位值 0x0000XXXX, 只读, IDy 为对应 I/O 口输入电平状态",
+      "zh": "独立数据寄存器（CRC）；GPIO 端口输入数据寄存器（GPIO）"
+    },
+    {
+      "name": "IER",
+      "candidates": [
+        {
+          "periph": "ADC_TypeDef",
+          "offset": "0x04",
+          "desc": "ADC interrupt enable register",
+          "zh": "中断使能寄存器"
+        },
+        {
+          "periph": "LPTIM_TypeDef",
+          "offset": "0x08",
+          "desc": "LPTIM Interrupt Enable register",
+          "zh": "中断使能寄存器"
+        }
+      ],
+      "zh": "中断使能寄存器（ADC / LPTIM）"
+    },
+    {
+      "name": "IMR",
+      "candidates": [
+        {
+          "periph": "EXTI_TypeDef",
+          "offset": "0x80",
+          "desc": "EXTI Interrupt Mask Register",
+          "zh": "中断屏蔽寄存器"
+        }
+      ],
+      "zh": "中断屏蔽寄存器（EXTI）"
+    },
+    {
+      "name": "IOPENR",
+      "candidates": [
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x34",
+          "desc": "RCC IO port enable register",
+          "zh": "I/O 接口时钟使能寄存器"
+        }
+      ],
+      "zh": "I/O 接口时钟使能寄存器（RCC）"
+    },
+    {
+      "name": "IOPRSTR",
+      "candidates": [
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x24",
+          "desc": "RCC IO port reset register",
+          "zh": "I/O 接口复位寄存器"
+        }
+      ],
+      "zh": "I/O 接口复位寄存器（RCC）"
+    },
+    {
+      "name": "IP",
+      "zh": "中断优先级寄存器（NVIC）",
+      "candidates": [
+        {
+          "periph": "NVIC_Type",
+          "offset": "0x300",
+          "zh": "中断优先级寄存器",
+          "desc": "中断优先级寄存器数组 IP[8]: 每字节一个外部中断优先级(8 位宽, 有效位由 __NVIC_PRIO_BITS 决定, 通常只用高 2 位); NVIC 基址 0xE000E100"
+        }
+      ]
+    },
+    {
+      "name": "ISER",
+      "zh": "中断使能置位寄存器（NVIC）",
+      "candidates": [
+        {
+          "periph": "NVIC_Type",
+          "offset": "0x00",
+          "zh": "中断使能置位寄存器",
+          "desc": "中断设置使能寄存器数组 ISER[1]: [0] 写 1 使能对应外部中断(每位一个 IRQ); NVIC 基址 0xE000E100"
+        }
+      ]
+    },
+    {
+      "name": "ISPR",
+      "zh": "中断挂起置位寄存器（NVIC）",
+      "candidates": [
+        {
+          "periph": "NVIC_Type",
+          "offset": "0x100",
+          "zh": "中断挂起置位寄存器",
+          "desc": "中断设置挂起寄存器数组 ISPR[1]: [0] 写 1 将对应外部中断置为挂起; NVIC 基址 0xE000E100"
+        }
+      ]
+    },
+    {
+      "name": "ISR",
+      "candidates": [
+        {
+          "periph": "ADC_TypeDef",
+          "offset": "0x00",
+          "desc": "ADC interrupt and status register",
+          "zh": "中断和状态寄存器"
+        },
+        {
+          "periph": "LPTIM_TypeDef",
+          "offset": "0x00",
+          "desc": "LPTIM Interrupt and Status register",
+          "zh": "中断和状态寄存器"
+        }
+      ],
+      "zh": "中断和状态寄存器（ADC / LPTIM）"
+    },
+    {
+      "name": "KEYR",
+      "candidates": [
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x08",
+          "desc": "FLASH Key register",
+          "zh": "FLASH 密钥寄存器"
+        }
+      ],
+      "zh": "FLASH 密钥寄存器（FLASH）"
+    },
+    {
+      "name": "KR",
+      "candidates": [
+        {
+          "periph": "IWDG_TypeDef",
+          "offset": "0x00",
+          "desc": "IWDG Key register",
+          "zh": "密钥寄存器"
+        }
+      ],
+      "note": "写 0xAAAA 喂狗(否则计数器到 0 复位); 0x5555 允许访问 IWDG_PR/IWDG_RLR; 0xCCCC 启动 IWDG(选择硬件看门狗时不受此限制)",
+      "zh": "密钥寄存器（IWDG）"
+    },
+    {
+      "name": "LCKR",
+      "candidates": [
+        {
+          "periph": "GPIO_TypeDef",
+          "offset": "0x1C",
+          "desc": "GPIO port configuration lock register",
+          "zh": "GPIO 端口配置锁定寄存器"
+        }
+      ],
+      "note": "Address offset 0x1C; 复位值 0x00000000; bit16 LCKK; 锁键写入时序: 写1->写0->写1->读0->读1(最后一个读可省略, 用于确认); 时序中只能字访问且不能改变 LCK[15:0]; 锁定后下次系统复位前不能再更改端口配置; 首次锁键时序后读 LCKK 返回 1 直到复位",
+      "zh": "GPIO 端口配置锁定寄存器（GPIO）"
+    },
+    {
+      "name": "LOAD",
+      "zh": "SysTick 重装载值寄存器（SysTick）",
+      "candidates": [
+        {
+          "periph": "SysTick_Type",
+          "offset": "0x04",
+          "zh": "SysTick 重装载值寄存器",
+          "desc": "SysTick 重装载值寄存器: RELOAD(24 位), 计到 0 后重载; SysTick 基址 0xE000E010"
+        }
+      ]
+    },
+    {
+      "name": "MODER",
+      "candidates": [
+        {
+          "periph": "GPIO_TypeDef",
+          "offset": "0x00",
+          "desc": "GPIO port mode register",
+          "zh": "GPIO 端口模式寄存器"
+        }
+      ],
+      "note": "Address offset 0x00; 复位值: GPIOA 0x0000FFEF, GPIOB 视 option byte SWD 配置 0x0000FFFF(配SWD)/0x0000EFFF(未配), GPIOC 0x0000000E(配SWD)/0x0000000F(未配); MODEy[1:0] (y=15..0): 00 输入模式 / 01 通用输出模式 / 10 复用功能模式 / 11 模拟模式(复位态)",
+      "zh": "GPIO 端口模式寄存器（GPIO）"
+    },
+    {
+      "name": "nSDK_END",
+      "candidates": [
+        {
+          "periph": "OB_TypeDef",
+          "offset": "0x07",
+          "desc": "Complemented SDK area end address",
+          "zh": "SDK 区结束地址的反码"
+        }
+      ],
+      "zh": "SDK 区结束地址的反码（OB）"
+    },
+    {
+      "name": "nSDK_STRT",
+      "candidates": [
+        {
+          "periph": "OB_TypeDef",
+          "offset": "0x06",
+          "desc": "Complemented SDK area start address",
+          "zh": "SDK 区起始地址的反码"
+        }
+      ],
+      "zh": "SDK 区起始地址的反码（OB）"
+    },
+    {
+      "name": "nUSER",
+      "candidates": [
+        {
+          "periph": "OB_TypeDef",
+          "offset": "0x03",
+          "desc": "Complemented FLASH option byte user options",
+          "zh": "FLASH 选项字节用户选项的反码"
+        }
+      ],
+      "zh": "FLASH 选项字节用户选项的反码（OB）"
+    },
+    {
+      "name": "nWRP",
+      "candidates": [
+        {
+          "periph": "OB_TypeDef",
+          "offset": "0x0E",
+          "desc": "Complemented FLASH option byte write protection",
+          "zh": "FLASH 写保护选项字节的反码"
+        }
+      ],
+      "zh": "FLASH 写保护选项字节的反码（OB）"
+    },
+    {
+      "name": "OAR1",
+      "candidates": [
+        {
+          "periph": "I2C_TypeDef",
+          "offset": "0x08",
+          "desc": "I2C Own address register1",
+          "zh": "I2C 自身地址寄存器1"
+        }
+      ],
+      "zh": "I2C 自身地址寄存器1（I2C）"
+    },
+    {
+      "name": "ODR",
+      "candidates": [
+        {
+          "periph": "GPIO_TypeDef",
+          "offset": "0x14",
+          "desc": "GPIO port output data register",
+          "zh": "GPIO 端口输出数据寄存器"
+        }
+      ],
+      "note": "Address offset 0x14; 复位值 0x00000000; 可读可写; 可通过 GPIOx_BSRR/GPIOx_BRR 对各位独立置位/清除",
+      "zh": "GPIO 端口输出数据寄存器（GPIO）"
+    },
+    {
+      "name": "OPTKEYR",
+      "candidates": [
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x0C",
+          "desc": "FLASH Option Key register",
+          "zh": "FLASH 选项密钥寄存器"
+        }
+      ],
+      "zh": "FLASH 选项密钥寄存器（FLASH）"
+    },
+    {
+      "name": "OPTR",
+      "candidates": [
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x20",
+          "desc": "FLASH Option register",
+          "zh": "FLASH 选项寄存器"
+        }
+      ],
+      "zh": "FLASH 选项寄存器（FLASH）"
+    },
+    {
+      "name": "OR",
+      "candidates": [
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x50",
+          "desc": "TIM option register",
+          "zh": "TIM 选项寄存器"
+        }
+      ],
+      "note": "手册标题: TIM14 选项寄存器(TIMx_OR)",
+      "zh": "TIM 选项寄存器（TIM）"
+    },
+    {
+      "name": "OSPEEDR",
+      "candidates": [
+        {
+          "periph": "GPIO_TypeDef",
+          "offset": "0x08",
+          "desc": "GPIO port output speed register",
+          "zh": "GPIO 端口输出速度寄存器"
+        }
+      ],
+      "note": "Address offset 0x08; 复位值 其他口 0x00000000; GPIOB: 配SWD 0x00000000/未配 0x00003000; GPIOC: 配SWD 0x00000003/未配 0x00000000; OSPEEDy[1:0]: 00 非常低 / 01 低速 / 10 高速 / 11 非常高",
+      "zh": "GPIO 端口输出速度寄存器（GPIO）"
+    },
+    {
+      "name": "OTYPER",
+      "candidates": [
+        {
+          "periph": "GPIO_TypeDef",
+          "offset": "0x04",
+          "desc": "GPIO port output type register",
+          "zh": "GPIO 端口输出类型寄存器"
+        }
+      ],
+      "note": "Address offset 0x04; 复位值 0x00000000; OTy: 0 推挽输出(复位态) / 1 开漏输出",
+      "zh": "GPIO 端口输出类型寄存器（GPIO）"
+    },
+    {
+      "name": "PERTPE",
+      "candidates": [
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x114",
+          "desc": "FLASH PERTPE register",
+          "zh": "FLASH 页擦写 TPE 寄存器"
+        }
+      ],
+      "zh": "FLASH 页擦写 TPE 寄存器（FLASH）"
+    },
+    {
+      "name": "PR",
+      "candidates": [
+        {
+          "periph": "EXTI_TypeDef",
+          "offset": "0x0C",
+          "desc": "EXTI Pending Register 1                          Address offset:   0x0C",
+          "zh": "挂起寄存器"
+        },
+        {
+          "periph": "IWDG_TypeDef",
+          "offset": "0x04",
+          "desc": "IWDG Prescaler register",
+          "zh": "预分频寄存器"
+        }
+      ],
+      "zh": "挂起寄存器（EXTI）；预分频寄存器（IWDG）"
+    },
+    {
+      "name": "PRETPE",
+      "candidates": [
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x120",
+          "desc": "FLASH PRETPE register",
+          "zh": "FLASH PRE-PROGRAM TPE 寄存器"
+        }
+      ],
+      "zh": "FLASH PRE-PROGRAM TPE 寄存器（FLASH）"
+    },
+    {
+      "name": "PRGTPE",
+      "candidates": [
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x11C",
+          "desc": "FLASH PRGTPE register",
+          "zh": "FLASH PROGRAM TPE 寄存器"
+        }
+      ],
+      "zh": "FLASH PROGRAM TPE 寄存器（FLASH）"
+    },
+    {
+      "name": "PSC",
+      "candidates": [
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x28",
+          "desc": "TIM prescaler register",
+          "zh": "预分频器"
+        }
+      ],
+      "zh": "预分频器（TIM）"
+    },
+    {
+      "name": "PUPDR",
+      "candidates": [
+        {
+          "periph": "GPIO_TypeDef",
+          "offset": "0x0C",
+          "desc": "GPIO port pull-up/pull-down register",
+          "zh": "GPIO 端口上下拉寄存器"
+        }
+      ],
+      "note": "Address offset 0x0C; 复位值 port A 0x00000020; GPIOB: 配SWD 0x00000000/未配 0x00001000; GPIOC: 配SWD 0x00000001/未配 0x00000000; PUPDy[1:0]: 00 无上下拉 / 01 上拉 / 10 下拉 / 11 保留",
+      "zh": "GPIO 端口上下拉寄存器（GPIO）"
+    },
+    {
+      "name": "RCR",
+      "candidates": [
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x30",
+          "desc": "TIM repetition counter register",
+          "zh": "重复计数器寄存器"
+        }
+      ],
+      "zh": "重复计数器寄存器（TIM）"
+    },
+    {
+      "name": "RLR",
+      "candidates": [
+        {
+          "periph": "IWDG_TypeDef",
+          "offset": "0x08",
+          "desc": "IWDG Reload register",
+          "zh": "重装载寄存器"
+        }
+      ],
+      "zh": "重装载寄存器（IWDG）"
+    },
+    {
+      "name": "RTSR",
+      "candidates": [
+        {
+          "periph": "EXTI_TypeDef",
+          "offset": "0x00",
+          "desc": "EXTI Rising Trigger Selection Register 1",
+          "zh": "上升沿触发选择寄存器"
+        }
+      ],
+      "zh": "上升沿触发选择寄存器（EXTI）"
+    },
+    {
+      "name": "SCR",
+      "zh": "系统控制寄存器（SCB）",
+      "candidates": [
+        {
+          "periph": "SCB_Type",
+          "offset": "0x10",
+          "zh": "系统控制寄存器",
+          "desc": "系统控制寄存器: SEVONPEND/SLEEPDEEP/SLEEPONEXIT; SCB 基址 0xE000ED00"
+        }
+      ]
+    },
+    {
+      "name": "SDK_END",
+      "candidates": [
+        {
+          "periph": "OB_TypeDef",
+          "offset": "0x05",
+          "desc": "SDK area end address(stored in SDK[12:8])",
+          "zh": "SDK 区结束地址(存于 SDK[12:8])"
+        }
+      ],
+      "zh": "SDK 区结束地址(存于 SDK[12:8])（OB）"
+    },
+    {
+      "name": "SDK_STRT",
+      "candidates": [
+        {
+          "periph": "OB_TypeDef",
+          "offset": "0x04",
+          "desc": "SDK area start address(stored in SDK[4:0])",
+          "zh": "SDK 区起始地址(存于 SDK[4:0])"
+        }
+      ],
+      "zh": "SDK 区起始地址(存于 SDK[4:0])（OB）"
+    },
+    {
+      "name": "SDKR",
+      "candidates": [
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x24",
+          "desc": "FLASH SDK address register",
+          "zh": "FLASH SDK 地址寄存器"
+        }
+      ],
+      "zh": "FLASH SDK 地址寄存器（FLASH）"
+    },
+    {
+      "name": "SHCSR",
+      "zh": "系统处理控制与状态寄存器（SCB）",
+      "candidates": [
+        {
+          "periph": "SCB_Type",
+          "offset": "0x24",
+          "zh": "系统处理控制与状态寄存器",
+          "desc": "系统处理控制与状态寄存器: SVCALLPENDED; SCB 基址 0xE000ED00"
+        }
+      ]
+    },
+    {
+      "name": "SHP",
+      "zh": "系统异常优先级寄存器（SCB）",
+      "candidates": [
+        {
+          "periph": "SCB_Type",
+          "offset": "0x1C",
+          "zh": "系统异常优先级寄存器",
+          "desc": "系统处理优先级寄存器数组 SHP[2]: [0](0x1C) 保留, [1](0x20) 对应 SVCall/PendSV/SysTick 优先级(本 V4.30 头文件用 SHP[2] 合并表示 SHPR2/SHPR3, 故无独立 SHPR2/SHPR3 定义); SCB 基址 0xE000ED00"
+        }
+      ]
+    },
+    {
+      "name": "SMCR",
+      "candidates": [
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x08",
+          "desc": "TIM slave mode control register",
+          "zh": "从模式控制寄存器"
+        }
+      ],
+      "zh": "从模式控制寄存器（TIM）"
+    },
+    {
+      "name": "SMERTPE",
+      "candidates": [
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x118",
+          "desc": "FLASH SMERTPE register",
+          "zh": "FLASH SECTOR/MASS ERASE TPE 寄存器"
+        }
+      ],
+      "zh": "FLASH SECTOR/MASS ERASE TPE 寄存器（FLASH）"
+    },
+    {
+      "name": "SMPR",
+      "candidates": [
+        {
+          "periph": "ADC_TypeDef",
+          "offset": "0x14",
+          "desc": "ADC sampling time register",
+          "zh": "采样时间寄存器"
+        }
+      ],
+      "zh": "采样时间寄存器（ADC）"
+    },
+    {
+      "name": "SR",
+      "candidates": [
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x10",
+          "desc": "FLASH Status register",
+          "zh": "状态寄存器"
+        },
+        {
+          "periph": "IWDG_TypeDef",
+          "offset": "0x0C",
+          "desc": "IWDG Status register",
+          "zh": "状态寄存器"
+        },
+        {
+          "periph": "SPI_TypeDef",
+          "offset": "0x08",
+          "desc": "SPI Status register",
+          "zh": "状态寄存器"
+        },
+        {
+          "periph": "TIM_TypeDef",
+          "offset": "0x10",
+          "desc": "TIM status register",
+          "zh": "状态寄存器"
+        },
+        {
+          "periph": "USART_TypeDef",
+          "offset": "0x00",
+          "desc": "USART     Status  register",
+          "zh": "状态寄存器"
+        }
+      ],
+      "zh": "状态寄存器（FLASH / IWDG / SPI / TIM / USART）"
+    },
+    {
+      "name": "SR1",
+      "candidates": [
+        {
+          "periph": "I2C_TypeDef",
+          "offset": "0x14",
+          "desc": "I2C Status register1",
+          "zh": "I2C 状态寄存器1"
+        }
+      ],
+      "zh": "I2C 状态寄存器1（I2C）"
+    },
+    {
+      "name": "SR2",
+      "candidates": [
+        {
+          "periph": "I2C_TypeDef",
+          "offset": "0x18",
+          "desc": "I2C Status register2",
+          "zh": "I2C 状态寄存器2"
+        }
+      ],
+      "zh": "I2C 状态寄存器2（I2C）"
+    },
+    {
+      "name": "STCR",
+      "candidates": [
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x90",
+          "desc": "FLASH sleep time config register",
+          "zh": "FLASH 睡眠时间配置寄存器"
+        }
+      ],
+      "zh": "FLASH 睡眠时间配置寄存器（FLASH）"
+    },
+    {
+      "name": "SWIER",
+      "candidates": [
+        {
+          "periph": "EXTI_TypeDef",
+          "offset": "0x08",
+          "desc": "EXTI Software Interrupt event Register 1",
+          "zh": "软件中断事件寄存器"
+        }
+      ],
+      "zh": "软件中断事件寄存器（EXTI）"
+    },
+    {
+      "name": "TPS3",
+      "candidates": [
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x10C",
+          "desc": "FLASH TPS3 register",
+          "zh": "FLASH TPS3 寄存器"
+        }
+      ],
+      "zh": "FLASH TPS3 寄存器（FLASH）"
+    },
+    {
+      "name": "TR",
+      "candidates": [
+        {
+          "periph": "ADC_TypeDef",
+          "offset": "0x20",
+          "desc": "ADC analog watchdog 1 threshold register",
+          "zh": "看门狗阈值寄存器"
+        }
+      ],
+      "zh": "看门狗阈值寄存器（ADC）"
+    },
+    {
+      "name": "TRISE",
+      "candidates": [
+        {
+          "periph": "I2C_TypeDef",
+          "offset": "0x20",
+          "desc": "I2C TRISE register",
+          "zh": "I2C TRISE 寄存器"
+        }
+      ],
+      "zh": "I2C TRISE 寄存器（I2C）"
+    },
+    {
+      "name": "TS0",
+      "candidates": [
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x100",
+          "desc": "FLASH TS0 register",
+          "zh": "FLASH TS0 寄存器"
+        }
+      ],
+      "zh": "FLASH TS0 寄存器（FLASH）"
+    },
+    {
+      "name": "TS1",
+      "candidates": [
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x104",
+          "desc": "FLASH TS1 register",
+          "zh": "FLASH TS1 寄存器"
+        }
+      ],
+      "zh": "FLASH TS1 寄存器（FLASH）"
+    },
+    {
+      "name": "TS2P",
+      "candidates": [
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x108",
+          "desc": "FLASH TS2P register",
+          "zh": "FLASH TS2P 寄存器"
+        }
+      ],
+      "zh": "FLASH TS2P 寄存器（FLASH）"
+    },
+    {
+      "name": "TS3",
+      "candidates": [
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x110",
+          "desc": "FLASH TS3 register",
+          "zh": "FLASH TS3 寄存器"
+        }
+      ],
+      "zh": "FLASH TS3 寄存器（FLASH）"
+    },
+    {
+      "name": "USER",
+      "candidates": [
+        {
+          "periph": "OB_TypeDef",
+          "offset": "0x01",
+          "desc": "FLASH option byte user options",
+          "zh": "FLASH 选项字节用户选项"
+        }
+      ],
+      "zh": "FLASH 选项字节用户选项（OB）"
+    },
+    {
+      "name": "VAL",
+      "zh": "SysTick 当前值寄存器（SysTick）",
+      "candidates": [
+        {
+          "periph": "SysTick_Type",
+          "offset": "0x08",
+          "zh": "SysTick 当前值寄存器",
+          "desc": "SysTick 当前值寄存器: CURRENT(24 位), 写任意值清零并清 COUNTFLAG; SysTick 基址 0xE000E010"
+        }
+      ]
+    },
+    {
+      "name": "VREFBUF",
+      "candidates": [
+        {
+          "periph": "RCC_TypeDef",
+          "offset": "0x80",
+          "desc": "RCC VREFBUF calibration Register",
+          "zh": "VREFBUF 校准寄存器"
+        }
+      ],
+      "zh": "VREFBUF 校准寄存器（RCC）"
+    },
+    {
+      "name": "VTOR",
+      "zh": "向量表偏移寄存器（SCB）",
+      "candidates": [
+        {
+          "periph": "SCB_Type",
+          "offset": "0x08",
+          "zh": "向量表偏移寄存器",
+          "desc": "向量表偏移寄存器: TBLOFF 向量表基址偏移; 仅当 __VTOR_PRESENT==1 时在头文件中定义(见 core_cm0plus.h #if); SCB 基址 0xE000ED00"
+        }
+      ]
+    },
+    {
+      "name": "WRP",
+      "candidates": [
+        {
+          "periph": "OB_TypeDef",
+          "offset": "0x0C",
+          "desc": "FLASH option byte write protection",
+          "zh": "FLASH 写保护选项字节"
+        }
+      ],
+      "zh": "FLASH 写保护选项字节（OB）"
+    },
+    {
+      "name": "WRPR",
+      "candidates": [
+        {
+          "periph": "FLASH_TypeDef",
+          "offset": "0x2C",
+          "desc": "FLASH WRP address register",
+          "zh": "FLASH WRP 地址寄存器"
+        }
+      ],
+      "zh": "FLASH WRP 地址寄存器（FLASH）"
+    }
+  ]
+}

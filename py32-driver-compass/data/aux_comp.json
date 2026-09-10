@@ -1,0 +1,294 @@
+{
+  "module": "COMP",
+  "moduleId": "comp",
+  "hal": [
+    {
+      "name": "COMP_GET_EXTI_LINE",
+      "sig": "#define COMP_GET_EXTI_LINE(__INSTANCE__)    (((__INSTANCE__) == COMP1) ? COMP_EXTI_LINE_COMP1  \\\n                                             : COMP_EXTI_LINE_COMP2)",
+      "brief": "根据比较器实例返回其输出对应的 EXTI 线选择宏(COMP1 对应 COMP_EXTI_LINE_COMP1/EXTI 线 17, COMP2 对应 COMP_EXTI_LINE_COMP2/EXTI 线 18)。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "比较器实例(COMP1 或 COMP2)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "COMP1 返回 COMP_EXTI_LINE_COMP1(EXTI_IMR_IM17), COMP2 返回 COMP_EXTI_LINE_COMP2(EXTI_IMR_IM18)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define COMP_GET_EXTI_LINE(__INSTANCE__)    (((__INSTANCE__) == COMP1) ? COMP_EXTI_LINE_COMP1  \\\r\n                                             : COMP_EXTI_LINE_COMP2)"
+    },
+    {
+      "name": "IS_COMP_INPUT_MINUS",
+      "sig": "#define IS_COMP_INPUT_MINUS(__COMP_INSTANCE__, __INPUT_MINUS__) (((__INPUT_MINUS__) == COMP_INPUT_MINUS_IO1) || \\\n                                                                 ((__INPUT_MINUS__) == COMP_INPUT_MINUS_IO2))",
+      "brief": "校验比较器反相输入(-)选择参数是否合法(IO1 或 IO2)。",
+      "params": [
+        {
+          "name": "__COMP_INSTANCE__",
+          "type": "宏参数",
+          "desc": "比较器实例(COMP1/COMP2); 宏体内未实际使用, 仅为签名保留"
+        },
+        {
+          "name": "__INPUT_MINUS__",
+          "type": "宏参数",
+          "desc": "反相输入选择(COMP_INPUT_MINUS_IO1/IO2)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define IS_COMP_INPUT_MINUS(__COMP_INSTANCE__, __INPUT_MINUS__) (((__INPUT_MINUS__) == COMP_INPUT_MINUS_IO1) || \\\r\n                                                                 ((__INPUT_MINUS__) == COMP_INPUT_MINUS_IO2))"
+    },
+    {
+      "name": "IS_COMP_INPUT_PLUS",
+      "sig": "#define IS_COMP_INPUT_PLUS(__COMP_INSTANCE__, __INPUT_PLUS__) (((__INPUT_PLUS__) == COMP_INPUT_PLUS_IO1) || \\\n                                                               ((__INPUT_PLUS__) == COMP_INPUT_PLUS_IO2))",
+      "brief": "校验比较器同相输入(+)选择参数是否合法(IO1 或 IO2)。",
+      "params": [
+        {
+          "name": "__COMP_INSTANCE__",
+          "type": "宏参数",
+          "desc": "比较器实例(COMP1/COMP2); 宏体内未实际使用, 仅为签名保留"
+        },
+        {
+          "name": "__INPUT_PLUS__",
+          "type": "宏参数",
+          "desc": "同相输入选择(COMP_INPUT_PLUS_IO1/IO2)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define IS_COMP_INPUT_PLUS(__COMP_INSTANCE__, __INPUT_PLUS__) (((__INPUT_PLUS__) == COMP_INPUT_PLUS_IO1) || \\\r\n                                                               ((__INPUT_PLUS__) == COMP_INPUT_PLUS_IO2))"
+    },
+    {
+      "name": "IS_COMP_OUTPUT_LEVEL",
+      "sig": "#define IS_COMP_OUTPUT_LEVEL(__OUTPUT_LEVEL__) (((__OUTPUT_LEVEL__) == COMP_OUTPUT_LEVEL_LOW)     || \\\n                                                ((__OUTPUT_LEVEL__) == COMP_OUTPUT_LEVEL_HIGH))",
+      "brief": "校验比较器输出电平参数是否合法(低电平或高电平)。",
+      "params": [
+        {
+          "name": "__OUTPUT_LEVEL__",
+          "type": "宏参数",
+          "desc": "输出电平(COMP_OUTPUT_LEVEL_LOW/HIGH)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define IS_COMP_OUTPUT_LEVEL(__OUTPUT_LEVEL__) (((__OUTPUT_LEVEL__) == COMP_OUTPUT_LEVEL_LOW)     || \\\r\n                                                ((__OUTPUT_LEVEL__) == COMP_OUTPUT_LEVEL_HIGH))"
+    },
+    {
+      "name": "IS_COMP_OUTPUTPOL",
+      "sig": "#define IS_COMP_OUTPUTPOL(__POL__)          (((__POL__) == COMP_OUTPUTPOL_NONINVERTED) || \\\n                                             ((__POL__) == COMP_OUTPUTPOL_INVERTED))",
+      "brief": "校验比较器输出极性参数是否合法(同相或反相)。",
+      "params": [
+        {
+          "name": "__POL__",
+          "type": "宏参数",
+          "desc": "输出极性(COMP_OUTPUTPOL_NONINVERTED/INVERTED)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define IS_COMP_OUTPUTPOL(__POL__)          (((__POL__) == COMP_OUTPUTPOL_NONINVERTED) || \\\r\n                                             ((__POL__) == COMP_OUTPUTPOL_INVERTED))"
+    },
+    {
+      "name": "IS_COMP_TRIGGERMODE",
+      "sig": "#define IS_COMP_TRIGGERMODE(__MODE__)       (((__MODE__) == COMP_TRIGGERMODE_NONE)                 || \\\n                                             ((__MODE__) == COMP_TRIGGERMODE_IT_RISING)            || \\\n                                             ((__MODE__) == COMP_TRIGGERMODE_IT_FALLING)           || \\\n                                             ((__MODE__) == COMP_TRIGGERMODE_IT_RISING_FALLING)    || \\\n                                             ((__MODE__) == COMP_TRIGGERMODE_EVENT_RISING)         || \\\n                                             ((__MODE__) == COMP_TRIGGERMODE_EVENT_FALLING)        || \\\n                                             ((__MODE__) == COMP_TRIGGERMODE_EVENT_RISING_FALLING))",
+      "brief": "校验比较器触发模式参数是否合法(无触发、上升/下降/双边沿的中断或事件触发)。",
+      "params": [
+        {
+          "name": "__MODE__",
+          "type": "宏参数",
+          "desc": "触发模式(COMP_TRIGGERMODE_NONE/IT_RISING/IT_FALLING/IT_RISING_FALLING/EVENT_RISING/EVENT_FALLING/EVENT_RISING_FALLING)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define IS_COMP_TRIGGERMODE(__MODE__)       (((__MODE__) == COMP_TRIGGERMODE_NONE)                 || \\\r\n                                             ((__MODE__) == COMP_TRIGGERMODE_IT_RISING)            || \\\r\n                                             ((__MODE__) == COMP_TRIGGERMODE_IT_FALLING)           || \\\r\n                                             ((__MODE__) == COMP_TRIGGERMODE_IT_RISING_FALLING)    || \\\r\n                                             ((__MODE__) == COMP_TRIGGERMODE_EVENT_RISING)         || \\\r\n                                             ((__MODE__) == COMP_TRIGGERMODE_EVENT_FALLING)        || \\\r\n                                             ((__MODE__) == COMP_TRIGGERMODE_EVENT_RISING_FALLING))"
+    },
+    {
+      "name": "IS_COMP_VREFDIV",
+      "sig": "#define IS_COMP_VREFDIV(__VREFDIV__)        (((__VREFDIV__) == COMP_VREFCMP_DISABLE)                || \\\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_1_16VREFCMP)        || \\\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_2_16VREFCMP)        || \\\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_3_16VREFCMP)        || \\\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_4_16VREFCMP)        || \\\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_5_16VREFCMP)        || \\\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_6_16VREFCMP)        || \\\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_7_16VREFCMP)        || \\\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_8_16VREFCMP)        || \\\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_9_16VREFCMP)        || \\\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_10_16VREFCMP)       || \\\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_11_16VREFCMP)       || \\\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_12_16VREFCMP)       || \\\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_13_16VREFCMP)       || \\\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_14_16VREFCMP)       || \\\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_15_16VREFCMP)       || \\\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_VREFCMP))",
+      "brief": "校验比较器 VREF 分压比参数是否合法(禁用、1/16~15/16 分压或全量 VREFCMP)。",
+      "params": [
+        {
+          "name": "__VREFDIV__",
+          "type": "宏参数",
+          "desc": "VREF 分压比(COMP_VREFCMP_DISABLE、COMP_VREFCMP_DIV_1_16VREFCMP~DIV_15_16VREFCMP 或 COMP_VREFCMP_DIV_VREFCMP)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define IS_COMP_VREFDIV(__VREFDIV__)        (((__VREFDIV__) == COMP_VREFCMP_DISABLE)                || \\\r\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_1_16VREFCMP)        || \\\r\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_2_16VREFCMP)        || \\\r\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_3_16VREFCMP)        || \\\r\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_4_16VREFCMP)        || \\\r\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_5_16VREFCMP)        || \\\r\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_6_16VREFCMP)        || \\\r\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_7_16VREFCMP)        || \\\r\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_8_16VREFCMP)        || \\\r\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_9_16VREFCMP)        || \\\r\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_10_16VREFCMP)       || \\\r\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_11_16VREFCMP)       || \\\r\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_12_16VREFCMP)       || \\\r\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_13_16VREFCMP)       || \\\r\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_14_16VREFCMP)       || \\\r\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_15_16VREFCMP)       || \\\r\n                                             ((__VREFDIV__) == COMP_VREFCMP_DIV_VREFCMP))"
+    },
+    {
+      "name": "IS_COMP_VREFSRC",
+      "sig": "#define IS_COMP_VREFSRC(__VREFSRC__)        (((__VREFSRC__) == COMP_VREFCMP_SOURCE_VREFBUF)         || \\\n                                             ((__VREFSRC__) == COMP_VREFCMP_SOURCE_VREFBUF1P5V)     || \\\n                                             ((__VREFSRC__) == COMP_VREFCMP_SOURCE_VREFBUF2P048V)   || \\\n                                             ((__VREFSRC__) == COMP_VREFCMP_SOURCE_VREFBUF2P5V)     || \\\n                                             ((__VREFSRC__) == COMP_VREFCMP_SOURCE_VCC))",
+      "brief": "校验比较器 VREF 源参数是否合法(VREFBUF 各档电压或 VCC)。",
+      "params": [
+        {
+          "name": "__VREFSRC__",
+          "type": "宏参数",
+          "desc": "VREF 源(COMP_VREFCMP_SOURCE_VREFBUF/VREFBUF1P5V/VREFBUF2P048V/VREFBUF2P5V/VCC)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define IS_COMP_VREFSRC(__VREFSRC__)        (((__VREFSRC__) == COMP_VREFCMP_SOURCE_VREFBUF)         || \\\r\n                                             ((__VREFSRC__) == COMP_VREFCMP_SOURCE_VREFBUF1P5V)     || \\\r\n                                             ((__VREFSRC__) == COMP_VREFCMP_SOURCE_VREFBUF2P048V)   || \\\r\n                                             ((__VREFSRC__) == COMP_VREFCMP_SOURCE_VREFBUF2P5V)     || \\\r\n                                             ((__VREFSRC__) == COMP_VREFCMP_SOURCE_VCC))"
+    },
+    {
+      "name": "IS_COMP_WINDOWMODE",
+      "sig": "#define IS_COMP_WINDOWMODE(__WINDOWMODE__)  (((__WINDOWMODE__) == COMP_WINDOWMODE_DISABLE)                || \\\n                                             ((__WINDOWMODE__) == COMP_WINDOWMODE_COMP2_INPUT_PLUS_COMMON)  )",
+      "brief": "校验比较器窗口模式参数是否合法(禁用或 COMP2 同相输入与 COMP1 共用作为窗口输入)。",
+      "params": [
+        {
+          "name": "__WINDOWMODE__",
+          "type": "宏参数",
+          "desc": "窗口模式(COMP_WINDOWMODE_DISABLE 或 COMP_WINDOWMODE_COMP2_INPUT_PLUS_COMMON)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define IS_COMP_WINDOWMODE(__WINDOWMODE__)  (((__WINDOWMODE__) == COMP_WINDOWMODE_DISABLE)                || \\\r\n                                             ((__WINDOWMODE__) == COMP_WINDOWMODE_COMP2_INPUT_PLUS_COMMON)  )"
+    }
+  ],
+  "ll": [
+    {
+      "name": "__COMP_PTR_REG_OFFSET",
+      "sig": "#define __COMP_PTR_REG_OFFSET(__REG__, __REG_OFFFSET__)                        \\\n  ((__IO uint32_t *)((uint32_t) ((uint32_t)(&(__REG__)) + ((__REG_OFFFSET__) << 2U))))",
+      "brief": "返回从寄存器基址加上偏移(偏移量左移 2 位换算为字节)后的寄存器地址指针, 供内部访问相邻寄存器。",
+      "params": [
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "寄存器基址(对其取地址)"
+        },
+        {
+          "name": "__REG_OFFFSET__",
+          "type": "宏参数",
+          "desc": "偏移量, 单位为寄存器个数"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t *",
+        "desc": "偏移后寄存器地址指针"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "macro",
+      "src": "#define __COMP_PTR_REG_OFFSET(__REG__, __REG_OFFFSET__)                        \\\r\n  ((__IO uint32_t *)((uint32_t) ((uint32_t)(&(__REG__)) + ((__REG_OFFFSET__) << 2U))))"
+    },
+    {
+      "name": "IS_LL_COMP_INPUT_MINUS",
+      "sig": "#define IS_LL_COMP_INPUT_MINUS(__COMP_INSTANCE__, __INPUT_MINUS__)             \\\n  ( ((__INPUT_MINUS__) == LL_COMP_INPUT_MINUS_IO1)                           \\\n   || ((__INPUT_MINUS__) == LL_COMP_INPUT_MINUS_IO2)                           \\\n  )",
+      "brief": "LL 层校验比较器反相输入(-)选择参数是否合法(IO1 或 IO2)。",
+      "params": [
+        {
+          "name": "__COMP_INSTANCE__",
+          "type": "宏参数",
+          "desc": "比较器实例(COMP1/COMP2); 宏体内未实际使用, 仅为签名保留"
+        },
+        {
+          "name": "__INPUT_MINUS__",
+          "type": "宏参数",
+          "desc": "反相输入选择(LL_COMP_INPUT_MINUS_IO1/IO2)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_comp.c",
+      "kind": "macro",
+      "src": "#define IS_LL_COMP_INPUT_MINUS(__COMP_INSTANCE__, __INPUT_MINUS__)             \\\r\n  ( ((__INPUT_MINUS__) == LL_COMP_INPUT_MINUS_IO1)                           \\\r\n   || ((__INPUT_MINUS__) == LL_COMP_INPUT_MINUS_IO2)                           \\\r\n  )"
+    },
+    {
+      "name": "IS_LL_COMP_INPUT_PLUS",
+      "sig": "#define IS_LL_COMP_INPUT_PLUS(__COMP_INSTANCE__, __INPUT_PLUS__)               \\\n  (   ((__INPUT_PLUS__) == LL_COMP_INPUT_PLUS_IO1)                             \\\n   || ((__INPUT_PLUS__) == LL_COMP_INPUT_PLUS_IO2)                             \\\n  )",
+      "brief": "LL 层校验比较器同相输入(+)选择参数是否合法(IO1 或 IO2)。",
+      "params": [
+        {
+          "name": "__COMP_INSTANCE__",
+          "type": "宏参数",
+          "desc": "比较器实例(COMP1/COMP2); 宏体内未实际使用, 仅为签名保留"
+        },
+        {
+          "name": "__INPUT_PLUS__",
+          "type": "宏参数",
+          "desc": "同相输入选择(LL_COMP_INPUT_PLUS_IO1/IO2)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_comp.c",
+      "kind": "macro",
+      "src": "#define IS_LL_COMP_INPUT_PLUS(__COMP_INSTANCE__, __INPUT_PLUS__)               \\\r\n  (   ((__INPUT_PLUS__) == LL_COMP_INPUT_PLUS_IO1)                             \\\r\n   || ((__INPUT_PLUS__) == LL_COMP_INPUT_PLUS_IO2)                             \\\r\n  )"
+    },
+    {
+      "name": "IS_LL_COMP_OUTPUT_POLARITY",
+      "sig": "#define IS_LL_COMP_OUTPUT_POLARITY(__POLARITY__)                               \\\n  (   ((__POLARITY__) == LL_COMP_OUTPUTPOL_NONINVERTED)                        \\\n   || ((__POLARITY__) == LL_COMP_OUTPUTPOL_INVERTED)                           \\\n  )",
+      "brief": "LL 层校验比较器输出极性参数是否合法(同相或反相)。",
+      "params": [
+        {
+          "name": "__POLARITY__",
+          "type": "宏参数",
+          "desc": "输出极性(LL_COMP_OUTPUTPOL_NONINVERTED/INVERTED)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_comp.c",
+      "kind": "macro",
+      "src": "#define IS_LL_COMP_OUTPUT_POLARITY(__POLARITY__)                               \\\r\n  (   ((__POLARITY__) == LL_COMP_OUTPUTPOL_NONINVERTED)                        \\\r\n   || ((__POLARITY__) == LL_COMP_OUTPUTPOL_INVERTED)                           \\\r\n  )"
+    }
+  ],
+  "types": [],
+  "consts": []
+}

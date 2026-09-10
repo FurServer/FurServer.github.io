@@ -1,0 +1,490 @@
+{
+  "module": "RCC",
+  "moduleId": "rcc",
+  "hal": [
+    {
+      "name": "IS_RCC_CLOCKTYPE",
+      "sig": "#define IS_RCC_CLOCKTYPE(__CLK__)         ((((__CLK__) & RCC_CLOCKTYPE_ALL) != 0x00UL) && (((__CLK__) & ~RCC_CLOCKTYPE_ALL) == 0x00UL))",
+      "brief": "校验时钟类型位掩码至少包含一个 RCC_CLOCKTYPE_ALL 中的位, 且不含 RCC_CLOCKTYPE_ALL 之外的非法位。",
+      "params": [
+        {
+          "name": "__CLK__",
+          "type": "宏参数",
+          "desc": "待校验的时钟类型位掩码"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_CLOCKTYPE(__CLK__)         ((((__CLK__) & RCC_CLOCKTYPE_ALL) != 0x00UL) && (((__CLK__) & ~RCC_CLOCKTYPE_ALL) == 0x00UL))"
+    },
+    {
+      "name": "IS_RCC_COMP1CLKSOURCE",
+      "sig": "#define IS_RCC_COMP1CLKSOURCE(__SOURCE__)  \\\n               (((__SOURCE__) == RCC_COMP1CLKSOURCE_PCLK)  || \\\n                ((__SOURCE__) == RCC_COMP1CLKSOURCE_LSC))",
+      "brief": "校验 COMP1 时钟源是否为 PCLK(RCC_COMP1CLKSOURCE_PCLK)或 LSC(RCC_COMP1CLKSOURCE_LSC)之一, 对应 CCIPR 寄存器 COMP1SEL 位。",
+      "params": [
+        {
+          "name": "__SOURCE__",
+          "type": "宏参数",
+          "desc": "待校验的 COMP1 时钟源选择值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc_ex.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_COMP1CLKSOURCE(__SOURCE__)  \\\r\n               (((__SOURCE__) == RCC_COMP1CLKSOURCE_PCLK)  || \\\r\n                ((__SOURCE__) == RCC_COMP1CLKSOURCE_LSC))"
+    },
+    {
+      "name": "IS_RCC_COMP2CLKSOURCE",
+      "sig": "#define IS_RCC_COMP2CLKSOURCE(__SOURCE__)  \\\n               (((__SOURCE__) == RCC_COMP2CLKSOURCE_PCLK)  || \\\n                ((__SOURCE__) == RCC_COMP2CLKSOURCE_LSC))",
+      "brief": "校验 COMP2 时钟源是否为 PCLK(RCC_COMP2CLKSOURCE_PCLK)或 LSC(RCC_COMP2CLKSOURCE_LSC)之一, 对应 CCIPR 寄存器 COMP2SEL 位。",
+      "params": [
+        {
+          "name": "__SOURCE__",
+          "type": "宏参数",
+          "desc": "待校验的 COMP2 时钟源选择值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc_ex.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_COMP2CLKSOURCE(__SOURCE__)  \\\r\n               (((__SOURCE__) == RCC_COMP2CLKSOURCE_PCLK)  || \\\r\n                ((__SOURCE__) == RCC_COMP2CLKSOURCE_LSC))"
+    },
+    {
+      "name": "IS_RCC_HCLK",
+      "sig": "#define IS_RCC_HCLK(__HCLK__)             (((__HCLK__) == RCC_SYSCLK_DIV1)   || ((__HCLK__) == RCC_SYSCLK_DIV2)   || \\\n                                           ((__HCLK__) == RCC_SYSCLK_DIV4)   || ((__HCLK__) == RCC_SYSCLK_DIV8)   || \\\n                                           ((__HCLK__) == RCC_SYSCLK_DIV16)  || ((__HCLK__) == RCC_SYSCLK_DIV64)  || \\\n                                           ((__HCLK__) == RCC_SYSCLK_DIV128) || ((__HCLK__) == RCC_SYSCLK_DIV256) || \\\n                                           ((__HCLK__) == RCC_SYSCLK_DIV512))",
+      "brief": "校验 HCLK 分频配置是否为 RCC_SYSCLK_DIV1 至 RCC_SYSCLK_DIV512 之一(对应 CFGR 寄存器 HPRE 字段)。",
+      "params": [
+        {
+          "name": "__HCLK__",
+          "type": "宏参数",
+          "desc": "待校验的 HCLK 分频配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_HCLK(__HCLK__)             (((__HCLK__) == RCC_SYSCLK_DIV1)   || ((__HCLK__) == RCC_SYSCLK_DIV2)   || \\\r\n                                           ((__HCLK__) == RCC_SYSCLK_DIV4)   || ((__HCLK__) == RCC_SYSCLK_DIV8)   || \\\r\n                                           ((__HCLK__) == RCC_SYSCLK_DIV16)  || ((__HCLK__) == RCC_SYSCLK_DIV64)  || \\\r\n                                           ((__HCLK__) == RCC_SYSCLK_DIV128) || ((__HCLK__) == RCC_SYSCLK_DIV256) || \\\r\n                                           ((__HCLK__) == RCC_SYSCLK_DIV512))"
+    },
+    {
+      "name": "IS_RCC_HSE",
+      "sig": "#define IS_RCC_HSE(__HSE__)          (((__HSE__) == RCC_HSE_BYPASS_ENABLE) || ((__HSE__) == RCC_HSE_BYPASS_DISABLE))",
+      "brief": "校验 HSE 配置是否为旁路使能(RCC_HSE_BYPASS_ENABLE)或旁路禁止(RCC_HSE_BYPASS_DISABLE)之一。",
+      "params": [
+        {
+          "name": "__HSE__",
+          "type": "宏参数",
+          "desc": "待校验的 HSE 配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_HSE(__HSE__)          (((__HSE__) == RCC_HSE_BYPASS_ENABLE) || ((__HSE__) == RCC_HSE_BYPASS_DISABLE))"
+    },
+    {
+      "name": "IS_RCC_HSI",
+      "sig": "#define IS_RCC_HSI(__HSI__)          (((__HSI__) == RCC_HSI_OFF) || ((__HSI__) == RCC_HSI_ON))",
+      "brief": "校验 HSI 状态是否为关闭(RCC_HSI_OFF)或开启(RCC_HSI_ON)之一。",
+      "params": [
+        {
+          "name": "__HSI__",
+          "type": "宏参数",
+          "desc": "待校验的 HSI 状态值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_HSI(__HSI__)          (((__HSI__) == RCC_HSI_OFF) || ((__HSI__) == RCC_HSI_ON))"
+    },
+    {
+      "name": "IS_RCC_HSI_CALIBRATION_VALUE",
+      "sig": "#define IS_RCC_HSI_CALIBRATION_VALUE(__VALUE__) (((__VALUE__) == RCC_HSICALIBRATION_24MHz)     || \\\n                                                 ((__VALUE__) == RCC_HSICALIBRATION_4MHz)      || \\\n                                                 ((__VALUE__) == RCC_HSICALIBRATION_8MHz)      || \\\n                                                 ((__VALUE__) == RCC_HSICALIBRATION_48MHz))",
+      "brief": "校验 HSI 校准频率档位是否为 24MHz/4MHz/8MHz/48MHz 之一(RCC_HSICALIBRATION_*, 对应 ICSCR 寄存器 HSI 频率选择/校准字段)。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的 HSI 校准频率档位值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_HSI_CALIBRATION_VALUE(__VALUE__) (((__VALUE__) == RCC_HSICALIBRATION_24MHz)     || \\\r\n                                                 ((__VALUE__) == RCC_HSICALIBRATION_4MHz)      || \\\r\n                                                 ((__VALUE__) == RCC_HSICALIBRATION_8MHz)      || \\\r\n                                                 ((__VALUE__) == RCC_HSICALIBRATION_48MHz))"
+    },
+    {
+      "name": "IS_RCC_HSIDIV",
+      "sig": "#define IS_RCC_HSIDIV(__DIV__)            (((__DIV__) == RCC_HSI_DIV1)  || ((__DIV__) == RCC_HSI_DIV2) || \\\n                                           ((__DIV__) == RCC_HSI_DIV4)  || ((__DIV__) == RCC_HSI_DIV8) || \\\n                                           ((__DIV__) == RCC_HSI_DIV16) || ((__DIV__) == RCC_HSI_DIV32)|| \\\n                                           ((__DIV__) == RCC_HSI_DIV64) || ((__DIV__) == RCC_HSI_DIV128))",
+      "brief": "校验 HSI 分频系数是否为 RCC_HSI_DIV1 至 RCC_HSI_DIV128 之一(对应 CR 寄存器 HSIDIV 字段)。",
+      "params": [
+        {
+          "name": "__DIV__",
+          "type": "宏参数",
+          "desc": "待校验的 HSI 分频系数值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_HSIDIV(__DIV__)            (((__DIV__) == RCC_HSI_DIV1)  || ((__DIV__) == RCC_HSI_DIV2) || \\\r\n                                           ((__DIV__) == RCC_HSI_DIV4)  || ((__DIV__) == RCC_HSI_DIV8) || \\\r\n                                           ((__DIV__) == RCC_HSI_DIV16) || ((__DIV__) == RCC_HSI_DIV32)|| \\\r\n                                           ((__DIV__) == RCC_HSI_DIV64) || ((__DIV__) == RCC_HSI_DIV128))"
+    },
+    {
+      "name": "IS_RCC_LPTIM1CLKSOURCE",
+      "sig": "#define IS_RCC_LPTIM1CLKSOURCE(__SOURCE__)  \\\n               (((__SOURCE__) == RCC_LPTIMCLKSOURCE_PCLK)|| \\\n                ((__SOURCE__) == RCC_LPTIMCLKSOURCE_LSI)  || \\\n                ((__SOURCE__) == RCC_LPTIMCLKSOURCE_LSE))",
+      "brief": "校验 LPTIM1 时钟源是否为 PCLK、LSI 或 LSE 之一(RCC_LPTIMCLKSOURCE_*, 对应 CCIPR 寄存器 LPTIMSEL 位)。",
+      "params": [
+        {
+          "name": "__SOURCE__",
+          "type": "宏参数",
+          "desc": "待校验的 LPTIM1 时钟源选择值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc_ex.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_LPTIM1CLKSOURCE(__SOURCE__)  \\\r\n               (((__SOURCE__) == RCC_LPTIMCLKSOURCE_PCLK)|| \\\r\n                ((__SOURCE__) == RCC_LPTIMCLKSOURCE_LSI)  || \\\r\n                ((__SOURCE__) == RCC_LPTIMCLKSOURCE_LSE))"
+    },
+    {
+      "name": "IS_RCC_LSCOSOURCE",
+      "sig": "#define IS_RCC_LSCOSOURCE(__SOURCE__) (((__SOURCE__) == RCC_LSCOSOURCE_LSI) || \\\n                                       ((__SOURCE__) == RCC_LSCOSOURCE_LSE))",
+      "brief": "校验低速时钟输出(LSCO)源是否为 LSI(RCC_LSCOSOURCE_LSI)或 LSE(RCC_LSCOSOURCE_LSE)之一, 对应 BDCR 寄存器 LSCOSEL 位。",
+      "params": [
+        {
+          "name": "__SOURCE__",
+          "type": "宏参数",
+          "desc": "待校验的 LSCO 时钟源选择值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc_ex.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_LSCOSOURCE(__SOURCE__) (((__SOURCE__) == RCC_LSCOSOURCE_LSI) || \\\r\n                                       ((__SOURCE__) == RCC_LSCOSOURCE_LSE))"
+    },
+    {
+      "name": "IS_RCC_LSE",
+      "sig": "#define IS_RCC_LSE(__LSE__)          (((__LSE__) == RCC_LSE_OFF) || ((__LSE__) == RCC_LSE_ON) || \\\n                                      ((__LSE__) == RCC_LSE_BYPASS))",
+      "brief": "校验 LSE 配置是否为关闭(RCC_LSE_OFF)、开启(RCC_LSE_ON)或旁路(RCC_LSE_BYPASS)之一。",
+      "params": [
+        {
+          "name": "__LSE__",
+          "type": "宏参数",
+          "desc": "待校验的 LSE 配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_LSE(__LSE__)          (((__LSE__) == RCC_LSE_OFF) || ((__LSE__) == RCC_LSE_ON) || \\\r\n                                      ((__LSE__) == RCC_LSE_BYPASS))"
+    },
+    {
+      "name": "IS_RCC_LSE_DRIVE",
+      "sig": "#define IS_RCC_LSE_DRIVE(__DRIVE__)   (((__DRIVE__) == RCC_LSEDRIVE_LOWEST)        || \\\n                                       ((__DRIVE__) == RCC_LSEDRIVE_LOW)        || \\\n                                       ((__DRIVE__) == RCC_LSEDRIVE_MEDIUM)     || \\\n                                       ((__DRIVE__) == RCC_LSEDRIVE_HIGH))",
+      "brief": "校验 LSE 驱动能力是否为 LOWEST/LOW/MEDIUM/HIGH 之一(RCC_LSEDRIVE_*)。",
+      "params": [
+        {
+          "name": "__DRIVE__",
+          "type": "宏参数",
+          "desc": "待校验的 LSE 驱动能力配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_LSE_DRIVE(__DRIVE__)   (((__DRIVE__) == RCC_LSEDRIVE_LOWEST)        || \\\r\n                                       ((__DRIVE__) == RCC_LSEDRIVE_LOW)        || \\\r\n                                       ((__DRIVE__) == RCC_LSEDRIVE_MEDIUM)     || \\\r\n                                       ((__DRIVE__) == RCC_LSEDRIVE_HIGH))"
+    },
+    {
+      "name": "IS_RCC_LSI",
+      "sig": "#define IS_RCC_LSI(__LSI__)               (((__LSI__) == RCC_LSI_OFF) || ((__LSI__) == RCC_LSI_ON))",
+      "brief": "校验 LSI 状态是否为关闭(RCC_LSI_OFF)或开启(RCC_LSI_ON)之一。",
+      "params": [
+        {
+          "name": "__LSI__",
+          "type": "宏参数",
+          "desc": "待校验的 LSI 状态值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_LSI(__LSI__)               (((__LSI__) == RCC_LSI_OFF) || ((__LSI__) == RCC_LSI_ON))"
+    },
+    {
+      "name": "IS_RCC_LSI_CALIBRATION_VALUE",
+      "sig": "#define IS_RCC_LSI_CALIBRATION_VALUE(__VALUE__) ((__VALUE__) == RCC_LSICALIBRATION_32768Hz)",
+      "brief": "校验 LSI 校准频率值是否为 32768Hz(RCC_LSICALIBRATION_32768Hz)。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的 LSI 校准频率值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_LSI_CALIBRATION_VALUE(__VALUE__) ((__VALUE__) == RCC_LSICALIBRATION_32768Hz)"
+    },
+    {
+      "name": "IS_RCC_MCO",
+      "sig": "#define IS_RCC_MCO(__MCOX__)              (((__MCOX__) == RCC_MCO1) || ((__MCOX__) == RCC_MCO2))",
+      "brief": "校验 MCO 输出序号是否为 MCO1(RCC_MCO1)或 MCO2(RCC_MCO2)之一。",
+      "params": [
+        {
+          "name": "__MCOX__",
+          "type": "宏参数",
+          "desc": "待校验的 MCO 输出序号"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_MCO(__MCOX__)              (((__MCOX__) == RCC_MCO1) || ((__MCOX__) == RCC_MCO2))"
+    },
+    {
+      "name": "IS_RCC_MCO1SOURCE",
+      "sig": "#define IS_RCC_MCO1SOURCE(__SOURCE__) (((__SOURCE__) == RCC_MCOSOURCE_NOCLOCK) || \\\n                                       ((__SOURCE__) == RCC_MCOSOURCE_SYSCLK) || \\\n                                       ((__SOURCE__) == RCC_MCOSOURCE_HSI) || \\\n                                       ((__SOURCE__) == RCC_MCOSOURCE_HSE) || \\\n                                       ((__SOURCE__) == RCC_MCOSOURCE_LSI) || \\\n                                       ((__SOURCE__) == RCC_MCOSOURCE_LSE))",
+      "brief": "校验 MCO1 时钟源是否为无时钟/SYSCLK/HSI/HSE/LSI/LSE 之一(RCC_MCOSOURCE_*, 对应 CFGR 寄存器 MCOSEL 字段)。",
+      "params": [
+        {
+          "name": "__SOURCE__",
+          "type": "宏参数",
+          "desc": "待校验的 MCO1 时钟源选择值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_MCO1SOURCE(__SOURCE__) (((__SOURCE__) == RCC_MCOSOURCE_NOCLOCK) || \\\r\n                                       ((__SOURCE__) == RCC_MCOSOURCE_SYSCLK) || \\\r\n                                       ((__SOURCE__) == RCC_MCOSOURCE_HSI) || \\\r\n                                       ((__SOURCE__) == RCC_MCOSOURCE_HSE) || \\\r\n                                       ((__SOURCE__) == RCC_MCOSOURCE_LSI) || \\\r\n                                       ((__SOURCE__) == RCC_MCOSOURCE_LSE))"
+    },
+    {
+      "name": "IS_RCC_MCODIV",
+      "sig": "#define IS_RCC_MCODIV(__DIV__)        (((__DIV__) == RCC_MCODIV_1) || ((__DIV__) == RCC_MCODIV_2) || \\\n                                       ((__DIV__) == RCC_MCODIV_4) || ((__DIV__) == RCC_MCODIV_8) || \\\n                                       ((__DIV__) == RCC_MCODIV_16)|| ((__DIV__) == RCC_MCODIV_32) || \\\n                                       ((__DIV__) == RCC_MCODIV_64)|| ((__DIV__) == RCC_MCODIV_128))",
+      "brief": "校验 MCO 输出分频系数是否为 1 至 128 之一(RCC_MCODIV_*, 对应 CFGR 寄存器 MCOPRE 字段)。",
+      "params": [
+        {
+          "name": "__DIV__",
+          "type": "宏参数",
+          "desc": "待校验的 MCO 分频系数值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_MCODIV(__DIV__)        (((__DIV__) == RCC_MCODIV_1) || ((__DIV__) == RCC_MCODIV_2) || \\\r\n                                       ((__DIV__) == RCC_MCODIV_4) || ((__DIV__) == RCC_MCODIV_8) || \\\r\n                                       ((__DIV__) == RCC_MCODIV_16)|| ((__DIV__) == RCC_MCODIV_32) || \\\r\n                                       ((__DIV__) == RCC_MCODIV_64)|| ((__DIV__) == RCC_MCODIV_128))"
+    },
+    {
+      "name": "IS_RCC_OSCILLATORTYPE",
+      "sig": "#define IS_RCC_OSCILLATORTYPE(__OSCILLATOR__) (((__OSCILLATOR__) == RCC_OSCILLATORTYPE_NONE)                           || \\\n                                               (((__OSCILLATOR__) & RCC_OSCILLATORTYPE_HSE) == RCC_OSCILLATORTYPE_HSE) || \\\n                                               (((__OSCILLATOR__) & RCC_OSCILLATORTYPE_HSI) == RCC_OSCILLATORTYPE_HSI) || \\\n                                               (((__OSCILLATOR__) & RCC_OSCILLATORTYPE_LSI) == RCC_OSCILLATORTYPE_LSI) || \\\n                                               (((__OSCILLATOR__) & RCC_OSCILLATORTYPE_LSE) == RCC_OSCILLATORTYPE_LSE))",
+      "brief": "校验振荡器类型为 NONE, 或至少包含 HSE/HSI/LSI/LSE 中的一种(RCC_OSCILLATORTYPE_*)。",
+      "params": [
+        {
+          "name": "__OSCILLATOR__",
+          "type": "宏参数",
+          "desc": "待校验的振荡器类型位掩码"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_OSCILLATORTYPE(__OSCILLATOR__) (((__OSCILLATOR__) == RCC_OSCILLATORTYPE_NONE)                           || \\\r\n                                               (((__OSCILLATOR__) & RCC_OSCILLATORTYPE_HSE) == RCC_OSCILLATORTYPE_HSE) || \\\r\n                                               (((__OSCILLATOR__) & RCC_OSCILLATORTYPE_HSI) == RCC_OSCILLATORTYPE_HSI) || \\\r\n                                               (((__OSCILLATOR__) & RCC_OSCILLATORTYPE_LSI) == RCC_OSCILLATORTYPE_LSI) || \\\r\n                                               (((__OSCILLATOR__) & RCC_OSCILLATORTYPE_LSE) == RCC_OSCILLATORTYPE_LSE))"
+    },
+    {
+      "name": "IS_RCC_PCLK",
+      "sig": "#define IS_RCC_PCLK(__PCLK__)             (((__PCLK__) == RCC_HCLK_DIV1) || ((__PCLK__) == RCC_HCLK_DIV2) || \\\n                                           ((__PCLK__) == RCC_HCLK_DIV4) || ((__PCLK__) == RCC_HCLK_DIV8) || \\\n                                           ((__PCLK__) == RCC_HCLK_DIV16))",
+      "brief": "校验 PCLK 分频配置是否为 RCC_HCLK_DIV1 至 RCC_HCLK_DIV16 之一(对应 CFGR 寄存器 PPRE 字段)。",
+      "params": [
+        {
+          "name": "__PCLK__",
+          "type": "宏参数",
+          "desc": "待校验的 PCLK 分频配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_PCLK(__PCLK__)             (((__PCLK__) == RCC_HCLK_DIV1) || ((__PCLK__) == RCC_HCLK_DIV2) || \\\r\n                                           ((__PCLK__) == RCC_HCLK_DIV4) || ((__PCLK__) == RCC_HCLK_DIV8) || \\\r\n                                           ((__PCLK__) == RCC_HCLK_DIV16))"
+    },
+    {
+      "name": "IS_RCC_PERIPHCLOCK",
+      "sig": "#define IS_RCC_PERIPHCLOCK(__SELECTION__)  \\\n  ((((__SELECTION__) & RCC_PERIPHCLK_COMP1)   == RCC_PERIPHCLK_COMP1)   || \\\n   (((__SELECTION__) & RCC_PERIPHCLK_COMP2)   == RCC_PERIPHCLK_COMP2)   || \\\n   (((__SELECTION__) & RCC_PERIPHCLK_LPTIM)   == RCC_PERIPHCLK_LPTIM))",
+      "brief": "校验外设时钟选择掩码至少包含 COMP1/COMP2/LPTIM 中一个有效位(RCC_PERIPHCLK_*)。",
+      "params": [
+        {
+          "name": "__SELECTION__",
+          "type": "宏参数",
+          "desc": "待校验的外设时钟选择位掩码"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc_ex.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_PERIPHCLOCK(__SELECTION__)  \\\r\n  ((((__SELECTION__) & RCC_PERIPHCLK_COMP1)   == RCC_PERIPHCLK_COMP1)   || \\\r\n   (((__SELECTION__) & RCC_PERIPHCLK_COMP2)   == RCC_PERIPHCLK_COMP2)   || \\\r\n   (((__SELECTION__) & RCC_PERIPHCLK_LPTIM)   == RCC_PERIPHCLK_LPTIM))"
+    },
+    {
+      "name": "IS_RCC_SYSCLKSOURCE",
+      "sig": "#define IS_RCC_SYSCLKSOURCE(__SOURCE__)   (((__SOURCE__) == RCC_SYSCLKSOURCE_HSISYS)  || \\\n                                            ((__SOURCE__) == RCC_SYSCLKSOURCE_HSE)  || \\\n                                            ((__SOURCE__) == RCC_SYSCLKSOURCE_LSE)  || \\\n                                            ((__SOURCE__) == RCC_SYSCLKSOURCE_LSI))",
+      "brief": "校验系统时钟源是否为 HSISYS/HSE/LSE/LSI 之一(RCC_SYSCLKSOURCE_*, 对应 CFGR 寄存器 SW 字段)。",
+      "params": [
+        {
+          "name": "__SOURCE__",
+          "type": "宏参数",
+          "desc": "待校验的系统时钟源选择值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_rcc.h",
+      "kind": "macro",
+      "src": "#define IS_RCC_SYSCLKSOURCE(__SOURCE__)   (((__SOURCE__) == RCC_SYSCLKSOURCE_HSISYS)  || \\\r\n                                            ((__SOURCE__) == RCC_SYSCLKSOURCE_HSE)  || \\\r\n                                            ((__SOURCE__) == RCC_SYSCLKSOURCE_LSE)  || \\\r\n                                            ((__SOURCE__) == RCC_SYSCLKSOURCE_LSI))"
+    }
+  ],
+  "ll": [
+    {
+      "name": "IS_LL_RCC_COMP_CLKSOURCE",
+      "sig": "#define IS_LL_RCC_COMP_CLKSOURCE(__VALUE__)  (((__VALUE__) == LL_RCC_COMP1_CLKSOURCE) \\\n                                           || ((__VALUE__) == LL_RCC_COMP2_CLKSOURCE))",
+      "brief": "校验比较器时钟源选择是否合法(LL_RCC_COMP1_CLKSOURCE 或 LL_RCC_COMP2_CLKSOURCE, 对应 CCIPR 寄存器 COMP 时钟选择位)。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的比较器时钟源选择值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_rcc.c",
+      "kind": "macro",
+      "src": "#define IS_LL_RCC_COMP_CLKSOURCE(__VALUE__)  (((__VALUE__) == LL_RCC_COMP1_CLKSOURCE) \\\r\n                                           || ((__VALUE__) == LL_RCC_COMP2_CLKSOURCE))"
+    },
+    {
+      "name": "IS_LL_RCC_LPTIM_CLKSOURCE",
+      "sig": "#define IS_LL_RCC_LPTIM_CLKSOURCE(__VALUE__)  (((__VALUE__) == LL_RCC_LPTIM1_CLKSOURCE))",
+      "brief": "校验 LPTIM1 时钟源选择是否合法(仅 LL_RCC_LPTIM1_CLKSOURCE, 对应 CCIPR 寄存器 LPTIMSEL 位)。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的 LPTIM1 时钟源选择值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_rcc.c",
+      "kind": "macro",
+      "src": "#define IS_LL_RCC_LPTIM_CLKSOURCE(__VALUE__)  (((__VALUE__) == LL_RCC_LPTIM1_CLKSOURCE))"
+    },
+    {
+      "name": "IS_LL_RCC_MCO_CLKSOURCE",
+      "sig": "#define IS_LL_RCC_MCO_CLKSOURCE(__VALUE__)  (((__VALUE__) == LL_RCC_MCO1_CLKSOURCE))",
+      "brief": "校验 MCO1 时钟源选择是否合法(仅 LL_RCC_MCO1_CLKSOURCE, 对应 CFGR 寄存器 MCOSEL 位)。",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的 MCO1 时钟源选择值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_rcc.c",
+      "kind": "macro",
+      "src": "#define IS_LL_RCC_MCO_CLKSOURCE(__VALUE__)  (((__VALUE__) == LL_RCC_MCO1_CLKSOURCE))"
+    }
+  ],
+  "types": [],
+  "consts": []
+}

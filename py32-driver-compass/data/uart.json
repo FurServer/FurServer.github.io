@@ -1,0 +1,2014 @@
+{
+  "module": "UART",
+  "moduleId": "uart",
+  "intro": "UART(通用异步收发器)是芯片 USART1 外设的异步模式封装: 仅使用异步串行收发功能(同步时钟输出 CLKEN 与半双工 HDSEL 等位在异步初始化时被强制清零), 复用 USART_TypeDef 寄存器结构, 支持轮询/中断收发、半双工、多处理器与 LIN 模式, 本模块仅提供 HAL 驱动, 无 LL 对应库。",
+  "files": [
+    "py32f002b_hal_uart.c",
+    "py32f002b_hal_uart.h",
+    "py32f002xx5.h"
+  ],
+  "hal": [
+    {
+      "name": "HAL_UART_Init",
+      "sig": "HAL_StatusTypeDef HAL_UART_Init(UART_HandleTypeDef *huart)",
+      "brief": "按 UART_InitTypeDef 中的参数初始化 UART 异步模式, 并建立对应句柄(首次调用时通过 HAL_UART_MspInit() 配置底层 GPIO/时钟/NVIC)。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "指向 UART 句柄结构体, 内含该 UART 模块的配置信息"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 句柄为空或参数非法"
+      },
+      "notes": [
+        "异步模式下 CR2 的 CLKEN 位与 CR3 的 HDSEL 位被强制清零, 同步时钟输出与半双工功能不使能。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_UART_Init(UART_HandleTypeDef *huart)\r\n{\r\n  /* Check the UART handle allocation */\r\n  if (huart == NULL)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Check the parameters */\r\n  if (huart->Init.HwFlowCtl != UART_HWCONTROL_NONE)\r\n  {\r\n    /* The hardware flow control is available only for USART1 */\r\n    assert_param(IS_UART_HWFLOW_INSTANCE(huart->Instance));\r\n    assert_param(IS_UART_HARDWARE_FLOW_CONTROL(huart->Init.HwFlowCtl));\r\n  }\r\n  else\r\n  {\r\n    assert_param(IS_UART_INSTANCE(huart->Instance));\r\n  }\r\n  assert_param(IS_UART_WORD_LENGTH(huart->Init.WordLength));\r\n#if defined(USART_CR3_OVER8)\r\n  assert_param(IS_UART_OVERSAMPLING(huart->Init.OverSampling));\r\n#endif /* USART_CR3_OVER8 */\r\n\r\n  if (huart->gState == HAL_UART_STATE_RESET)\r\n  {\r\n    /* Allocate lock resource and initialize it */\r\n    huart->Lock = HAL_UNLOCKED;\r\n\r\n#if (USE_HAL_UART_REGISTER_CALLBACKS == 1)\r\n    UART_InitCallbacksToDefault(huart);\r\n\r\n    if (huart->MspInitCallback == NULL)\r\n    {\r\n      huart->MspInitCallback = HAL_UART_MspInit;\r\n    }\r\n\r\n    /* Init the low level hardware */\r\n    huart->MspInitCallback(huart);\r\n#else\r\n    /* Init the low level hardware : GPIO, CLOCK */\r\n    HAL_UART_MspInit(huart);\r\n#endif /* (USE_HAL_UART_REGISTER_CALLBACKS) */\r\n  }\r\n\r\n  huart->gState = HAL_UART_STATE_BUSY;\r\n\r\n  /* Disable the peripheral */\r\n  __HAL_UART_DISABLE(huart);\r\n\r\n  /* Set the UART Communication parameters */\r\n  UART_SetConfig(huart);\r\n\r\n  if (huart->AdvancedInit.AdvFeatureInit != UART_ADVFEATURE_NO_INIT)\r\n  {\r\n    UART_AdvFeatureConfig(huart);\r\n  }\r\n  /* In asynchronous mode, the following bits must be kept cleared:\r\n     - CLKEN bit in the USART_CR2 register,\r\n     - HDSEL bit in the USART_CR3 register.*/\r\n  CLEAR_BIT(huart->Instance->CR2, USART_CR2_CLKEN);\r\n  CLEAR_BIT(huart->Instance->CR3, USART_CR3_HDSEL);\r\n\r\n  /* Enable the peripheral */\r\n  __HAL_UART_ENABLE(huart);\r\n\r\n  /* Initialize the UART state */\r\n  huart->ErrorCode = HAL_UART_ERROR_NONE;\r\n  huart->gState = HAL_UART_STATE_READY;\r\n  huart->RxState = HAL_UART_STATE_READY;\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_HalfDuplex_Init",
+      "sig": "HAL_StatusTypeDef HAL_HalfDuplex_Init(UART_HandleTypeDef *huart)",
+      "brief": "按 UART_InitTypeDef 中的参数初始化 UART 半双工模式: 置位 CR3 的 HDSEL 位使能半双工。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "指向 UART 句柄结构体, 内含该 UART 模块的配置信息"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 句柄为空或参数非法"
+      },
+      "notes": [
+        "半双工模式下 CR2 的 CLKEN 位被强制清零。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_HalfDuplex_Init(UART_HandleTypeDef *huart)\r\n{\r\n  /* Check the UART handle allocation */\r\n  if (huart == NULL)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_UART_HALFDUPLEX_INSTANCE(huart->Instance));\r\n  assert_param(IS_UART_WORD_LENGTH(huart->Init.WordLength));\r\n#if defined(USART_CR3_OVER8)\r\n  assert_param(IS_UART_OVERSAMPLING(huart->Init.OverSampling));\r\n#endif /* USART_CR3_OVER8 */\r\n\r\n  if (huart->gState == HAL_UART_STATE_RESET)\r\n  {\r\n    /* Allocate lock resource and initialize it */\r\n    huart->Lock = HAL_UNLOCKED;\r\n\r\n#if (USE_HAL_UART_REGISTER_CALLBACKS == 1)\r\n    UART_InitCallbacksToDefault(huart);\r\n\r\n    if (huart->MspInitCallback == NULL)\r\n    {\r\n      huart->MspInitCallback = HAL_UART_MspInit;\r\n    }\r\n\r\n    /* Init the low level hardware */\r\n    huart->MspInitCallback(huart);\r\n#else\r\n    /* Init the low level hardware : GPIO, CLOCK */\r\n    HAL_UART_MspInit(huart);\r\n#endif /* (USE_HAL_UART_REGISTER_CALLBACKS) */\r\n  }\r\n\r\n  huart->gState = HAL_UART_STATE_BUSY;\r\n\r\n  /* Disable the peripheral */\r\n  __HAL_UART_DISABLE(huart);\r\n\r\n  /* Set the UART Communication parameters */\r\n  UART_SetConfig(huart);\r\n\r\n  /* In half-duplex mode, the following bits must be kept cleared:\r\n     - CLKEN bit in the USART_CR2 register.*/\r\n  CLEAR_BIT(huart->Instance->CR2, USART_CR2_CLKEN);\r\n\r\n  /* Enable the Half-Duplex mode by setting the HDSEL bit in the CR3 register */\r\n  SET_BIT(huart->Instance->CR3, USART_CR3_HDSEL);\r\n\r\n  /* Enable the peripheral */\r\n  __HAL_UART_ENABLE(huart);\r\n\r\n  /* Initialize the UART state*/\r\n  huart->ErrorCode = HAL_UART_ERROR_NONE;\r\n  huart->gState = HAL_UART_STATE_READY;\r\n  huart->RxState = HAL_UART_STATE_READY;\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_MultiProcessor_Init",
+      "sig": "HAL_StatusTypeDef HAL_MultiProcessor_Init(UART_HandleTypeDef *huart, uint8_t Address, uint32_t WakeUpMethod)",
+      "brief": "初始化 UART 多处理器模式: 配置节点地址与唤醒方式(空闲线检测或地址标记)。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "指向 UART 句柄结构体"
+        },
+        {
+          "name": "Address",
+          "type": "uint8_t",
+          "desc": "USART 节点地址(写入 CR2 的 ADD 位域)"
+        },
+        {
+          "name": "WakeUpMethod",
+          "type": "uint32_t",
+          "desc": "唤醒方式: UART_WAKEUPMETHOD_IDLELINE 空闲线检测 / UART_WAKEUPMETHOD_ADDRESSMARK 地址标记"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 句柄为空或参数非法"
+      },
+      "notes": [
+        "多处理器模式下 CLKEN/HDSEL 等位被强制清零。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_MultiProcessor_Init(UART_HandleTypeDef *huart, uint8_t Address, uint32_t WakeUpMethod)\r\n{\r\n  /* Check the UART handle allocation */\r\n  if (huart == NULL)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_UART_INSTANCE(huart->Instance));\r\n\r\n  /* Check the Address & wake up method parameters */\r\n  assert_param(IS_UART_WAKEUPMETHOD(WakeUpMethod));\r\n  assert_param(IS_UART_ADDRESS(Address));\r\n  assert_param(IS_UART_WORD_LENGTH(huart->Init.WordLength));\r\n#if defined(USART_CR3_OVER8)\r\n  assert_param(IS_UART_OVERSAMPLING(huart->Init.OverSampling));\r\n#endif /* USART_CR3_OVER8 */\r\n\r\n  if (huart->gState == HAL_UART_STATE_RESET)\r\n  {\r\n    /* Allocate lock resource and initialize it */\r\n    huart->Lock = HAL_UNLOCKED;\r\n\r\n#if (USE_HAL_UART_REGISTER_CALLBACKS == 1)\r\n    UART_InitCallbacksToDefault(huart);\r\n\r\n    if (huart->MspInitCallback == NULL)\r\n    {\r\n      huart->MspInitCallback = HAL_UART_MspInit;\r\n    }\r\n\r\n    /* Init the low level hardware */\r\n    huart->MspInitCallback(huart);\r\n#else\r\n    /* Init the low level hardware : GPIO, CLOCK */\r\n    HAL_UART_MspInit(huart);\r\n#endif /* (USE_HAL_UART_REGISTER_CALLBACKS) */\r\n  }\r\n\r\n  huart->gState = HAL_UART_STATE_BUSY;\r\n\r\n  /* Disable the peripheral */\r\n  __HAL_UART_DISABLE(huart);\r\n\r\n  /* Set the UART Communication parameters */\r\n  UART_SetConfig(huart);\r\n\r\n  /* In Multi-Processor mode, the following bits must be kept cleared:\r\n     - LINEN and CLKEN bits in the USART_CR2 register,\r\n     - SCEN, HDSEL and IREN  bits in the USART_CR3 register */\r\n  CLEAR_BIT(huart->Instance->CR2, USART_CR2_CLKEN);\r\n  CLEAR_BIT(huart->Instance->CR3, USART_CR3_HDSEL);\r\n\r\n  /* Set the USART address node */\r\n  CLEAR_BIT(huart->Instance->CR2, USART_CR2_ADD);\r\n  SET_BIT(huart->Instance->CR2, Address);\r\n\r\n  /* Set the wake up method by setting the WAKE bit in the CR1 register */\r\n  CLEAR_BIT(huart->Instance->CR1, USART_CR1_WAKE);\r\n  SET_BIT(huart->Instance->CR1, WakeUpMethod);\r\n\r\n  /* Enable the peripheral */\r\n  __HAL_UART_ENABLE(huart);\r\n\r\n  /* Initialize the UART state */\r\n  huart->ErrorCode = HAL_UART_ERROR_NONE;\r\n  huart->gState = HAL_UART_STATE_READY;\r\n  huart->RxState = HAL_UART_STATE_READY;\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_UART_DeInit",
+      "sig": "HAL_StatusTypeDef HAL_UART_DeInit(UART_HandleTypeDef *huart)",
+      "brief": "反初始化 UART 外设: 禁止外设, 调用 HAL_UART_MspDeInit() 释放底层资源, 句柄状态复位为 RESET。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "指向 UART 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 句柄为空"
+      },
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_UART_DeInit(UART_HandleTypeDef *huart)\r\n{\r\n  /* Check the UART handle allocation */\r\n  if (huart == NULL)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_UART_INSTANCE(huart->Instance));\r\n\r\n  huart->gState = HAL_UART_STATE_BUSY;\r\n\r\n  /* Disable the Peripheral */\r\n  __HAL_UART_DISABLE(huart);\r\n\r\n#if (USE_HAL_UART_REGISTER_CALLBACKS == 1)\r\n  if (huart->MspDeInitCallback == NULL)\r\n  {\r\n    huart->MspDeInitCallback = HAL_UART_MspDeInit;\r\n  }\r\n  /* DeInit the low level hardware */\r\n  huart->MspDeInitCallback(huart);\r\n#else\r\n  /* DeInit the low level hardware */\r\n  HAL_UART_MspDeInit(huart);\r\n#endif /* (USE_HAL_UART_REGISTER_CALLBACKS) */\r\n\r\n  huart->ErrorCode = HAL_UART_ERROR_NONE;\r\n  huart->gState = HAL_UART_STATE_RESET;\r\n  huart->RxState = HAL_UART_STATE_RESET;\r\n\r\n  /* Process Unlock */\r\n  __HAL_UNLOCK(huart);\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_UART_MspInit",
+      "sig": "void HAL_UART_MspInit(UART_HandleTypeDef *huart)",
+      "brief": "UART 底层 MSP 初始化(弱定义空函数): 使能 USART 时钟、配置 TX/RX 引脚复用与 NVIC 中断, 由用户在应用层重写实现。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "指向 UART 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件中重写; 库中默认实现为空。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "__weak void HAL_UART_MspInit(UART_HandleTypeDef *huart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(huart);\r\n  /* NOTE: This function should not be modified, when the callback is needed,\r\n           the HAL_UART_MspInit could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_UART_MspDeInit",
+      "sig": "void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)",
+      "brief": "UART 底层 MSP 反初始化(弱定义空函数): 复位 USART 时钟、引脚配置与 NVIC, 由用户在应用层重写实现。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "指向 UART 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件中重写; 库中默认实现为空。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "__weak void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(huart);\r\n  /* NOTE: This function should not be modified, when the callback is needed,\r\n           the HAL_UART_MspDeInit could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_UART_RegisterCallback",
+      "sig": "HAL_StatusTypeDef HAL_UART_RegisterCallback(UART_HandleTypeDef *huart, HAL_UART_CallbackIDTypeDef CallbackID, pUART_CallbackTypeDef pCallback)",
+      "brief": "注册用户 UART 回调函数, 替换库内对应弱定义回调(需定义 USE_HAL_UART_REGISTER_CALLBACKS=1)。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        },
+        {
+          "name": "CallbackID",
+          "type": "HAL_UART_CallbackIDTypeDef",
+          "desc": "要注册的回调 ID, 可取 HAL_UART_TX_HALFCOMPLETE_CB_ID 等 11 个回调 ID"
+        },
+        {
+          "name": "pCallback",
+          "type": "pUART_CallbackTypeDef",
+          "desc": "指向用户回调函数的指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 回调为空、状态不允许或 ID 非法"
+      },
+      "notes": [
+        "普通回调仅在 HAL_UART_STATE_READY 状态可注册; MspInit/MspDeInit 回调在 READY 或 RESET 状态均可注册。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_UART_RegisterCallback(UART_HandleTypeDef *huart, HAL_UART_CallbackIDTypeDef CallbackID, pUART_CallbackTypeDef pCallback)\r\n{\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  if (pCallback == NULL)\r\n  {\r\n    /* Update the error code */\r\n    huart->ErrorCode |= HAL_UART_ERROR_INVALID_CALLBACK;\r\n\r\n    return HAL_ERROR;\r\n  }\r\n  /* Process locked */\r\n  __HAL_LOCK(huart);\r\n\r\n  if (huart->gState == HAL_UART_STATE_READY)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_UART_TX_HALFCOMPLETE_CB_ID :\r\n      huart->TxHalfCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_UART_TX_COMPLETE_CB_ID :\r\n      huart->TxCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_UART_RX_HALFCOMPLETE_CB_ID :\r\n      huart->RxHalfCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_UART_RX_COMPLETE_CB_ID :\r\n      huart->RxCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_UART_ERROR_CB_ID :\r\n      huart->ErrorCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_UART_ABORT_COMPLETE_CB_ID :\r\n      huart->AbortCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_UART_ABORT_TRANSMIT_COMPLETE_CB_ID :\r\n      huart->AbortTransmitCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_UART_ABORT_RECEIVE_COMPLETE_CB_ID :\r\n      huart->AbortReceiveCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_UART_MSPINIT_CB_ID :\r\n      huart->MspInitCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_UART_MSPDEINIT_CB_ID :\r\n      huart->MspDeInitCallback = pCallback;\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      huart->ErrorCode |= HAL_UART_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else if (huart->gState == HAL_UART_STATE_RESET)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_UART_MSPINIT_CB_ID :\r\n      huart->MspInitCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_UART_MSPDEINIT_CB_ID :\r\n      huart->MspDeInitCallback = pCallback;\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      huart->ErrorCode |= HAL_UART_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else\r\n  {\r\n    /* Update the error code */\r\n    huart->ErrorCode |= HAL_UART_ERROR_INVALID_CALLBACK;\r\n\r\n    /* Return error status */\r\n    status =  HAL_ERROR;\r\n  }\r\n\r\n  /* Release Lock */\r\n  __HAL_UNLOCK(huart);\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_UART_UnRegisterCallback",
+      "sig": "HAL_StatusTypeDef HAL_UART_UnRegisterCallback(UART_HandleTypeDef *huart, HAL_UART_CallbackIDTypeDef CallbackID)",
+      "brief": "注销已注册的 UART 回调, 恢复为库内对应的弱定义默认回调(需定义 USE_HAL_UART_REGISTER_CALLBACKS=1)。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        },
+        {
+          "name": "CallbackID",
+          "type": "HAL_UART_CallbackIDTypeDef",
+          "desc": "要注销的回调 ID, 可取 HAL_UART_TX_HALFCOMPLETE_CB_ID 等 11 个回调 ID"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 状态不允许或 ID 非法"
+      },
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_UART_UnRegisterCallback(UART_HandleTypeDef *huart, HAL_UART_CallbackIDTypeDef CallbackID)\r\n{\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  /* Process locked */\r\n  __HAL_LOCK(huart);\r\n\r\n  if (HAL_UART_STATE_READY == huart->gState)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_UART_TX_HALFCOMPLETE_CB_ID :\r\n      huart->TxHalfCpltCallback = HAL_UART_TxHalfCpltCallback;               /* Legacy weak  TxHalfCpltCallback       */\r\n      break;\r\n\r\n    case HAL_UART_TX_COMPLETE_CB_ID :\r\n      huart->TxCpltCallback = HAL_UART_TxCpltCallback;                       /* Legacy weak TxCpltCallback            */\r\n      break;\r\n\r\n    case HAL_UART_RX_HALFCOMPLETE_CB_ID :\r\n      huart->RxHalfCpltCallback = HAL_UART_RxHalfCpltCallback;               /* Legacy weak RxHalfCpltCallback        */\r\n      break;\r\n\r\n    case HAL_UART_RX_COMPLETE_CB_ID :\r\n      huart->RxCpltCallback = HAL_UART_RxCpltCallback;                       /* Legacy weak RxCpltCallback            */\r\n      break;\r\n\r\n    case HAL_UART_ERROR_CB_ID :\r\n      huart->ErrorCallback = HAL_UART_ErrorCallback;                         /* Legacy weak ErrorCallback             */\r\n      break;\r\n\r\n    case HAL_UART_ABORT_COMPLETE_CB_ID :\r\n      huart->AbortCpltCallback = HAL_UART_AbortCpltCallback;                 /* Legacy weak AbortCpltCallback         */\r\n      break;\r\n\r\n    case HAL_UART_ABORT_TRANSMIT_COMPLETE_CB_ID :\r\n      huart->AbortTransmitCpltCallback = HAL_UART_AbortTransmitCpltCallback; /* Legacy weak AbortTransmitCpltCallback */\r\n      break;\r\n\r\n    case HAL_UART_ABORT_RECEIVE_COMPLETE_CB_ID :\r\n      huart->AbortReceiveCpltCallback = HAL_UART_AbortReceiveCpltCallback;   /* Legacy weak AbortReceiveCpltCallback  */\r\n      break;\r\n\r\n    case HAL_UART_MSPINIT_CB_ID :\r\n      huart->MspInitCallback = HAL_UART_MspInit;                             /* Legacy weak MspInitCallback           */\r\n      break;\r\n\r\n    case HAL_UART_MSPDEINIT_CB_ID :\r\n      huart->MspDeInitCallback = HAL_UART_MspDeInit;                         /* Legacy weak MspDeInitCallback         */\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      huart->ErrorCode |= HAL_UART_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else if (HAL_UART_STATE_RESET == huart->gState)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_UART_MSPINIT_CB_ID :\r\n      huart->MspInitCallback = HAL_UART_MspInit;\r\n      break;\r\n\r\n    case HAL_UART_MSPDEINIT_CB_ID :\r\n      huart->MspDeInitCallback = HAL_UART_MspDeInit;\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      huart->ErrorCode |= HAL_UART_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else\r\n  {\r\n    /* Update the error code */\r\n    huart->ErrorCode |= HAL_UART_ERROR_INVALID_CALLBACK;\r\n\r\n    /* Return error status */\r\n    status =  HAL_ERROR;\r\n  }\r\n\r\n  /* Release Lock */\r\n  __HAL_UNLOCK(huart);\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_UART_Transmit",
+      "sig": "HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size, uint32_t Timeout)",
+      "brief": "阻塞模式(轮询)发送指定数量的数据, 函数返回时发送已完成或已超时。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "指向 UART 句柄结构体"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向数据缓冲区(u8 或 u16 数据元素)"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要发送的数据元素个数(u8 或 u16)"
+        },
+        {
+          "name": "Timeout",
+          "type": "uint32_t",
+          "desc": "超时时长(ms), 取 HAL_MAX_DELAY 表示无限等待"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 发送已在忙; HAL_TIMEOUT 等待标志超时; HAL_ERROR 参数非法"
+      },
+      "notes": [
+        "9 位无校验(PCE=0, M=1)时数据按 uint16_t 处理, pData 需 2 字节对齐。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size, uint32_t Timeout)\r\n{\r\n  uint8_t  *pdata8bits;\r\n  uint16_t *pdata16bits;\r\n  uint32_t tickstart = 0U;\r\n\r\n  /* Check that a Tx process is not already ongoing */\r\n  if (huart->gState == HAL_UART_STATE_READY)\r\n  {\r\n    if ((pData == NULL) || (Size == 0U))\r\n    {\r\n      return  HAL_ERROR;\r\n    }\r\n    /* In case of 9bits/No Parity transfer, pData buffer provided as input parameter\r\n       should be aligned on a u16 frontier, as data to be filled into DR will be\r\n       handled through a u16 cast. */\r\n    if ((huart->Init.WordLength == UART_WORDLENGTH_9B) && (huart->Init.Parity == UART_PARITY_NONE))\r\n    {\r\n      if ((((uint32_t)pData) & 1U) != 0U)\r\n      {\r\n        return  HAL_ERROR;\r\n      }\r\n    }\r\n    /* Process Locked */\r\n    __HAL_LOCK(huart);\r\n\r\n    huart->ErrorCode = HAL_UART_ERROR_NONE;\r\n    huart->gState = HAL_UART_STATE_BUSY_TX;\r\n\r\n    /* Init tickstart for timeout managment */\r\n    tickstart = HAL_GetTick();\r\n\r\n    huart->TxXferSize = Size;\r\n    huart->TxXferCount = Size;\r\n\r\n    /* In case of 9bits/No Parity transfer, pData needs to be handled as a uint16_t pointer */\r\n    if ((huart->Init.WordLength == UART_WORDLENGTH_9B) && (huart->Init.Parity == UART_PARITY_NONE))\r\n    {\r\n      pdata8bits  = NULL;\r\n      pdata16bits = (uint16_t *) pData;\r\n    }\r\n    else\r\n    {\r\n      pdata8bits  = pData;\r\n      pdata16bits = NULL;\r\n    }\r\n\r\n\r\n    while (huart->TxXferCount > 0U)\r\n    {\r\n\r\n      if (UART_WaitOnFlagUntilTimeout(huart, UART_FLAG_TXE, RESET, tickstart, Timeout) != HAL_OK)\r\n      {\r\n        return HAL_TIMEOUT;\r\n      }\r\n      if (pdata8bits == NULL)\r\n      {\r\n        huart->Instance->DR = (uint16_t)(*pdata16bits & 0x01FFU);\r\n        pdata16bits++;\r\n      }\r\n      else\r\n      {\r\n        huart->Instance->DR = (uint8_t)(*pdata8bits & 0xFFU);\r\n        pdata8bits++;\r\n      }\r\n\r\n      huart->TxXferCount--;\r\n    }\r\n\r\n    if (UART_WaitOnFlagUntilTimeout(huart, UART_FLAG_TC, RESET, tickstart, Timeout) != HAL_OK)\r\n    {\r\n      return HAL_TIMEOUT;\r\n    }\r\n\r\n    /* At end of Tx process, restore huart->gState to Ready */\r\n    huart->gState = HAL_UART_STATE_READY;\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(huart);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_UART_Receive",
+      "sig": "HAL_StatusTypeDef HAL_UART_Receive(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size, uint32_t Timeout)",
+      "brief": "阻塞模式(轮询)接收指定数量的数据, 函数返回时接收已完成或已超时。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "指向 UART 句柄结构体"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向数据缓冲区(u8 或 u16 数据元素)"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要接收的数据元素个数(u8 或 u16)"
+        },
+        {
+          "name": "Timeout",
+          "type": "uint32_t",
+          "desc": "超时时长(ms), 取 HAL_MAX_DELAY 表示无限等待"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 接收已在忙; HAL_TIMEOUT 等待标志超时; HAL_ERROR 参数非法"
+      },
+      "notes": [
+        "9 位无校验(PCE=0, M=1)时数据按 uint16_t 处理, pData 需 2 字节对齐。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_UART_Receive(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size, uint32_t Timeout)\r\n{\r\n  uint8_t  *pdata8bits;\r\n  uint16_t *pdata16bits;\r\n  uint32_t tickstart = 0U;\r\n\r\n  /* Check that a Rx process is not already ongoing */\r\n  if (huart->RxState == HAL_UART_STATE_READY)\r\n  {\r\n    if ((pData == NULL) || (Size == 0U))\r\n    {\r\n      return  HAL_ERROR;\r\n    }\r\n    /* In case of 9bits/No Parity transfer, pData buffer provided as input parameter\r\n       should be aligned on a u16 frontier, as data to be received from RDR will be\r\n       handled through a u16 cast. */\r\n    if ((huart->Init.WordLength == UART_WORDLENGTH_9B) && (huart->Init.Parity == UART_PARITY_NONE))\r\n    {\r\n      if ((((uint32_t)pData) & 1U) != 0U)\r\n      {\r\n        return  HAL_ERROR;\r\n      }\r\n    }\r\n    /* Process Locked */\r\n    __HAL_LOCK(huart);\r\n\r\n    huart->ErrorCode = HAL_UART_ERROR_NONE;\r\n    huart->RxState = HAL_UART_STATE_BUSY_RX;\r\n\r\n    /* Init tickstart for timeout managment */\r\n    tickstart = HAL_GetTick();\r\n\r\n    huart->RxXferSize = Size;\r\n    huart->RxXferCount = Size;\r\n\r\n    /* In case of 9bits/No Parity transfer, pRxData needs to be handled as a uint16_t pointer */\r\n    if ((huart->Init.WordLength == UART_WORDLENGTH_9B) && (huart->Init.Parity == UART_PARITY_NONE))\r\n    {\r\n      pdata8bits  = NULL;\r\n      pdata16bits = (uint16_t *) pData;\r\n    }\r\n    else\r\n    {\r\n      pdata8bits  = pData;\r\n      pdata16bits = NULL;\r\n    }\r\n    /* as long as data have to be received */\r\n    while (huart->RxXferCount > 0U)\r\n    {\r\n      if (UART_WaitOnFlagUntilTimeout(huart, UART_FLAG_RXNE, RESET, tickstart, Timeout) != HAL_OK)\r\n      {\r\n        return HAL_TIMEOUT;\r\n      }\r\n      if (pdata8bits == NULL)\r\n      {\r\n        *pdata16bits = (uint16_t)(huart->Instance->DR & 0x1FF);\r\n        pdata16bits++;\r\n      }\r\n      else\r\n      {\r\n        *pdata8bits = (uint8_t)(huart->Instance->DR & (uint8_t)0xFF);\r\n        pdata8bits++;\r\n      }\r\n      huart->RxXferCount--;\r\n    }\r\n    /* At end of Rx process, restore huart->RxState to Ready */\r\n    huart->RxState = HAL_UART_STATE_READY;\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(huart);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_UART_Transmit_IT",
+      "sig": "HAL_StatusTypeDef HAL_UART_Transmit_IT(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size)",
+      "brief": "非阻塞模式(中断)发送指定数量的数据, 发送完成由 UART 中断调用 HAL_UART_TxCpltCallback() 回调。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "指向 UART 句柄结构体"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向数据缓冲区(u8 或 u16 数据元素)"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要发送的数据元素个数(u8 或 u16)"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功启动; HAL_BUSY 发送已在忙; HAL_ERROR 参数非法"
+      },
+      "notes": [
+        "内部通过使能 TXE 中断逐字节发送, 最后使能 TC 中断结束传输。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_UART_Transmit_IT(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size)\r\n{\r\n  /* Check that a Tx process is not already ongoing */\r\n  if (huart->gState == HAL_UART_STATE_READY)\r\n  {\r\n    if ((pData == NULL) || (Size == 0U))\r\n    {\r\n      return HAL_ERROR;\r\n    }\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(huart);\r\n\r\n    huart->pTxBuffPtr = pData;\r\n    huart->TxXferSize = Size;\r\n    huart->TxXferCount = Size;\r\n\r\n    huart->ErrorCode = HAL_UART_ERROR_NONE;\r\n    huart->gState = HAL_UART_STATE_BUSY_TX;\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(huart);\r\n\r\n    /* Enable the UART Transmit data register empty Interrupt */\r\n    __HAL_UART_ENABLE_IT(huart, UART_IT_TXE);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_UART_Receive_IT",
+      "sig": "HAL_StatusTypeDef HAL_UART_Receive_IT(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size)",
+      "brief": "非阻塞模式(中断)接收指定数量的数据, 接收完成调用 HAL_UART_RxCpltCallback(), 出错调用 HAL_UART_ErrorCallback() 回调。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "指向 UART 句柄结构体"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向数据缓冲区(u8 或 u16 数据元素)"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要接收的数据元素个数(u8 或 u16)"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功启动; HAL_BUSY 接收已在忙; HAL_ERROR 参数非法"
+      },
+      "notes": [
+        "内部使能 PE、ERR 与 RXNE 中断, 逐字节接收; 帧/噪声/校验错误为可恢复错误, 过载错误为阻塞性错误。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_UART_Receive_IT(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size)\r\n{\r\n  /* Check that a Rx process is not already ongoing */\r\n  if (huart->RxState == HAL_UART_STATE_READY)\r\n  {\r\n    if ((pData == NULL) || (Size == 0U))\r\n    {\r\n      return HAL_ERROR;\r\n    }\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(huart);\r\n\r\n    huart->pRxBuffPtr = pData;\r\n    huart->RxXferSize = Size;\r\n    huart->RxXferCount = Size;\r\n\r\n    huart->ErrorCode = HAL_UART_ERROR_NONE;\r\n    huart->RxState = HAL_UART_STATE_BUSY_RX;\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(huart);\r\n\r\n    /* Enable the UART Parity Error Interrupt */\r\n    __HAL_UART_ENABLE_IT(huart, UART_IT_PE);\r\n\r\n    /* Enable the UART Error Interrupt: (Frame error, noise error, overrun error) */\r\n    __HAL_UART_ENABLE_IT(huart, UART_IT_ERR);\r\n\r\n    /* Enable the UART Data Register not empty Interrupt */\r\n    __HAL_UART_ENABLE_IT(huart, UART_IT_RXNE);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_UART_Abort",
+      "sig": "HAL_StatusTypeDef HAL_UART_Abort(UART_HandleTypeDef *huart)",
+      "brief": "中止正在进行的中断模式收发传输(阻塞方式): 关闭收发相关中断, 状态复位为 READY。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 中止完成"
+      },
+      "notes": [
+        "阻塞方式执行, 退出函数时中止即视为完成。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_UART_Abort(UART_HandleTypeDef *huart)\r\n{\r\n  /* Disable TXEIE, TCIE, RXNE, PE and ERR (Frame error, noise error, overrun error) interrupts */\r\n  CLEAR_BIT(huart->Instance->CR1, (USART_CR1_RXNEIE | USART_CR1_PEIE | USART_CR1_TXEIE | USART_CR1_TCIE));\r\n  CLEAR_BIT(huart->Instance->CR3, USART_CR3_EIE);\r\n\r\n  /* Reset Tx and Rx transfer counters */\r\n  huart->TxXferCount = 0x00U;\r\n  huart->RxXferCount = 0x00U;\r\n\r\n  /* Reset ErrorCode */\r\n  huart->ErrorCode = HAL_UART_ERROR_NONE;\r\n\r\n  /* Restore huart->RxState and huart->gState to Ready */\r\n  huart->RxState = HAL_UART_STATE_READY;\r\n  huart->gState = HAL_UART_STATE_READY;\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_UART_AbortTransmit",
+      "sig": "HAL_StatusTypeDef HAL_UART_AbortTransmit(UART_HandleTypeDef *huart)",
+      "brief": "中止正在进行的中断模式发送传输(阻塞方式): 关闭 TXE/TC 中断, gState 复位为 READY。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 中止完成"
+      },
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_UART_AbortTransmit(UART_HandleTypeDef *huart)\r\n{\r\n  /* Disable TXEIE and TCIE interrupts */\r\n  CLEAR_BIT(huart->Instance->CR1, (USART_CR1_TXEIE | USART_CR1_TCIE));\r\n\r\n  /* Reset Tx transfer counter */\r\n  huart->TxXferCount = 0x00U;\r\n\r\n  /* Restore huart->gState to Ready */\r\n  huart->gState = HAL_UART_STATE_READY;\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_UART_AbortReceive",
+      "sig": "HAL_StatusTypeDef HAL_UART_AbortReceive(UART_HandleTypeDef *huart)",
+      "brief": "中止正在进行的中断模式接收传输(阻塞方式): 关闭 RXNE/PE/ERR 中断, RxState 复位为 READY。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 中止完成"
+      },
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_UART_AbortReceive(UART_HandleTypeDef *huart)\r\n{\r\n  /* Disable RXNE, PE and ERR (Frame error, noise error, overrun error) interrupts */\r\n  CLEAR_BIT(huart->Instance->CR1, (USART_CR1_RXNEIE | USART_CR1_PEIE));\r\n  CLEAR_BIT(huart->Instance->CR3, USART_CR3_EIE);\r\n\r\n  /* Reset Rx transfer counter */\r\n  huart->RxXferCount = 0x00U;\r\n\r\n  /* Restore huart->RxState to Ready */\r\n  huart->RxState = HAL_UART_STATE_READY;\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_UART_Abort_IT",
+      "sig": "HAL_StatusTypeDef HAL_UART_Abort_IT(UART_HandleTypeDef *huart)",
+      "brief": "中止正在进行的中断模式收发传输(中断方式): 关闭收发中断, 状态复位为 READY, 并调用 HAL_UART_AbortCpltCallback() 回调。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 中止请求已发出"
+      },
+      "notes": [
+        "中断方式执行, 以用户中止完成回调被执行为中止完成的标志。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_UART_Abort_IT(UART_HandleTypeDef *huart)\r\n{\r\n  uint32_t AbortCplt = 0x01U;\r\n\r\n  /* Disable TXEIE, TCIE, RXNE, PE and ERR (Frame error, noise error, overrun error) interrupts */\r\n  CLEAR_BIT(huart->Instance->CR1, (USART_CR1_RXNEIE | USART_CR1_PEIE | USART_CR1_TXEIE | USART_CR1_TCIE));\r\n  CLEAR_BIT(huart->Instance->CR3, USART_CR3_EIE);\r\n\r\n  /* call user Abort Complete callback */\r\n  if (AbortCplt == 0x01U)\r\n  {\r\n    /* Reset Tx and Rx transfer counters */\r\n    huart->TxXferCount = 0x00U;\r\n    huart->RxXferCount = 0x00U;\r\n\r\n    /* Reset ErrorCode */\r\n    huart->ErrorCode = HAL_UART_ERROR_NONE;\r\n\r\n    /* Restore huart->gState and huart->RxState to Ready */\r\n    huart->gState  = HAL_UART_STATE_READY;\r\n    huart->RxState = HAL_UART_STATE_READY;\r\n\r\n    /* call directly user Abort complete callback */\r\n#if (USE_HAL_UART_REGISTER_CALLBACKS == 1)\r\n    /* Call registered Abort complete callback */\r\n    huart->AbortCpltCallback(huart);\r\n#else\r\n    /* Call legacy weak Abort complete callback */\r\n    HAL_UART_AbortCpltCallback(huart);\r\n#endif /* USE_HAL_UART_REGISTER_CALLBACKS */\r\n  }\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_UART_AbortTransmit_IT",
+      "sig": "HAL_StatusTypeDef HAL_UART_AbortTransmit_IT(UART_HandleTypeDef *huart)",
+      "brief": "中止正在进行的中断模式发送传输(中断方式): 关闭 TXE/TC 中断, gState 复位为 READY, 并调用 HAL_UART_AbortTransmitCpltCallback() 回调。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 中止请求已发出"
+      },
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_UART_AbortTransmit_IT(UART_HandleTypeDef *huart)\r\n{\r\n  /* Disable TXEIE and TCIE interrupts */\r\n  CLEAR_BIT(huart->Instance->CR1, (USART_CR1_TXEIE | USART_CR1_TCIE));\r\n\r\n    /* Reset Tx transfer counter */\r\n    huart->TxXferCount = 0x00U;\r\n\r\n    /* Restore huart->gState to Ready */\r\n    huart->gState = HAL_UART_STATE_READY;\r\n\r\n    /* call directly user Abort complete callback */\r\n#if (USE_HAL_UART_REGISTER_CALLBACKS == 1)\r\n    /* Call registered Abort Transmit Complete Callback */\r\n    huart->AbortTransmitCpltCallback(huart);\r\n#else\r\n    /* Call legacy weak Abort Transmit Complete Callback */\r\n    HAL_UART_AbortTransmitCpltCallback(huart);\r\n#endif /* USE_HAL_UART_REGISTER_CALLBACKS */ \r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_UART_AbortReceive_IT",
+      "sig": "HAL_StatusTypeDef HAL_UART_AbortReceive_IT(UART_HandleTypeDef *huart)",
+      "brief": "中止正在进行的中断模式接收传输(中断方式): 关闭 RXNE/PE/ERR 中断, RxState 复位为 READY, 并调用 HAL_UART_AbortReceiveCpltCallback() 回调。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 中止请求已发出"
+      },
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_UART_AbortReceive_IT(UART_HandleTypeDef *huart)\r\n{\r\n  /* Disable RXNE, PE and ERR (Frame error, noise error, overrun error) interrupts */\r\n  CLEAR_BIT(huart->Instance->CR1, (USART_CR1_RXNEIE | USART_CR1_PEIE));\r\n  CLEAR_BIT(huart->Instance->CR3, USART_CR3_EIE);\r\n\r\n    /* Reset Rx transfer counter */\r\n    huart->RxXferCount = 0x00U;\r\n\r\n    /* Restore huart->RxState to Ready */\r\n    huart->RxState = HAL_UART_STATE_READY;\r\n\r\n    /* call directly user Abort complete callback */\r\n#if (USE_HAL_UART_REGISTER_CALLBACKS == 1)\r\n    /* Call registered Abort Receive Complete Callback */\r\n    huart->AbortReceiveCpltCallback(huart);\r\n#else\r\n    /* Call legacy weak Abort Receive Complete Callback */\r\n    HAL_UART_AbortReceiveCpltCallback(huart);\r\n#endif /* USE_HAL_UART_REGISTER_CALLBACKS */\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_UART_IRQHandler",
+      "sig": "void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)",
+      "brief": "UART 中断服务处理函数: 检测 RXNE/TXE/TC/IDLE 及各错误标志, 分发到内部收发处理并调用相应回调, 应在 UART 中断服务程序中调用。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "指向 UART 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "检测到空闲帧时清除 IDLE 标志并调用 HAL_UART_IdleFrameDetectCpltCallback(); 过载错误作为阻塞性错误中止接收。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)\r\n{\r\n  uint32_t isrflags   = READ_REG(huart->Instance->SR);\r\n  uint32_t cr1its     = READ_REG(huart->Instance->CR1);\r\n  uint32_t cr3its     = READ_REG(huart->Instance->CR3);\r\n  uint32_t errorflags = 0x00U;\r\n\r\n  /* If no error occurs */\r\n  errorflags = (isrflags & (uint32_t)(USART_SR_PE | USART_SR_FE | USART_SR_ORE | USART_SR_NE));\r\n  if (errorflags == RESET)\r\n  {\r\n    /* UART in mode Receiver -------------------------------------------------*/\r\n    if (((isrflags & USART_SR_RXNE) != RESET) && ((cr1its & USART_CR1_RXNEIE) != RESET))\r\n    {\r\n      UART_Receive_IT(huart);\r\n      return;\r\n    }\r\n  }\r\n\r\n  /* If some errors occur */\r\n  if ((errorflags != RESET) && (((cr3its & USART_CR3_EIE) != RESET) || ((cr1its & (USART_CR1_RXNEIE | USART_CR1_PEIE)) != RESET)))\r\n  {\r\n    /* UART parity error interrupt occurred ----------------------------------*/\r\n    if (((isrflags & USART_SR_PE) != RESET) && ((cr1its & USART_CR1_PEIE) != RESET))\r\n    {\r\n      huart->ErrorCode |= HAL_UART_ERROR_PE;\r\n    }\r\n\r\n    /* UART noise error interrupt occurred -----------------------------------*/\r\n    if (((isrflags & USART_SR_NE) != RESET) && ((cr3its & USART_CR3_EIE) != RESET))\r\n    {\r\n      huart->ErrorCode |= HAL_UART_ERROR_NE;\r\n    }\r\n\r\n    /* UART frame error interrupt occurred -----------------------------------*/\r\n    if (((isrflags & USART_SR_FE) != RESET) && ((cr3its & USART_CR3_EIE) != RESET))\r\n    {\r\n      huart->ErrorCode |= HAL_UART_ERROR_FE;\r\n    }\r\n\r\n    /* UART Over-Run interrupt occurred --------------------------------------*/\r\n    if (((isrflags & USART_SR_ORE) != RESET) && ((cr3its & USART_CR3_EIE) != RESET))\r\n    {\r\n      huart->ErrorCode |= HAL_UART_ERROR_ORE;\r\n    }\r\n\r\n    /* Call UART Error Call back function if need be --------------------------*/\r\n    if (huart->ErrorCode != HAL_UART_ERROR_NONE)\r\n    {\r\n      /* UART in mode Receiver -----------------------------------------------*/\r\n      if (((isrflags & USART_SR_RXNE) != RESET) && ((cr1its & USART_CR1_RXNEIE) != RESET))\r\n      {\r\n        UART_Receive_IT(huart);\r\n      }\r\n\r\n      /* If Overrun error occurs,\r\n         consider error as blocking */\r\n      if ((huart->ErrorCode & HAL_UART_ERROR_ORE) != RESET)\r\n      {\r\n        /* Blocking error : transfer is aborted\r\n           Set the UART state ready to be able to start again the process,\r\n           Disable Rx Interrupts, if ongoing */\r\n        UART_EndRxTransfer(huart);\r\n\r\n          /* Call user error callback */\r\n#if (USE_HAL_UART_REGISTER_CALLBACKS == 1)\r\n          /*Call registered error callback*/\r\n          huart->ErrorCallback(huart);\r\n#else\r\n          /*Call legacy weak error callback*/\r\n          HAL_UART_ErrorCallback(huart);\r\n#endif /* USE_HAL_UART_REGISTER_CALLBACKS */\r\n      }\r\n      else\r\n      {\r\n        /* Non Blocking error : transfer could go on.\r\n           Error is notified to user through user error callback */\r\n#if (USE_HAL_UART_REGISTER_CALLBACKS == 1)\r\n        /*Call registered error callback*/\r\n        huart->ErrorCallback(huart);\r\n#else\r\n        /*Call legacy weak error callback*/\r\n        HAL_UART_ErrorCallback(huart);\r\n#endif /* USE_HAL_UART_REGISTER_CALLBACKS */\r\n\r\n        huart->ErrorCode = HAL_UART_ERROR_NONE;\r\n      }\r\n    }\r\n    return;\r\n  } /* End if some error occurs */\r\n  \r\n  /* Idle frame detect */\r\n  if (((isrflags & USART_SR_IDLE) != RESET) && ((cr1its & USART_CR1_IDLEIE) != RESET))\r\n  {\r\n    __HAL_UART_CLEAR_IDLEFLAG(huart);\r\n    \r\n    HAL_UART_IdleFrameDetectCpltCallback(huart);\r\n  }\r\n\r\n  /* UART in mode Transmitter ------------------------------------------------*/\r\n  if (((isrflags & USART_SR_TXE) != RESET) && ((cr1its & USART_CR1_TXEIE) != RESET))\r\n  {\r\n    UART_Transmit_IT(huart);\r\n    return;\r\n  }\r\n\r\n  /* UART in mode Transmitter end --------------------------------------------*/\r\n  if (((isrflags & USART_SR_TC) != RESET) && ((cr1its & USART_CR1_TCIE) != RESET))\r\n  {\r\n    UART_EndTransmit_IT(huart);\r\n    return;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_UART_TxCpltCallback",
+      "sig": "void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)",
+      "brief": "发送完成回调(弱定义空函数): 由 UART 中断处理自动调用, 用户在应用层重写以实现发送完成处理。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件中重写。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "__weak void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(huart);\r\n  /* NOTE: This function should not be modified, when the callback is needed,\r\n           the HAL_UART_TxCpltCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_UART_TxHalfCpltCallback",
+      "sig": "void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *huart)",
+      "brief": "发送半程完成回调(弱定义空函数), 用户在应用层重写以实现半程处理。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件中重写。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "__weak void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *huart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(huart);\r\n  /* NOTE: This function should not be modified, when the callback is needed,\r\n           the HAL_UART_TxHalfCpltCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_UART_RxCpltCallback",
+      "sig": "void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)",
+      "brief": "接收完成回调(弱定义空函数): 由 UART 中断处理自动调用, 用户在应用层重写以实现接收完成处理。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件中重写。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "__weak void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(huart);\r\n  /* NOTE: This function should not be modified, when the callback is needed,\r\n           the HAL_UART_RxCpltCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_UART_RxHalfCpltCallback",
+      "sig": "void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)",
+      "brief": "接收半程完成回调(弱定义空函数), 用户在应用层重写以实现半程处理。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件中重写。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "__weak void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(huart);\r\n  /* NOTE: This function should not be modified, when the callback is needed,\r\n           the HAL_UART_RxHalfCpltCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_UART_ErrorCallback",
+      "sig": "void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)",
+      "brief": "UART 通信错误回调(弱定义空函数): 检测到通信错误时由中断处理调用, 用户在应用层重写实现错误处理。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件中重写。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "__weak void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(huart);\r\n  /* NOTE: This function should not be modified, when the callback is needed,\r\n           the HAL_UART_ErrorCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_UART_AbortCpltCallback",
+      "sig": "void HAL_UART_AbortCpltCallback(UART_HandleTypeDef *huart)",
+      "brief": "UART 中止完成回调(弱定义空函数): HAL_UART_Abort_IT() 中止完成后被调用。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件中重写。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "__weak void HAL_UART_AbortCpltCallback(UART_HandleTypeDef *huart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(huart);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_UART_AbortCpltCallback can be implemented in the user file.\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_UART_AbortTransmitCpltCallback",
+      "sig": "void HAL_UART_AbortTransmitCpltCallback(UART_HandleTypeDef *huart)",
+      "brief": "UART 发送中止完成回调(弱定义空函数): HAL_UART_AbortTransmit_IT() 中止完成后被调用。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件中重写。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "__weak void HAL_UART_AbortTransmitCpltCallback(UART_HandleTypeDef *huart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(huart);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_UART_AbortTransmitCpltCallback can be implemented in the user file.\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_UART_AbortReceiveCpltCallback",
+      "sig": "void HAL_UART_AbortReceiveCpltCallback(UART_HandleTypeDef *huart)",
+      "brief": "UART 接收中止完成回调(弱定义空函数): HAL_UART_AbortReceive_IT() 中止完成后被调用。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件中重写。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "__weak void HAL_UART_AbortReceiveCpltCallback(UART_HandleTypeDef *huart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(huart);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_UART_AbortReceiveCpltCallback can be implemented in the user file.\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_UART_IdleFrameDetectCpltCallback",
+      "sig": "void HAL_UART_IdleFrameDetectCpltCallback(UART_HandleTypeDef *huart)",
+      "brief": "UART 空闲帧检测完成回调(弱定义空函数): 检测到空闲帧时由 HAL_UART_IRQHandler() 调用。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件中重写。"
+      ],
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "__weak void HAL_UART_IdleFrameDetectCpltCallback(UART_HandleTypeDef *huart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(huart);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_UART_IdleFrameDetectCpltCallback can be implemented in the user file.\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_MultiProcessor_EnterMuteMode",
+      "sig": "HAL_StatusTypeDef HAL_MultiProcessor_EnterMuteMode(UART_HandleTypeDef *huart)",
+      "brief": "使 UART 进入静音模式(置位 CR1 的 RWU 位)。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功"
+      },
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_MultiProcessor_EnterMuteMode(UART_HandleTypeDef *huart)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_UART_INSTANCE(huart->Instance));\r\n\r\n  /* Process Locked */\r\n  __HAL_LOCK(huart);\r\n\r\n  huart->gState = HAL_UART_STATE_BUSY;\r\n\r\n  /* Enable the USART mute mode  by setting the RWU bit in the CR1 register */\r\n  SET_BIT(huart->Instance->CR1, USART_CR1_RWU);\r\n\r\n  huart->gState = HAL_UART_STATE_READY;\r\n\r\n  /* Process Unlocked */\r\n  __HAL_UNLOCK(huart);\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_MultiProcessor_ExitMuteMode",
+      "sig": "HAL_StatusTypeDef HAL_MultiProcessor_ExitMuteMode(UART_HandleTypeDef *huart)",
+      "brief": "通过软件退出 UART 静音模式(清除 CR1 的 RWU 位)。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功"
+      },
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_MultiProcessor_ExitMuteMode(UART_HandleTypeDef *huart)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_UART_INSTANCE(huart->Instance));\r\n\r\n  /* Process Locked */\r\n  __HAL_LOCK(huart);\r\n\r\n  huart->gState = HAL_UART_STATE_BUSY;\r\n\r\n  /* Disable the USART mute mode by clearing the RWU bit in the CR1 register */\r\n  CLEAR_BIT(huart->Instance->CR1, USART_CR1_RWU);\r\n\r\n  huart->gState = HAL_UART_STATE_READY;\r\n\r\n  /* Process Unlocked */\r\n  __HAL_UNLOCK(huart);\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_HalfDuplex_EnableTransmitter",
+      "sig": "HAL_StatusTypeDef HAL_HalfDuplex_EnableTransmitter(UART_HandleTypeDef *huart)",
+      "brief": "半双工模式下使能 UART 发送器并禁止接收器(置位 TE, 清除 RE)。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功"
+      },
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_HalfDuplex_EnableTransmitter(UART_HandleTypeDef *huart)\r\n{\r\n  uint32_t tmpreg = 0x00U;\r\n\r\n  /* Process Locked */\r\n  __HAL_LOCK(huart);\r\n\r\n  huart->gState = HAL_UART_STATE_BUSY;\r\n\r\n  /*-------------------------- USART CR1 Configuration -----------------------*/\r\n  tmpreg = huart->Instance->CR1;\r\n\r\n  /* Clear TE and RE bits */\r\n  tmpreg &= (uint32_t)~((uint32_t)(USART_CR1_TE | USART_CR1_RE));\r\n\r\n  /* Enable the USART's transmit interface by setting the TE bit in the USART CR1 register */\r\n  tmpreg |= (uint32_t)USART_CR1_TE;\r\n\r\n  /* Write to USART CR1 */\r\n  WRITE_REG(huart->Instance->CR1, (uint32_t)tmpreg);\r\n\r\n  huart->gState = HAL_UART_STATE_READY;\r\n\r\n  /* Process Unlocked */\r\n  __HAL_UNLOCK(huart);\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_HalfDuplex_EnableReceiver",
+      "sig": "HAL_StatusTypeDef HAL_HalfDuplex_EnableReceiver(UART_HandleTypeDef *huart)",
+      "brief": "半双工模式下使能 UART 接收器并禁止发送器(置位 RE, 清除 TE)。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功"
+      },
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_HalfDuplex_EnableReceiver(UART_HandleTypeDef *huart)\r\n{\r\n  uint32_t tmpreg = 0x00U;\r\n\r\n  /* Process Locked */\r\n  __HAL_LOCK(huart);\r\n\r\n  huart->gState = HAL_UART_STATE_BUSY;\r\n\r\n  /*-------------------------- USART CR1 Configuration -----------------------*/\r\n  tmpreg = huart->Instance->CR1;\r\n\r\n  /* Clear TE and RE bits */\r\n  tmpreg &= (uint32_t)~((uint32_t)(USART_CR1_TE | USART_CR1_RE));\r\n\r\n  /* Enable the USART's receive interface by setting the RE bit in the USART CR1 register */\r\n  tmpreg |= (uint32_t)USART_CR1_RE;\r\n\r\n  /* Write to USART CR1 */\r\n  WRITE_REG(huart->Instance->CR1, (uint32_t)tmpreg);\r\n\r\n  huart->gState = HAL_UART_STATE_READY;\r\n\r\n  /* Process Unlocked */\r\n  __HAL_UNLOCK(huart);\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_UART_GetState",
+      "sig": "HAL_UART_StateTypeDef HAL_UART_GetState(UART_HandleTypeDef *huart)",
+      "brief": "返回 UART 的当前状态: gState 与 RxState 两个子状态的按位组合。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "指向 UART 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "HAL_UART_StateTypeDef",
+        "desc": "状态组合值, 对应 HAL_UART_STATE_*(RESET/READY/BUSY/BUSY_TX/BUSY_RX/TIMEOUT/ERROR 等)"
+      },
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "HAL_UART_StateTypeDef HAL_UART_GetState(UART_HandleTypeDef *huart)\r\n{\r\n  uint32_t temp1 = 0x00U, temp2 = 0x00U;\r\n  temp1 = huart->gState;\r\n  temp2 = huart->RxState;\r\n\r\n  return (HAL_UART_StateTypeDef)(temp1 | temp2);\r\n}"
+    },
+    {
+      "name": "HAL_UART_GetError",
+      "sig": "uint32_t HAL_UART_GetError(UART_HandleTypeDef *huart)",
+      "brief": "返回 UART 通信过程中的错误码。",
+      "params": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "指向 UART 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "错误码, 对应 HAL_UART_ERROR_*(PE/NE/FE/ORE 等, 可组合)"
+      },
+      "file": "py32f002b_hal_uart.c",
+      "kind": "function",
+      "src": "uint32_t HAL_UART_GetError(UART_HandleTypeDef *huart)\r\n{\r\n  return huart->ErrorCode;\r\n}"
+    },
+    {
+      "name": "__HAL_UART_RESET_HANDLE_STATE",
+      "sig": "#define __HAL_UART_RESET_HANDLE_STATE(__HANDLE__)  do{                                                   \\\r\n                                                       (__HANDLE__)->gState = HAL_UART_STATE_RESET;      \\\r\n                                                       (__HANDLE__)->RxState = HAL_UART_STATE_RESET;     \\\r\n                                                       (__HANDLE__)->MspInitCallback = NULL;             \\\r\n                                                       (__HANDLE__)->MspDeInitCallback = NULL;           \\\r\n                                                     } while(0U)",
+      "brief": "宏: 将句柄的 gState 与 RxState 复位为 HAL_UART_STATE_RESET(回调注册使能时同时清空 MspInit/MspDeInit 回调指针)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_RESET_HANDLE_STATE(__HANDLE__)  do{                                                   \\\r\n                                                       (__HANDLE__)->gState = HAL_UART_STATE_RESET;      \\\r\n                                                       (__HANDLE__)->RxState = HAL_UART_STATE_RESET;     \\\r\n                                                       (__HANDLE__)->MspInitCallback = NULL;             \\\r\n                                                       (__HANDLE__)->MspDeInitCallback = NULL;           \\\r\n                                                     } while(0U)"
+    },
+    {
+      "name": "__HAL_UART_FLUSH_DRREGISTER",
+      "sig": "#define __HAL_UART_FLUSH_DRREGISTER(__HANDLE__) ((__HANDLE__)->Instance->DR)",
+      "brief": "宏: 读取 DR 寄存器以刷新(清空)UART 数据寄存器。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_FLUSH_DRREGISTER(__HANDLE__) ((__HANDLE__)->Instance->DR)"
+    },
+    {
+      "name": "__HAL_UART_GET_FLAG",
+      "sig": "#define __HAL_UART_GET_FLAG(__HANDLE__, __FLAG__) (((__HANDLE__)->Instance->SR & (__FLAG__)) == (__FLAG__))",
+      "brief": "宏: 检查指定的 UART 状态标志是否置位。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        },
+        {
+          "name": "__FLAG__",
+          "type": "宏参数",
+          "desc": "要检查的标志: UART_FLAG_CTS/TXE/TC/RXNE/IDLE/ORE/NE/FE/PE"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志的新状态(置位为真, 否则为假)"
+      },
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_GET_FLAG(__HANDLE__, __FLAG__) (((__HANDLE__)->Instance->SR & (__FLAG__)) == (__FLAG__))"
+    },
+    {
+      "name": "__HAL_UART_CLEAR_FLAG",
+      "sig": "#define __HAL_UART_CLEAR_FLAG(__HANDLE__, __FLAG__) ((__HANDLE__)->Instance->SR = ~(__FLAG__))",
+      "brief": "宏: 清除指定的 UART 挂起标志(可传多个标志组合)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        },
+        {
+          "name": "__FLAG__",
+          "type": "宏参数",
+          "desc": "要清除的标志: UART_FLAG_CTS/TC/RXNE 等任意组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "notes": [
+        "PE/FE/NE/ORE/IDLE 标志需按软件序列(先读 SR 再读 DR)清除; RXNE 读 DR 清除; TC 需读 SR 后写 DR; TXE 仅写 DR 清除。"
+      ],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_CLEAR_FLAG(__HANDLE__, __FLAG__) ((__HANDLE__)->Instance->SR = ~(__FLAG__))"
+    },
+    {
+      "name": "__HAL_UART_CLEAR_PEFLAG",
+      "sig": "#define __HAL_UART_CLEAR_PEFLAG(__HANDLE__)     \\\r\n  do{                                           \\\r\n    __IO uint32_t tmpreg = 0x00U;               \\\r\n    tmpreg = (__HANDLE__)->Instance->SR;        \\\r\n    tmpreg = (__HANDLE__)->Instance->DR;        \\\r\n    UNUSED(tmpreg);                             \\\r\n  } while(0U)",
+      "brief": "宏: 通过先读 SR 再读 DR 的软件序列清除校验错误(PE)挂起标志。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_CLEAR_PEFLAG(__HANDLE__)     \\\r\n  do{                                           \\\r\n    __IO uint32_t tmpreg = 0x00U;               \\\r\n    tmpreg = (__HANDLE__)->Instance->SR;        \\\r\n    tmpreg = (__HANDLE__)->Instance->DR;        \\\r\n    UNUSED(tmpreg);                             \\\r\n  } while(0U)"
+    },
+    {
+      "name": "__HAL_UART_CLEAR_FEFLAG",
+      "sig": "#define __HAL_UART_CLEAR_FEFLAG(__HANDLE__) __HAL_UART_CLEAR_PEFLAG(__HANDLE__)",
+      "brief": "宏: 清除帧错误(FE)挂起标志(同 CLEAR_PEFLAG 的软件序列)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_CLEAR_FEFLAG(__HANDLE__) __HAL_UART_CLEAR_PEFLAG(__HANDLE__)"
+    },
+    {
+      "name": "__HAL_UART_CLEAR_NEFLAG",
+      "sig": "#define __HAL_UART_CLEAR_NEFLAG(__HANDLE__) __HAL_UART_CLEAR_PEFLAG(__HANDLE__)",
+      "brief": "宏: 清除噪声错误(NE)挂起标志(同 CLEAR_PEFLAG 的软件序列)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_CLEAR_NEFLAG(__HANDLE__) __HAL_UART_CLEAR_PEFLAG(__HANDLE__)"
+    },
+    {
+      "name": "__HAL_UART_CLEAR_OREFLAG",
+      "sig": "#define __HAL_UART_CLEAR_OREFLAG(__HANDLE__) __HAL_UART_CLEAR_PEFLAG(__HANDLE__)",
+      "brief": "宏: 清除过载错误(ORE)挂起标志(同 CLEAR_PEFLAG 的软件序列)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_CLEAR_OREFLAG(__HANDLE__) __HAL_UART_CLEAR_PEFLAG(__HANDLE__)"
+    },
+    {
+      "name": "__HAL_UART_CLEAR_IDLEFLAG",
+      "sig": "#define __HAL_UART_CLEAR_IDLEFLAG(__HANDLE__) __HAL_UART_CLEAR_PEFLAG(__HANDLE__)",
+      "brief": "宏: 清除空闲线检测(IDLE)挂起标志(同 CLEAR_PEFLAG 的软件序列)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_CLEAR_IDLEFLAG(__HANDLE__) __HAL_UART_CLEAR_PEFLAG(__HANDLE__)"
+    },
+    {
+      "name": "__HAL_UART_ENABLE_IT",
+      "sig": "#define __HAL_UART_ENABLE_IT(__HANDLE__, __INTERRUPT__)   ((((__INTERRUPT__) >> 28U) == UART_CR1_REG_INDEX)? ((__HANDLE__)->Instance->CR1 |= ((__INTERRUPT__) & UART_IT_MASK)): \\\r\n                                                           (((__INTERRUPT__) >> 28U) == UART_CR2_REG_INDEX)? ((__HANDLE__)->Instance->CR2 |= ((__INTERRUPT__) & UART_IT_MASK)): \\\r\n                                                           ((__HANDLE__)->Instance->CR3 |= ((__INTERRUPT__) & UART_IT_MASK)))",
+      "brief": "宏: 使能指定的 UART 中断源, 根据中断编码自动选择 CR1/CR2/CR3 寄存器。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        },
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "要使能的中断源: UART_IT_CTS/TXE/TC/RXNE/IDLE/PE/ERR"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_ENABLE_IT(__HANDLE__, __INTERRUPT__)   ((((__INTERRUPT__) >> 28U) == UART_CR1_REG_INDEX)? ((__HANDLE__)->Instance->CR1 |= ((__INTERRUPT__) & UART_IT_MASK)): \\\r\n                                                           (((__INTERRUPT__) >> 28U) == UART_CR2_REG_INDEX)? ((__HANDLE__)->Instance->CR2 |= ((__INTERRUPT__) & UART_IT_MASK)): \\\r\n                                                           ((__HANDLE__)->Instance->CR3 |= ((__INTERRUPT__) & UART_IT_MASK)))"
+    },
+    {
+      "name": "__HAL_UART_DISABLE_IT",
+      "sig": "#define __HAL_UART_DISABLE_IT(__HANDLE__, __INTERRUPT__)  ((((__INTERRUPT__) >> 28U) == UART_CR1_REG_INDEX)? ((__HANDLE__)->Instance->CR1 &= ~((__INTERRUPT__) & UART_IT_MASK)): \\\r\n                                                           (((__INTERRUPT__) >> 28U) == UART_CR2_REG_INDEX)? ((__HANDLE__)->Instance->CR2 &= ~((__INTERRUPT__) & UART_IT_MASK)): \\\r\n                                                           ((__HANDLE__)->Instance->CR3 &= ~ ((__INTERRUPT__) & UART_IT_MASK)))",
+      "brief": "宏: 禁止指定的 UART 中断源, 根据中断编码自动选择 CR1/CR2/CR3 寄存器。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        },
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "要禁止的中断源: UART_IT_CTS/TXE/TC/RXNE/IDLE/PE/ERR"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_DISABLE_IT(__HANDLE__, __INTERRUPT__)  ((((__INTERRUPT__) >> 28U) == UART_CR1_REG_INDEX)? ((__HANDLE__)->Instance->CR1 &= ~((__INTERRUPT__) & UART_IT_MASK)): \\\r\n                                                           (((__INTERRUPT__) >> 28U) == UART_CR2_REG_INDEX)? ((__HANDLE__)->Instance->CR2 &= ~((__INTERRUPT__) & UART_IT_MASK)): \\\r\n                                                           ((__HANDLE__)->Instance->CR3 &= ~ ((__INTERRUPT__) & UART_IT_MASK)))"
+    },
+    {
+      "name": "__HAL_UART_GET_IT_SOURCE",
+      "sig": "#define __HAL_UART_GET_IT_SOURCE(__HANDLE__, __IT__) (((((__IT__) >> 28U) == UART_CR1_REG_INDEX)? (__HANDLE__)->Instance->CR1:(((((uint32_t)(__IT__)) >> 28U) == UART_CR2_REG_INDEX)? \\\r\n                                                      (__HANDLE__)->Instance->CR2 : (__HANDLE__)->Instance->CR3)) & (((uint32_t)(__IT__)) & UART_IT_MASK))",
+      "brief": "宏: 检查指定的 UART 中断源是否已使能(读取对应寄存器的中断使能位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        },
+        {
+          "name": "__IT__",
+          "type": "宏参数",
+          "desc": "要检查的中断源: UART_IT_CTS/TXE/TC/RXNE/IDLE/ERR"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "中断使能位的新状态(已使能为真, 否则为假)"
+      },
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_GET_IT_SOURCE(__HANDLE__, __IT__) (((((__IT__) >> 28U) == UART_CR1_REG_INDEX)? (__HANDLE__)->Instance->CR1:(((((uint32_t)(__IT__)) >> 28U) == UART_CR2_REG_INDEX)? \\\r\n                                                      (__HANDLE__)->Instance->CR2 : (__HANDLE__)->Instance->CR3)) & (((uint32_t)(__IT__)) & UART_IT_MASK))"
+    },
+    {
+      "name": "__HAL_UART_HWCONTROL_CTS_ENABLE",
+      "sig": "#define __HAL_UART_HWCONTROL_CTS_ENABLE(__HANDLE__)        \\\r\n  do{                                                      \\\r\n    SET_BIT((__HANDLE__)->Instance->CR3, USART_CR3_CTSE);  \\\r\n    (__HANDLE__)->Init.HwFlowCtl |= USART_CR3_CTSE;        \\\r\n  } while(0U)",
+      "brief": "宏: 使能 CTS 硬件流控(置位 CR3 的 CTSE 位并同步更新 Init.HwFlowCtl), 无需重新调用 HAL_UART_Init()。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄(需支持硬件流控的 USART 实例)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "notes": [
+        "仅可在外设已初始化且处于禁止状态时调用, 用后应重新使能外设。"
+      ],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_HWCONTROL_CTS_ENABLE(__HANDLE__)        \\\r\n  do{                                                      \\\r\n    SET_BIT((__HANDLE__)->Instance->CR3, USART_CR3_CTSE);  \\\r\n    (__HANDLE__)->Init.HwFlowCtl |= USART_CR3_CTSE;        \\\r\n  } while(0U)"
+    },
+    {
+      "name": "__HAL_UART_HWCONTROL_CTS_DISABLE",
+      "sig": "#define __HAL_UART_HWCONTROL_CTS_DISABLE(__HANDLE__)        \\\r\n  do{                                                       \\\r\n    CLEAR_BIT((__HANDLE__)->Instance->CR3, USART_CR3_CTSE); \\\r\n    (__HANDLE__)->Init.HwFlowCtl &= ~(USART_CR3_CTSE);      \\\r\n  } while(0U)",
+      "brief": "宏: 禁止 CTS 硬件流控(清除 CR3 的 CTSE 位并同步更新 Init.HwFlowCtl)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄(需支持硬件流控的 USART 实例)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "notes": [
+        "仅可在外设已初始化且处于禁止状态时调用, 用后应重新使能外设。"
+      ],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_HWCONTROL_CTS_DISABLE(__HANDLE__)        \\\r\n  do{                                                       \\\r\n    CLEAR_BIT((__HANDLE__)->Instance->CR3, USART_CR3_CTSE); \\\r\n    (__HANDLE__)->Init.HwFlowCtl &= ~(USART_CR3_CTSE);      \\\r\n  } while(0U)"
+    },
+    {
+      "name": "__HAL_UART_HWCONTROL_RTS_ENABLE",
+      "sig": "#define __HAL_UART_HWCONTROL_RTS_ENABLE(__HANDLE__)       \\\r\n  do{                                                     \\\r\n    SET_BIT((__HANDLE__)->Instance->CR3, USART_CR3_RTSE); \\\r\n    (__HANDLE__)->Init.HwFlowCtl |= USART_CR3_RTSE;       \\\r\n  } while(0U)",
+      "brief": "宏: 使能 RTS 硬件流控(置位 CR3 的 RTSE 位并同步更新 Init.HwFlowCtl), 无需重新调用 HAL_UART_Init()。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄(需支持硬件流控的 USART 实例)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "notes": [
+        "仅可在外设已初始化且处于禁止状态时调用, 用后应重新使能外设。"
+      ],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_HWCONTROL_RTS_ENABLE(__HANDLE__)       \\\r\n  do{                                                     \\\r\n    SET_BIT((__HANDLE__)->Instance->CR3, USART_CR3_RTSE); \\\r\n    (__HANDLE__)->Init.HwFlowCtl |= USART_CR3_RTSE;       \\\r\n  } while(0U)"
+    },
+    {
+      "name": "__HAL_UART_HWCONTROL_RTS_DISABLE",
+      "sig": "#define __HAL_UART_HWCONTROL_RTS_DISABLE(__HANDLE__)       \\\r\n  do{                                                      \\\r\n    CLEAR_BIT((__HANDLE__)->Instance->CR3, USART_CR3_RTSE);\\\r\n    (__HANDLE__)->Init.HwFlowCtl &= ~(USART_CR3_RTSE);     \\\r\n  } while(0U)",
+      "brief": "宏: 禁止 RTS 硬件流控(清除 CR3 的 RTSE 位并同步更新 Init.HwFlowCtl)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄(需支持硬件流控的 USART 实例)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "notes": [
+        "仅可在外设已初始化且处于禁止状态时调用, 用后应重新使能外设。"
+      ],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_HWCONTROL_RTS_DISABLE(__HANDLE__)       \\\r\n  do{                                                      \\\r\n    CLEAR_BIT((__HANDLE__)->Instance->CR3, USART_CR3_RTSE);\\\r\n    (__HANDLE__)->Init.HwFlowCtl &= ~(USART_CR3_RTSE);     \\\r\n  } while(0U)"
+    },
+    {
+      "name": "__HAL_UART_ONE_BIT_SAMPLE_ENABLE",
+      "sig": "#define __HAL_UART_ONE_BIT_SAMPLE_ENABLE(__HANDLE__) ((__HANDLE__)->Instance->CR3|= USART_CR3_ONEBIT)",
+      "brief": "宏: 使能 UART 单比特采样方法(置位 CR3 的 ONEBIT 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "notes": [
+        "该宏仅在定义 USART_CR3_ONEBIT 时编译; PY32F002B 未定义此位, 该宏实际不生效。"
+      ],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_ONE_BIT_SAMPLE_ENABLE(__HANDLE__) ((__HANDLE__)->Instance->CR3|= USART_CR3_ONEBIT)"
+    },
+    {
+      "name": "__HAL_UART_ONE_BIT_SAMPLE_DISABLE",
+      "sig": "#define __HAL_UART_ONE_BIT_SAMPLE_DISABLE(__HANDLE__) ((__HANDLE__)->Instance->CR3 &= (uint16_t)~((uint16_t)USART_CR3_ONEBIT))",
+      "brief": "宏: 禁止 UART 单比特采样方法(清除 CR3 的 ONEBIT 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "notes": [
+        "该宏仅在定义 USART_CR3_ONEBIT 时编译; PY32F002B 未定义此位, 该宏实际不生效。"
+      ],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_ONE_BIT_SAMPLE_DISABLE(__HANDLE__) ((__HANDLE__)->Instance->CR3 &= (uint16_t)~((uint16_t)USART_CR3_ONEBIT))"
+    },
+    {
+      "name": "__HAL_UART_ENABLE",
+      "sig": "#define __HAL_UART_ENABLE(__HANDLE__)               ((__HANDLE__)->Instance->CR1 |=  USART_CR1_UE)",
+      "brief": "宏: 使能 UART 外设(置位 CR1 的 UE 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_ENABLE(__HANDLE__)               ((__HANDLE__)->Instance->CR1 |=  USART_CR1_UE)"
+    },
+    {
+      "name": "__HAL_UART_DISABLE",
+      "sig": "#define __HAL_UART_DISABLE(__HANDLE__)              ((__HANDLE__)->Instance->CR1 &=  ~USART_CR1_UE)",
+      "brief": "宏: 禁止 UART 外设(清除 CR1 的 UE 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_DISABLE(__HANDLE__)              ((__HANDLE__)->Instance->CR1 &=  ~USART_CR1_UE)"
+    },
+    {
+      "name": "__HAL_UART_ENABLE_DIRECTIONRX",
+      "sig": "#define __HAL_UART_ENABLE_DIRECTIONRX(__HANDLE__)            ((__HANDLE__)->Instance->CR1 |=  USART_CR1_RE)",
+      "brief": "宏: 使能 UART 接收方向(置位 CR1 的 RE 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_ENABLE_DIRECTIONRX(__HANDLE__)            ((__HANDLE__)->Instance->CR1 |=  USART_CR1_RE)"
+    },
+    {
+      "name": "__HAL_UART_DISABLE_DIRECTIONRX",
+      "sig": "#define __HAL_UART_DISABLE_DIRECTIONRX(__HANDLE__)            ((__HANDLE__)->Instance->CR1 &=  ~USART_CR1_RE)",
+      "brief": "宏: 禁止 UART 接收方向(清除 CR1 的 RE 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_DISABLE_DIRECTIONRX(__HANDLE__)            ((__HANDLE__)->Instance->CR1 &=  ~USART_CR1_RE)"
+    },
+    {
+      "name": "__HAL_UART_SEND_AUTOBAUD_REQ",
+      "sig": "#define __HAL_UART_SEND_AUTOBAUD_REQ(__HANDLE__)    ((__HANDLE__)->Instance->SR |= (uint16_t)(USART_SR_ABRRQ))",
+      "brief": "宏: 发送自动波特率检测请求(置位 SR 的 ABRRQ 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "UART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define __HAL_UART_SEND_AUTOBAUD_REQ(__HANDLE__)    ((__HANDLE__)->Instance->SR |= (uint16_t)(USART_SR_ABRRQ))"
+    }
+  ],
+  "ll": [],
+  "types": [
+    {
+      "name": "UART_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t BaudRate; uint32_t WordLength; uint32_t StopBits; uint32_t Parity; uint32_t Mode; uint32_t HwFlowCtl; uint32_t OverSampling; } UART_InitTypeDef;",
+      "desc": "UART 初始化配置结构体, 作为 HAL_UART_Init()/HAL_HalfDuplex_Init()/HAL_MultiProcessor_Init() 的参数。",
+      "members": [
+        {
+          "name": "BaudRate",
+          "type": "uint32_t",
+          "desc": "通信波特率, 由 PCLK 与 16 倍过采样公式计算 BRR"
+        },
+        {
+          "name": "WordLength",
+          "type": "uint32_t",
+          "desc": "帧数据位长度, 可取 UART_WORDLENGTH_8B / UART_WORDLENGTH_9B"
+        },
+        {
+          "name": "StopBits",
+          "type": "uint32_t",
+          "desc": "停止位个数, 可取 UART_STOPBITS_1 / UART_STOPBITS_2"
+        },
+        {
+          "name": "Parity",
+          "type": "uint32_t",
+          "desc": "校验模式, 可取 UART_PARITY_NONE / EVEN / ODD(使能时校验位插入数据 MSB 位置)"
+        },
+        {
+          "name": "Mode",
+          "type": "uint32_t",
+          "desc": "收发模式, 可取 UART_MODE_RX / TX / TX_RX"
+        },
+        {
+          "name": "HwFlowCtl",
+          "type": "uint32_t",
+          "desc": "硬件流控, 可取 UART_HWCONTROL_NONE / RTS / CTS / RTS_CTS"
+        },
+        {
+          "name": "OverSampling",
+          "type": "uint32_t",
+          "desc": "过采样率, 可取 UART_OVERSAMPLING_16 / UART_OVERSAMPLING_8"
+        }
+      ],
+      "file": "py32f002b_hal_uart.h"
+    },
+    {
+      "name": "HAL_UART_StateTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_UART_STATE_RESET = 0x00U, HAL_UART_STATE_READY = 0x20U, HAL_UART_STATE_BUSY = 0x24U, HAL_UART_STATE_BUSY_TX = 0x21U, HAL_UART_STATE_BUSY_RX = 0x22U, HAL_UART_STATE_BUSY_TX_RX = 0x23U, HAL_UART_STATE_TIMEOUT = 0xA0U, HAL_UART_STATE_ERROR = 0xE0U } HAL_UART_StateTypeDef;",
+      "desc": "UART 状态枚举: 完整状态是 gState(全局/Tx)与 RxState 两个子状态的按位组合, 各值按位域编码(错误信息/初始化状态/忙状态等)。",
+      "members": [
+        {
+          "name": "HAL_UART_STATE_RESET",
+          "value": "0x00U",
+          "desc": "外设尚未初始化(gState 与 RxState 均允许)"
+        },
+        {
+          "name": "HAL_UART_STATE_READY",
+          "value": "0x20U",
+          "desc": "外设已初始化, 就绪可用(gState 与 RxState 均允许)"
+        },
+        {
+          "name": "HAL_UART_STATE_BUSY",
+          "value": "0x24U",
+          "desc": "内部处理进行中(仅允许用于 gState)"
+        },
+        {
+          "name": "HAL_UART_STATE_BUSY_TX",
+          "value": "0x21U",
+          "desc": "数据发送进行中(仅允许用于 gState)"
+        },
+        {
+          "name": "HAL_UART_STATE_BUSY_RX",
+          "value": "0x22U",
+          "desc": "数据接收进行中(仅允许用于 RxState)"
+        },
+        {
+          "name": "HAL_UART_STATE_BUSY_TX_RX",
+          "value": "0x23U",
+          "desc": "发送与接收同时进行(gState 与 RxState 组合的结果, 不作为单独赋值)"
+        },
+        {
+          "name": "HAL_UART_STATE_TIMEOUT",
+          "value": "0xA0U",
+          "desc": "超时(仅允许用于 gState)"
+        },
+        {
+          "name": "HAL_UART_STATE_ERROR",
+          "value": "0xE0U",
+          "desc": "出错(仅允许用于 gState)"
+        }
+      ],
+      "file": "py32f002b_hal_uart.h"
+    },
+    {
+      "name": "UART_AdvFeatureInitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t AdvFeatureInit; uint32_t AutoBaudRateEnable; uint32_t AutoBaudRateMode; } UART_AdvFeatureInitTypeDef;",
+      "desc": "UART 高级特性初始化结构体, 位于 UART_HandleTypeDef 的 AdvancedInit 成员, 用于自动波特率检测等高级特性配置。",
+      "members": [
+        {
+          "name": "AdvFeatureInit",
+          "type": "uint32_t",
+          "desc": "指定要初始化哪些高级特性, 可取 UART_ADVFEATURE_NO_INIT / UART_ADVFEATURE_AUTOBAUDRATE_INIT(可多个同时)"
+        },
+        {
+          "name": "AutoBaudRateEnable",
+          "type": "uint32_t",
+          "desc": "是否使能自动波特率检测, 可取 UART_ADVFEATURE_AUTOBAUDRATE_DISABLE / ENABLE"
+        },
+        {
+          "name": "AutoBaudRateMode",
+          "type": "uint32_t",
+          "desc": "自动波特率检测方式, 可取 UART_ADVFEATURE_AUTOBAUDRATE_ONSTARTBIT / ONFALLINGEDGE"
+        }
+      ],
+      "file": "py32f002b_hal_uart.h"
+    },
+    {
+      "name": "UART_HandleTypeDef",
+      "kind": "struct",
+      "def": "typedef struct __UART_HandleTypeDef { USART_TypeDef *Instance; UART_InitTypeDef Init; UART_AdvFeatureInitTypeDef AdvancedInit; uint8_t *pTxBuffPtr; uint16_t TxXferSize; __IO uint16_t TxXferCount; uint8_t *pRxBuffPtr; uint16_t RxXferSize; __IO uint16_t RxXferCount; HAL_LockTypeDef Lock; __IO HAL_UART_StateTypeDef gState; __IO HAL_UART_StateTypeDef RxState; __IO uint32_t ErrorCode; ... } UART_HandleTypeDef;",
+      "desc": "UART 句柄结构体, 保存外设基址、通信参数、收发缓冲区指针/计数、锁定对象与状态, 作为所有 HAL_UART_* API 的参数。",
+      "members": [
+        {
+          "name": "Instance",
+          "type": "USART_TypeDef *",
+          "desc": "UART 寄存器基地址(本芯片为 USART1)"
+        },
+        {
+          "name": "Init",
+          "type": "UART_InitTypeDef",
+          "desc": "UART 通信参数"
+        },
+        {
+          "name": "AdvancedInit",
+          "type": "UART_AdvFeatureInitTypeDef",
+          "desc": "UART 高级特性初始化参数"
+        },
+        {
+          "name": "pTxBuffPtr",
+          "type": "uint8_t *",
+          "desc": "指向发送缓冲区"
+        },
+        {
+          "name": "TxXferSize",
+          "type": "uint16_t",
+          "desc": "发送数据总大小"
+        },
+        {
+          "name": "TxXferCount",
+          "type": "__IO uint16_t",
+          "desc": "发送剩余计数"
+        },
+        {
+          "name": "pRxBuffPtr",
+          "type": "uint8_t *",
+          "desc": "指向接收缓冲区"
+        },
+        {
+          "name": "RxXferSize",
+          "type": "uint16_t",
+          "desc": "接收数据总大小"
+        },
+        {
+          "name": "RxXferCount",
+          "type": "__IO uint16_t",
+          "desc": "接收剩余计数"
+        },
+        {
+          "name": "Lock",
+          "type": "HAL_LockTypeDef",
+          "desc": "锁定对象(防止并发访问)"
+        },
+        {
+          "name": "gState",
+          "type": "__IO HAL_UART_StateTypeDef",
+          "desc": "全局句柄管理与 Tx 操作状态, 可取 HAL_UART_STATE_*"
+        },
+        {
+          "name": "RxState",
+          "type": "__IO HAL_UART_StateTypeDef",
+          "desc": "Rx 操作状态, 可取 HAL_UART_STATE_*"
+        },
+        {
+          "name": "ErrorCode",
+          "type": "__IO uint32_t",
+          "desc": "UART 错误码, 对应 HAL_UART_ERROR_*"
+        }
+      ],
+      "notes": [
+        "定义 USE_HAL_UART_REGISTER_CALLBACKS=1 时结构体末尾还包含 TxHalfCplt/TxCplt/RxHalfCplt/RxCplt/Error/AbortCplt/AbortTransmitCplt/AbortReceiveCplt/Wakeup/MspInit/MspDeInit 共 11 个回调函数指针成员。"
+      ],
+      "file": "py32f002b_hal_uart.h"
+    },
+    {
+      "name": "HAL_UART_CallbackIDTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_UART_TX_HALFCOMPLETE_CB_ID = 0x00U, HAL_UART_TX_COMPLETE_CB_ID = 0x01U, HAL_UART_RX_HALFCOMPLETE_CB_ID = 0x02U, HAL_UART_RX_COMPLETE_CB_ID = 0x03U, HAL_UART_ERROR_CB_ID = 0x04U, HAL_UART_ABORT_COMPLETE_CB_ID = 0x05U, HAL_UART_ABORT_TRANSMIT_COMPLETE_CB_ID = 0x06U, HAL_UART_ABORT_RECEIVE_COMPLETE_CB_ID = 0x07U, HAL_UART_WAKEUP_CB_ID = 0x08U, HAL_UART_MSPINIT_CB_ID = 0x0BU, HAL_UART_MSPDEINIT_CB_ID = 0x0CU } HAL_UART_CallbackIDTypeDef;",
+      "desc": "HAL UART 回调 ID 枚举, 作为 HAL_UART_RegisterCallback()/HAL_UART_UnRegisterCallback() 的 CallbackID 参数(仅在定义 USE_HAL_UART_REGISTER_CALLBACKS=1 时可用)。",
+      "members": [
+        {
+          "name": "HAL_UART_TX_HALFCOMPLETE_CB_ID",
+          "value": "0x00U",
+          "desc": "发送半程完成回调 ID"
+        },
+        {
+          "name": "HAL_UART_TX_COMPLETE_CB_ID",
+          "value": "0x01U",
+          "desc": "发送完成回调 ID"
+        },
+        {
+          "name": "HAL_UART_RX_HALFCOMPLETE_CB_ID",
+          "value": "0x02U",
+          "desc": "接收半程完成回调 ID"
+        },
+        {
+          "name": "HAL_UART_RX_COMPLETE_CB_ID",
+          "value": "0x03U",
+          "desc": "接收完成回调 ID"
+        },
+        {
+          "name": "HAL_UART_ERROR_CB_ID",
+          "value": "0x04U",
+          "desc": "错误回调 ID"
+        },
+        {
+          "name": "HAL_UART_ABORT_COMPLETE_CB_ID",
+          "value": "0x05U",
+          "desc": "中止完成回调 ID"
+        },
+        {
+          "name": "HAL_UART_ABORT_TRANSMIT_COMPLETE_CB_ID",
+          "value": "0x06U",
+          "desc": "发送中止完成回调 ID"
+        },
+        {
+          "name": "HAL_UART_ABORT_RECEIVE_COMPLETE_CB_ID",
+          "value": "0x07U",
+          "desc": "接收中止完成回调 ID"
+        },
+        {
+          "name": "HAL_UART_WAKEUP_CB_ID",
+          "value": "0x08U",
+          "desc": "唤醒回调 ID"
+        },
+        {
+          "name": "HAL_UART_MSPINIT_CB_ID",
+          "value": "0x0BU",
+          "desc": "MspInit 回调 ID"
+        },
+        {
+          "name": "HAL_UART_MSPDEINIT_CB_ID",
+          "value": "0x0CU",
+          "desc": "MspDeInit 回调 ID"
+        }
+      ],
+      "file": "py32f002b_hal_uart.h"
+    },
+    {
+      "name": "USART_TypeDef",
+      "kind": "periph",
+      "def": "typedef struct { __IO uint32_t SR; __IO uint32_t DR; __IO uint32_t BRR; __IO uint32_t CR1; __IO uint32_t CR2; __IO uint32_t CR3; } USART_TypeDef;",
+      "desc": "USART 外设寄存器结构体(UART 模块复用该结构体)。实例: USART1。",
+      "members": [
+        {
+          "name": "SR",
+          "type": "__IO uint32_t",
+          "desc": "状态寄存器(偏移 0x00)"
+        },
+        {
+          "name": "DR",
+          "type": "__IO uint32_t",
+          "desc": "数据寄存器(偏移 0x04)"
+        },
+        {
+          "name": "BRR",
+          "type": "__IO uint32_t",
+          "desc": "波特率寄存器(偏移 0x08)"
+        },
+        {
+          "name": "CR1",
+          "type": "__IO uint32_t",
+          "desc": "控制寄存器 1(偏移 0x0C)"
+        },
+        {
+          "name": "CR2",
+          "type": "__IO uint32_t",
+          "desc": "控制寄存器 2(偏移 0x10)"
+        },
+        {
+          "name": "CR3",
+          "type": "__IO uint32_t",
+          "desc": "控制寄存器 3(偏移 0x14)"
+        }
+      ],
+      "file": "py32f002xx5.h"
+    },
+    {
+      "name": "pUART_CallbackTypeDef",
+      "kind": "typedef",
+      "def": "typedef void (*pUART_CallbackTypeDef)(UART_HandleTypeDef *huart);",
+      "desc": "UART 回调函数指针类型(用于 HAL_UART_RegisterCallback)。",
+      "members": [
+        {
+          "name": "huart",
+          "type": "UART_HandleTypeDef *",
+          "desc": "UART 句柄"
+        }
+      ],
+      "file": "py32f002b_hal_uart.h"
+    }
+  ],
+  "consts": [
+    {
+      "name": "HAL_UART_ERROR_NONE",
+      "value": "0x00000000U",
+      "desc": "无错误",
+      "group": "错误码",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define HAL_UART_ERROR_NONE              0x00000000U   /*!< No error            */"
+    },
+    {
+      "name": "HAL_UART_ERROR_PE",
+      "value": "0x00000001U",
+      "desc": "校验错误",
+      "group": "错误码",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define HAL_UART_ERROR_PE                0x00000001U   /*!< Parity error        */"
+    },
+    {
+      "name": "HAL_UART_ERROR_NE",
+      "value": "0x00000002U",
+      "desc": "噪声错误",
+      "group": "错误码",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define HAL_UART_ERROR_NE                0x00000002U   /*!< Noise error         */"
+    },
+    {
+      "name": "HAL_UART_ERROR_FE",
+      "value": "0x00000004U",
+      "desc": "帧错误",
+      "group": "错误码",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define HAL_UART_ERROR_FE                0x00000004U   /*!< Frame error         */"
+    },
+    {
+      "name": "HAL_UART_ERROR_ORE",
+      "value": "0x00000008U",
+      "desc": "过载错误",
+      "group": "错误码",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define HAL_UART_ERROR_ORE               0x00000008U   /*!< Overrun error       */"
+    },
+    {
+      "name": "HAL_UART_ERROR_INVALID_CALLBACK",
+      "value": "0x00000020U",
+      "desc": "非法回调错误(仅定义 USE_HAL_UART_REGISTER_CALLBACKS=1 时存在)",
+      "group": "错误码",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define  HAL_UART_ERROR_INVALID_CALLBACK 0x00000020U   /*!< Invalid Callback error  */"
+    },
+    {
+      "name": "UART_WORDLENGTH_8B",
+      "value": "0x00000000U",
+      "desc": "8 位数据字长",
+      "group": "字长",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_WORDLENGTH_8B                  0x00000000U"
+    },
+    {
+      "name": "UART_WORDLENGTH_9B",
+      "value": "((uint32_t)USART_CR1_M)",
+      "desc": "9 位数据字长",
+      "group": "字长",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_WORDLENGTH_9B                  ((uint32_t)USART_CR1_M)"
+    },
+    {
+      "name": "UART_STOPBITS_1",
+      "value": "0x00000000U",
+      "desc": "1 个停止位",
+      "group": "停止位",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_STOPBITS_1                     0x00000000U"
+    },
+    {
+      "name": "UART_STOPBITS_2",
+      "value": "((uint32_t)USART_CR2_STOP)",
+      "desc": "2 个停止位",
+      "group": "停止位",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_STOPBITS_2                     ((uint32_t)USART_CR2_STOP)"
+    },
+    {
+      "name": "UART_PARITY_NONE",
+      "value": "0x00000000U",
+      "desc": "无校验",
+      "group": "校验",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_PARITY_NONE                    0x00000000U"
+    },
+    {
+      "name": "UART_PARITY_EVEN",
+      "value": "((uint32_t)USART_CR1_PCE)",
+      "desc": "偶校验",
+      "group": "校验",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_PARITY_EVEN                    ((uint32_t)USART_CR1_PCE)"
+    },
+    {
+      "name": "UART_PARITY_ODD",
+      "value": "((uint32_t)(USART_CR1_PCE | USART_CR1_PS))",
+      "desc": "奇校验",
+      "group": "校验",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_PARITY_ODD                     ((uint32_t)(USART_CR1_PCE | USART_CR1_PS))"
+    },
+    {
+      "name": "UART_HWCONTROL_NONE",
+      "value": "0x00000000U",
+      "desc": "无硬件流控",
+      "group": "硬件流控",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_HWCONTROL_NONE                  0x00000000U"
+    },
+    {
+      "name": "UART_HWCONTROL_RTS",
+      "value": "((uint32_t)USART_CR3_RTSE)",
+      "desc": "仅 RTS 硬件流控",
+      "group": "硬件流控",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_HWCONTROL_RTS                   ((uint32_t)USART_CR3_RTSE)"
+    },
+    {
+      "name": "UART_HWCONTROL_CTS",
+      "value": "((uint32_t)USART_CR3_CTSE)",
+      "desc": "仅 CTS 硬件流控",
+      "group": "硬件流控",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_HWCONTROL_CTS                   ((uint32_t)USART_CR3_CTSE)"
+    },
+    {
+      "name": "UART_HWCONTROL_RTS_CTS",
+      "value": "((uint32_t)(USART_CR3_RTSE | USART_CR3_CTSE))",
+      "desc": "RTS 与 CTS 硬件流控",
+      "group": "硬件流控",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_HWCONTROL_RTS_CTS               ((uint32_t)(USART_CR3_RTSE | USART_CR3_CTSE))"
+    },
+    {
+      "name": "UART_MODE_RX",
+      "value": "((uint32_t)USART_CR1_RE)",
+      "desc": "仅接收模式",
+      "group": "收发模式",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_MODE_RX                        ((uint32_t)USART_CR1_RE)"
+    },
+    {
+      "name": "UART_MODE_TX",
+      "value": "((uint32_t)USART_CR1_TE)",
+      "desc": "仅发送模式",
+      "group": "收发模式",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_MODE_TX                        ((uint32_t)USART_CR1_TE)"
+    },
+    {
+      "name": "UART_MODE_TX_RX",
+      "value": "((uint32_t)(USART_CR1_TE | USART_CR1_RE))",
+      "desc": "收发模式",
+      "group": "收发模式",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_MODE_TX_RX                     ((uint32_t)(USART_CR1_TE | USART_CR1_RE))"
+    },
+    {
+      "name": "UART_STATE_DISABLE",
+      "value": "0x00000000U",
+      "desc": "外设禁止状态",
+      "group": "外设状态",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_STATE_DISABLE                  0x00000000U"
+    },
+    {
+      "name": "UART_STATE_ENABLE",
+      "value": "((uint32_t)USART_CR1_UE)",
+      "desc": "外设使能状态",
+      "group": "外设状态",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_STATE_ENABLE                   ((uint32_t)USART_CR1_UE)"
+    },
+    {
+      "name": "UART_OVERSAMPLING_16",
+      "value": "0x00000000U",
+      "desc": "16 倍过采样",
+      "group": "过采样",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_OVERSAMPLING_16                    0x00000000U"
+    },
+    {
+      "name": "UART_OVERSAMPLING_8",
+      "value": "((uint32_t)USART_CR3_OVER8)",
+      "desc": "8 倍过采样",
+      "group": "过采样",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_OVERSAMPLING_8                     ((uint32_t)USART_CR3_OVER8)"
+    },
+    {
+      "name": "UART_LINBREAKDETECTLENGTH_10B",
+      "value": "0x00000000U",
+      "desc": "LIN 断开检测长度为 10 位",
+      "group": "LIN 断开检测长度",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_LINBREAKDETECTLENGTH_10B      0x00000000U"
+    },
+    {
+      "name": "UART_LINBREAKDETECTLENGTH_11B",
+      "value": "((uint32_t)USART_CR2_LBDL)",
+      "desc": "LIN 断开检测长度为 11 位",
+      "group": "LIN 断开检测长度",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_LINBREAKDETECTLENGTH_11B      ((uint32_t)USART_CR2_LBDL)"
+    },
+    {
+      "name": "UART_WAKEUPMETHOD_IDLELINE",
+      "value": "0x00000000U",
+      "desc": "空闲线检测唤醒",
+      "group": "唤醒方式",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_WAKEUPMETHOD_IDLELINE                0x00000000U"
+    },
+    {
+      "name": "UART_WAKEUPMETHOD_ADDRESSMARK",
+      "value": "((uint32_t)USART_CR1_WAKE)",
+      "desc": "地址标记唤醒",
+      "group": "唤醒方式",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_WAKEUPMETHOD_ADDRESSMARK             ((uint32_t)USART_CR1_WAKE)"
+    },
+    {
+      "name": "UART_FLAG_ABRF",
+      "value": "((uint32_t)USART_SR_ABRF)",
+      "desc": "自动波特率检测标志",
+      "group": "状态标志",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_FLAG_ABRF                      ((uint32_t)USART_SR_ABRF)          /*!< UART auto Baud rate flag                  */"
+    },
+    {
+      "name": "UART_FLAG_ABRE",
+      "value": "((uint32_t)USART_SR_ABRE)",
+      "desc": "自动波特率检测错误标志",
+      "group": "状态标志",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_FLAG_ABRE                      ((uint32_t)USART_SR_ABRE)          /*!< UART auto Baud rate error                 */"
+    },
+    {
+      "name": "UART_FLAG_CTS",
+      "value": "((uint32_t)USART_SR_CTS)",
+      "desc": "CTS 变化标志",
+      "group": "状态标志",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_FLAG_CTS                       ((uint32_t)USART_SR_CTS)"
+    },
+    {
+      "name": "UART_FLAG_TXE",
+      "value": "((uint32_t)USART_SR_TXE)",
+      "desc": "发送数据寄存器空标志",
+      "group": "状态标志",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_FLAG_TXE                       ((uint32_t)USART_SR_TXE)"
+    },
+    {
+      "name": "UART_FLAG_TC",
+      "value": "((uint32_t)USART_SR_TC)",
+      "desc": "发送完成标志",
+      "group": "状态标志",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_FLAG_TC                        ((uint32_t)USART_SR_TC)"
+    },
+    {
+      "name": "UART_FLAG_RXNE",
+      "value": "((uint32_t)USART_SR_RXNE)",
+      "desc": "接收数据寄存器非空标志",
+      "group": "状态标志",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_FLAG_RXNE                      ((uint32_t)USART_SR_RXNE)"
+    },
+    {
+      "name": "UART_FLAG_IDLE",
+      "value": "((uint32_t)USART_SR_IDLE)",
+      "desc": "空闲线检测标志",
+      "group": "状态标志",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_FLAG_IDLE                      ((uint32_t)USART_SR_IDLE)"
+    },
+    {
+      "name": "UART_FLAG_ORE",
+      "value": "((uint32_t)USART_SR_ORE)",
+      "desc": "过载错误标志",
+      "group": "状态标志",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_FLAG_ORE                       ((uint32_t)USART_SR_ORE)"
+    },
+    {
+      "name": "UART_FLAG_NE",
+      "value": "((uint32_t)USART_SR_NE)",
+      "desc": "噪声错误标志",
+      "group": "状态标志",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_FLAG_NE                        ((uint32_t)USART_SR_NE)"
+    },
+    {
+      "name": "UART_FLAG_FE",
+      "value": "((uint32_t)USART_SR_FE)",
+      "desc": "帧错误标志",
+      "group": "状态标志",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_FLAG_FE                        ((uint32_t)USART_SR_FE)"
+    },
+    {
+      "name": "UART_FLAG_PE",
+      "value": "((uint32_t)USART_SR_PE)",
+      "desc": "校验错误标志",
+      "group": "状态标志",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_FLAG_PE                        ((uint32_t)USART_SR_PE)"
+    },
+    {
+      "name": "UART_IT_PE",
+      "value": "((uint32_t)(UART_CR1_REG_INDEX << 28U | USART_CR1_PEIE))",
+      "desc": "校验错误中断(CR1 寄存器)",
+      "group": "中断源",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_IT_PE                       ((uint32_t)(UART_CR1_REG_INDEX << 28U | USART_CR1_PEIE))"
+    },
+    {
+      "name": "UART_IT_TXE",
+      "value": "((uint32_t)(UART_CR1_REG_INDEX << 28U | USART_CR1_TXEIE))",
+      "desc": "发送数据寄存器空中断(CR1 寄存器)",
+      "group": "中断源",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_IT_TXE                      ((uint32_t)(UART_CR1_REG_INDEX << 28U | USART_CR1_TXEIE))"
+    },
+    {
+      "name": "UART_IT_TC",
+      "value": "((uint32_t)(UART_CR1_REG_INDEX << 28U | USART_CR1_TCIE))",
+      "desc": "发送完成中断(CR1 寄存器)",
+      "group": "中断源",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_IT_TC                       ((uint32_t)(UART_CR1_REG_INDEX << 28U | USART_CR1_TCIE))"
+    },
+    {
+      "name": "UART_IT_RXNE",
+      "value": "((uint32_t)(UART_CR1_REG_INDEX << 28U | USART_CR1_RXNEIE))",
+      "desc": "接收数据寄存器非空中断(CR1 寄存器)",
+      "group": "中断源",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_IT_RXNE                     ((uint32_t)(UART_CR1_REG_INDEX << 28U | USART_CR1_RXNEIE))"
+    },
+    {
+      "name": "UART_IT_IDLE",
+      "value": "((uint32_t)(UART_CR1_REG_INDEX << 28U | USART_CR1_IDLEIE))",
+      "desc": "空闲线检测中断(CR1 寄存器)",
+      "group": "中断源",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_IT_IDLE                     ((uint32_t)(UART_CR1_REG_INDEX << 28U | USART_CR1_IDLEIE))"
+    },
+    {
+      "name": "UART_IT_CTS",
+      "value": "((uint32_t)(UART_CR3_REG_INDEX << 28U | USART_CR3_CTSIE))",
+      "desc": "CTS 变化中断(CR3 寄存器)",
+      "group": "中断源",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_IT_CTS                      ((uint32_t)(UART_CR3_REG_INDEX << 28U | USART_CR3_CTSIE))"
+    },
+    {
+      "name": "UART_IT_ERR",
+      "value": "((uint32_t)(UART_CR3_REG_INDEX << 28U | USART_CR3_EIE))",
+      "desc": "错误中断: 帧/噪声/过载错误(CR3 寄存器)",
+      "group": "中断源",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_IT_ERR                      ((uint32_t)(UART_CR3_REG_INDEX << 28U | USART_CR3_EIE))"
+    },
+    {
+      "name": "UART_ADVFEATURE_NO_INIT",
+      "value": "0x00000000U",
+      "desc": "不初始化高级特性",
+      "group": "高级特性初始化",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_ADVFEATURE_NO_INIT                 0x00000000U          /*!< No advanced feature initialization       */"
+    },
+    {
+      "name": "UART_ADVFEATURE_AUTOBAUDRATE_INIT",
+      "value": "0x00000040U",
+      "desc": "自动波特率检测初始化",
+      "group": "高级特性初始化",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_ADVFEATURE_AUTOBAUDRATE_INIT       0x00000040U          /*!< Auto Baud rate detection initialization  */"
+    },
+    {
+      "name": "UART_ADVFEATURE_AUTOBAUDRATE_DISABLE",
+      "value": "0x00000000U",
+      "desc": "禁止自动波特率检测",
+      "group": "自动波特率使能",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_ADVFEATURE_AUTOBAUDRATE_DISABLE   0x00000000U          /*!< RX Auto Baud rate detection enable  */"
+    },
+    {
+      "name": "UART_ADVFEATURE_AUTOBAUDRATE_ENABLE",
+      "value": "USART_CR3_ABREN",
+      "desc": "使能自动波特率检测",
+      "group": "自动波特率使能",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_ADVFEATURE_AUTOBAUDRATE_ENABLE    USART_CR3_ABREN      /*!< RX Auto Baud rate detection disable */"
+    },
+    {
+      "name": "UART_ADVFEATURE_AUTOBAUDRATE_ONSTARTBIT",
+      "value": "0x00000000U",
+      "desc": "起始位自动波特率检测",
+      "group": "自动波特率模式",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_ADVFEATURE_AUTOBAUDRATE_ONSTARTBIT    0x00000000U           /*!< Auto Baud rate detection on start bit            */"
+    },
+    {
+      "name": "UART_ADVFEATURE_AUTOBAUDRATE_ONFALLINGEDGE",
+      "value": "USART_CR3_ABRMODE_0",
+      "desc": "下降沿自动波特率检测",
+      "group": "自动波特率模式",
+      "file": "py32f002b_hal_uart.h",
+      "src": "#define UART_ADVFEATURE_AUTOBAUDRATE_ONFALLINGEDGE USART_CR3_ABRMODE_0   /*!< Auto Baud rate detection on falling edge         */"
+    }
+  ]
+}

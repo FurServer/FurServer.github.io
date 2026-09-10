@@ -1,0 +1,2138 @@
+{
+  "module": "I2C",
+  "moduleId": "i2c",
+  "intro": "I2C 外设 HAL 驱动: 提供初始化/反初始化(MspInit/MspDeInit、回调注册)、IO 操作(主/从模式阻塞与中断传输、存储器读写、顺序传输、地址监听、设备就绪检测、传输中止)以及外设状态/模式/错误查询。本驱动基于传统 I2C 接口(SR1/SR2/DR 寄存器), 不含 DMA 支持。",
+  "files": [
+    "py32f002b_hal_i2c.c",
+    "py32f002b_hal_i2c.h"
+  ],
+  "hal": [
+    {
+      "name": "HAL_I2C_Init",
+      "sig": "HAL_StatusTypeDef HAL_I2C_Init(I2C_HandleTypeDef *hi2c)",
+      "brief": "根据 hi2c->Init 中的参数初始化 I2C 外设并初始化句柄: 配置通信速度、快速模式占空比、自身地址 1、广播呼叫与无延展模式。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向包含配置信息的 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败(参数无效或 PCLK1 频率不满足要求)"
+      },
+      "notes": [
+        "首次调用且句柄状态为 HAL_I2C_STATE_RESET 时会自动调用 HAL_I2C_MspInit() 配置底层硬件(GPIO/时钟/NVIC)。",
+        "初始化前需先实现 HAL_I2C_MspInit()。"
+      ],
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_Init(I2C_HandleTypeDef *hi2c)\r\n{\r\n  uint32_t freqrange;\r\n  uint32_t pclk1;\r\n\r\n  /* Check the I2C handle allocation */\r\n  if (hi2c == NULL)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_I2C_ALL_INSTANCE(hi2c->Instance));\r\n  assert_param(IS_I2C_CLOCK_SPEED(hi2c->Init.ClockSpeed));\r\n  assert_param(IS_I2C_DUTY_CYCLE(hi2c->Init.DutyCycle));\r\n  assert_param(IS_I2C_OWN_ADDRESS1(hi2c->Init.OwnAddress1));\r\n  assert_param(IS_I2C_GENERAL_CALL(hi2c->Init.GeneralCallMode));\r\n  assert_param(IS_I2C_NO_STRETCH(hi2c->Init.NoStretchMode));\r\n\r\n  if (hi2c->State == HAL_I2C_STATE_RESET)\r\n  {\r\n    /* Allocate lock resource and initialize it */\r\n    hi2c->Lock = HAL_UNLOCKED;\r\n\r\n#if (USE_HAL_I2C_REGISTER_CALLBACKS == 1)\r\n    /* Init the I2C Callback settings */\r\n    hi2c->MasterTxCpltCallback = HAL_I2C_MasterTxCpltCallback; /* Legacy weak MasterTxCpltCallback */\r\n    hi2c->MasterRxCpltCallback = HAL_I2C_MasterRxCpltCallback; /* Legacy weak MasterRxCpltCallback */\r\n    hi2c->SlaveTxCpltCallback  = HAL_I2C_SlaveTxCpltCallback;  /* Legacy weak SlaveTxCpltCallback  */\r\n    hi2c->SlaveRxCpltCallback  = HAL_I2C_SlaveRxCpltCallback;  /* Legacy weak SlaveRxCpltCallback  */\r\n    hi2c->ListenCpltCallback   = HAL_I2C_ListenCpltCallback;   /* Legacy weak ListenCpltCallback   */\r\n    hi2c->MemTxCpltCallback    = HAL_I2C_MemTxCpltCallback;    /* Legacy weak MemTxCpltCallback    */\r\n    hi2c->MemRxCpltCallback    = HAL_I2C_MemRxCpltCallback;    /* Legacy weak MemRxCpltCallback    */\r\n    hi2c->ErrorCallback        = HAL_I2C_ErrorCallback;        /* Legacy weak ErrorCallback        */\r\n    hi2c->AbortCpltCallback    = HAL_I2C_AbortCpltCallback;    /* Legacy weak AbortCpltCallback    */\r\n    hi2c->AddrCallback         = HAL_I2C_AddrCallback;         /* Legacy weak AddrCallback         */\r\n\r\n    if (hi2c->MspInitCallback == NULL)\r\n    {\r\n      hi2c->MspInitCallback = HAL_I2C_MspInit; /* Legacy weak MspInit  */\r\n    }\r\n\r\n    /* Init the low level hardware : GPIO, CLOCK, NVIC */\r\n    hi2c->MspInitCallback(hi2c);\r\n#else\r\n    /* Init the low level hardware : GPIO, CLOCK, NVIC */\r\n    HAL_I2C_MspInit(hi2c);\r\n#endif /* USE_HAL_I2C_REGISTER_CALLBACKS */\r\n  }\r\n\r\n  hi2c->State = HAL_I2C_STATE_BUSY;\r\n\r\n  /* Disable the selected I2C peripheral */\r\n  __HAL_I2C_DISABLE(hi2c);\r\n\r\n  /* Get PCLK1 frequency */\r\n  pclk1 = HAL_RCC_GetPCLK1Freq();\r\n\r\n  /* Check the minimum allowed PCLK1 frequency */\r\n  if (I2C_MIN_PCLK_FREQ(pclk1, hi2c->Init.ClockSpeed) == 1U)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Calculate frequency range */\r\n  freqrange = I2C_FREQRANGE(pclk1);\r\n\r\n  /*---------------------------- I2Cx CR2 Configuration ----------------------*/\r\n  /* Configure I2Cx: Frequency range */\r\n  MODIFY_REG(hi2c->Instance->CR2, I2C_CR2_FREQ, freqrange);\r\n\r\n  /*---------------------------- I2Cx TRISE Configuration --------------------*/\r\n  /* Configure I2Cx: Rise Time */\r\n  MODIFY_REG(hi2c->Instance->TRISE, I2C_TRISE_TRISE, I2C_RISE_TIME(freqrange, hi2c->Init.ClockSpeed));\r\n\r\n  /*---------------------------- I2Cx CCR Configuration ----------------------*/\r\n  /* Configure I2Cx: Speed */\r\n  MODIFY_REG(hi2c->Instance->CCR, (I2C_CCR_FS | I2C_CCR_DUTY | I2C_CCR_CCR), I2C_SPEED(pclk1, hi2c->Init.ClockSpeed, hi2c->Init.DutyCycle));\r\n\r\n  /*---------------------------- I2Cx CR1 Configuration ----------------------*/\r\n  /* Configure I2Cx: Generalcall and NoStretch mode */\r\n  MODIFY_REG(hi2c->Instance->CR1, (I2C_CR1_ENGC | I2C_CR1_NOSTRETCH), (hi2c->Init.GeneralCallMode | hi2c->Init.NoStretchMode));\r\n\r\n  /*---------------------------- I2Cx OAR1 Configuration ---------------------*/\r\n  /* Configure I2Cx: Own Address1 and addressing mode */\r\n  MODIFY_REG(hi2c->Instance->OAR1, ( I2C_OAR1_ADD1_7 ), (hi2c->Init.OwnAddress1));\r\n\r\n  /* Enable the selected I2C peripheral */\r\n  __HAL_I2C_ENABLE(hi2c);\r\n\r\n  hi2c->ErrorCode = HAL_I2C_ERROR_NONE;\r\n  hi2c->State = HAL_I2C_STATE_READY;\r\n  hi2c->PreviousState = I2C_STATE_NONE;\r\n  hi2c->Mode = HAL_I2C_MODE_NONE;\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_I2C_DeInit",
+      "sig": "HAL_StatusTypeDef HAL_I2C_DeInit(I2C_HandleTypeDef *hi2c)",
+      "brief": "反初始化 I2C 外设: 禁止外设并恢复句柄为复位状态(HAL_I2C_STATE_RESET)。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败(句柄为空)"
+      },
+      "notes": [
+        "会调用 HAL_I2C_MspDeInit() 反初始化底层硬件。"
+      ],
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_DeInit(I2C_HandleTypeDef *hi2c)\r\n{\r\n  /* Check the I2C handle allocation */\r\n  if (hi2c == NULL)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_I2C_ALL_INSTANCE(hi2c->Instance));\r\n\r\n  hi2c->State = HAL_I2C_STATE_BUSY;\r\n\r\n  /* Disable the I2C Peripheral Clock */\r\n  __HAL_I2C_DISABLE(hi2c);\r\n\r\n#if (USE_HAL_I2C_REGISTER_CALLBACKS == 1)\r\n  if (hi2c->MspDeInitCallback == NULL)\r\n  {\r\n    hi2c->MspDeInitCallback = HAL_I2C_MspDeInit; /* Legacy weak MspDeInit  */\r\n  }\r\n\r\n  /* DeInit the low level hardware: GPIO, CLOCK, NVIC */\r\n  hi2c->MspDeInitCallback(hi2c);\r\n#else\r\n  /* DeInit the low level hardware: GPIO, CLOCK, NVIC */\r\n  HAL_I2C_MspDeInit(hi2c);\r\n#endif /* USE_HAL_I2C_REGISTER_CALLBACKS */\r\n\r\n  hi2c->ErrorCode     = HAL_I2C_ERROR_NONE;\r\n  hi2c->State         = HAL_I2C_STATE_RESET;\r\n  hi2c->PreviousState = I2C_STATE_NONE;\r\n  hi2c->Mode          = HAL_I2C_MODE_NONE;\r\n\r\n  /* Release Lock */\r\n  __HAL_UNLOCK(hi2c);\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_I2C_MspInit",
+      "sig": "void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c)",
+      "brief": "I2C 底层硬件初始化(弱定义空函数): 由 HAL_I2C_Init() 调用, 用户需在此实现时钟使能、GPIO 复用开漏配置及 NVIC 中断配置。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "__weak void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hi2c);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_I2C_MspInit could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_I2C_MspDeInit",
+      "sig": "void HAL_I2C_MspDeInit(I2C_HandleTypeDef *hi2c)",
+      "brief": "I2C 底层硬件反初始化(弱定义空函数): 由 HAL_I2C_DeInit() 调用, 用户可在此关闭时钟、复位 GPIO 与 NVIC 配置。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "__weak void HAL_I2C_MspDeInit(I2C_HandleTypeDef *hi2c)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hi2c);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_I2C_MspDeInit could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_I2C_RegisterCallback",
+      "sig": "HAL_StatusTypeDef HAL_I2C_RegisterCallback(I2C_HandleTypeDef *hi2c, HAL_I2C_CallbackIDTypeDef CallbackID, pI2C_CallbackTypeDef pCallback)",
+      "brief": "注册用户 I2C 回调, 替换对应的弱定义回调。需定义 USE_HAL_I2C_REGISTER_CALLBACKS。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "CallbackID",
+          "type": "HAL_I2C_CallbackIDTypeDef",
+          "desc": "要注册的回调 ID: HAL_I2C_MASTER_TX_COMPLETE_CB_ID / MASTER_RX / SLAVE_TX / SLAVE_RX / LISTEN_COMPLETE / MEM_TX / MEM_RX / ERROR / ABORT / MSPINIT / MSPDEINIT"
+        },
+        {
+          "name": "pCallback",
+          "type": "pI2C_CallbackTypeDef",
+          "desc": "指向回调函数的指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败(回调为空或句柄状态不允许)"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_RegisterCallback(I2C_HandleTypeDef *hi2c, HAL_I2C_CallbackIDTypeDef CallbackID, pI2C_CallbackTypeDef pCallback)\r\n{\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  if (pCallback == NULL)\r\n  {\r\n    /* Update the error code */\r\n    hi2c->ErrorCode |= HAL_I2C_ERROR_INVALID_CALLBACK;\r\n\r\n    return HAL_ERROR;\r\n  }\r\n  /* Process locked */\r\n  __HAL_LOCK(hi2c);\r\n\r\n  if (HAL_I2C_STATE_READY == hi2c->State)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_I2C_MASTER_TX_COMPLETE_CB_ID :\r\n      hi2c->MasterTxCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_I2C_MASTER_RX_COMPLETE_CB_ID :\r\n      hi2c->MasterRxCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_I2C_SLAVE_TX_COMPLETE_CB_ID :\r\n      hi2c->SlaveTxCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_I2C_SLAVE_RX_COMPLETE_CB_ID :\r\n      hi2c->SlaveRxCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_I2C_LISTEN_COMPLETE_CB_ID :\r\n      hi2c->ListenCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_I2C_MEM_TX_COMPLETE_CB_ID :\r\n      hi2c->MemTxCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_I2C_MEM_RX_COMPLETE_CB_ID :\r\n      hi2c->MemRxCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_I2C_ERROR_CB_ID :\r\n      hi2c->ErrorCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_I2C_ABORT_CB_ID :\r\n      hi2c->AbortCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_I2C_MSPINIT_CB_ID :\r\n      hi2c->MspInitCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_I2C_MSPDEINIT_CB_ID :\r\n      hi2c->MspDeInitCallback = pCallback;\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      hi2c->ErrorCode |= HAL_I2C_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else if (HAL_I2C_STATE_RESET == hi2c->State)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_I2C_MSPINIT_CB_ID :\r\n      hi2c->MspInitCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_I2C_MSPDEINIT_CB_ID :\r\n      hi2c->MspDeInitCallback = pCallback;\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      hi2c->ErrorCode |= HAL_I2C_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else\r\n  {\r\n    /* Update the error code */\r\n    hi2c->ErrorCode |= HAL_I2C_ERROR_INVALID_CALLBACK;\r\n\r\n    /* Return error status */\r\n    status =  HAL_ERROR;\r\n  }\r\n\r\n  /* Release Lock */\r\n  __HAL_UNLOCK(hi2c);\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_I2C_UnRegisterCallback",
+      "sig": "HAL_StatusTypeDef HAL_I2C_UnRegisterCallback(I2C_HandleTypeDef *hi2c, HAL_I2C_CallbackIDTypeDef CallbackID)",
+      "brief": "注销指定 I2C 回调, 恢复为库内的弱定义回调。需定义 USE_HAL_I2C_REGISTER_CALLBACKS。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "CallbackID",
+          "type": "HAL_I2C_CallbackIDTypeDef",
+          "desc": "要注销的回调 ID, 取值同 HAL_I2C_RegisterCallback()"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_UnRegisterCallback(I2C_HandleTypeDef *hi2c, HAL_I2C_CallbackIDTypeDef CallbackID)\r\n{\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  /* Process locked */\r\n  __HAL_LOCK(hi2c);\r\n\r\n  if (HAL_I2C_STATE_READY == hi2c->State)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_I2C_MASTER_TX_COMPLETE_CB_ID :\r\n      hi2c->MasterTxCpltCallback = HAL_I2C_MasterTxCpltCallback; /* Legacy weak MasterTxCpltCallback */\r\n      break;\r\n\r\n    case HAL_I2C_MASTER_RX_COMPLETE_CB_ID :\r\n      hi2c->MasterRxCpltCallback = HAL_I2C_MasterRxCpltCallback; /* Legacy weak MasterRxCpltCallback */\r\n      break;\r\n\r\n    case HAL_I2C_SLAVE_TX_COMPLETE_CB_ID :\r\n      hi2c->SlaveTxCpltCallback = HAL_I2C_SlaveTxCpltCallback;   /* Legacy weak SlaveTxCpltCallback  */\r\n      break;\r\n\r\n    case HAL_I2C_SLAVE_RX_COMPLETE_CB_ID :\r\n      hi2c->SlaveRxCpltCallback = HAL_I2C_SlaveRxCpltCallback;   /* Legacy weak SlaveRxCpltCallback  */\r\n      break;\r\n\r\n    case HAL_I2C_LISTEN_COMPLETE_CB_ID :\r\n      hi2c->ListenCpltCallback = HAL_I2C_ListenCpltCallback;     /* Legacy weak ListenCpltCallback   */\r\n      break;\r\n\r\n    case HAL_I2C_MEM_TX_COMPLETE_CB_ID :\r\n      hi2c->MemTxCpltCallback = HAL_I2C_MemTxCpltCallback;       /* Legacy weak MemTxCpltCallback    */\r\n      break;\r\n\r\n    case HAL_I2C_MEM_RX_COMPLETE_CB_ID :\r\n      hi2c->MemRxCpltCallback = HAL_I2C_MemRxCpltCallback;       /* Legacy weak MemRxCpltCallback    */\r\n      break;\r\n\r\n    case HAL_I2C_ERROR_CB_ID :\r\n      hi2c->ErrorCallback = HAL_I2C_ErrorCallback;               /* Legacy weak ErrorCallback        */\r\n      break;\r\n\r\n    case HAL_I2C_ABORT_CB_ID :\r\n      hi2c->AbortCpltCallback = HAL_I2C_AbortCpltCallback;       /* Legacy weak AbortCpltCallback    */\r\n      break;\r\n\r\n    case HAL_I2C_MSPINIT_CB_ID :\r\n      hi2c->MspInitCallback = HAL_I2C_MspInit;                   /* Legacy weak MspInit              */\r\n      break;\r\n\r\n    case HAL_I2C_MSPDEINIT_CB_ID :\r\n      hi2c->MspDeInitCallback = HAL_I2C_MspDeInit;               /* Legacy weak MspDeInit            */\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      hi2c->ErrorCode |= HAL_I2C_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else if (HAL_I2C_STATE_RESET == hi2c->State)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_I2C_MSPINIT_CB_ID :\r\n      hi2c->MspInitCallback = HAL_I2C_MspInit;                   /* Legacy weak MspInit              */\r\n      break;\r\n\r\n    case HAL_I2C_MSPDEINIT_CB_ID :\r\n      hi2c->MspDeInitCallback = HAL_I2C_MspDeInit;               /* Legacy weak MspDeInit            */\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      hi2c->ErrorCode |= HAL_I2C_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else\r\n  {\r\n    /* Update the error code */\r\n    hi2c->ErrorCode |= HAL_I2C_ERROR_INVALID_CALLBACK;\r\n\r\n    /* Return error status */\r\n    status =  HAL_ERROR;\r\n  }\r\n\r\n  /* Release Lock */\r\n  __HAL_UNLOCK(hi2c);\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_I2C_RegisterAddrCallback",
+      "sig": "HAL_StatusTypeDef HAL_I2C_RegisterAddrCallback(I2C_HandleTypeDef *hi2c, pI2C_AddrCallbackTypeDef pCallback)",
+      "brief": "注册从机地址匹配回调, 替换弱定义的 HAL_I2C_AddrCallback()。需定义 USE_HAL_I2C_REGISTER_CALLBACKS。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "pCallback",
+          "type": "pI2C_AddrCallbackTypeDef",
+          "desc": "指向地址匹配回调函数的指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_RegisterAddrCallback(I2C_HandleTypeDef *hi2c, pI2C_AddrCallbackTypeDef pCallback)\r\n{\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  if (pCallback == NULL)\r\n  {\r\n    /* Update the error code */\r\n    hi2c->ErrorCode |= HAL_I2C_ERROR_INVALID_CALLBACK;\r\n\r\n    return HAL_ERROR;\r\n  }\r\n  /* Process locked */\r\n  __HAL_LOCK(hi2c);\r\n\r\n  if (HAL_I2C_STATE_READY == hi2c->State)\r\n  {\r\n    hi2c->AddrCallback = pCallback;\r\n  }\r\n  else\r\n  {\r\n    /* Update the error code */\r\n    hi2c->ErrorCode |= HAL_I2C_ERROR_INVALID_CALLBACK;\r\n\r\n    /* Return error status */\r\n    status =  HAL_ERROR;\r\n  }\r\n\r\n  /* Release Lock */\r\n  __HAL_UNLOCK(hi2c);\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_I2C_UnRegisterAddrCallback",
+      "sig": "HAL_StatusTypeDef HAL_I2C_UnRegisterAddrCallback(I2C_HandleTypeDef *hi2c)",
+      "brief": "注销从机地址匹配回调, 恢复为弱定义的 HAL_I2C_AddrCallback()。需定义 USE_HAL_I2C_REGISTER_CALLBACKS。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_UnRegisterAddrCallback(I2C_HandleTypeDef *hi2c)\r\n{\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  /* Process locked */\r\n  __HAL_LOCK(hi2c);\r\n\r\n  if (HAL_I2C_STATE_READY == hi2c->State)\r\n  {\r\n    hi2c->AddrCallback = HAL_I2C_AddrCallback; /* Legacy weak AddrCallback  */\r\n  }\r\n  else\r\n  {\r\n    /* Update the error code */\r\n    hi2c->ErrorCode |= HAL_I2C_ERROR_INVALID_CALLBACK;\r\n\r\n    /* Return error status */\r\n    status =  HAL_ERROR;\r\n  }\r\n\r\n  /* Release Lock */\r\n  __HAL_UNLOCK(hi2c);\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_I2C_Master_Transmit",
+      "sig": "HAL_StatusTypeDef HAL_I2C_Master_Transmit(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *pData, uint16_t Size, uint32_t Timeout)",
+      "brief": "主模式下以阻塞方式发送指定长度的数据(轮询等待直至传输完成或超时)。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "DevAddress",
+          "type": "uint16_t",
+          "desc": "目标设备地址: 数据手册中的 7 位地址需左移 1 位后再传入"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向发送数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要发送的数据字节数"
+        },
+        {
+          "name": "Timeout",
+          "type": "uint32_t",
+          "desc": "超时时间(ms)"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 失败(超时或无应答等)"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_Master_Transmit(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *pData, uint16_t Size, uint32_t Timeout)\r\n{\r\n  /* Init tickstart for timeout management*/\r\n  uint32_t tickstart = HAL_GetTick();\r\n\r\n  if (hi2c->State == HAL_I2C_STATE_READY)\r\n  {\r\n    /* Wait until BUSY flag is reset */\r\n    if (I2C_WaitOnFlagUntilTimeout(hi2c, I2C_FLAG_BUSY, SET, I2C_TIMEOUT_BUSY_FLAG, tickstart) != HAL_OK)\r\n    {\r\n      return HAL_BUSY;\r\n    }\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(hi2c);\r\n\r\n    /* Check if the I2C is already enabled */\r\n    if ((hi2c->Instance->CR1 & I2C_CR1_PE) != I2C_CR1_PE)\r\n    {\r\n      /* Enable I2C peripheral */\r\n      __HAL_I2C_ENABLE(hi2c);\r\n    }\r\n\r\n    /* Disable Pos */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n    hi2c->State       = HAL_I2C_STATE_BUSY_TX;\r\n    hi2c->Mode        = HAL_I2C_MODE_MASTER;\r\n    hi2c->ErrorCode   = HAL_I2C_ERROR_NONE;\r\n\r\n    /* Prepare transfer parameters */\r\n    hi2c->pBuffPtr    = pData;\r\n    hi2c->XferCount   = Size;\r\n    hi2c->XferSize    = hi2c->XferCount;\r\n    hi2c->XferOptions = I2C_NO_OPTION_FRAME;\r\n\r\n    /* Send Slave Address */\r\n    if (I2C_MasterRequestWrite(hi2c, DevAddress, Timeout, tickstart) != HAL_OK)\r\n    {\r\n      return HAL_ERROR;\r\n    }\r\n\r\n    /* Clear ADDR flag */\r\n    __HAL_I2C_CLEAR_ADDRFLAG(hi2c);\r\n\r\n    while (hi2c->XferSize > 0U)\r\n    {\r\n      /* Wait until TXE flag is set */\r\n      if (I2C_WaitOnTXEFlagUntilTimeout(hi2c, Timeout, tickstart) != HAL_OK)\r\n      {\r\n        if (hi2c->ErrorCode == HAL_I2C_ERROR_AF)\r\n        {\r\n          /* Generate Stop */\r\n          SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n        }\r\n        return HAL_ERROR;\r\n      }\r\n\r\n      /* Write data to DR */\r\n      hi2c->Instance->DR = *hi2c->pBuffPtr;\r\n\r\n      /* Increment Buffer pointer */\r\n      hi2c->pBuffPtr++;\r\n\r\n      /* Update counter */\r\n      hi2c->XferCount--;\r\n      hi2c->XferSize--;\r\n\r\n      if ((__HAL_I2C_GET_FLAG(hi2c, I2C_FLAG_BTF) == SET) && (hi2c->XferSize != 0U))\r\n      {\r\n        /* Write data to DR */\r\n        hi2c->Instance->DR = *hi2c->pBuffPtr;\r\n\r\n        /* Increment Buffer pointer */\r\n        hi2c->pBuffPtr++;\r\n\r\n        /* Update counter */\r\n        hi2c->XferCount--;\r\n        hi2c->XferSize--;\r\n      }\r\n      /* Wait until BTF flag is set */\r\n      if (I2C_WaitOnBTFFlagUntilTimeout(hi2c, Timeout, tickstart) != HAL_OK)\r\n      {\r\n        if (hi2c->ErrorCode == HAL_I2C_ERROR_AF)\r\n        {\r\n          /* Generate Stop */\r\n          SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n        }\r\n        return HAL_ERROR;\r\n      }\r\n    }\r\n\r\n    /* Generate Stop */\r\n    SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n\r\n    hi2c->State = HAL_I2C_STATE_READY;\r\n    hi2c->Mode = HAL_I2C_MODE_NONE;\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(hi2c);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_Master_Receive",
+      "sig": "HAL_StatusTypeDef HAL_I2C_Master_Receive(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *pData, uint16_t Size, uint32_t Timeout)",
+      "brief": "主模式下以阻塞方式接收指定长度的数据(轮询等待直至接收完成或超时)。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "DevAddress",
+          "type": "uint16_t",
+          "desc": "目标设备地址: 数据手册中的 7 位地址需左移 1 位后再传入"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向接收数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要接收的数据字节数"
+        },
+        {
+          "name": "Timeout",
+          "type": "uint32_t",
+          "desc": "超时时间(ms)"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_Master_Receive(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *pData, uint16_t Size, uint32_t Timeout)\r\n{\r\n  /* Init tickstart for timeout management*/\r\n  uint32_t tickstart = HAL_GetTick();\r\n\r\n  if (hi2c->State == HAL_I2C_STATE_READY)\r\n  {\r\n    /* Wait until BUSY flag is reset */\r\n    if (I2C_WaitOnFlagUntilTimeout(hi2c, I2C_FLAG_BUSY, SET, I2C_TIMEOUT_BUSY_FLAG, tickstart) != HAL_OK)\r\n    {\r\n      return HAL_BUSY;\r\n    }\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(hi2c);\r\n\r\n    /* Check if the I2C is already enabled */\r\n    if ((hi2c->Instance->CR1 & I2C_CR1_PE) != I2C_CR1_PE)\r\n    {\r\n      /* Enable I2C peripheral */\r\n      __HAL_I2C_ENABLE(hi2c);\r\n    }\r\n\r\n    /* Disable Pos */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n    hi2c->State       = HAL_I2C_STATE_BUSY_RX;\r\n    hi2c->Mode        = HAL_I2C_MODE_MASTER;\r\n    hi2c->ErrorCode   = HAL_I2C_ERROR_NONE;\r\n\r\n    /* Prepare transfer parameters */\r\n    hi2c->pBuffPtr    = pData;\r\n    hi2c->XferCount   = Size;\r\n    hi2c->XferSize    = hi2c->XferCount;\r\n    hi2c->XferOptions = I2C_NO_OPTION_FRAME;\r\n\r\n    /* Send Slave Address */\r\n    if (I2C_MasterRequestRead(hi2c, DevAddress, Timeout, tickstart) != HAL_OK)\r\n    {\r\n      return HAL_ERROR;\r\n    }\r\n\r\n    if (hi2c->XferSize == 0U)\r\n    {\r\n      /* Clear ADDR flag */\r\n      __HAL_I2C_CLEAR_ADDRFLAG(hi2c);\r\n\r\n      /* Generate Stop */\r\n      SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n    }\r\n    else if (hi2c->XferSize == 1U)\r\n    {\r\n      /* Disable Acknowledge */\r\n      CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n      /* Disable all active IRQs around ADDR clearing and STOP programming because the EV6_3\r\n      software sequence must complete before the current byte end of transfer */\r\n      __disable_irq();\r\n\r\n      /* Clear ADDR flag */\r\n      __HAL_I2C_CLEAR_ADDRFLAG(hi2c);\r\n\r\n      /* Generate Stop */\r\n      SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n\r\n      /* Re-enable IRQs */\r\n      __enable_irq();\r\n    }\r\n    else if (hi2c->XferSize == 2U)\r\n    {\r\n      /* Enable Pos */\r\n      SET_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n      /* Disable all active IRQs around ADDR clearing and STOP programming because the EV6_3\r\n      software sequence must complete before the current byte end of transfer */\r\n      __disable_irq();\r\n\r\n      /* Clear ADDR flag */\r\n      __HAL_I2C_CLEAR_ADDRFLAG(hi2c);\r\n\r\n      /* Disable Acknowledge */\r\n      CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n      /* Re-enable IRQs */\r\n      __enable_irq();\r\n    }\r\n    else\r\n    {\r\n      /* Enable Acknowledge */\r\n      SET_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n      /* Clear ADDR flag */\r\n      __HAL_I2C_CLEAR_ADDRFLAG(hi2c);\r\n    }\r\n\r\n    while (hi2c->XferSize > 0U)\r\n    {\r\n      if (hi2c->XferSize <= 3U)\r\n      {\r\n        /* One byte */\r\n        if (hi2c->XferSize == 1U)\r\n        {\r\n          /* Wait until RXNE flag is set */\r\n          if (I2C_WaitOnRXNEFlagUntilTimeout(hi2c, Timeout, tickstart) != HAL_OK)\r\n          {\r\n            return HAL_ERROR;\r\n          }\r\n\r\n          /* Read data from DR */\r\n          *hi2c->pBuffPtr = (uint8_t)hi2c->Instance->DR;\r\n\r\n          /* Increment Buffer pointer */\r\n          hi2c->pBuffPtr++;\r\n\r\n          /* Update counter */\r\n          hi2c->XferSize--;\r\n          hi2c->XferCount--;\r\n        }\r\n        /* Two bytes */\r\n        else if (hi2c->XferSize == 2U)\r\n        {\r\n          /* Wait until BTF flag is set */\r\n          if (I2C_WaitOnFlagUntilTimeout(hi2c, I2C_FLAG_BTF, RESET, Timeout, tickstart) != HAL_OK)\r\n          {\r\n            return HAL_ERROR;\r\n          }\r\n\r\n          /* Disable all active IRQs around ADDR clearing and STOP programming because the EV6_3\r\n             software sequence must complete before the current byte end of transfer */\r\n          __disable_irq();\r\n\r\n          /* Generate Stop */\r\n          SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n\r\n          /* Read data from DR */\r\n          *hi2c->pBuffPtr = (uint8_t)hi2c->Instance->DR;\r\n\r\n          /* Increment Buffer pointer */\r\n          hi2c->pBuffPtr++;\r\n\r\n          /* Update counter */\r\n          hi2c->XferSize--;\r\n          hi2c->XferCount--;\r\n\r\n          /* Re-enable IRQs */\r\n          __enable_irq();\r\n\r\n          /* Read data from DR */\r\n          *hi2c->pBuffPtr = (uint8_t)hi2c->Instance->DR;\r\n\r\n          /* Increment Buffer pointer */\r\n          hi2c->pBuffPtr++;\r\n\r\n          /* Update counter */\r\n          hi2c->XferSize--;\r\n          hi2c->XferCount--;\r\n        }\r\n        /* 3 Last bytes */\r\n        else\r\n        {\r\n          /* Wait until BTF flag is set */\r\n          if (I2C_WaitOnFlagUntilTimeout(hi2c, I2C_FLAG_BTF, RESET, Timeout, tickstart) != HAL_OK)\r\n          {\r\n            return HAL_ERROR;\r\n          }\r\n\r\n          /* Disable Acknowledge */\r\n          CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n          /* Disable all active IRQs around ADDR clearing and STOP programming because the EV6_3\r\n             software sequence must complete before the current byte end of transfer */\r\n          __disable_irq();\r\n\r\n          /* Read data from DR */\r\n          *hi2c->pBuffPtr = (uint8_t)hi2c->Instance->DR;\r\n\r\n          /* Increment Buffer pointer */\r\n          hi2c->pBuffPtr++;\r\n\r\n          /* Update counter */\r\n          hi2c->XferSize--;\r\n          hi2c->XferCount--;\r\n\r\n          /* Wait until BTF flag is set */\r\n          if (I2C_WaitOnFlagUntilTimeout(hi2c, I2C_FLAG_BTF, RESET, Timeout, tickstart) != HAL_OK)\r\n          {\r\n            return HAL_ERROR;\r\n          }\r\n\r\n          /* Generate Stop */\r\n          SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n\r\n          /* Read data from DR */\r\n          *hi2c->pBuffPtr = (uint8_t)hi2c->Instance->DR;\r\n\r\n          /* Increment Buffer pointer */\r\n          hi2c->pBuffPtr++;\r\n\r\n          /* Update counter */\r\n          hi2c->XferSize--;\r\n          hi2c->XferCount--;\r\n\r\n          /* Re-enable IRQs */\r\n          __enable_irq();\r\n\r\n          /* Read data from DR */\r\n          *hi2c->pBuffPtr = (uint8_t)hi2c->Instance->DR;\r\n\r\n          /* Increment Buffer pointer */\r\n          hi2c->pBuffPtr++;\r\n\r\n          /* Update counter */\r\n          hi2c->XferSize--;\r\n          hi2c->XferCount--;\r\n        }\r\n      }\r\n      else\r\n      {\r\n        /* Wait until RXNE flag is set */\r\n        if (I2C_WaitOnRXNEFlagUntilTimeout(hi2c, Timeout, tickstart) != HAL_OK)\r\n        {\r\n          return HAL_ERROR;\r\n        }\r\n\r\n        /* Read data from DR */\r\n        *hi2c->pBuffPtr = (uint8_t)hi2c->Instance->DR;\r\n\r\n        /* Increment Buffer pointer */\r\n        hi2c->pBuffPtr++;\r\n\r\n        /* Update counter */\r\n        hi2c->XferSize--;\r\n        hi2c->XferCount--;\r\n\r\n        if (__HAL_I2C_GET_FLAG(hi2c, I2C_FLAG_BTF) == SET)\r\n        {\r\n          /* Read data from DR */\r\n          *hi2c->pBuffPtr = (uint8_t)hi2c->Instance->DR;\r\n\r\n          /* Increment Buffer pointer */\r\n          hi2c->pBuffPtr++;\r\n\r\n          /* Update counter */\r\n          hi2c->XferSize--;\r\n          hi2c->XferCount--;\r\n        }\r\n      }\r\n    }\r\n\r\n    hi2c->State = HAL_I2C_STATE_READY;\r\n    hi2c->Mode = HAL_I2C_MODE_NONE;\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(hi2c);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_Slave_Transmit",
+      "sig": "HAL_StatusTypeDef HAL_I2C_Slave_Transmit(I2C_HandleTypeDef *hi2c, uint8_t *pData, uint16_t Size, uint32_t Timeout)",
+      "brief": "从模式下以阻塞方式发送指定长度的数据(等待主机寻址后轮询发送直至完成或超时)。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向发送数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要发送的数据字节数"
+        },
+        {
+          "name": "Timeout",
+          "type": "uint32_t",
+          "desc": "超时时间(ms)"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_Slave_Transmit(I2C_HandleTypeDef *hi2c, uint8_t *pData, uint16_t Size, uint32_t Timeout)\r\n{\r\n  /* Init tickstart for timeout management*/\r\n  uint32_t tickstart = HAL_GetTick();\r\n\r\n  if (hi2c->State == HAL_I2C_STATE_READY)\r\n  {\r\n    if ((pData == NULL) || (Size == 0U))\r\n    {\r\n      return  HAL_ERROR;\r\n    }\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(hi2c);\r\n\r\n    /* Check if the I2C is already enabled */\r\n    if ((hi2c->Instance->CR1 & I2C_CR1_PE) != I2C_CR1_PE)\r\n    {\r\n      /* Enable I2C peripheral */\r\n      __HAL_I2C_ENABLE(hi2c);\r\n    }\r\n\r\n    /* Disable Pos */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n    hi2c->State       = HAL_I2C_STATE_BUSY_TX;\r\n    hi2c->Mode        = HAL_I2C_MODE_SLAVE;\r\n    hi2c->ErrorCode   = HAL_I2C_ERROR_NONE;\r\n\r\n    /* Prepare transfer parameters */\r\n    hi2c->pBuffPtr    = pData;\r\n    hi2c->XferCount   = Size;\r\n    hi2c->XferSize    = hi2c->XferCount;\r\n    hi2c->XferOptions = I2C_NO_OPTION_FRAME;\r\n\r\n    /* Enable Address Acknowledge */\r\n    SET_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n    /* Wait until ADDR flag is set */\r\n    if (I2C_WaitOnFlagUntilTimeout(hi2c, I2C_FLAG_ADDR, RESET, Timeout, tickstart) != HAL_OK)\r\n    {\r\n      return HAL_ERROR;\r\n    }\r\n\r\n    /* Clear ADDR flag */\r\n    __HAL_I2C_CLEAR_ADDRFLAG(hi2c);\r\n\r\n\r\n\r\n    while (hi2c->XferSize > 0U)\r\n    {\r\n      /* Wait until TXE flag is set */\r\n      if (I2C_WaitOnTXEFlagUntilTimeout(hi2c, Timeout, tickstart) != HAL_OK)\r\n      {\r\n        /* Disable Address Acknowledge */\r\n        CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n        return HAL_ERROR;\r\n      }\r\n\r\n      /* Write data to DR */\r\n      hi2c->Instance->DR = *hi2c->pBuffPtr;\r\n\r\n      /* Increment Buffer pointer */\r\n      hi2c->pBuffPtr++;\r\n\r\n      /* Update counter */\r\n      hi2c->XferCount--;\r\n      hi2c->XferSize--;\r\n\r\n      if ((__HAL_I2C_GET_FLAG(hi2c, I2C_FLAG_BTF) == SET) && (hi2c->XferSize != 0U))\r\n      {\r\n        /* Write data to DR */\r\n        hi2c->Instance->DR = *hi2c->pBuffPtr;\r\n\r\n        /* Increment Buffer pointer */\r\n        hi2c->pBuffPtr++;\r\n\r\n        /* Update counter */\r\n        hi2c->XferCount--;\r\n        hi2c->XferSize--;\r\n      }\r\n    }\r\n\r\n    /* Wait until AF flag is set */\r\n    if (I2C_WaitOnFlagUntilTimeout(hi2c, I2C_FLAG_AF, RESET, Timeout, tickstart) != HAL_OK)\r\n    {\r\n      return HAL_ERROR;\r\n    }\r\n\r\n    /* Clear AF flag */\r\n    __HAL_I2C_CLEAR_FLAG(hi2c, I2C_FLAG_AF);\r\n\r\n    /* Disable Address Acknowledge */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n    hi2c->State = HAL_I2C_STATE_READY;\r\n    hi2c->Mode = HAL_I2C_MODE_NONE;\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(hi2c);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_Slave_Receive",
+      "sig": "HAL_StatusTypeDef HAL_I2C_Slave_Receive(I2C_HandleTypeDef *hi2c, uint8_t *pData, uint16_t Size, uint32_t Timeout)",
+      "brief": "从模式下以阻塞方式接收指定长度的数据(等待主机寻址后轮询接收直至完成或超时)。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向接收数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要接收的数据字节数"
+        },
+        {
+          "name": "Timeout",
+          "type": "uint32_t",
+          "desc": "超时时间(ms)"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_Slave_Receive(I2C_HandleTypeDef *hi2c, uint8_t *pData, uint16_t Size, uint32_t Timeout)\r\n{\r\n  /* Init tickstart for timeout management*/\r\n  uint32_t tickstart = HAL_GetTick();\r\n\r\n  if (hi2c->State == HAL_I2C_STATE_READY)\r\n  {\r\n    if ((pData == NULL) || (Size == (uint16_t)0))\r\n    {\r\n      return HAL_ERROR;\r\n    }\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(hi2c);\r\n\r\n    /* Check if the I2C is already enabled */\r\n    if ((hi2c->Instance->CR1 & I2C_CR1_PE) != I2C_CR1_PE)\r\n    {\r\n      /* Enable I2C peripheral */\r\n      __HAL_I2C_ENABLE(hi2c);\r\n    }\r\n\r\n    /* Disable Pos */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n    hi2c->State       = HAL_I2C_STATE_BUSY_RX;\r\n    hi2c->Mode        = HAL_I2C_MODE_SLAVE;\r\n    hi2c->ErrorCode   = HAL_I2C_ERROR_NONE;\r\n\r\n    /* Prepare transfer parameters */\r\n    hi2c->pBuffPtr    = pData;\r\n    hi2c->XferCount   = Size;\r\n    hi2c->XferSize    = hi2c->XferCount;\r\n    hi2c->XferOptions = I2C_NO_OPTION_FRAME;\r\n\r\n    /* Enable Address Acknowledge */\r\n    SET_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n    /* Wait until ADDR flag is set */\r\n    if (I2C_WaitOnFlagUntilTimeout(hi2c, I2C_FLAG_ADDR, RESET, Timeout, tickstart) != HAL_OK)\r\n    {\r\n      return HAL_ERROR;\r\n    }\r\n\r\n    /* Clear ADDR flag */\r\n    __HAL_I2C_CLEAR_ADDRFLAG(hi2c);\r\n\r\n    while (hi2c->XferSize > 0U)\r\n    {\r\n      /* Wait until RXNE flag is set */\r\n      if (I2C_WaitOnRXNEFlagUntilTimeout(hi2c, Timeout, tickstart) != HAL_OK)\r\n      {\r\n        /* Disable Address Acknowledge */\r\n        CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n        return HAL_ERROR;\r\n      }\r\n\r\n      /* Read data from DR */\r\n      *hi2c->pBuffPtr = (uint8_t)hi2c->Instance->DR;\r\n\r\n      /* Increment Buffer pointer */\r\n      hi2c->pBuffPtr++;\r\n\r\n      /* Update counter */\r\n      hi2c->XferSize--;\r\n      hi2c->XferCount--;\r\n\r\n      if ((__HAL_I2C_GET_FLAG(hi2c, I2C_FLAG_BTF) == SET) && (hi2c->XferSize != 0U))\r\n      {\r\n        /* Read data from DR */\r\n        *hi2c->pBuffPtr = (uint8_t)hi2c->Instance->DR;\r\n\r\n        /* Increment Buffer pointer */\r\n        hi2c->pBuffPtr++;\r\n\r\n        /* Update counter */\r\n        hi2c->XferSize--;\r\n        hi2c->XferCount--;\r\n      }\r\n    }\r\n\r\n    /* Wait until STOP flag is set */\r\n    if (I2C_WaitOnSTOPFlagUntilTimeout(hi2c, Timeout, tickstart) != HAL_OK)\r\n    {\r\n      /* Disable Address Acknowledge */\r\n      CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n      return HAL_ERROR;\r\n    }\r\n\r\n    /* Clear STOP flag */\r\n    __HAL_I2C_CLEAR_STOPFLAG(hi2c);\r\n\r\n    /* Disable Address Acknowledge */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n    hi2c->State = HAL_I2C_STATE_READY;\r\n    hi2c->Mode = HAL_I2C_MODE_NONE;\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(hi2c);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_Master_Transmit_IT",
+      "sig": "HAL_StatusTypeDef HAL_I2C_Master_Transmit_IT(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *pData, uint16_t Size)",
+      "brief": "主模式下以中断方式(非阻塞)发送指定长度的数据, 传输完成时调用 HAL_I2C_MasterTxCpltCallback()。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "DevAddress",
+          "type": "uint16_t",
+          "desc": "目标设备地址: 数据手册中的 7 位地址需左移 1 位后再传入"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向发送数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要发送的数据字节数"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 失败"
+      },
+      "notes": [
+        "返回只表示传输已启动, 结束通过 I2C 中断与回调指示, 需在 NVIC 中使能对应 I2C 中断。"
+      ],
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_Master_Transmit_IT(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *pData, uint16_t Size)\r\n{\r\n  __IO uint32_t count = 0U;\r\n\r\n  if (hi2c->State == HAL_I2C_STATE_READY)\r\n  {\r\n    /* Wait until BUSY flag is reset */\r\n    count = I2C_TIMEOUT_BUSY_FLAG * (SystemCoreClock / 25U / 1000U);\r\n    do\r\n    {\r\n      count--;\r\n      if (count == 0U)\r\n      {\r\n        hi2c->PreviousState       = I2C_STATE_NONE;\r\n        hi2c->State               = HAL_I2C_STATE_READY;\r\n        hi2c->Mode                = HAL_I2C_MODE_NONE;\r\n        hi2c->ErrorCode           |= HAL_I2C_ERROR_TIMEOUT;\r\n\r\n        /* Process Unlocked */\r\n        __HAL_UNLOCK(hi2c);\r\n\r\n        return HAL_ERROR;\r\n      }\r\n    }\r\n    while (__HAL_I2C_GET_FLAG(hi2c, I2C_FLAG_BUSY) != RESET);\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(hi2c);\r\n\r\n    /* Check if the I2C is already enabled */\r\n    if ((hi2c->Instance->CR1 & I2C_CR1_PE) != I2C_CR1_PE)\r\n    {\r\n      /* Enable I2C peripheral */\r\n      __HAL_I2C_ENABLE(hi2c);\r\n    }\r\n\r\n    /* Disable Pos */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n    hi2c->State     = HAL_I2C_STATE_BUSY_TX;\r\n    hi2c->Mode      = HAL_I2C_MODE_MASTER;\r\n    hi2c->ErrorCode = HAL_I2C_ERROR_NONE;\r\n\r\n    /* Prepare transfer parameters */\r\n    hi2c->pBuffPtr    = pData;\r\n    hi2c->XferCount   = Size;\r\n    hi2c->XferSize    = hi2c->XferCount;\r\n    hi2c->XferOptions = I2C_NO_OPTION_FRAME;\r\n    hi2c->Devaddress  = DevAddress;\r\n\r\n    /* Generate Start */\r\n    SET_BIT(hi2c->Instance->CR1, I2C_CR1_START);\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(hi2c);\r\n\r\n    /* Note : The I2C interrupts must be enabled after unlocking current process\r\n              to avoid the risk of I2C interrupt handle execution before current\r\n              process unlock */\r\n    /* Enable EVT, BUF and ERR interrupt */\r\n    __HAL_I2C_ENABLE_IT(hi2c, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_Master_Receive_IT",
+      "sig": "HAL_StatusTypeDef HAL_I2C_Master_Receive_IT(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *pData, uint16_t Size)",
+      "brief": "主模式下以中断方式(非阻塞)接收指定长度的数据, 接收完成时调用 HAL_I2C_MasterRxCpltCallback()。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "DevAddress",
+          "type": "uint16_t",
+          "desc": "目标设备地址: 数据手册中的 7 位地址需左移 1 位后再传入"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向接收数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要接收的数据字节数"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_Master_Receive_IT(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *pData, uint16_t Size)\r\n{\r\n  __IO uint32_t count = 0U;\r\n\r\n  if (hi2c->State == HAL_I2C_STATE_READY)\r\n  {\r\n    /* Wait until BUSY flag is reset */\r\n    count = I2C_TIMEOUT_BUSY_FLAG * (SystemCoreClock / 25U / 1000U);\r\n    do\r\n    {\r\n      count--;\r\n      if (count == 0U)\r\n      {\r\n        hi2c->PreviousState       = I2C_STATE_NONE;\r\n        hi2c->State               = HAL_I2C_STATE_READY;\r\n        hi2c->Mode                = HAL_I2C_MODE_NONE;\r\n        hi2c->ErrorCode           |= HAL_I2C_ERROR_TIMEOUT;\r\n\r\n        /* Process Unlocked */\r\n        __HAL_UNLOCK(hi2c);\r\n\r\n        return HAL_ERROR;\r\n      }\r\n    }\r\n    while (__HAL_I2C_GET_FLAG(hi2c, I2C_FLAG_BUSY) != RESET);\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(hi2c);\r\n\r\n    /* Check if the I2C is already enabled */\r\n    if ((hi2c->Instance->CR1 & I2C_CR1_PE) != I2C_CR1_PE)\r\n    {\r\n      /* Enable I2C peripheral */\r\n      __HAL_I2C_ENABLE(hi2c);\r\n    }\r\n\r\n    /* Disable Pos */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n    hi2c->State     = HAL_I2C_STATE_BUSY_RX;\r\n    hi2c->Mode      = HAL_I2C_MODE_MASTER;\r\n    hi2c->ErrorCode = HAL_I2C_ERROR_NONE;\r\n\r\n    /* Prepare transfer parameters */\r\n    hi2c->pBuffPtr    = pData;\r\n    hi2c->XferCount   = Size;\r\n    hi2c->XferSize    = hi2c->XferCount;\r\n    hi2c->XferOptions = I2C_NO_OPTION_FRAME;\r\n    hi2c->Devaddress  = DevAddress;\r\n\r\n    /* Enable Acknowledge */\r\n    SET_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n    /* Generate Start */\r\n    SET_BIT(hi2c->Instance->CR1, I2C_CR1_START);\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(hi2c);\r\n\r\n    /* Note : The I2C interrupts must be enabled after unlocking current process\r\n    to avoid the risk of I2C interrupt handle execution before current\r\n    process unlock */\r\n\r\n    /* Enable EVT, BUF and ERR interrupt */\r\n    __HAL_I2C_ENABLE_IT(hi2c, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_Slave_Transmit_IT",
+      "sig": "HAL_StatusTypeDef HAL_I2C_Slave_Transmit_IT(I2C_HandleTypeDef *hi2c, uint8_t *pData, uint16_t Size)",
+      "brief": "从模式下以中断方式(非阻塞)发送指定长度的数据, 传输完成时调用 HAL_I2C_SlaveTxCpltCallback()。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向发送数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要发送的数据字节数"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_Slave_Transmit_IT(I2C_HandleTypeDef *hi2c, uint8_t *pData, uint16_t Size)\r\n{\r\n\r\n  if (hi2c->State == HAL_I2C_STATE_READY)\r\n  {\r\n    if ((pData == NULL) || (Size == 0U))\r\n    {\r\n      return  HAL_ERROR;\r\n    }\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(hi2c);\r\n\r\n    /* Check if the I2C is already enabled */\r\n    if ((hi2c->Instance->CR1 & I2C_CR1_PE) != I2C_CR1_PE)\r\n    {\r\n      /* Enable I2C peripheral */\r\n      __HAL_I2C_ENABLE(hi2c);\r\n    }\r\n\r\n    /* Disable Pos */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n    hi2c->State     = HAL_I2C_STATE_BUSY_TX;\r\n    hi2c->Mode      = HAL_I2C_MODE_SLAVE;\r\n    hi2c->ErrorCode = HAL_I2C_ERROR_NONE;\r\n\r\n    /* Prepare transfer parameters */\r\n    hi2c->pBuffPtr    = pData;\r\n    hi2c->XferCount   = Size;\r\n    hi2c->XferSize    = hi2c->XferCount;\r\n    hi2c->XferOptions = I2C_NO_OPTION_FRAME;\r\n\r\n    /* Enable Address Acknowledge */\r\n    SET_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(hi2c);\r\n\r\n    /* Note : The I2C interrupts must be enabled after unlocking current process\r\n              to avoid the risk of I2C interrupt handle execution before current\r\n              process unlock */\r\n\r\n    /* Enable EVT, BUF and ERR interrupt */\r\n    __HAL_I2C_ENABLE_IT(hi2c, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_Slave_Receive_IT",
+      "sig": "HAL_StatusTypeDef HAL_I2C_Slave_Receive_IT(I2C_HandleTypeDef *hi2c, uint8_t *pData, uint16_t Size)",
+      "brief": "从模式下以中断方式(非阻塞)接收指定长度的数据, 接收完成时调用 HAL_I2C_SlaveRxCpltCallback()。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向接收数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要接收的数据字节数"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_Slave_Receive_IT(I2C_HandleTypeDef *hi2c, uint8_t *pData, uint16_t Size)\r\n{\r\n\r\n  if (hi2c->State == HAL_I2C_STATE_READY)\r\n  {\r\n    if ((pData == NULL) || (Size == 0U))\r\n    {\r\n      return  HAL_ERROR;\r\n    }\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(hi2c);\r\n\r\n    /* Check if the I2C is already enabled */\r\n    if ((hi2c->Instance->CR1 & I2C_CR1_PE) != I2C_CR1_PE)\r\n    {\r\n      /* Enable I2C peripheral */\r\n      __HAL_I2C_ENABLE(hi2c);\r\n    }\r\n\r\n    /* Disable Pos */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n    hi2c->State     = HAL_I2C_STATE_BUSY_RX;\r\n    hi2c->Mode      = HAL_I2C_MODE_SLAVE;\r\n    hi2c->ErrorCode = HAL_I2C_ERROR_NONE;\r\n\r\n    /* Prepare transfer parameters */\r\n    hi2c->pBuffPtr    = pData;\r\n    hi2c->XferCount   = Size;\r\n    hi2c->XferSize    = hi2c->XferCount;\r\n    hi2c->XferOptions = I2C_NO_OPTION_FRAME;\r\n\r\n    /* Enable Address Acknowledge */\r\n    SET_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(hi2c);\r\n\r\n    /* Note : The I2C interrupts must be enabled after unlocking current process\r\n              to avoid the risk of I2C interrupt handle execution before current\r\n              process unlock */\r\n\r\n    /* Enable EVT, BUF and ERR interrupt */\r\n    __HAL_I2C_ENABLE_IT(hi2c, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_Mem_Write",
+      "sig": "HAL_StatusTypeDef HAL_I2C_Mem_Write(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint8_t *pData, uint16_t Size, uint32_t Timeout)",
+      "brief": "以阻塞方式向目标设备指定存储器地址写入数据(先发从机地址与存储器地址, 再发数据)。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "DevAddress",
+          "type": "uint16_t",
+          "desc": "目标设备地址: 数据手册中的 7 位地址需左移 1 位后再传入"
+        },
+        {
+          "name": "MemAddress",
+          "type": "uint16_t",
+          "desc": "设备内部存储器地址"
+        },
+        {
+          "name": "MemAddSize",
+          "type": "uint16_t",
+          "desc": "内部存储器地址长度: I2C_MEMADD_SIZE_8BIT 或 I2C_MEMADD_SIZE_16BIT"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向发送数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要发送的数据字节数"
+        },
+        {
+          "name": "Timeout",
+          "type": "uint32_t",
+          "desc": "超时时间(ms)"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_Mem_Write(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint8_t *pData, uint16_t Size, uint32_t Timeout)\r\n{\r\n  /* Init tickstart for timeout management*/\r\n  uint32_t tickstart = HAL_GetTick();\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_I2C_MEMADD_SIZE(MemAddSize));\r\n\r\n  if (hi2c->State == HAL_I2C_STATE_READY)\r\n  {\r\n    /* Wait until BUSY flag is reset */\r\n    if (I2C_WaitOnFlagUntilTimeout(hi2c, I2C_FLAG_BUSY, SET, I2C_TIMEOUT_BUSY_FLAG, tickstart) != HAL_OK)\r\n    {\r\n      return HAL_BUSY;\r\n    }\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(hi2c);\r\n\r\n    /* Check if the I2C is already enabled */\r\n    if ((hi2c->Instance->CR1 & I2C_CR1_PE) != I2C_CR1_PE)\r\n    {\r\n      /* Enable I2C peripheral */\r\n      __HAL_I2C_ENABLE(hi2c);\r\n    }\r\n\r\n    /* Disable Pos */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n    hi2c->State     = HAL_I2C_STATE_BUSY_TX;\r\n    hi2c->Mode      = HAL_I2C_MODE_MEM;\r\n    hi2c->ErrorCode = HAL_I2C_ERROR_NONE;\r\n\r\n    /* Prepare transfer parameters */\r\n    hi2c->pBuffPtr    = pData;\r\n    hi2c->XferCount   = Size;\r\n    hi2c->XferSize    = hi2c->XferCount;\r\n    hi2c->XferOptions = I2C_NO_OPTION_FRAME;\r\n\r\n    /* Send Slave Address and Memory Address */\r\n    if (I2C_RequestMemoryWrite(hi2c, DevAddress, MemAddress, MemAddSize, Timeout, tickstart) != HAL_OK)\r\n    {\r\n      return HAL_ERROR;\r\n    }\r\n\r\n    while (hi2c->XferSize > 0U)\r\n    {\r\n      /* Wait until TXE flag is set */\r\n      if (I2C_WaitOnTXEFlagUntilTimeout(hi2c, Timeout, tickstart) != HAL_OK)\r\n      {\r\n        if (hi2c->ErrorCode == HAL_I2C_ERROR_AF)\r\n        {\r\n          /* Generate Stop */\r\n          SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n        }\r\n        return HAL_ERROR;\r\n      }\r\n\r\n      /* Write data to DR */\r\n      hi2c->Instance->DR = *hi2c->pBuffPtr;\r\n\r\n      /* Increment Buffer pointer */\r\n      hi2c->pBuffPtr++;\r\n\r\n      /* Update counter */\r\n      hi2c->XferSize--;\r\n      hi2c->XferCount--;\r\n\r\n      if ((__HAL_I2C_GET_FLAG(hi2c, I2C_FLAG_BTF) == SET) && (hi2c->XferSize != 0U))\r\n      {\r\n        /* Write data to DR */\r\n        hi2c->Instance->DR = *hi2c->pBuffPtr;\r\n\r\n        /* Increment Buffer pointer */\r\n        hi2c->pBuffPtr++;\r\n\r\n        /* Update counter */\r\n        hi2c->XferSize--;\r\n        hi2c->XferCount--;\r\n      }\r\n    }\r\n\r\n    /* Wait until BTF flag is set */\r\n    if (I2C_WaitOnBTFFlagUntilTimeout(hi2c, Timeout, tickstart) != HAL_OK)\r\n    {\r\n      if (hi2c->ErrorCode == HAL_I2C_ERROR_AF)\r\n      {\r\n        /* Generate Stop */\r\n        SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n      }\r\n      return HAL_ERROR;\r\n    }\r\n\r\n    /* Generate Stop */\r\n    SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n\r\n    hi2c->State = HAL_I2C_STATE_READY;\r\n    hi2c->Mode = HAL_I2C_MODE_NONE;\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(hi2c);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_Mem_Read",
+      "sig": "HAL_StatusTypeDef HAL_I2C_Mem_Read(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint8_t *pData, uint16_t Size, uint32_t Timeout)",
+      "brief": "以阻塞方式从目标设备指定存储器地址读取数据(先写存储器地址, 再重发起始条件读数据)。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "DevAddress",
+          "type": "uint16_t",
+          "desc": "目标设备地址: 数据手册中的 7 位地址需左移 1 位后再传入"
+        },
+        {
+          "name": "MemAddress",
+          "type": "uint16_t",
+          "desc": "设备内部存储器地址"
+        },
+        {
+          "name": "MemAddSize",
+          "type": "uint16_t",
+          "desc": "内部存储器地址长度: I2C_MEMADD_SIZE_8BIT 或 I2C_MEMADD_SIZE_16BIT"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向接收数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要接收的数据字节数"
+        },
+        {
+          "name": "Timeout",
+          "type": "uint32_t",
+          "desc": "超时时间(ms)"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_Mem_Read(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint8_t *pData, uint16_t Size, uint32_t Timeout)\r\n{\r\n  /* Init tickstart for timeout management*/\r\n  uint32_t tickstart = HAL_GetTick();\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_I2C_MEMADD_SIZE(MemAddSize));\r\n\r\n  if (hi2c->State == HAL_I2C_STATE_READY)\r\n  {\r\n    /* Wait until BUSY flag is reset */\r\n    if (I2C_WaitOnFlagUntilTimeout(hi2c, I2C_FLAG_BUSY, SET, I2C_TIMEOUT_BUSY_FLAG, tickstart) != HAL_OK)\r\n    {\r\n      return HAL_BUSY;\r\n    }\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(hi2c);\r\n\r\n    /* Check if the I2C is already enabled */\r\n    if ((hi2c->Instance->CR1 & I2C_CR1_PE) != I2C_CR1_PE)\r\n    {\r\n      /* Enable I2C peripheral */\r\n      __HAL_I2C_ENABLE(hi2c);\r\n    }\r\n\r\n    /* Disable Pos */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n    hi2c->State     = HAL_I2C_STATE_BUSY_RX;\r\n    hi2c->Mode      = HAL_I2C_MODE_MEM;\r\n    hi2c->ErrorCode = HAL_I2C_ERROR_NONE;\r\n\r\n    /* Prepare transfer parameters */\r\n    hi2c->pBuffPtr    = pData;\r\n    hi2c->XferCount   = Size;\r\n    hi2c->XferSize    = hi2c->XferCount;\r\n    hi2c->XferOptions = I2C_NO_OPTION_FRAME;\r\n\r\n    /* Send Slave Address and Memory Address */\r\n    if (I2C_RequestMemoryRead(hi2c, DevAddress, MemAddress, MemAddSize, Timeout, tickstart) != HAL_OK)\r\n    {\r\n      return HAL_ERROR;\r\n    }\r\n\r\n    if (hi2c->XferSize == 0U)\r\n    {\r\n      /* Clear ADDR flag */\r\n      __HAL_I2C_CLEAR_ADDRFLAG(hi2c);\r\n\r\n      /* Generate Stop */\r\n      SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n    }\r\n    else if (hi2c->XferSize == 1U)\r\n    {\r\n      /* Disable Acknowledge */\r\n      CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n      /* Disable all active IRQs around ADDR clearing and STOP programming because the EV6_3\r\n         software sequence must complete before the current byte end of transfer */\r\n      __disable_irq();\r\n\r\n      /* Clear ADDR flag */\r\n      __HAL_I2C_CLEAR_ADDRFLAG(hi2c);\r\n\r\n      /* Generate Stop */\r\n      SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n\r\n      /* Re-enable IRQs */\r\n      __enable_irq();\r\n    }\r\n    else if (hi2c->XferSize == 2U)\r\n    {\r\n      /* Enable Pos */\r\n      SET_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n      /* Disable all active IRQs around ADDR clearing and STOP programming because the EV6_3\r\n         software sequence must complete before the current byte end of transfer */\r\n      __disable_irq();\r\n\r\n      /* Clear ADDR flag */\r\n      __HAL_I2C_CLEAR_ADDRFLAG(hi2c);\r\n\r\n      /* Disable Acknowledge */\r\n      CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n      /* Re-enable IRQs */\r\n      __enable_irq();\r\n    }\r\n    else\r\n    {\r\n      /* Enable Acknowledge */\r\n      SET_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n      /* Clear ADDR flag */\r\n      __HAL_I2C_CLEAR_ADDRFLAG(hi2c);\r\n    }\r\n\r\n    while (hi2c->XferSize > 0U)\r\n    {\r\n      if (hi2c->XferSize <= 3U)\r\n      {\r\n        /* One byte */\r\n        if (hi2c->XferSize == 1U)\r\n        {\r\n          /* Wait until RXNE flag is set */\r\n          if (I2C_WaitOnRXNEFlagUntilTimeout(hi2c, Timeout, tickstart) != HAL_OK)\r\n          {\r\n            return HAL_ERROR;\r\n          }\r\n\r\n          /* Read data from DR */\r\n          *hi2c->pBuffPtr = (uint8_t)hi2c->Instance->DR;\r\n\r\n          /* Increment Buffer pointer */\r\n          hi2c->pBuffPtr++;\r\n\r\n          /* Update counter */\r\n          hi2c->XferSize--;\r\n          hi2c->XferCount--;\r\n        }\r\n        /* Two bytes */\r\n        else if (hi2c->XferSize == 2U)\r\n        {\r\n          /* Wait until BTF flag is set */\r\n          if (I2C_WaitOnFlagUntilTimeout(hi2c, I2C_FLAG_BTF, RESET, Timeout, tickstart) != HAL_OK)\r\n          {\r\n            return HAL_ERROR;\r\n          }\r\n\r\n          /* Disable all active IRQs around ADDR clearing and STOP programming because the EV6_3\r\n             software sequence must complete before the current byte end of transfer */\r\n          __disable_irq();\r\n\r\n          /* Generate Stop */\r\n          SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n\r\n          /* Read data from DR */\r\n          *hi2c->pBuffPtr = (uint8_t)hi2c->Instance->DR;\r\n\r\n          /* Increment Buffer pointer */\r\n          hi2c->pBuffPtr++;\r\n\r\n          /* Update counter */\r\n          hi2c->XferSize--;\r\n          hi2c->XferCount--;\r\n\r\n          /* Re-enable IRQs */\r\n          __enable_irq();\r\n\r\n          /* Read data from DR */\r\n          *hi2c->pBuffPtr = (uint8_t)hi2c->Instance->DR;\r\n\r\n          /* Increment Buffer pointer */\r\n          hi2c->pBuffPtr++;\r\n\r\n          /* Update counter */\r\n          hi2c->XferSize--;\r\n          hi2c->XferCount--;\r\n        }\r\n        /* 3 Last bytes */\r\n        else\r\n        {\r\n          /* Wait until BTF flag is set */\r\n          if (I2C_WaitOnFlagUntilTimeout(hi2c, I2C_FLAG_BTF, RESET, Timeout, tickstart) != HAL_OK)\r\n          {\r\n            return HAL_ERROR;\r\n          }\r\n\r\n          /* Disable Acknowledge */\r\n          CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n          /* Disable all active IRQs around ADDR clearing and STOP programming because the EV6_3\r\n             software sequence must complete before the current byte end of transfer */\r\n          __disable_irq();\r\n\r\n          /* Read data from DR */\r\n          *hi2c->pBuffPtr = (uint8_t)hi2c->Instance->DR;\r\n\r\n          /* Increment Buffer pointer */\r\n          hi2c->pBuffPtr++;\r\n\r\n          /* Update counter */\r\n          hi2c->XferSize--;\r\n          hi2c->XferCount--;\r\n\r\n          /* Wait until BTF flag is set */\r\n          if (I2C_WaitOnFlagUntilTimeout(hi2c, I2C_FLAG_BTF, RESET, Timeout, tickstart) != HAL_OK)\r\n          {\r\n            return HAL_ERROR;\r\n          }\r\n\r\n          /* Generate Stop */\r\n          SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n\r\n          /* Read data from DR */\r\n          *hi2c->pBuffPtr = (uint8_t)hi2c->Instance->DR;\r\n\r\n          /* Increment Buffer pointer */\r\n          hi2c->pBuffPtr++;\r\n\r\n          /* Update counter */\r\n          hi2c->XferSize--;\r\n          hi2c->XferCount--;\r\n\r\n          /* Re-enable IRQs */\r\n          __enable_irq();\r\n\r\n          /* Read data from DR */\r\n          *hi2c->pBuffPtr = (uint8_t)hi2c->Instance->DR;\r\n\r\n          /* Increment Buffer pointer */\r\n          hi2c->pBuffPtr++;\r\n\r\n          /* Update counter */\r\n          hi2c->XferSize--;\r\n          hi2c->XferCount--;\r\n        }\r\n      }\r\n      else\r\n      {\r\n        /* Wait until RXNE flag is set */\r\n        if (I2C_WaitOnRXNEFlagUntilTimeout(hi2c, Timeout, tickstart) != HAL_OK)\r\n        {\r\n          return HAL_ERROR;\r\n        }\r\n\r\n        /* Read data from DR */\r\n        *hi2c->pBuffPtr = (uint8_t)hi2c->Instance->DR;\r\n\r\n        /* Increment Buffer pointer */\r\n        hi2c->pBuffPtr++;\r\n\r\n        /* Update counter */\r\n        hi2c->XferSize--;\r\n        hi2c->XferCount--;\r\n\r\n        if (__HAL_I2C_GET_FLAG(hi2c, I2C_FLAG_BTF) == SET)\r\n        {\r\n          /* Read data from DR */\r\n          *hi2c->pBuffPtr = (uint8_t)hi2c->Instance->DR;\r\n\r\n          /* Increment Buffer pointer */\r\n          hi2c->pBuffPtr++;\r\n\r\n          /* Update counter */\r\n          hi2c->XferSize--;\r\n          hi2c->XferCount--;\r\n        }\r\n      }\r\n    }\r\n\r\n    hi2c->State = HAL_I2C_STATE_READY;\r\n    hi2c->Mode = HAL_I2C_MODE_NONE;\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(hi2c);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_Mem_Write_IT",
+      "sig": "HAL_StatusTypeDef HAL_I2C_Mem_Write_IT(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint8_t *pData, uint16_t Size)",
+      "brief": "以中断方式(非阻塞)向目标设备指定存储器地址写入数据, 完成时调用 HAL_I2C_MemTxCpltCallback()。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "DevAddress",
+          "type": "uint16_t",
+          "desc": "目标设备地址: 数据手册中的 7 位地址需左移 1 位后再传入"
+        },
+        {
+          "name": "MemAddress",
+          "type": "uint16_t",
+          "desc": "设备内部存储器地址"
+        },
+        {
+          "name": "MemAddSize",
+          "type": "uint16_t",
+          "desc": "内部存储器地址长度: I2C_MEMADD_SIZE_8BIT 或 I2C_MEMADD_SIZE_16BIT"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向发送数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要发送的数据字节数"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_Mem_Write_IT(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint8_t *pData, uint16_t Size)\r\n{\r\n  __IO uint32_t count = 0U;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_I2C_MEMADD_SIZE(MemAddSize));\r\n\r\n  if (hi2c->State == HAL_I2C_STATE_READY)\r\n  {\r\n    /* Wait until BUSY flag is reset */\r\n    count = I2C_TIMEOUT_BUSY_FLAG * (SystemCoreClock / 25U / 1000U);\r\n    do\r\n    {\r\n      count--;\r\n      if (count == 0U)\r\n      {\r\n        hi2c->PreviousState       = I2C_STATE_NONE;\r\n        hi2c->State               = HAL_I2C_STATE_READY;\r\n        hi2c->Mode                = HAL_I2C_MODE_NONE;\r\n        hi2c->ErrorCode           |= HAL_I2C_ERROR_TIMEOUT;\r\n\r\n        /* Process Unlocked */\r\n        __HAL_UNLOCK(hi2c);\r\n\r\n        return HAL_ERROR;\r\n      }\r\n    }\r\n    while (__HAL_I2C_GET_FLAG(hi2c, I2C_FLAG_BUSY) != RESET);\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(hi2c);\r\n\r\n    /* Check if the I2C is already enabled */\r\n    if ((hi2c->Instance->CR1 & I2C_CR1_PE) != I2C_CR1_PE)\r\n    {\r\n      /* Enable I2C peripheral */\r\n      __HAL_I2C_ENABLE(hi2c);\r\n    }\r\n\r\n    /* Disable Pos */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n    hi2c->State     = HAL_I2C_STATE_BUSY_TX;\r\n    hi2c->Mode      = HAL_I2C_MODE_MEM;\r\n    hi2c->ErrorCode = HAL_I2C_ERROR_NONE;\r\n\r\n    /* Prepare transfer parameters */\r\n    hi2c->pBuffPtr    = pData;\r\n    hi2c->XferCount   = Size;\r\n    hi2c->XferSize    = hi2c->XferCount;\r\n    hi2c->XferOptions = I2C_NO_OPTION_FRAME;\r\n    hi2c->Devaddress  = DevAddress;\r\n    hi2c->Memaddress  = MemAddress;\r\n    hi2c->MemaddSize  = MemAddSize;\r\n    hi2c->EventCount  = 0U;\r\n\r\n    /* Generate Start */\r\n    SET_BIT(hi2c->Instance->CR1, I2C_CR1_START);\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(hi2c);\r\n\r\n    /* Note : The I2C interrupts must be enabled after unlocking current process\r\n    to avoid the risk of I2C interrupt handle execution before current\r\n    process unlock */\r\n\r\n    /* Enable EVT, BUF and ERR interrupt */\r\n    __HAL_I2C_ENABLE_IT(hi2c, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_Mem_Read_IT",
+      "sig": "HAL_StatusTypeDef HAL_I2C_Mem_Read_IT(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint8_t *pData, uint16_t Size)",
+      "brief": "以中断方式(非阻塞)从目标设备指定存储器地址读取数据, 完成时调用 HAL_I2C_MemRxCpltCallback()。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "DevAddress",
+          "type": "uint16_t",
+          "desc": "目标设备地址: 数据手册中的 7 位地址需左移 1 位后再传入"
+        },
+        {
+          "name": "MemAddress",
+          "type": "uint16_t",
+          "desc": "设备内部存储器地址"
+        },
+        {
+          "name": "MemAddSize",
+          "type": "uint16_t",
+          "desc": "内部存储器地址长度: I2C_MEMADD_SIZE_8BIT 或 I2C_MEMADD_SIZE_16BIT"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向接收数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要接收的数据字节数"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_Mem_Read_IT(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint8_t *pData, uint16_t Size)\r\n{\r\n  __IO uint32_t count = 0U;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_I2C_MEMADD_SIZE(MemAddSize));\r\n\r\n  if (hi2c->State == HAL_I2C_STATE_READY)\r\n  {\r\n    /* Wait until BUSY flag is reset */\r\n    count = I2C_TIMEOUT_BUSY_FLAG * (SystemCoreClock / 25U / 1000U);\r\n    do\r\n    {\r\n      count--;\r\n      if (count == 0U)\r\n      {\r\n        hi2c->PreviousState       = I2C_STATE_NONE;\r\n        hi2c->State               = HAL_I2C_STATE_READY;\r\n        hi2c->Mode                = HAL_I2C_MODE_NONE;\r\n        hi2c->ErrorCode           |= HAL_I2C_ERROR_TIMEOUT;\r\n\r\n        /* Process Unlocked */\r\n        __HAL_UNLOCK(hi2c);\r\n\r\n        return HAL_ERROR;\r\n      }\r\n    }\r\n    while (__HAL_I2C_GET_FLAG(hi2c, I2C_FLAG_BUSY) != RESET);\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(hi2c);\r\n\r\n    /* Check if the I2C is already enabled */\r\n    if ((hi2c->Instance->CR1 & I2C_CR1_PE) != I2C_CR1_PE)\r\n    {\r\n      /* Enable I2C peripheral */\r\n      __HAL_I2C_ENABLE(hi2c);\r\n    }\r\n\r\n    /* Disable Pos */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n    hi2c->State     = HAL_I2C_STATE_BUSY_RX;\r\n    hi2c->Mode      = HAL_I2C_MODE_MEM;\r\n    hi2c->ErrorCode = HAL_I2C_ERROR_NONE;\r\n\r\n    /* Prepare transfer parameters */\r\n    hi2c->pBuffPtr    = pData;\r\n    hi2c->XferCount   = Size;\r\n    hi2c->XferSize    = hi2c->XferCount;\r\n    hi2c->XferOptions = I2C_NO_OPTION_FRAME;\r\n    hi2c->Devaddress  = DevAddress;\r\n    hi2c->Memaddress  = MemAddress;\r\n    hi2c->MemaddSize  = MemAddSize;\r\n    hi2c->EventCount  = 0U;\r\n\r\n    /* Enable Acknowledge */\r\n    SET_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n    /* Generate Start */\r\n    SET_BIT(hi2c->Instance->CR1, I2C_CR1_START);\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(hi2c);\r\n\r\n    if (hi2c->XferSize > 0U)\r\n    {\r\n      /* Note : The I2C interrupts must be enabled after unlocking current process\r\n      to avoid the risk of I2C interrupt handle execution before current\r\n      process unlock */\r\n\r\n      /* Enable EVT, BUF and ERR interrupt */\r\n      __HAL_I2C_ENABLE_IT(hi2c, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR);\r\n    }\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_IsDeviceReady",
+      "sig": "HAL_StatusTypeDef HAL_I2C_IsDeviceReady(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint32_t Trials, uint32_t Timeout)",
+      "brief": "检查目标设备是否就绪: 向设备发送其地址(写方向), 收到 ADDR 即视为就绪, 否则按 Trials 次数重试。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "DevAddress",
+          "type": "uint16_t",
+          "desc": "目标设备地址: 数据手册中的 7 位地址需左移 1 位后再传入"
+        },
+        {
+          "name": "Trials",
+          "type": "uint32_t",
+          "desc": "最大尝试次数"
+        },
+        {
+          "name": "Timeout",
+          "type": "uint32_t",
+          "desc": "每次尝试的超时时间(ms)"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 设备就绪; HAL_BUSY 忙; HAL_ERROR 设备未应答或超时"
+      },
+      "notes": [
+        "常用于存储器类设备上电后的就绪探测。"
+      ],
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_IsDeviceReady(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint32_t Trials, uint32_t Timeout)\r\n{\r\n  /* Get tick */\r\n  uint32_t tickstart = HAL_GetTick();\r\n  uint32_t I2C_Trials = 1U;\r\n  FlagStatus tmp1;\r\n  FlagStatus tmp2;\r\n\r\n  if (hi2c->State == HAL_I2C_STATE_READY)\r\n  {\r\n    /* Wait until BUSY flag is reset */\r\n    if (I2C_WaitOnFlagUntilTimeout(hi2c, I2C_FLAG_BUSY, SET, I2C_TIMEOUT_BUSY_FLAG, tickstart) != HAL_OK)\r\n    {\r\n      return HAL_BUSY;\r\n    }\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(hi2c);\r\n\r\n    /* Check if the I2C is already enabled */\r\n    if ((hi2c->Instance->CR1 & I2C_CR1_PE) != I2C_CR1_PE)\r\n    {\r\n      /* Enable I2C peripheral */\r\n      __HAL_I2C_ENABLE(hi2c);\r\n    }\r\n\r\n    /* Disable Pos */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n    hi2c->State = HAL_I2C_STATE_BUSY;\r\n    hi2c->ErrorCode = HAL_I2C_ERROR_NONE;\r\n    hi2c->XferOptions = I2C_NO_OPTION_FRAME;\r\n\r\n    do\r\n    {\r\n      /* Generate Start */\r\n      SET_BIT(hi2c->Instance->CR1, I2C_CR1_START);\r\n\r\n      /* Wait until SB flag is set */\r\n      if (I2C_WaitOnFlagUntilTimeout(hi2c, I2C_FLAG_SB, RESET, Timeout, tickstart) != HAL_OK)\r\n      {\r\n        return HAL_ERROR;\r\n      }\r\n\r\n      /* Send slave address */\r\n      hi2c->Instance->DR = I2C_7BIT_ADD_WRITE(DevAddress);\r\n\r\n      /* Wait until ADDR or AF flag are set */\r\n      /* Get tick */\r\n      tickstart = HAL_GetTick();\r\n\r\n      tmp1 = __HAL_I2C_GET_FLAG(hi2c, I2C_FLAG_ADDR);\r\n      tmp2 = __HAL_I2C_GET_FLAG(hi2c, I2C_FLAG_AF);\r\n      while ((hi2c->State != HAL_I2C_STATE_TIMEOUT) && (tmp1 == RESET) && (tmp2 == RESET))\r\n      {\r\n        if (((HAL_GetTick() - tickstart) > Timeout) || (Timeout == 0U))\r\n        {\r\n          hi2c->State = HAL_I2C_STATE_TIMEOUT;\r\n        }\r\n        tmp1 = __HAL_I2C_GET_FLAG(hi2c, I2C_FLAG_ADDR);\r\n        tmp2 = __HAL_I2C_GET_FLAG(hi2c, I2C_FLAG_AF);\r\n      }\r\n\r\n      hi2c->State = HAL_I2C_STATE_READY;\r\n\r\n      /* Check if the ADDR flag has been set */\r\n      if (__HAL_I2C_GET_FLAG(hi2c, I2C_FLAG_ADDR) == SET)\r\n      {\r\n        /* Generate Stop */\r\n        SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n\r\n        /* Clear ADDR Flag */\r\n        __HAL_I2C_CLEAR_ADDRFLAG(hi2c);\r\n\r\n        /* Wait until BUSY flag is reset */\r\n        if (I2C_WaitOnFlagUntilTimeout(hi2c, I2C_FLAG_BUSY, SET, I2C_TIMEOUT_BUSY_FLAG, tickstart) != HAL_OK)\r\n        {\r\n          return HAL_ERROR;\r\n        }\r\n\r\n        hi2c->State = HAL_I2C_STATE_READY;\r\n\r\n        /* Process Unlocked */\r\n        __HAL_UNLOCK(hi2c);\r\n\r\n        return HAL_OK;\r\n      }\r\n      else\r\n      {\r\n        /* Generate Stop */\r\n        SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n\r\n        /* Clear AF Flag */\r\n        __HAL_I2C_CLEAR_FLAG(hi2c, I2C_FLAG_AF);\r\n\r\n        /* Wait until BUSY flag is reset */\r\n        if (I2C_WaitOnFlagUntilTimeout(hi2c, I2C_FLAG_BUSY, SET, I2C_TIMEOUT_BUSY_FLAG, tickstart) != HAL_OK)\r\n        {\r\n          return HAL_ERROR;\r\n        }\r\n      }\r\n\r\n      /* Increment Trials */\r\n      I2C_Trials++;\r\n    }\r\n    while (I2C_Trials < Trials);\r\n\r\n    hi2c->State = HAL_I2C_STATE_READY;\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(hi2c);\r\n\r\n    return HAL_ERROR;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_Master_Seq_Transmit_IT",
+      "sig": "HAL_StatusTypeDef HAL_I2C_Master_Seq_Transmit_IT(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *pData, uint16_t Size, uint32_t XferOptions)",
+      "brief": "主模式下以中断方式发送一帧数据, 用于管理含重复起始条件(repeated start)的顺序传输, 可在方向切换时产生重启条件。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "DevAddress",
+          "type": "uint16_t",
+          "desc": "目标设备地址: 数据手册中的 7 位地址需左移 1 位后再传入"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向发送数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "本帧要发送的数据字节数"
+        },
+        {
+          "name": "XferOptions",
+          "type": "uint32_t",
+          "desc": "传输帧选项: I2C_FIRST_FRAME / I2C_NEXT_FRAME / I2C_LAST_FRAME / I2C_FIRST_AND_LAST_FRAME / I2C_LAST_FRAME_NO_STOP / I2C_OTHER_FRAME / I2C_OTHER_AND_LAST_FRAME / I2C_FIRST_AND_NEXT_FRAME"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_Master_Seq_Transmit_IT(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *pData, uint16_t Size, uint32_t XferOptions)\r\n{\r\n  __IO uint32_t Prev_State = 0x00U;\r\n  __IO uint32_t count      = 0x00U;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_I2C_TRANSFER_OPTIONS_REQUEST(XferOptions));\r\n\r\n  if (hi2c->State == HAL_I2C_STATE_READY)\r\n  {\r\n    /* Check Busy Flag only if FIRST call of Master interface */\r\n    if ((XferOptions == I2C_FIRST_AND_LAST_FRAME) || (XferOptions == I2C_FIRST_FRAME))\r\n    {\r\n      /* Wait until BUSY flag is reset */\r\n      count = I2C_TIMEOUT_BUSY_FLAG * (SystemCoreClock / 25U / 1000U);\r\n      do\r\n      {\r\n        count--;\r\n        if (count == 0U)\r\n        {\r\n          hi2c->PreviousState       = I2C_STATE_NONE;\r\n          hi2c->State               = HAL_I2C_STATE_READY;\r\n          hi2c->Mode                = HAL_I2C_MODE_NONE;\r\n          hi2c->ErrorCode           |= HAL_I2C_ERROR_TIMEOUT;\r\n\r\n          /* Process Unlocked */\r\n          __HAL_UNLOCK(hi2c);\r\n\r\n          return HAL_ERROR;\r\n        }\r\n      }\r\n      while (__HAL_I2C_GET_FLAG(hi2c, I2C_FLAG_BUSY) != RESET);\r\n    }\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(hi2c);\r\n\r\n    /* Check if the I2C is already enabled */\r\n    if ((hi2c->Instance->CR1 & I2C_CR1_PE) != I2C_CR1_PE)\r\n    {\r\n      /* Enable I2C peripheral */\r\n      __HAL_I2C_ENABLE(hi2c);\r\n    }\r\n\r\n    /* Disable Pos */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n    hi2c->State     = HAL_I2C_STATE_BUSY_TX;\r\n    hi2c->Mode      = HAL_I2C_MODE_MASTER;\r\n    hi2c->ErrorCode = HAL_I2C_ERROR_NONE;\r\n\r\n    /* Prepare transfer parameters */\r\n    hi2c->pBuffPtr    = pData;\r\n    hi2c->XferCount   = Size;\r\n    hi2c->XferSize    = hi2c->XferCount;\r\n    hi2c->XferOptions = XferOptions;\r\n    hi2c->Devaddress  = DevAddress;\r\n\r\n    Prev_State = hi2c->PreviousState;\r\n\r\n    /* If transfer direction not change and there is no request to start another frame, do not generate Restart Condition */\r\n    /* Mean Previous state is same as current state */\r\n    if ((Prev_State != I2C_STATE_MASTER_BUSY_TX) || (IS_I2C_TRANSFER_OTHER_OPTIONS_REQUEST(XferOptions) == 1))\r\n    {\r\n      /* Generate Start */\r\n      SET_BIT(hi2c->Instance->CR1, I2C_CR1_START);\r\n    }\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(hi2c);\r\n\r\n    /* Note : The I2C interrupts must be enabled after unlocking current process\r\n    to avoid the risk of I2C interrupt handle execution before current\r\n    process unlock */\r\n\r\n    /* Enable EVT, BUF and ERR interrupt */\r\n    __HAL_I2C_ENABLE_IT(hi2c, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_Master_Seq_Receive_IT",
+      "sig": "HAL_StatusTypeDef HAL_I2C_Master_Seq_Receive_IT(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *pData, uint16_t Size, uint32_t XferOptions)",
+      "brief": "主模式下以中断方式接收一帧数据, 用于管理含重复起始条件的顺序传输, 可在方向切换时产生重启条件。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "DevAddress",
+          "type": "uint16_t",
+          "desc": "目标设备地址: 数据手册中的 7 位地址需左移 1 位后再传入"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向接收数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "本帧要接收的数据字节数"
+        },
+        {
+          "name": "XferOptions",
+          "type": "uint32_t",
+          "desc": "传输帧选项, 取值同 HAL_I2C_Master_Seq_Transmit_IT()"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_Master_Seq_Receive_IT(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *pData, uint16_t Size, uint32_t XferOptions)\r\n{\r\n  __IO uint32_t Prev_State = 0x00U;\r\n  __IO uint32_t count = 0U;\r\n  uint32_t enableIT = (I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR);\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_I2C_TRANSFER_OPTIONS_REQUEST(XferOptions));\r\n\r\n  if (hi2c->State == HAL_I2C_STATE_READY)\r\n  {\r\n    /* Check Busy Flag only if FIRST call of Master interface */\r\n    if ((XferOptions == I2C_FIRST_AND_LAST_FRAME) || (XferOptions == I2C_FIRST_FRAME))\r\n    {\r\n      /* Wait until BUSY flag is reset */\r\n      count = I2C_TIMEOUT_BUSY_FLAG * (SystemCoreClock / 25U / 1000U);\r\n      do\r\n      {\r\n        count--;\r\n        if (count == 0U)\r\n        {\r\n          hi2c->PreviousState       = I2C_STATE_NONE;\r\n          hi2c->State               = HAL_I2C_STATE_READY;\r\n          hi2c->Mode                = HAL_I2C_MODE_NONE;\r\n          hi2c->ErrorCode           |= HAL_I2C_ERROR_TIMEOUT;\r\n\r\n          /* Process Unlocked */\r\n          __HAL_UNLOCK(hi2c);\r\n\r\n          return HAL_ERROR;\r\n        }\r\n      }\r\n      while (__HAL_I2C_GET_FLAG(hi2c, I2C_FLAG_BUSY) != RESET);\r\n    }\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(hi2c);\r\n\r\n    /* Check if the I2C is already enabled */\r\n    if ((hi2c->Instance->CR1 & I2C_CR1_PE) != I2C_CR1_PE)\r\n    {\r\n      /* Enable I2C peripheral */\r\n      __HAL_I2C_ENABLE(hi2c);\r\n    }\r\n\r\n    /* Disable Pos */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n    hi2c->State     = HAL_I2C_STATE_BUSY_RX;\r\n    hi2c->Mode      = HAL_I2C_MODE_MASTER;\r\n    hi2c->ErrorCode = HAL_I2C_ERROR_NONE;\r\n\r\n    /* Prepare transfer parameters */\r\n    hi2c->pBuffPtr    = pData;\r\n    hi2c->XferCount   = Size;\r\n    hi2c->XferSize    = hi2c->XferCount;\r\n    hi2c->XferOptions = XferOptions;\r\n    hi2c->Devaddress  = DevAddress;\r\n\r\n    Prev_State = hi2c->PreviousState;\r\n\r\n    if ((hi2c->XferCount == 2U) && ((XferOptions == I2C_LAST_FRAME) || (XferOptions == I2C_LAST_FRAME_NO_STOP)))\r\n    {\r\n      if (Prev_State == I2C_STATE_MASTER_BUSY_RX)\r\n      {\r\n        /* Disable Acknowledge */\r\n        CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n        /* Enable Pos */\r\n        SET_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n        /* Remove Enabling of IT_BUF, mean RXNE treatment, treat the 2 bytes through BTF */\r\n        enableIT &= ~I2C_IT_BUF;\r\n      }\r\n      else\r\n      {\r\n        /* Enable Acknowledge */\r\n        SET_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n      }\r\n    }\r\n    else\r\n    {\r\n      /* Enable Acknowledge */\r\n      SET_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n    }\r\n\r\n    /* If transfer direction not change and there is no request to start another frame, do not generate Restart Condition */\r\n    /* Mean Previous state is same as current state */\r\n    if ((Prev_State != I2C_STATE_MASTER_BUSY_RX) || (IS_I2C_TRANSFER_OTHER_OPTIONS_REQUEST(XferOptions) == 1))\r\n    {\r\n      /* Generate Start */\r\n      SET_BIT(hi2c->Instance->CR1, I2C_CR1_START);\r\n    }\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(hi2c);\r\n\r\n    /* Note : The I2C interrupts must be enabled after unlocking current process\r\n    to avoid the risk of I2C interrupt handle execution before current\r\n    process unlock */\r\n\r\n    /* Enable interrupts */\r\n    __HAL_I2C_ENABLE_IT(hi2c, enableIT);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_Slave_Seq_Transmit_IT",
+      "sig": "HAL_StatusTypeDef HAL_I2C_Slave_Seq_Transmit_IT(I2C_HandleTypeDef *hi2c, uint8_t *pData, uint16_t Size, uint32_t XferOptions)",
+      "brief": "从模式下以中断方式发送一帧数据, 用于在监听(Listen)模式下管理顺序传输。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向发送数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "本帧要发送的数据字节数"
+        },
+        {
+          "name": "XferOptions",
+          "type": "uint32_t",
+          "desc": "传输帧选项, 取值同 HAL_I2C_Master_Seq_Transmit_IT()"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙(未处于监听状态); HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_Slave_Seq_Transmit_IT(I2C_HandleTypeDef *hi2c, uint8_t *pData, uint16_t Size, uint32_t XferOptions)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_I2C_TRANSFER_OPTIONS_REQUEST(XferOptions));\r\n\r\n  if (((uint32_t)hi2c->State & (uint32_t)HAL_I2C_STATE_LISTEN) == (uint32_t)HAL_I2C_STATE_LISTEN)\r\n  {\r\n    if ((pData == NULL) || (Size == 0U))\r\n    {\r\n      return  HAL_ERROR;\r\n    }\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(hi2c);\r\n\r\n    /* Check if the I2C is already enabled */\r\n    if ((hi2c->Instance->CR1 & I2C_CR1_PE) != I2C_CR1_PE)\r\n    {\r\n      /* Enable I2C peripheral */\r\n      __HAL_I2C_ENABLE(hi2c);\r\n    }\r\n\r\n    /* Disable Pos */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n    hi2c->State     = HAL_I2C_STATE_BUSY_TX_LISTEN;\r\n    hi2c->Mode      = HAL_I2C_MODE_SLAVE;\r\n    hi2c->ErrorCode = HAL_I2C_ERROR_NONE;\r\n\r\n    /* Prepare transfer parameters */\r\n    hi2c->pBuffPtr    = pData;\r\n    hi2c->XferCount   = Size;\r\n    hi2c->XferSize    = hi2c->XferCount;\r\n    hi2c->XferOptions = XferOptions;\r\n\r\n    /* Clear ADDR flag */\r\n    __HAL_I2C_CLEAR_ADDRFLAG(hi2c);\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(hi2c);\r\n\r\n    /* Note : The I2C interrupts must be enabled after unlocking current process\r\n              to avoid the risk of I2C interrupt handle execution before current\r\n              process unlock */\r\n\r\n    /* Enable EVT, BUF and ERR interrupt */\r\n    __HAL_I2C_ENABLE_IT(hi2c, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_Slave_Seq_Receive_IT",
+      "sig": "HAL_StatusTypeDef HAL_I2C_Slave_Seq_Receive_IT(I2C_HandleTypeDef *hi2c, uint8_t *pData, uint16_t Size, uint32_t XferOptions)",
+      "brief": "从模式下以中断方式接收一帧数据, 用于在监听(Listen)模式下管理顺序传输。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "pData",
+          "type": "uint8_t *",
+          "desc": "指向接收数据缓冲区的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "本帧要接收的数据字节数"
+        },
+        {
+          "name": "XferOptions",
+          "type": "uint32_t",
+          "desc": "传输帧选项, 取值同 HAL_I2C_Master_Seq_Transmit_IT()"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙(未处于监听状态); HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_Slave_Seq_Receive_IT(I2C_HandleTypeDef *hi2c, uint8_t *pData, uint16_t Size, uint32_t XferOptions)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_I2C_TRANSFER_OPTIONS_REQUEST(XferOptions));\r\n\r\n  if (((uint32_t)hi2c->State & (uint32_t)HAL_I2C_STATE_LISTEN) == (uint32_t)HAL_I2C_STATE_LISTEN)\r\n  {\r\n    if ((pData == NULL) || (Size == 0U))\r\n    {\r\n      return  HAL_ERROR;\r\n    }\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(hi2c);\r\n\r\n    /* Check if the I2C is already enabled */\r\n    if ((hi2c->Instance->CR1 & I2C_CR1_PE) != I2C_CR1_PE)\r\n    {\r\n      /* Enable I2C peripheral */\r\n      __HAL_I2C_ENABLE(hi2c);\r\n    }\r\n\r\n    /* Disable Pos */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_POS);\r\n\r\n    hi2c->State     = HAL_I2C_STATE_BUSY_RX_LISTEN;\r\n    hi2c->Mode      = HAL_I2C_MODE_SLAVE;\r\n    hi2c->ErrorCode = HAL_I2C_ERROR_NONE;\r\n\r\n    /* Prepare transfer parameters */\r\n    hi2c->pBuffPtr    = pData;\r\n    hi2c->XferCount   = Size;\r\n    hi2c->XferSize    = hi2c->XferCount;\r\n    hi2c->XferOptions = XferOptions;\r\n\r\n    /* Clear ADDR flag */\r\n    __HAL_I2C_CLEAR_ADDRFLAG(hi2c);\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(hi2c);\r\n\r\n    /* Note : The I2C interrupts must be enabled after unlocking current process\r\n              to avoid the risk of I2C interrupt handle execution before current\r\n              process unlock */\r\n\r\n    /* Enable EVT, BUF and ERR interrupt */\r\n    __HAL_I2C_ENABLE_IT(hi2c, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_EnableListen_IT",
+      "sig": "HAL_StatusTypeDef HAL_I2C_EnableListen_IT(I2C_HandleTypeDef *hi2c)",
+      "brief": "以中断方式使能从机地址监听模式: 使能地址应答与事件/错误中断, 地址匹配时调用 HAL_I2C_AddrCallback()。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_EnableListen_IT(I2C_HandleTypeDef *hi2c)\r\n{\r\n  if (hi2c->State == HAL_I2C_STATE_READY)\r\n  {\r\n    hi2c->State = HAL_I2C_STATE_LISTEN;\r\n\r\n    /* Check if the I2C is already enabled */\r\n    if ((hi2c->Instance->CR1 & I2C_CR1_PE) != I2C_CR1_PE)\r\n    {\r\n      /* Enable I2C peripheral */\r\n      __HAL_I2C_ENABLE(hi2c);\r\n    }\r\n\r\n    /* Enable Address Acknowledge */\r\n    SET_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n    /* Enable EVT and ERR interrupt */\r\n    __HAL_I2C_ENABLE_IT(hi2c, I2C_IT_EVT | I2C_IT_ERR);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_DisableListen_IT",
+      "sig": "HAL_StatusTypeDef HAL_I2C_DisableListen_IT(I2C_HandleTypeDef *hi2c)",
+      "brief": "以中断方式禁止从机地址监听模式: 关闭地址应答与事件/错误中断(仅在没有传输进行时生效)。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙(传输进行中)"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_DisableListen_IT(I2C_HandleTypeDef *hi2c)\r\n{\r\n  /* Declaration of tmp to prevent undefined behavior of volatile usage */\r\n  uint32_t tmp;\r\n\r\n  /* Disable Address listen mode only if a transfer is not ongoing */\r\n  if (hi2c->State == HAL_I2C_STATE_LISTEN)\r\n  {\r\n    tmp = (uint32_t)(hi2c->State) & I2C_STATE_MSK;\r\n    hi2c->PreviousState = tmp | (uint32_t)(hi2c->Mode);\r\n    hi2c->State = HAL_I2C_STATE_READY;\r\n    hi2c->Mode = HAL_I2C_MODE_NONE;\r\n\r\n    /* Disable Address Acknowledge */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n    /* Disable EVT and ERR interrupt */\r\n    __HAL_I2C_DISABLE_IT(hi2c, I2C_IT_EVT | I2C_IT_ERR);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_Master_Abort_IT",
+      "sig": "HAL_StatusTypeDef HAL_I2C_Master_Abort_IT(I2C_HandleTypeDef *hi2c, uint16_t DevAddress)",
+      "brief": "中止正在进行的 I2C 主模式传输(中断方式): 清除应答并产生停止条件, 完成后调用 HAL_I2C_AbortCpltCallback()。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "DevAddress",
+          "type": "uint16_t",
+          "desc": "目标设备地址(本实现中未使用, 保留参数)"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败(当前非主模式, 不可中止)"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_I2C_Master_Abort_IT(I2C_HandleTypeDef *hi2c, uint16_t DevAddress)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(DevAddress);\r\n\r\n  /* Abort Master transfer during Receive or Transmit process    */\r\n  if (hi2c->Mode == HAL_I2C_MODE_MASTER)\r\n  {\r\n    /* Process Locked */\r\n    __HAL_LOCK(hi2c);\r\n\r\n    hi2c->PreviousState = I2C_STATE_NONE;\r\n    hi2c->State = HAL_I2C_STATE_ABORT;\r\n\r\n    /* Disable Acknowledge */\r\n    CLEAR_BIT(hi2c->Instance->CR1, I2C_CR1_ACK);\r\n\r\n    /* Generate Stop */\r\n    SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n\r\n    hi2c->XferCount = 0U;\r\n\r\n    /* Disable EVT, BUF and ERR interrupt */\r\n    __HAL_I2C_DISABLE_IT(hi2c, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR);\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(hi2c);\r\n\r\n    /* Call the corresponding callback to inform upper layer of End of Transfer */\r\n    I2C_ITError(hi2c);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    /* Wrong usage of abort function */\r\n    /* This function should be used only in case of abort monitored by master device */\r\n    return HAL_ERROR;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_EV_IRQHandler",
+      "sig": "void HAL_I2C_EV_IRQHandler(I2C_HandleTypeDef *hi2c)",
+      "brief": "I2C 事件中断服务函数: 按主/从模式状态机处理 SB、ADD10、ADDR、TXE、RXNE、BTF、STOPF 等事件标志。应在 I2C 事件中断服务程序中调用。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "void HAL_I2C_EV_IRQHandler(I2C_HandleTypeDef *hi2c)\r\n{\r\n  uint32_t sr1itflags;\r\n  uint32_t sr2itflags               = 0U;\r\n  uint32_t itsources                = READ_REG(hi2c->Instance->CR2);\r\n  uint32_t CurrentXferOptions       = hi2c->XferOptions;\r\n  HAL_I2C_ModeTypeDef CurrentMode   = hi2c->Mode;\r\n  HAL_I2C_StateTypeDef CurrentState = hi2c->State;\r\n\r\n  /* Master or Memory mode selected */\r\n  if ((CurrentMode == HAL_I2C_MODE_MASTER) || (CurrentMode == HAL_I2C_MODE_MEM))\r\n  {\r\n    sr2itflags   = READ_REG(hi2c->Instance->SR2);\r\n    sr1itflags   = READ_REG(hi2c->Instance->SR1);\r\n\r\n    /* Exit IRQ event until Start Bit detected in case of Other frame requested */\r\n    if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_SB) == RESET) && (IS_I2C_TRANSFER_OTHER_OPTIONS_REQUEST(CurrentXferOptions) == 1U))\r\n    {\r\n      return;\r\n    }\r\n\r\n    /* SB Set ----------------------------------------------------------------*/\r\n    if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_SB) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_EVT) != RESET))\r\n    {\r\n      /* Convert OTHER_xxx XferOptions if any */\r\n      I2C_ConvertOtherXferOptions(hi2c);\r\n\r\n      I2C_Master_SB(hi2c);\r\n    }\r\n    /* ADD10 Set -------------------------------------------------------------*/\r\n    else if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_ADD10) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_EVT) != RESET))\r\n    {\r\n      I2C_Master_ADD10(hi2c);\r\n    }\r\n    /* ADDR Set --------------------------------------------------------------*/\r\n    else if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_ADDR) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_EVT) != RESET))\r\n    {\r\n      I2C_Master_ADDR(hi2c);\r\n    }\r\n    /* I2C in mode Transmitter -----------------------------------------------*/\r\n    else if (I2C_CHECK_FLAG(sr2itflags, I2C_FLAG_TRA) != RESET)\r\n    {\r\n        /* TXE set and BTF reset -----------------------------------------------*/\r\n        if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_TXE) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_BUF) != RESET) && (I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BTF) == RESET))\r\n        {\r\n          I2C_MasterTransmit_TXE(hi2c);\r\n        }\r\n        /* BTF set -------------------------------------------------------------*/\r\n        else if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BTF) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_EVT) != RESET))\r\n        {\r\n          I2C_MasterTransmit_BTF(hi2c);\r\n        }\r\n        else\r\n        {\r\n          /* Do nothing */\r\n        }\r\n    }\r\n    /* I2C in mode Receiver --------------------------------------------------*/\r\n    else\r\n    {\r\n        /* RXNE set and BTF reset -----------------------------------------------*/\r\n        if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_RXNE) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_BUF) != RESET) && (I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BTF) == RESET))\r\n        {\r\n          I2C_MasterReceive_RXNE(hi2c);\r\n        }\r\n        /* BTF set -------------------------------------------------------------*/\r\n        else if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BTF) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_EVT) != RESET))\r\n        {\r\n          I2C_MasterReceive_BTF(hi2c);\r\n        }\r\n        else\r\n        {\r\n          /* Do nothing */\r\n        }\r\n    }\r\n  }\r\n  /* Slave mode selected */\r\n  else\r\n  {\r\n    /* If an error is detected, read only SR1 register to prevent */\r\n    /* a clear of ADDR flags by reading SR2 after reading SR1 in Error treatment */\r\n    if (hi2c->ErrorCode != HAL_I2C_ERROR_NONE)\r\n    {\r\n      sr1itflags   = READ_REG(hi2c->Instance->SR1);\r\n    }\r\n    else\r\n    {\r\n      sr2itflags   = READ_REG(hi2c->Instance->SR2);\r\n      sr1itflags   = READ_REG(hi2c->Instance->SR1);\r\n    }\r\n\r\n    /* ADDR set --------------------------------------------------------------*/\r\n    if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_ADDR) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_EVT) != RESET))\r\n    {\r\n      /* Now time to read SR2, this will clear ADDR flag automatically */\r\n      if (hi2c->ErrorCode != HAL_I2C_ERROR_NONE)\r\n      {\r\n        sr2itflags   = READ_REG(hi2c->Instance->SR2);\r\n      }\r\n      I2C_Slave_ADDR(hi2c, sr2itflags);\r\n    }\r\n    /* STOPF set --------------------------------------------------------------*/\r\n    else if (I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_STOPF) != RESET)\r\n    {\r\n      I2C_Slave_STOPF(hi2c);\r\n    }\r\n    /* I2C in mode Transmitter -----------------------------------------------*/\r\n    else if ((CurrentState == HAL_I2C_STATE_BUSY_TX) || (CurrentState == HAL_I2C_STATE_BUSY_TX_LISTEN))\r\n    {\r\n      /* TXE set and BTF reset -----------------------------------------------*/\r\n      if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_TXE) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_BUF) != RESET) && (I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BTF) == RESET))\r\n      {\r\n        I2C_SlaveTransmit_TXE(hi2c);\r\n      }\r\n      /* BTF set -------------------------------------------------------------*/\r\n      else if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BTF) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_EVT) != RESET))\r\n      {\r\n        I2C_SlaveTransmit_BTF(hi2c);\r\n      }\r\n      else\r\n      {\r\n        /* Do nothing */\r\n      }\r\n    }\r\n    /* I2C in mode Receiver --------------------------------------------------*/\r\n    else\r\n    {\r\n      /* RXNE set and BTF reset ----------------------------------------------*/\r\n      if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_RXNE) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_BUF) != RESET) && (I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BTF) == RESET))\r\n      {\r\n        I2C_SlaveReceive_RXNE(hi2c);\r\n      }\r\n      /* BTF set -------------------------------------------------------------*/\r\n      else if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BTF) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_EVT) != RESET))\r\n      {\r\n        I2C_SlaveReceive_BTF(hi2c);\r\n      }\r\n      else\r\n      {\r\n        /* Do nothing */\r\n      }\r\n    }\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_ER_IRQHandler",
+      "sig": "void HAL_I2C_ER_IRQHandler(I2C_HandleTypeDef *hi2c)",
+      "brief": "I2C 错误中断服务函数: 检测并清除 BERR/ARLO/AF/OVR 错误标志, 记录错误码并转入错误处理。应在 I2C 错误中断服务程序中调用。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "void HAL_I2C_ER_IRQHandler(I2C_HandleTypeDef *hi2c)\r\n{\r\n  HAL_I2C_ModeTypeDef tmp1;\r\n  uint32_t tmp2;\r\n  HAL_I2C_StateTypeDef tmp3;\r\n  uint32_t tmp4;\r\n  uint32_t sr1itflags = READ_REG(hi2c->Instance->SR1);\r\n  uint32_t itsources  = READ_REG(hi2c->Instance->CR2);\r\n  uint32_t error      = HAL_I2C_ERROR_NONE;\r\n\r\n  /* I2C Bus error interrupt occurred ----------------------------------------*/\r\n  if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BERR) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_ERR) != RESET))\r\n  {\r\n    error |= HAL_I2C_ERROR_BERR;\r\n\r\n    /* Clear BERR flag */\r\n    __HAL_I2C_CLEAR_FLAG(hi2c, I2C_FLAG_BERR);\r\n\r\n    /* Workaround: Start cannot be generated after a misplaced Stop */\r\n    SET_BIT(hi2c->Instance->CR1, I2C_CR1_SWRST);\r\n  }\r\n\r\n  /* I2C Arbitration Lost error interrupt occurred ---------------------------*/\r\n  if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_ARLO) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_ERR) != RESET))\r\n  {\r\n    error |= HAL_I2C_ERROR_ARLO;\r\n\r\n    /* Clear ARLO flag */\r\n    __HAL_I2C_CLEAR_FLAG(hi2c, I2C_FLAG_ARLO);\r\n  }\r\n\r\n  /* I2C Acknowledge failure error interrupt occurred ------------------------*/\r\n  if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_AF) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_ERR) != RESET))\r\n  {\r\n    tmp1 = hi2c->Mode;\r\n    tmp2 = hi2c->XferCount;\r\n    tmp3 = hi2c->State;\r\n    tmp4 = hi2c->PreviousState;\r\n    if ((tmp1 == HAL_I2C_MODE_SLAVE) && (tmp2 == 0U) && \\\r\n        ((tmp3 == HAL_I2C_STATE_BUSY_TX) || (tmp3 == HAL_I2C_STATE_BUSY_TX_LISTEN) || \\\r\n         ((tmp3 == HAL_I2C_STATE_LISTEN) && (tmp4 == I2C_STATE_SLAVE_BUSY_TX))))\r\n    {\r\n      I2C_Slave_AF(hi2c);\r\n    }\r\n    else\r\n    {\r\n      /* Clear AF flag */\r\n      __HAL_I2C_CLEAR_FLAG(hi2c, I2C_FLAG_AF);\r\n\r\n      error |= HAL_I2C_ERROR_AF;\r\n\r\n      /* Do not generate a STOP in case of Slave receive non acknowledge during transfer (mean not at the end of transfer) */\r\n      if (hi2c->Mode == HAL_I2C_MODE_MASTER)\r\n      {\r\n        /* Generate Stop */\r\n        SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n      }\r\n    }\r\n  }\r\n\r\n  /* I2C Over-Run/Under-Run interrupt occurred -------------------------------*/\r\n  if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_OVR) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_ERR) != RESET))\r\n  {\r\n    error |= HAL_I2C_ERROR_OVR;\r\n    /* Clear OVR flag */\r\n    __HAL_I2C_CLEAR_FLAG(hi2c, I2C_FLAG_OVR);\r\n  }\r\n\r\n  /* Call the Error Callback in case of Error detected -----------------------*/\r\n  if (error != HAL_I2C_ERROR_NONE)\r\n  {\r\n    hi2c->ErrorCode |= error;\r\n    I2C_ITError(hi2c);\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_IRQHandler",
+      "sig": "void HAL_I2C_IRQHandler(I2C_HandleTypeDef *hi2c)",
+      "brief": "I2C 综合中断服务函数: 同时处理事件与错误中断(等效于 EV 与 ER 处理器合并), 非阻塞模式使用。应在 I2C1_IRQHandler 中调用。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "void HAL_I2C_IRQHandler(I2C_HandleTypeDef *hi2c)\r\n{\r\n  uint32_t sr1itflags;\r\n  uint32_t sr2itflags               = 0U;\r\n  uint32_t itsources                = READ_REG(hi2c->Instance->CR2);\r\n  uint32_t CurrentXferOptions       = hi2c->XferOptions;\r\n  HAL_I2C_ModeTypeDef CurrentMode   = hi2c->Mode;\r\n  HAL_I2C_StateTypeDef CurrentState = hi2c->State;\r\n  \r\n  HAL_I2C_ModeTypeDef tmp1;\r\n  uint32_t tmp2;\r\n  HAL_I2C_StateTypeDef tmp3;\r\n  uint32_t tmp4;\r\n  uint32_t error      = HAL_I2C_ERROR_NONE;\r\n\r\n  /* Master or Memory mode selected */\r\n  if ((CurrentMode == HAL_I2C_MODE_MASTER) || (CurrentMode == HAL_I2C_MODE_MEM))\r\n  {\r\n    sr2itflags   = READ_REG(hi2c->Instance->SR2);\r\n    sr1itflags   = READ_REG(hi2c->Instance->SR1);\r\n\r\n    /* Exit IRQ event until Start Bit detected in case of Other frame requested */\r\n    if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_SB) == RESET) && (IS_I2C_TRANSFER_OTHER_OPTIONS_REQUEST(CurrentXferOptions) == 1U))\r\n    {\r\n      return;\r\n    }\r\n\r\n    /* SB Set ----------------------------------------------------------------*/\r\n    if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_SB) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_EVT) != RESET))\r\n    {\r\n      /* Convert OTHER_xxx XferOptions if any */\r\n      I2C_ConvertOtherXferOptions(hi2c);\r\n\r\n      I2C_Master_SB(hi2c);\r\n    }\r\n    /* ADD10 Set -------------------------------------------------------------*/\r\n    else if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_ADD10) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_EVT) != RESET))\r\n    {\r\n      I2C_Master_ADD10(hi2c);\r\n    }\r\n    /* ADDR Set --------------------------------------------------------------*/\r\n    else if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_ADDR) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_EVT) != RESET))\r\n    {\r\n      I2C_Master_ADDR(hi2c);\r\n    }\r\n    /* I2C in mode Transmitter -----------------------------------------------*/\r\n    else if (I2C_CHECK_FLAG(sr2itflags, I2C_FLAG_TRA) != RESET)\r\n    {\r\n        /* TXE set and BTF reset -----------------------------------------------*/\r\n        if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_TXE) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_BUF) != RESET) && (I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BTF) == RESET))\r\n        {\r\n          I2C_MasterTransmit_TXE(hi2c);\r\n        }\r\n        /* BTF set -------------------------------------------------------------*/\r\n        else if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BTF) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_EVT) != RESET))\r\n        {\r\n          I2C_MasterTransmit_BTF(hi2c);\r\n        }\r\n        else\r\n        {\r\n          /* Do nothing */\r\n        }\r\n    }\r\n    /* I2C in mode Receiver --------------------------------------------------*/\r\n    else\r\n    {\r\n        /* RXNE set and BTF reset -----------------------------------------------*/\r\n        if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_RXNE) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_BUF) != RESET) && (I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BTF) == RESET))\r\n        {\r\n          I2C_MasterReceive_RXNE(hi2c);\r\n        }\r\n        /* BTF set -------------------------------------------------------------*/\r\n        else if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BTF) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_EVT) != RESET))\r\n        {\r\n          I2C_MasterReceive_BTF(hi2c);\r\n        }\r\n        else\r\n        {\r\n          /* Do nothing */\r\n        }\r\n    }\r\n  }\r\n  /* Slave mode selected */\r\n  else\r\n  {\r\n    /* If an error is detected, read only SR1 register to prevent */\r\n    /* a clear of ADDR flags by reading SR2 after reading SR1 in Error treatment */\r\n    if (hi2c->ErrorCode != HAL_I2C_ERROR_NONE)\r\n    {\r\n      sr1itflags   = READ_REG(hi2c->Instance->SR1);\r\n    }\r\n    else\r\n    {\r\n      sr2itflags   = READ_REG(hi2c->Instance->SR2);\r\n      sr1itflags   = READ_REG(hi2c->Instance->SR1);\r\n    }\r\n\r\n    /* ADDR set --------------------------------------------------------------*/\r\n    if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_ADDR) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_EVT) != RESET))\r\n    {\r\n      /* Now time to read SR2, this will clear ADDR flag automatically */\r\n      if (hi2c->ErrorCode != HAL_I2C_ERROR_NONE)\r\n      {\r\n        sr2itflags   = READ_REG(hi2c->Instance->SR2);\r\n      }\r\n      I2C_Slave_ADDR(hi2c, sr2itflags);\r\n    }\r\n    /* STOPF set --------------------------------------------------------------*/\r\n    else if (I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_STOPF) != RESET)\r\n    {\r\n      I2C_Slave_STOPF(hi2c);\r\n    }\r\n    /* I2C in mode Transmitter -----------------------------------------------*/\r\n    else if ((CurrentState == HAL_I2C_STATE_BUSY_TX) || (CurrentState == HAL_I2C_STATE_BUSY_TX_LISTEN))\r\n    {\r\n      /* TXE set and BTF reset -----------------------------------------------*/\r\n      if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_TXE) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_BUF) != RESET) && (I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BTF) == RESET))\r\n      {\r\n        I2C_SlaveTransmit_TXE(hi2c);\r\n      }\r\n      /* BTF set -------------------------------------------------------------*/\r\n      else if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BTF) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_EVT) != RESET))\r\n      {\r\n        I2C_SlaveTransmit_BTF(hi2c);\r\n      }\r\n      else\r\n      {\r\n        /* Do nothing */\r\n      }\r\n    }\r\n    /* I2C in mode Receiver --------------------------------------------------*/\r\n    else\r\n    {\r\n      /* RXNE set and BTF reset ----------------------------------------------*/\r\n      if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_RXNE) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_BUF) != RESET) && (I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BTF) == RESET))\r\n      {\r\n        I2C_SlaveReceive_RXNE(hi2c);\r\n      }\r\n      /* BTF set -------------------------------------------------------------*/\r\n      else if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BTF) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_EVT) != RESET))\r\n      {\r\n        I2C_SlaveReceive_BTF(hi2c);\r\n      }\r\n      else\r\n      {\r\n        /* Do nothing */\r\n      }\r\n    }\r\n  }\r\n  \r\n  /* I2C in Error Treatment --------------------------------------------------*/\r\n  if (((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BERR) != RESET) || (I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_ARLO) != RESET) || \\\r\n       (I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_AF) != RESET) || (I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_OVR) != RESET)) && \\\r\n       (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_ERR) != RESET))\r\n  {\r\n    /* I2C Bus error interrupt occurred ----------------------------------------*/\r\n    if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_BERR) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_ERR) != RESET))\r\n    {\r\n      error |= HAL_I2C_ERROR_BERR;\r\n\r\n      /* Clear BERR flag */\r\n      __HAL_I2C_CLEAR_FLAG(hi2c, I2C_FLAG_BERR);\r\n\r\n      /* Workaround: Start cannot be generated after a misplaced Stop */\r\n      SET_BIT(hi2c->Instance->CR1, I2C_CR1_SWRST);\r\n    }\r\n\r\n    /* I2C Arbitration Lost error interrupt occurred ---------------------------*/\r\n    if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_ARLO) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_ERR) != RESET))\r\n    {\r\n      error |= HAL_I2C_ERROR_ARLO;\r\n\r\n      /* Clear ARLO flag */\r\n      __HAL_I2C_CLEAR_FLAG(hi2c, I2C_FLAG_ARLO);\r\n    }\r\n\r\n    /* I2C Acknowledge failure error interrupt occurred ------------------------*/\r\n    if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_AF) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_ERR) != RESET))\r\n    {\r\n      tmp1 = hi2c->Mode;\r\n      tmp2 = hi2c->XferCount;\r\n      tmp3 = hi2c->State;\r\n      tmp4 = hi2c->PreviousState;\r\n      if ((tmp1 == HAL_I2C_MODE_SLAVE) && (tmp2 == 0U) && \\\r\n          ((tmp3 == HAL_I2C_STATE_BUSY_TX) || (tmp3 == HAL_I2C_STATE_BUSY_TX_LISTEN) || \\\r\n          ((tmp3 == HAL_I2C_STATE_LISTEN) && (tmp4 == I2C_STATE_SLAVE_BUSY_TX))))\r\n      {\r\n        I2C_Slave_AF(hi2c);\r\n      }\r\n      else\r\n      {\r\n        /* Clear AF flag */\r\n        __HAL_I2C_CLEAR_FLAG(hi2c, I2C_FLAG_AF);\r\n\r\n        error |= HAL_I2C_ERROR_AF;\r\n\r\n        /* Do not generate a STOP in case of Slave receive non acknowledge during transfer (mean not at the end of transfer) */\r\n        if (hi2c->Mode == HAL_I2C_MODE_MASTER)\r\n        {\r\n          /* Generate Stop */\r\n          SET_BIT(hi2c->Instance->CR1, I2C_CR1_STOP);\r\n        }\r\n      }\r\n    }\r\n\r\n    /* I2C Over-Run/Under-Run interrupt occurred -------------------------------*/\r\n    if ((I2C_CHECK_FLAG(sr1itflags, I2C_FLAG_OVR) != RESET) && (I2C_CHECK_IT_SOURCE(itsources, I2C_IT_ERR) != RESET))\r\n    {\r\n      error |= HAL_I2C_ERROR_OVR;\r\n      /* Clear OVR flag */\r\n      __HAL_I2C_CLEAR_FLAG(hi2c, I2C_FLAG_OVR);\r\n    }\r\n\r\n    /* Call the Error Callback in case of Error detected -----------------------*/\r\n    if (error != HAL_I2C_ERROR_NONE)\r\n    {\r\n      hi2c->ErrorCode |= error;\r\n      I2C_ITError(hi2c);\r\n    }\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_I2C_MasterTxCpltCallback",
+      "sig": "void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)",
+      "brief": "主模式发送完成回调(弱定义空函数): 主模式中断发送结束时由驱动调用, 用户重写以实现自己的处理。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "__weak void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hi2c);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_I2C_MasterTxCpltCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_I2C_MasterRxCpltCallback",
+      "sig": "void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c)",
+      "brief": "主模式接收完成回调(弱定义空函数): 主模式中断接收结束时由驱动调用, 用户重写以实现自己的处理。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "__weak void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hi2c);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_I2C_MasterRxCpltCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_I2C_SlaveTxCpltCallback",
+      "sig": "void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef *hi2c)",
+      "brief": "从模式发送完成回调(弱定义空函数): 从模式中断发送结束时由驱动调用, 用户重写以实现自己的处理。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "__weak void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef *hi2c)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hi2c);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_I2C_SlaveTxCpltCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_I2C_SlaveRxCpltCallback",
+      "sig": "void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *hi2c)",
+      "brief": "从模式接收完成回调(弱定义空函数): 从模式中断接收结束时由驱动调用, 用户重写以实现自己的处理。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "__weak void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *hi2c)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hi2c);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_I2C_SlaveRxCpltCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_I2C_AddrCallback",
+      "sig": "void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirection, uint16_t AddrMatchCode)",
+      "brief": "从机地址匹配回调(弱定义空函数): 监听模式下从机地址被匹配时由驱动调用, 用户重写以实现自己的处理。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        },
+        {
+          "name": "TransferDirection",
+          "type": "uint8_t",
+          "desc": "主机请求的传输方向: I2C_DIRECTION_TRANSMIT(发送) / I2C_DIRECTION_RECEIVE(接收)"
+        },
+        {
+          "name": "AddrMatchCode",
+          "type": "uint16_t",
+          "desc": "地址匹配码"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "__weak void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirection, uint16_t AddrMatchCode)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hi2c);\r\n  UNUSED(TransferDirection);\r\n  UNUSED(AddrMatchCode);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_I2C_AddrCallback() could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_I2C_ListenCpltCallback",
+      "sig": "void HAL_I2C_ListenCpltCallback(I2C_HandleTypeDef *hi2c)",
+      "brief": "地址监听完成回调(弱定义空函数): 监听模式结束(检测到停止条件)时由驱动调用, 用户重写以实现自己的处理。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "__weak void HAL_I2C_ListenCpltCallback(I2C_HandleTypeDef *hi2c)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hi2c);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_I2C_ListenCpltCallback() could be implemented in the user file\r\n  */\r\n}"
+    },
+    {
+      "name": "HAL_I2C_MemTxCpltCallback",
+      "sig": "void HAL_I2C_MemTxCpltCallback(I2C_HandleTypeDef *hi2c)",
+      "brief": "存储器写传输完成回调(弱定义空函数): HAL_I2C_Mem_Write_IT() 完成时由驱动调用, 用户重写以实现自己的处理。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "__weak void HAL_I2C_MemTxCpltCallback(I2C_HandleTypeDef *hi2c)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hi2c);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_I2C_MemTxCpltCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_I2C_MemRxCpltCallback",
+      "sig": "void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)",
+      "brief": "存储器读传输完成回调(弱定义空函数): HAL_I2C_Mem_Read_IT() 完成时由驱动调用, 用户重写以实现自己的处理。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "__weak void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hi2c);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_I2C_MemRxCpltCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_I2C_ErrorCallback",
+      "sig": "void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)",
+      "brief": "I2C 错误回调(弱定义空函数): 传输过程中检测到错误时由驱动调用, 用户重写以实现自己的错误处理(可通过 HAL_I2C_GetError() 查询错误码)。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "__weak void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hi2c);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_I2C_ErrorCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_I2C_AbortCpltCallback",
+      "sig": "void HAL_I2C_AbortCpltCallback(I2C_HandleTypeDef *hi2c)",
+      "brief": "传输中止完成回调(弱定义空函数): HAL_I2C_Master_Abort_IT() 中止流程结束时由驱动调用, 用户重写以实现自己的处理。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "__weak void HAL_I2C_AbortCpltCallback(I2C_HandleTypeDef *hi2c)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hi2c);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_I2C_AbortCpltCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_I2C_GetState",
+      "sig": "HAL_I2C_StateTypeDef HAL_I2C_GetState(I2C_HandleTypeDef *hi2c)",
+      "brief": "返回 I2C 句柄当前状态(复位/就绪/忙/忙发送/忙接收/监听/中止/超时/错误等)。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "HAL_I2C_StateTypeDef",
+        "desc": "句柄状态, 取值 HAL_I2C_STATE_*"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_I2C_StateTypeDef HAL_I2C_GetState(I2C_HandleTypeDef *hi2c)\r\n{\r\n  /* Return I2C handle state */\r\n  return hi2c->State;\r\n}"
+    },
+    {
+      "name": "HAL_I2C_GetMode",
+      "sig": "HAL_I2C_ModeTypeDef HAL_I2C_GetMode(I2C_HandleTypeDef *hi2c)",
+      "brief": "返回 I2C 当前通信模式(无/主/从/存储器模式)。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "HAL_I2C_ModeTypeDef",
+        "desc": "通信模式, 取值 HAL_I2C_MODE_*"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "HAL_I2C_ModeTypeDef HAL_I2C_GetMode(I2C_HandleTypeDef *hi2c)\r\n{\r\n  return hi2c->Mode;\r\n}"
+    },
+    {
+      "name": "HAL_I2C_GetError",
+      "sig": "uint32_t HAL_I2C_GetError(I2C_HandleTypeDef *hi2c)",
+      "brief": "返回 I2C 句柄的错误码(多个错误位可按位或组合)。",
+      "params": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "指向 I2C 句柄结构体"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "错误码, 取值 HAL_I2C_ERROR_*(可组合)"
+      },
+      "file": "py32f002b_hal_i2c.c",
+      "kind": "function",
+      "src": "uint32_t HAL_I2C_GetError(I2C_HandleTypeDef *hi2c)\r\n{\r\n  return hi2c->ErrorCode;\r\n}"
+    },
+    {
+      "name": "__HAL_I2C_RESET_HANDLE_STATE",
+      "sig": "#define __HAL_I2C_RESET_HANDLE_STATE(__HANDLE__)                do{                                                   \\\r\n                                                                    (__HANDLE__)->State = HAL_I2C_STATE_RESET;       \\\r\n                                                                    (__HANDLE__)->MspInitCallback = NULL;            \\\r\n                                                                    (__HANDLE__)->MspDeInitCallback = NULL;          \\\r\n                                                                  } while(0)",
+      "brief": "宏: 将 I2C 句柄状态复位为 HAL_I2C_STATE_RESET(定义 USE_HAL_I2C_REGISTER_CALLBACKS 时同时清空 MspInit/MspDeInit 回调)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "I2C 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define __HAL_I2C_RESET_HANDLE_STATE(__HANDLE__)                do{                                                   \\\r\n                                                                    (__HANDLE__)->State = HAL_I2C_STATE_RESET;       \\\r\n                                                                    (__HANDLE__)->MspInitCallback = NULL;            \\\r\n                                                                    (__HANDLE__)->MspDeInitCallback = NULL;          \\\r\n                                                                  } while(0)"
+    },
+    {
+      "name": "__HAL_I2C_ENABLE_IT",
+      "sig": "#define __HAL_I2C_ENABLE_IT(__HANDLE__, __INTERRUPT__)   SET_BIT((__HANDLE__)->Instance->CR2,(__INTERRUPT__))",
+      "brief": "宏: 使能指定的 I2C 中断源(写 CR2 寄存器)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "I2C 句柄"
+        },
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "中断源: I2C_IT_BUF / I2C_IT_EVT / I2C_IT_ERR, 可组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define __HAL_I2C_ENABLE_IT(__HANDLE__, __INTERRUPT__)   SET_BIT((__HANDLE__)->Instance->CR2,(__INTERRUPT__))"
+    },
+    {
+      "name": "__HAL_I2C_DISABLE_IT",
+      "sig": "#define __HAL_I2C_DISABLE_IT(__HANDLE__, __INTERRUPT__)  CLEAR_BIT((__HANDLE__)->Instance->CR2, (__INTERRUPT__))",
+      "brief": "宏: 禁止指定的 I2C 中断源(写 CR2 寄存器)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "I2C 句柄"
+        },
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "中断源: I2C_IT_BUF / I2C_IT_EVT / I2C_IT_ERR, 可组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define __HAL_I2C_DISABLE_IT(__HANDLE__, __INTERRUPT__)  CLEAR_BIT((__HANDLE__)->Instance->CR2, (__INTERRUPT__))"
+    },
+    {
+      "name": "__HAL_I2C_GET_IT_SOURCE",
+      "sig": "#define __HAL_I2C_GET_IT_SOURCE(__HANDLE__, __INTERRUPT__) ((((__HANDLE__)->Instance->CR2 & (__INTERRUPT__)) == (__INTERRUPT__)) ? SET : RESET)",
+      "brief": "宏: 查询指定的 I2C 中断源当前是否使能。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "I2C 句柄"
+        },
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "中断源: I2C_IT_BUF / I2C_IT_EVT / I2C_IT_ERR"
+        }
+      ],
+      "retval": {
+        "type": "FlagStatus",
+        "desc": "SET 使能 / RESET 禁止"
+      },
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define __HAL_I2C_GET_IT_SOURCE(__HANDLE__, __INTERRUPT__) ((((__HANDLE__)->Instance->CR2 & (__INTERRUPT__)) == (__INTERRUPT__)) ? SET : RESET)"
+    },
+    {
+      "name": "__HAL_I2C_GET_FLAG",
+      "sig": "#define __HAL_I2C_GET_FLAG(__HANDLE__, __FLAG__) ((((uint8_t)((__FLAG__) >> 16U)) == 0x01U) ? \\\r\n                                                  (((((__HANDLE__)->Instance->SR1) & ((__FLAG__) & I2C_FLAG_MASK)) == ((__FLAG__) & I2C_FLAG_MASK)) ? SET : RESET) : \\\r\n                                                  (((((__HANDLE__)->Instance->SR2) & ((__FLAG__) & I2C_FLAG_MASK)) == ((__FLAG__) & I2C_FLAG_MASK)) ? SET : RESET))",
+      "brief": "宏: 查询指定的 I2C 标志是否置位(自动按标志编码判断读 SR1 还是 SR2)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "I2C 句柄"
+        },
+        {
+          "name": "__FLAG__",
+          "type": "宏参数",
+          "desc": "标志: I2C_FLAG_OVR/AF/ARLO/BERR/TXE/RXNE/STOPF/ADD10/BTF/ADDR/SB/DUALF/GENCALL/TRA/BUSY/MSL"
+        }
+      ],
+      "retval": {
+        "type": "FlagStatus",
+        "desc": "SET 置位 / RESET 未置位"
+      },
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define __HAL_I2C_GET_FLAG(__HANDLE__, __FLAG__) ((((uint8_t)((__FLAG__) >> 16U)) == 0x01U) ? \\\r\n                                                  (((((__HANDLE__)->Instance->SR1) & ((__FLAG__) & I2C_FLAG_MASK)) == ((__FLAG__) & I2C_FLAG_MASK)) ? SET : RESET) : \\\r\n                                                  (((((__HANDLE__)->Instance->SR2) & ((__FLAG__) & I2C_FLAG_MASK)) == ((__FLAG__) & I2C_FLAG_MASK)) ? SET : RESET))"
+    },
+    {
+      "name": "__HAL_I2C_CLEAR_FLAG",
+      "sig": "#define __HAL_I2C_CLEAR_FLAG(__HANDLE__, __FLAG__) ((__HANDLE__)->Instance->SR1 = ~((__FLAG__) & I2C_FLAG_MASK))",
+      "brief": "宏: 清除 I2C 的挂起标志(适用于写 0 清除类标志: OVR/AF/ARLO/BERR)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "I2C 句柄"
+        },
+        {
+          "name": "__FLAG__",
+          "type": "宏参数",
+          "desc": "要清除的标志: I2C_FLAG_OVR / AF / ARLO / BERR, 可组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define __HAL_I2C_CLEAR_FLAG(__HANDLE__, __FLAG__) ((__HANDLE__)->Instance->SR1 = ~((__FLAG__) & I2C_FLAG_MASK))"
+    },
+    {
+      "name": "__HAL_I2C_CLEAR_ADDRFLAG",
+      "sig": "#define __HAL_I2C_CLEAR_ADDRFLAG(__HANDLE__)    \\\r\n  do{                                           \\\r\n    __IO uint32_t tmpreg = 0x00U;               \\\r\n    tmpreg = (__HANDLE__)->Instance->SR1;       \\\r\n    tmpreg = (__HANDLE__)->Instance->SR2;       \\\r\n    UNUSED(tmpreg);                             \\\r\n  } while(0)",
+      "brief": "宏: 清除 I2C 的 ADDR 挂起标志(通过读 SR1 再读 SR2 完成)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "I2C 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define __HAL_I2C_CLEAR_ADDRFLAG(__HANDLE__)    \\\r\n  do{                                           \\\r\n    __IO uint32_t tmpreg = 0x00U;               \\\r\n    tmpreg = (__HANDLE__)->Instance->SR1;       \\\r\n    tmpreg = (__HANDLE__)->Instance->SR2;       \\\r\n    UNUSED(tmpreg);                             \\\r\n  } while(0)"
+    },
+    {
+      "name": "__HAL_I2C_CLEAR_STOPFLAG",
+      "sig": "#define __HAL_I2C_CLEAR_STOPFLAG(__HANDLE__)           \\\r\n  do{                                                  \\\r\n    __IO uint32_t tmpreg = 0x00U;                      \\\r\n    tmpreg = (__HANDLE__)->Instance->SR1;              \\\r\n    SET_BIT((__HANDLE__)->Instance->CR1, I2C_CR1_PE);  \\\r\n    UNUSED(tmpreg);                                    \\\r\n  } while(0)",
+      "brief": "宏: 清除 I2C 的 STOPF 挂起标志(读 SR1 后写 CR1 的 PE 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "I2C 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define __HAL_I2C_CLEAR_STOPFLAG(__HANDLE__)           \\\r\n  do{                                                  \\\r\n    __IO uint32_t tmpreg = 0x00U;                      \\\r\n    tmpreg = (__HANDLE__)->Instance->SR1;              \\\r\n    SET_BIT((__HANDLE__)->Instance->CR1, I2C_CR1_PE);  \\\r\n    UNUSED(tmpreg);                                    \\\r\n  } while(0)"
+    },
+    {
+      "name": "__HAL_I2C_ENABLE",
+      "sig": "#define __HAL_I2C_ENABLE(__HANDLE__)                  SET_BIT((__HANDLE__)->Instance->CR1, I2C_CR1_PE)",
+      "brief": "宏: 使能 I2C 外设(置位 CR1 的 PE 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "I2C 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define __HAL_I2C_ENABLE(__HANDLE__)                  SET_BIT((__HANDLE__)->Instance->CR1, I2C_CR1_PE)"
+    },
+    {
+      "name": "__HAL_I2C_DISABLE",
+      "sig": "#define __HAL_I2C_DISABLE(__HANDLE__)                 CLEAR_BIT((__HANDLE__)->Instance->CR1, I2C_CR1_PE)",
+      "brief": "宏: 禁止 I2C 外设(清零 CR1 的 PE 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "I2C 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_i2c.h",
+      "kind": "macro",
+      "src": "#define __HAL_I2C_DISABLE(__HANDLE__)                 CLEAR_BIT((__HANDLE__)->Instance->CR1, I2C_CR1_PE)"
+    }
+  ],
+  "types": [
+    {
+      "name": "I2C_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t ClockSpeed; uint32_t DutyCycle; uint32_t OwnAddress1; uint32_t GeneralCallMode; uint32_t NoStretchMode; } I2C_InitTypeDef;",
+      "desc": "I2C 初始化配置结构体, 作为 HAL_I2C_Init() 的参数, 各成员通过 hi2c->Init 配置。",
+      "members": [
+        {
+          "name": "ClockSpeed",
+          "type": "uint32_t",
+          "desc": "通信时钟频率(Hz), 必须低于 400kHz"
+        },
+        {
+          "name": "DutyCycle",
+          "type": "uint32_t",
+          "desc": "快速模式占空比: I2C_DUTYCYCLE_2 / I2C_DUTYCYCLE_16_9"
+        },
+        {
+          "name": "OwnAddress1",
+          "type": "uint32_t",
+          "desc": "本机自身地址 1(7 位或 10 位地址)"
+        },
+        {
+          "name": "GeneralCallMode",
+          "type": "uint32_t",
+          "desc": "广播呼叫模式: I2C_GENERALCALL_DISABLE / I2C_GENERALCALL_ENABLE"
+        },
+        {
+          "name": "NoStretchMode",
+          "type": "uint32_t",
+          "desc": "无延展模式: I2C_NOSTRETCH_DISABLE / I2C_NOSTRETCH_ENABLE"
+        }
+      ],
+      "file": "py32f002b_hal_i2c.h"
+    },
+    {
+      "name": "I2C_HandleTypeDef",
+      "kind": "struct",
+      "def": "typedef struct __I2C_HandleTypeDef { I2C_TypeDef *Instance; I2C_InitTypeDef Init; uint8_t *pBuffPtr; uint16_t XferSize; __IO uint16_t XferCount; __IO uint32_t XferOptions; __IO uint32_t PreviousState; HAL_LockTypeDef Lock; __IO HAL_I2C_StateTypeDef State; __IO HAL_I2C_ModeTypeDef Mode; __IO uint32_t ErrorCode; __IO uint32_t Devaddress; __IO uint32_t Memaddress; __IO uint32_t MemaddSize; __IO uint32_t EventCount; } I2C_HandleTypeDef;",
+      "desc": "I2C 句柄结构体, 保存外设实例、初始化参数与传输过程上下文, 所有 HAL 函数通过它操作。",
+      "members": [
+        {
+          "name": "Instance",
+          "type": "I2C_TypeDef *",
+          "desc": "I2C 寄存器基地址(I2C1)"
+        },
+        {
+          "name": "Init",
+          "type": "I2C_InitTypeDef",
+          "desc": "I2C 通信参数"
+        },
+        {
+          "name": "pBuffPtr",
+          "type": "uint8_t *",
+          "desc": "指向传输缓冲区的指针"
+        },
+        {
+          "name": "XferSize",
+          "type": "uint16_t",
+          "desc": "传输数据长度"
+        },
+        {
+          "name": "XferCount",
+          "type": "__IO uint16_t",
+          "desc": "传输计数器"
+        },
+        {
+          "name": "XferOptions",
+          "type": "__IO uint32_t",
+          "desc": "传输帧选项(顺序传输用)"
+        },
+        {
+          "name": "PreviousState",
+          "type": "__IO uint32_t",
+          "desc": "上一次通信状态与模式(内部使用)"
+        },
+        {
+          "name": "Lock",
+          "type": "HAL_LockTypeDef",
+          "desc": "锁定对象(防止并发访问)"
+        },
+        {
+          "name": "State",
+          "type": "__IO HAL_I2C_StateTypeDef",
+          "desc": "通信状态(HAL_I2C_STATE_*)"
+        },
+        {
+          "name": "Mode",
+          "type": "__IO HAL_I2C_ModeTypeDef",
+          "desc": "通信模式(HAL_I2C_MODE_*)"
+        },
+        {
+          "name": "ErrorCode",
+          "type": "__IO uint32_t",
+          "desc": "错误码(HAL_I2C_ERROR_*, 可组合)"
+        },
+        {
+          "name": "Devaddress",
+          "type": "__IO uint32_t",
+          "desc": "目标设备地址"
+        },
+        {
+          "name": "Memaddress",
+          "type": "__IO uint32_t",
+          "desc": "目标存储器地址"
+        },
+        {
+          "name": "MemaddSize",
+          "type": "__IO uint32_t",
+          "desc": "目标存储器地址长度"
+        },
+        {
+          "name": "EventCount",
+          "type": "__IO uint32_t",
+          "desc": "事件计数器"
+        }
+      ],
+      "file": "py32f002b_hal_i2c.h"
+    },
+    {
+      "name": "HAL_I2C_StateTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_I2C_STATE_RESET = 0x00U, HAL_I2C_STATE_READY = 0x20U, HAL_I2C_STATE_BUSY = 0x24U, HAL_I2C_STATE_BUSY_TX = 0x21U, HAL_I2C_STATE_BUSY_RX = 0x22U, HAL_I2C_STATE_LISTEN = 0x28U, HAL_I2C_STATE_BUSY_TX_LISTEN = 0x29U, HAL_I2C_STATE_BUSY_RX_LISTEN = 0x2AU, HAL_I2C_STATE_ABORT = 0x60U, HAL_I2C_STATE_TIMEOUT = 0xA0U, HAL_I2C_STATE_ERROR = 0xE0U } HAL_I2C_StateTypeDef;",
+      "desc": "I2C 句柄状态枚举: 按位图编码(高 2 位错误信息、b5 初始化状态、b3 监听、b2 忙、b1 接收忙、b0 发送忙)。",
+      "members": [
+        {
+          "name": "HAL_I2C_STATE_RESET",
+          "value": "0x00U",
+          "desc": "外设尚未初始化"
+        },
+        {
+          "name": "HAL_I2C_STATE_READY",
+          "value": "0x20U",
+          "desc": "外设已初始化, 就绪"
+        },
+        {
+          "name": "HAL_I2C_STATE_BUSY",
+          "value": "0x24U",
+          "desc": "内部处理进行中"
+        },
+        {
+          "name": "HAL_I2C_STATE_BUSY_TX",
+          "value": "0x21U",
+          "desc": "数据发送进行中"
+        },
+        {
+          "name": "HAL_I2C_STATE_BUSY_RX",
+          "value": "0x22U",
+          "desc": "数据接收进行中"
+        },
+        {
+          "name": "HAL_I2C_STATE_LISTEN",
+          "value": "0x28U",
+          "desc": "地址监听模式进行中"
+        },
+        {
+          "name": "HAL_I2C_STATE_BUSY_TX_LISTEN",
+          "value": "0x29U",
+          "desc": "监听模式与数据发送同时进行"
+        },
+        {
+          "name": "HAL_I2C_STATE_BUSY_RX_LISTEN",
+          "value": "0x2AU",
+          "desc": "监听模式与数据接收同时进行"
+        },
+        {
+          "name": "HAL_I2C_STATE_ABORT",
+          "value": "0x60U",
+          "desc": "用户中止请求进行中"
+        },
+        {
+          "name": "HAL_I2C_STATE_TIMEOUT",
+          "value": "0xA0U",
+          "desc": "超时状态"
+        },
+        {
+          "name": "HAL_I2C_STATE_ERROR",
+          "value": "0xE0U",
+          "desc": "错误状态"
+        }
+      ],
+      "file": "py32f002b_hal_i2c.h"
+    },
+    {
+      "name": "HAL_I2C_ModeTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_I2C_MODE_NONE = 0x00U, HAL_I2C_MODE_MASTER = 0x10U, HAL_I2C_MODE_SLAVE = 0x20U, HAL_I2C_MODE_MEM = 0x40U } HAL_I2C_ModeTypeDef;",
+      "desc": "I2C 通信模式枚举(按位图编码: b6 存储器模式、b5 从模式、b4 主模式)。",
+      "members": [
+        {
+          "name": "HAL_I2C_MODE_NONE",
+          "value": "0x00U",
+          "desc": "无通信进行中"
+        },
+        {
+          "name": "HAL_I2C_MODE_MASTER",
+          "value": "0x10U",
+          "desc": "主模式"
+        },
+        {
+          "name": "HAL_I2C_MODE_SLAVE",
+          "value": "0x20U",
+          "desc": "从模式"
+        },
+        {
+          "name": "HAL_I2C_MODE_MEM",
+          "value": "0x40U",
+          "desc": "存储器模式"
+        }
+      ],
+      "file": "py32f002b_hal_i2c.h"
+    },
+    {
+      "name": "HAL_I2C_CallbackIDTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_I2C_MASTER_TX_COMPLETE_CB_ID = 0x00U, HAL_I2C_MASTER_RX_COMPLETE_CB_ID = 0x01U, HAL_I2C_SLAVE_TX_COMPLETE_CB_ID = 0x02U, HAL_I2C_SLAVE_RX_COMPLETE_CB_ID = 0x03U, HAL_I2C_LISTEN_COMPLETE_CB_ID = 0x04U, HAL_I2C_MEM_TX_COMPLETE_CB_ID = 0x05U, HAL_I2C_MEM_RX_COMPLETE_CB_ID = 0x06U, HAL_I2C_ERROR_CB_ID = 0x07U, HAL_I2C_ABORT_CB_ID = 0x08U, HAL_I2C_MSPINIT_CB_ID = 0x09U, HAL_I2C_MSPDEINIT_CB_ID = 0x0AU } HAL_I2C_CallbackIDTypeDef;",
+      "desc": "HAL I2C 回调 ID 枚举, 供 HAL_I2C_RegisterCallback() / HAL_I2C_UnRegisterCallback() 使用(需定义 USE_HAL_I2C_REGISTER_CALLBACKS)。",
+      "members": [
+        {
+          "name": "HAL_I2C_MASTER_TX_COMPLETE_CB_ID",
+          "value": "0x00U",
+          "desc": "主模式发送完成回调 ID"
+        },
+        {
+          "name": "HAL_I2C_MASTER_RX_COMPLETE_CB_ID",
+          "value": "0x01U",
+          "desc": "主模式接收完成回调 ID"
+        },
+        {
+          "name": "HAL_I2C_SLAVE_TX_COMPLETE_CB_ID",
+          "value": "0x02U",
+          "desc": "从模式发送完成回调 ID"
+        },
+        {
+          "name": "HAL_I2C_SLAVE_RX_COMPLETE_CB_ID",
+          "value": "0x03U",
+          "desc": "从模式接收完成回调 ID"
+        },
+        {
+          "name": "HAL_I2C_LISTEN_COMPLETE_CB_ID",
+          "value": "0x04U",
+          "desc": "监听完成回调 ID"
+        },
+        {
+          "name": "HAL_I2C_MEM_TX_COMPLETE_CB_ID",
+          "value": "0x05U",
+          "desc": "存储器写传输回调 ID"
+        },
+        {
+          "name": "HAL_I2C_MEM_RX_COMPLETE_CB_ID",
+          "value": "0x06U",
+          "desc": "存储器读传输完成回调 ID"
+        },
+        {
+          "name": "HAL_I2C_ERROR_CB_ID",
+          "value": "0x07U",
+          "desc": "错误回调 ID"
+        },
+        {
+          "name": "HAL_I2C_ABORT_CB_ID",
+          "value": "0x08U",
+          "desc": "中止回调 ID"
+        },
+        {
+          "name": "HAL_I2C_MSPINIT_CB_ID",
+          "value": "0x09U",
+          "desc": "MspInit 回调 ID"
+        },
+        {
+          "name": "HAL_I2C_MSPDEINIT_CB_ID",
+          "value": "0x0AU",
+          "desc": "MspDeInit 回调 ID"
+        }
+      ],
+      "file": "py32f002b_hal_i2c.h"
+    },
+    {
+      "name": "pI2C_CallbackTypeDef",
+      "kind": "typedef",
+      "def": "typedef void (*pI2C_CallbackTypeDef)(I2C_HandleTypeDef *hi2c);",
+      "desc": "I2C 回调函数指针类型(用于 HAL_I2C_RegisterCallback)。",
+      "members": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "I2C 句柄"
+        }
+      ],
+      "file": "py32f002b_hal_i2c.h"
+    },
+    {
+      "name": "pI2C_AddrCallbackTypeDef",
+      "kind": "typedef",
+      "def": "typedef void (*pI2C_AddrCallbackTypeDef)(I2C_HandleTypeDef *hi2c, uint8_t TransferDirection, uint16_t AddrMatchCode);",
+      "desc": "I2C 从机地址匹配回调函数指针类型(用于 HAL_I2C_RegisterAddrCallback)。",
+      "members": [
+        {
+          "name": "hi2c",
+          "type": "I2C_HandleTypeDef *",
+          "desc": "I2C 句柄"
+        },
+        {
+          "name": "TransferDirection",
+          "type": "uint8_t",
+          "desc": "传输方向"
+        },
+        {
+          "name": "AddrMatchCode",
+          "type": "uint16_t",
+          "desc": "匹配的地址"
+        }
+      ],
+      "file": "py32f002b_hal_i2c.h"
+    }
+  ],
+  "consts": [
+    {
+      "name": "I2C_DUTYCYCLE_2",
+      "value": "0x00000000U",
+      "desc": "快速模式占空比 Tlow/Thigh = 2",
+      "group": "I2C 快速模式占空比",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_DUTYCYCLE_2                 0x00000000U"
+    },
+    {
+      "name": "I2C_DUTYCYCLE_16_9",
+      "value": "I2C_CCR_DUTY",
+      "desc": "快速模式占空比 Tlow/Thigh = 16/9",
+      "group": "I2C 快速模式占空比",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_DUTYCYCLE_16_9              I2C_CCR_DUTY"
+    },
+    {
+      "name": "I2C_GENERALCALL_DISABLE",
+      "value": "0x00000000U",
+      "desc": "禁止广播呼叫(地址 0x00 不应答)",
+      "group": "I2C 广播呼叫模式",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_GENERALCALL_DISABLE        0x00000000U"
+    },
+    {
+      "name": "I2C_GENERALCALL_ENABLE",
+      "value": "I2C_CR1_ENGC",
+      "desc": "使能广播呼叫(地址 0x00 应答)",
+      "group": "I2C 广播呼叫模式",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_GENERALCALL_ENABLE         I2C_CR1_ENGC"
+    },
+    {
+      "name": "I2C_NOSTRETCH_DISABLE",
+      "value": "0x00000000U",
+      "desc": "禁止无延展模式(即使能时钟延展)",
+      "group": "I2C 无延展模式",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_NOSTRETCH_DISABLE          0x00000000U"
+    },
+    {
+      "name": "I2C_NOSTRETCH_ENABLE",
+      "value": "I2C_CR1_NOSTRETCH",
+      "desc": "使能无延展模式(即禁止时钟延展)",
+      "group": "I2C 无延展模式",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_NOSTRETCH_ENABLE           I2C_CR1_NOSTRETCH"
+    },
+    {
+      "name": "I2C_MEMADD_SIZE_8BIT",
+      "value": "0x00000001U",
+      "desc": "存储器地址为 8 位",
+      "group": "I2C 存储器地址长度",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_MEMADD_SIZE_8BIT            0x00000001U"
+    },
+    {
+      "name": "I2C_MEMADD_SIZE_16BIT",
+      "value": "0x00000010U",
+      "desc": "存储器地址为 16 位",
+      "group": "I2C 存储器地址长度",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_MEMADD_SIZE_16BIT           0x00000010U"
+    },
+    {
+      "name": "I2C_DIRECTION_RECEIVE",
+      "value": "0x00000000U",
+      "desc": "传输方向: 接收",
+      "group": "I2C 传输方向",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_DIRECTION_RECEIVE           0x00000000U"
+    },
+    {
+      "name": "I2C_DIRECTION_TRANSMIT",
+      "value": "0x00000001U",
+      "desc": "传输方向: 发送",
+      "group": "I2C 传输方向",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_DIRECTION_TRANSMIT          0x00000001U"
+    },
+    {
+      "name": "I2C_FIRST_FRAME",
+      "value": "0x00000001U",
+      "desc": "顺序传输: 首帧(起始条件+地址+数据, 无结束 STOP)",
+      "group": "I2C 顺序传输选项",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define  I2C_FIRST_FRAME                0x00000001U"
+    },
+    {
+      "name": "I2C_FIRST_AND_NEXT_FRAME",
+      "value": "0x00000002U",
+      "desc": "顺序传输: 首帧且允许连续调用同接口多次(仅主模式)",
+      "group": "I2C 顺序传输选项",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define  I2C_FIRST_AND_NEXT_FRAME       0x00000002U"
+    },
+    {
+      "name": "I2C_NEXT_FRAME",
+      "value": "0x00000004U",
+      "desc": "顺序传输: 中间帧(重启条件+地址+新数据, 无 STOP)",
+      "group": "I2C 顺序传输选项",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define  I2C_NEXT_FRAME                 0x00000004U"
+    },
+    {
+      "name": "I2C_FIRST_AND_LAST_FRAME",
+      "value": "0x00000008U",
+      "desc": "顺序传输: 唯一帧(功能与非顺序接口相同)",
+      "group": "I2C 顺序传输选项",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define  I2C_FIRST_AND_LAST_FRAME       0x00000008U"
+    },
+    {
+      "name": "I2C_LAST_FRAME_NO_STOP",
+      "value": "0x00000010U",
+      "desc": "顺序传输: 末帧但不产生 STOP(仅主模式)",
+      "group": "I2C 顺序传输选项",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define  I2C_LAST_FRAME_NO_STOP         0x00000010U"
+    },
+    {
+      "name": "I2C_LAST_FRAME",
+      "value": "0x00000020U",
+      "desc": "顺序传输: 末帧(产生最终 STOP)",
+      "group": "I2C 顺序传输选项",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define  I2C_LAST_FRAME                 0x00000020U"
+    },
+    {
+      "name": "I2C_OTHER_FRAME",
+      "value": "(0x00AA0000U)",
+      "desc": "顺序传输: 其它帧, 每次调用后均产生重启条件(仅主模式)",
+      "group": "I2C 顺序传输选项",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define  I2C_OTHER_FRAME                (0x00AA0000U)"
+    },
+    {
+      "name": "I2C_OTHER_AND_LAST_FRAME",
+      "value": "(0xAA000000U)",
+      "desc": "顺序传输: 其它且为末帧(自动产生 STOP)",
+      "group": "I2C 顺序传输选项",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define  I2C_OTHER_AND_LAST_FRAME       (0xAA000000U)"
+    },
+    {
+      "name": "I2C_IT_BUF",
+      "value": "I2C_CR2_ITBUFEN",
+      "desc": "缓冲中断使能(TXE/RXNE)",
+      "group": "I2C 中断源",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_IT_BUF                      I2C_CR2_ITBUFEN"
+    },
+    {
+      "name": "I2C_IT_EVT",
+      "value": "I2C_CR2_ITEVTEN",
+      "desc": "事件中断使能(SB/ADDR/BTF/STOPF 等)",
+      "group": "I2C 中断源",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_IT_EVT                      I2C_CR2_ITEVTEN"
+    },
+    {
+      "name": "I2C_IT_ERR",
+      "value": "I2C_CR2_ITERREN",
+      "desc": "错误中断使能(BERR/ARLO/AF/OVR)",
+      "group": "I2C 中断源",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_IT_ERR                      I2C_CR2_ITERREN"
+    },
+    {
+      "name": "I2C_FLAG_OVR",
+      "value": "0x00010800U",
+      "desc": "溢出/下溢标志",
+      "group": "I2C 标志",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_FLAG_OVR                    0x00010800U"
+    },
+    {
+      "name": "I2C_FLAG_AF",
+      "value": "0x00010400U",
+      "desc": "应答失败标志",
+      "group": "I2C 标志",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_FLAG_AF                     0x00010400U"
+    },
+    {
+      "name": "I2C_FLAG_ARLO",
+      "value": "0x00010200U",
+      "desc": "仲裁丢失标志(主模式)",
+      "group": "I2C 标志",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_FLAG_ARLO                   0x00010200U"
+    },
+    {
+      "name": "I2C_FLAG_BERR",
+      "value": "0x00010100U",
+      "desc": "总线错误标志",
+      "group": "I2C 标志",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_FLAG_BERR                   0x00010100U"
+    },
+    {
+      "name": "I2C_FLAG_TXE",
+      "value": "0x00010080U",
+      "desc": "数据寄存器空标志(发送方)",
+      "group": "I2C 标志",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_FLAG_TXE                    0x00010080U"
+    },
+    {
+      "name": "I2C_FLAG_RXNE",
+      "value": "0x00010040U",
+      "desc": "数据寄存器非空标志(接收方)",
+      "group": "I2C 标志",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_FLAG_RXNE                   0x00010040U"
+    },
+    {
+      "name": "I2C_FLAG_STOPF",
+      "value": "0x00010010U",
+      "desc": "停止检测标志(从模式)",
+      "group": "I2C 标志",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_FLAG_STOPF                  0x00010010U"
+    },
+    {
+      "name": "I2C_FLAG_ADD10",
+      "value": "0x00010008U",
+      "desc": "10 位地址头已发送标志",
+      "group": "I2C 标志",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_FLAG_ADD10                  0x00010008U"
+    },
+    {
+      "name": "I2C_FLAG_BTF",
+      "value": "0x00010004U",
+      "desc": "字节传输完成标志",
+      "group": "I2C 标志",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_FLAG_BTF                    0x00010004U"
+    },
+    {
+      "name": "I2C_FLAG_ADDR",
+      "value": "0x00010002U",
+      "desc": "地址已发送(主模式)/地址匹配(从模式)标志",
+      "group": "I2C 标志",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_FLAG_ADDR                   0x00010002U"
+    },
+    {
+      "name": "I2C_FLAG_SB",
+      "value": "0x00010001U",
+      "desc": "起始位标志(主模式)",
+      "group": "I2C 标志",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_FLAG_SB                     0x00010001U"
+    },
+    {
+      "name": "I2C_FLAG_DUALF",
+      "value": "0x00100080U",
+      "desc": "双地址标志(命中第二地址)",
+      "group": "I2C 标志",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_FLAG_DUALF                  0x00100080U"
+    },
+    {
+      "name": "I2C_FLAG_GENCALL",
+      "value": "0x00100010U",
+      "desc": "广播呼叫地址标志(从模式)",
+      "group": "I2C 标志",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_FLAG_GENCALL                0x00100010U"
+    },
+    {
+      "name": "I2C_FLAG_TRA",
+      "value": "0x00100004U",
+      "desc": "发送/接收方向标志",
+      "group": "I2C 标志",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_FLAG_TRA                    0x00100004U"
+    },
+    {
+      "name": "I2C_FLAG_BUSY",
+      "value": "0x00100002U",
+      "desc": "总线忙标志",
+      "group": "I2C 标志",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_FLAG_BUSY                   0x00100002U"
+    },
+    {
+      "name": "I2C_FLAG_MSL",
+      "value": "0x00100001U",
+      "desc": "主/从标志",
+      "group": "I2C 标志",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define I2C_FLAG_MSL                    0x00100001U"
+    },
+    {
+      "name": "HAL_I2C_ERROR_NONE",
+      "value": "0x00000000U",
+      "desc": "无错误",
+      "group": "HAL I2C 错误码",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define HAL_I2C_ERROR_NONE              0x00000000U    /*!< No error              */"
+    },
+    {
+      "name": "HAL_I2C_ERROR_BERR",
+      "value": "0x00000001U",
+      "desc": "总线错误",
+      "group": "HAL I2C 错误码",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define HAL_I2C_ERROR_BERR              0x00000001U    /*!< BERR error            */"
+    },
+    {
+      "name": "HAL_I2C_ERROR_ARLO",
+      "value": "0x00000002U",
+      "desc": "仲裁丢失错误",
+      "group": "HAL I2C 错误码",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define HAL_I2C_ERROR_ARLO              0x00000002U    /*!< ARLO error            */"
+    },
+    {
+      "name": "HAL_I2C_ERROR_AF",
+      "value": "0x00000004U",
+      "desc": "应答失败错误",
+      "group": "HAL I2C 错误码",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define HAL_I2C_ERROR_AF                0x00000004U    /*!< AF error              */"
+    },
+    {
+      "name": "HAL_I2C_ERROR_OVR",
+      "value": "0x00000008U",
+      "desc": "溢出/下溢错误",
+      "group": "HAL I2C 错误码",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define HAL_I2C_ERROR_OVR               0x00000008U    /*!< OVR error             */"
+    },
+    {
+      "name": "HAL_I2C_ERROR_TIMEOUT",
+      "value": "0x00000020U",
+      "desc": "超时错误",
+      "group": "HAL I2C 错误码",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define HAL_I2C_ERROR_TIMEOUT           0x00000020U    /*!< Timeout Error         */"
+    },
+    {
+      "name": "HAL_I2C_ERROR_SIZE",
+      "value": "0x00000040U",
+      "desc": "长度管理错误",
+      "group": "HAL I2C 错误码",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define HAL_I2C_ERROR_SIZE              0x00000040U    /*!< Size Management error */"
+    },
+    {
+      "name": "HAL_I2C_ERROR_INVALID_CALLBACK",
+      "value": "0x00000100U",
+      "desc": "无效回调错误(需定义 USE_HAL_I2C_REGISTER_CALLBACKS)",
+      "group": "HAL I2C 错误码",
+      "file": "py32f002b_hal_i2c.h",
+      "src": "#define HAL_I2C_ERROR_INVALID_CALLBACK  0x00000100U    /*!< Invalid Callback error */"
+    }
+  ]
+}

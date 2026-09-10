@@ -1,0 +1,4108 @@
+{
+  "module": "USART",
+  "moduleId": "usart",
+  "intro": "通用同步/异步收发器: 支持同步/异步模式、8/9 位字长、校验、1/2 停止位、时钟极性/相位/最后位、硬件流控、半双工、多机通信与自动波特率检测。含 HAL 库(py32f002b_hal_usart.c/.h, 轮询与中断收发、回调注册/注销)与 LL 库(py32f002b_ll_usart.h/.c, 约 100 个寄存器级内联函数)。",
+  "files": [
+    "py32f002b_hal_usart.c",
+    "py32f002b_hal_usart.h",
+    "py32f002b_ll_usart.h",
+    "py32f002b_ll_usart.c",
+    "py32f002xx5.h"
+  ],
+  "hal": [
+    {
+      "name": "HAL_USART_Init",
+      "sig": "HAL_StatusTypeDef HAL_USART_Init(USART_HandleTypeDef *husart)",
+      "brief": "根据 USART_InitTypeDef 中的参数初始化 USART 模式并初始化句柄: 配置波特率/字长/停止位/校验/模式/时钟参数, 使能外设。首次使用时还调用 HAL_USART_MspInit() 完成底层 GPIO/时钟配置。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针, 含 Instance 与 Init 配置"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败(句柄为空等)"
+      },
+      "notes": [
+        "使能校验时, 校验位插入发送数据 MSB 位; 帧格式由 M 位与 PCE 位组合决定(见文件头表格)。"
+      ],
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_USART_Init(USART_HandleTypeDef *husart)\r\n{\r\n  /* Check the USART handle allocation */\r\n  if (husart == NULL)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_USART_INSTANCE(husart->Instance));\r\n\r\n  if (husart->State == HAL_USART_STATE_RESET)\r\n  {\r\n    /* Allocate lock resource and initialize it */\r\n    husart->Lock = HAL_UNLOCKED;\r\n\r\n#if (USE_HAL_USART_REGISTER_CALLBACKS == 1)\r\n    USART_InitCallbacksToDefault(husart);\r\n\r\n    if (husart->MspInitCallback == NULL)\r\n    {\r\n      husart->MspInitCallback = HAL_USART_MspInit;\r\n    }\r\n\r\n    /* Init the low level hardware */\r\n    husart->MspInitCallback(husart);\r\n#else\r\n    /* Init the low level hardware : GPIO, CLOCK */\r\n    HAL_USART_MspInit(husart);\r\n#endif /* USE_HAL_USART_REGISTER_CALLBACKS */\r\n  }\r\n\r\n  husart->State = HAL_USART_STATE_BUSY;\r\n\r\n  /* Set the USART Communication parameters */\r\n  USART_SetConfig(husart);\r\n\r\n  /* Enable the Peripheral */\r\n  __HAL_USART_ENABLE(husart);\r\n\r\n  /* Initialize the USART state */\r\n  husart->ErrorCode = HAL_USART_ERROR_NONE;\r\n  husart->State = HAL_USART_STATE_READY;\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_USART_DeInit",
+      "sig": "HAL_StatusTypeDef HAL_USART_DeInit(USART_HandleTypeDef *husart)",
+      "brief": "反初始化 USART 外设: 禁止外设, 调用 HAL_USART_MspDeInit() 释放底层资源, 状态恢复为 RESET。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_USART_DeInit(USART_HandleTypeDef *husart)\r\n{\r\n  /* Check the USART handle allocation */\r\n  if (husart == NULL)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_USART_INSTANCE(husart->Instance));\r\n\r\n  husart->State = HAL_USART_STATE_BUSY;\r\n\r\n  /* Disable the Peripheral */\r\n  __HAL_USART_DISABLE(husart);\r\n\r\n#if (USE_HAL_USART_REGISTER_CALLBACKS == 1)\r\n  if (husart->MspDeInitCallback == NULL)\r\n  {\r\n    husart->MspDeInitCallback = HAL_USART_MspDeInit;\r\n  }\r\n  /* DeInit the low level hardware */\r\n  husart->MspDeInitCallback(husart);\r\n#else\r\n  /* DeInit the low level hardware */\r\n  HAL_USART_MspDeInit(husart);\r\n#endif /* USE_HAL_USART_REGISTER_CALLBACKS */\r\n\r\n  husart->ErrorCode = HAL_USART_ERROR_NONE;\r\n  husart->State = HAL_USART_STATE_RESET;\r\n\r\n  /* Release Lock */\r\n  __HAL_UNLOCK(husart);\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_USART_MspInit",
+      "sig": "void HAL_USART_MspInit(USART_HandleTypeDef *husart)",
+      "brief": "USART 底层初始化(弱定义空函数): 由 HAL_USART_Init() 调用, 用户在此实现 USART 时钟使能、引脚复用配置与 NVIC 中断配置。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 不要修改库内实现, 在用户文件中重新实现同名函数。"
+      ],
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "__weak void HAL_USART_MspInit(USART_HandleTypeDef *husart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(husart);\r\n  /* NOTE: This function should not be modified, when the callback is needed,\r\n           the HAL_USART_MspInit could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_USART_MspDeInit",
+      "sig": "void HAL_USART_MspDeInit(USART_HandleTypeDef *husart)",
+      "brief": "USART 底层反初始化(弱定义空函数): 由 HAL_USART_DeInit() 调用, 用户在重写版本中关闭时钟、复位引脚与 NVIC 配置。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "__weak void HAL_USART_MspDeInit(USART_HandleTypeDef *husart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(husart);\r\n  /* NOTE: This function should not be modified, when the callback is needed,\r\n           the HAL_USART_MspDeInit could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_USART_RegisterCallback",
+      "sig": "HAL_StatusTypeDef HAL_USART_RegisterCallback(USART_HandleTypeDef *husart, HAL_USART_CallbackIDTypeDef CallbackID, pUSART_CallbackTypeDef pCallback)",
+      "brief": "注册用户回调以替代弱定义回调(需编译宏 USE_HAL_USART_REGISTER_CALLBACKS=1)。回调可在 READY 状态注册; MspInit/MspDeInit 回调可在 READY 或 RESET 状态注册。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        },
+        {
+          "name": "CallbackID",
+          "type": "HAL_USART_CallbackIDTypeDef",
+          "desc": "要注册的回调 ID, 可取 HAL_USART_TX_HALFCOMPLETE_CB_ID .. HAL_USART_MSPDEINIT_CB_ID"
+        },
+        {
+          "name": "pCallback",
+          "type": "pUSART_CallbackTypeDef",
+          "desc": "指向用户回调函数的指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败(回调为空或在不允许的状态注册)"
+      },
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_USART_RegisterCallback(USART_HandleTypeDef *husart, HAL_USART_CallbackIDTypeDef CallbackID, pUSART_CallbackTypeDef pCallback)\r\n{\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  if (pCallback == NULL)\r\n  {\r\n    /* Update the error code */\r\n    husart->ErrorCode |= HAL_USART_ERROR_INVALID_CALLBACK;\r\n\r\n    return HAL_ERROR;\r\n  }\r\n  /* Process locked */\r\n  __HAL_LOCK(husart);\r\n\r\n  if (husart->State == HAL_USART_STATE_READY)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_USART_TX_HALFCOMPLETE_CB_ID :\r\n      husart->TxHalfCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_USART_TX_COMPLETE_CB_ID :\r\n      husart->TxCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_USART_RX_HALFCOMPLETE_CB_ID :\r\n      husart->RxHalfCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_USART_RX_COMPLETE_CB_ID :\r\n      husart->RxCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_USART_TX_RX_COMPLETE_CB_ID :\r\n      husart->TxRxCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_USART_ERROR_CB_ID :\r\n      husart->ErrorCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_USART_ABORT_COMPLETE_CB_ID :\r\n      husart->AbortCpltCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_USART_MSPINIT_CB_ID :\r\n      husart->MspInitCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_USART_MSPDEINIT_CB_ID :\r\n      husart->MspDeInitCallback = pCallback;\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      husart->ErrorCode |= HAL_USART_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else if (husart->State == HAL_USART_STATE_RESET)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_USART_MSPINIT_CB_ID :\r\n      husart->MspInitCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_USART_MSPDEINIT_CB_ID :\r\n      husart->MspDeInitCallback = pCallback;\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      husart->ErrorCode |= HAL_USART_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else\r\n  {\r\n    /* Update the error code */\r\n    husart->ErrorCode |= HAL_USART_ERROR_INVALID_CALLBACK;\r\n\r\n    /* Return error status */\r\n    status =  HAL_ERROR;\r\n  }\r\n\r\n  /* Release Lock */\r\n  __HAL_UNLOCK(husart);\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_USART_UnRegisterCallback",
+      "sig": "HAL_StatusTypeDef HAL_USART_UnRegisterCallback(USART_HandleTypeDef *husart, HAL_USART_CallbackIDTypeDef CallbackID)",
+      "brief": "注销已注册的用户回调, 恢复为对应的弱定义默认函数(需编译宏 USE_HAL_USART_REGISTER_CALLBACKS=1)。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        },
+        {
+          "name": "CallbackID",
+          "type": "HAL_USART_CallbackIDTypeDef",
+          "desc": "要注销的回调 ID, 取值同注册函数"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败"
+      },
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_USART_UnRegisterCallback(USART_HandleTypeDef *husart, HAL_USART_CallbackIDTypeDef CallbackID)\r\n{\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  /* Process locked */\r\n  __HAL_LOCK(husart);\r\n\r\n  if (husart->State == HAL_USART_STATE_READY)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_USART_TX_HALFCOMPLETE_CB_ID :\r\n      husart->TxHalfCpltCallback = HAL_USART_TxHalfCpltCallback;               /* Legacy weak  TxHalfCpltCallback       */\r\n      break;\r\n\r\n    case HAL_USART_TX_COMPLETE_CB_ID :\r\n      husart->TxCpltCallback = HAL_USART_TxCpltCallback;                       /* Legacy weak TxCpltCallback            */\r\n      break;\r\n\r\n    case HAL_USART_RX_HALFCOMPLETE_CB_ID :\r\n      husart->RxHalfCpltCallback = HAL_USART_RxHalfCpltCallback;               /* Legacy weak RxHalfCpltCallback        */\r\n      break;\r\n\r\n    case HAL_USART_RX_COMPLETE_CB_ID :\r\n      husart->RxCpltCallback = HAL_USART_RxCpltCallback;                       /* Legacy weak RxCpltCallback            */\r\n      break;\r\n\r\n    case HAL_USART_TX_RX_COMPLETE_CB_ID :\r\n      husart->TxRxCpltCallback = HAL_USART_TxRxCpltCallback;                   /* Legacy weak TxRxCpltCallback            */\r\n      break;\r\n\r\n    case HAL_USART_ERROR_CB_ID :\r\n      husart->ErrorCallback = HAL_USART_ErrorCallback;                         /* Legacy weak ErrorCallback             */\r\n      break;\r\n\r\n    case HAL_USART_ABORT_COMPLETE_CB_ID :\r\n      husart->AbortCpltCallback = HAL_USART_AbortCpltCallback;                 /* Legacy weak AbortCpltCallback         */\r\n      break;\r\n\r\n    case HAL_USART_MSPINIT_CB_ID :\r\n      husart->MspInitCallback = HAL_USART_MspInit;                             /* Legacy weak MspInitCallback           */\r\n      break;\r\n\r\n    case HAL_USART_MSPDEINIT_CB_ID :\r\n      husart->MspDeInitCallback = HAL_USART_MspDeInit;                         /* Legacy weak MspDeInitCallback         */\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      husart->ErrorCode |= HAL_USART_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else if (husart->State == HAL_USART_STATE_RESET)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_USART_MSPINIT_CB_ID :\r\n      husart->MspInitCallback = HAL_USART_MspInit;\r\n      break;\r\n\r\n    case HAL_USART_MSPDEINIT_CB_ID :\r\n      husart->MspDeInitCallback = HAL_USART_MspDeInit;\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      husart->ErrorCode |= HAL_USART_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else\r\n  {\r\n    /* Update the error code */\r\n    husart->ErrorCode |= HAL_USART_ERROR_INVALID_CALLBACK;\r\n\r\n    /* Return error status */\r\n    status =  HAL_ERROR;\r\n  }\r\n\r\n  /* Release Lock */\r\n  __HAL_UNLOCK(husart);\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_USART_Transmit",
+      "sig": "HAL_StatusTypeDef HAL_USART_Transmit(USART_HandleTypeDef *husart, uint8_t *pTxData, uint16_t Size, uint32_t Timeout)",
+      "brief": "阻塞(轮询)模式单工发送指定数量的数据, 等待 TXE/TC 标志, 支持超时。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        },
+        {
+          "name": "pTxData",
+          "type": "uint8_t *",
+          "desc": "指向发送数据缓冲的指针(u8 或 u16 元素)"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要发送的数据元素个数(u8 或 u16)"
+        },
+        {
+          "name": "Timeout",
+          "type": "uint32_t",
+          "desc": "超时时间, 单位 ms"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_TIMEOUT 超时; HAL_BUSY 忙; HAL_ERROR 参数错误"
+      },
+      "notes": [
+        "9 位字长且无校验时, 数据按 u16 处理, Size 为 u16 个数。"
+      ],
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_USART_Transmit(USART_HandleTypeDef *husart, uint8_t *pTxData, uint16_t Size, uint32_t Timeout)\r\n{\r\n  uint16_t *tmp;\r\n  uint32_t tickstart = 0U;\r\n\r\n  if (husart->State == HAL_USART_STATE_READY)\r\n  {\r\n    if ((pTxData == NULL) || (Size == 0))\r\n    {\r\n      return  HAL_ERROR;\r\n    }\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(husart);\r\n\r\n    husart->ErrorCode = HAL_USART_ERROR_NONE;\r\n    husart->State = HAL_USART_STATE_BUSY_TX;\r\n\r\n    /* Init tickstart for timeout management */\r\n    tickstart = HAL_GetTick();\r\n\r\n    husart->TxXferSize = Size;\r\n    husart->TxXferCount = Size;\r\n    while (husart->TxXferCount > 0U)\r\n    {\r\n      husart->TxXferCount--;\r\n      if (husart->Init.WordLength == USART_WORDLENGTH_9B)\r\n      {\r\n        /* Wait for TC flag in order to write data in DR */\r\n        if (USART_WaitOnFlagUntilTimeout(husart, USART_FLAG_TXE, RESET, tickstart, Timeout) != HAL_OK)\r\n        {\r\n          return HAL_TIMEOUT;\r\n        }\r\n        tmp = (uint16_t *) pTxData;\r\n        husart->Instance->DR = (*tmp & (uint16_t)0x01FF);\r\n        if (husart->Init.Parity == USART_PARITY_NONE)\r\n        {\r\n          pTxData += 2U;\r\n        }\r\n        else\r\n        {\r\n          pTxData += 1U;\r\n        }\r\n      }\r\n      else\r\n      {\r\n        if (USART_WaitOnFlagUntilTimeout(husart, USART_FLAG_TXE, RESET, tickstart, Timeout) != HAL_OK)\r\n        {\r\n          return HAL_TIMEOUT;\r\n        }\r\n        husart->Instance->DR = (*pTxData++ & (uint8_t)0xFF);\r\n      }\r\n    }\r\n\r\n    if (USART_WaitOnFlagUntilTimeout(husart, USART_FLAG_TC, RESET, tickstart, Timeout) != HAL_OK)\r\n    {\r\n      return HAL_TIMEOUT;\r\n    }\r\n\r\n    husart->State = HAL_USART_STATE_READY;\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(husart);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_USART_Receive",
+      "sig": "HAL_StatusTypeDef HAL_USART_Receive(USART_HandleTypeDef *husart, uint8_t *pRxData, uint16_t Size, uint32_t Timeout)",
+      "brief": "阻塞(轮询)模式全双工接收指定数量的数据; 同步接收时同时发送哑数据以产生 SCLK 时钟。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        },
+        {
+          "name": "pRxData",
+          "type": "uint8_t *",
+          "desc": "指向接收数据缓冲的指针(u8 或 u16 元素)"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要接收的数据元素个数(u8 或 u16)"
+        },
+        {
+          "name": "Timeout",
+          "type": "uint32_t",
+          "desc": "超时时间, 单位 ms"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_TIMEOUT 超时; HAL_BUSY 忙; HAL_ERROR 参数错误"
+      },
+      "notes": [
+        "9 位字长且无校验时, 数据按 u16 处理, Size 为 u16 个数。"
+      ],
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_USART_Receive(USART_HandleTypeDef *husart, uint8_t *pRxData, uint16_t Size, uint32_t Timeout)\r\n{\r\n  uint16_t *tmp;\r\n  uint32_t tickstart = 0U;\r\n\r\n  if (husart->State == HAL_USART_STATE_READY)\r\n  {\r\n    if ((pRxData == NULL) || (Size == 0))\r\n    {\r\n      return  HAL_ERROR;\r\n    }\r\n    /* Process Locked */\r\n    __HAL_LOCK(husart);\r\n\r\n    husart->ErrorCode = HAL_USART_ERROR_NONE;\r\n    husart->State = HAL_USART_STATE_BUSY_RX;\r\n\r\n    /* Init tickstart for timeout management */\r\n    tickstart = HAL_GetTick();\r\n\r\n    husart->RxXferSize = Size;\r\n    husart->RxXferCount = Size;\r\n    /* Check the remain data to be received */\r\n    while (husart->RxXferCount > 0U)\r\n    {\r\n      husart->RxXferCount--;\r\n      if (husart->Init.WordLength == USART_WORDLENGTH_9B)\r\n      {\r\n        /* Wait until TXE flag is set to send dummy byte in order to generate the clock for the slave to send data */\r\n        if (USART_WaitOnFlagUntilTimeout(husart, USART_FLAG_TXE, RESET, tickstart, Timeout) != HAL_OK)\r\n        {\r\n          return HAL_TIMEOUT;\r\n        }\r\n        /* Send dummy byte in order to generate clock */\r\n        husart->Instance->DR = (DUMMY_DATA & (uint16_t)0x01FF);\r\n\r\n        /* Wait for RXNE Flag */\r\n        if (USART_WaitOnFlagUntilTimeout(husart, USART_FLAG_RXNE, RESET, tickstart, Timeout) != HAL_OK)\r\n        {\r\n          return HAL_TIMEOUT;\r\n        }\r\n        tmp = (uint16_t *) pRxData ;\r\n        if (husart->Init.Parity == USART_PARITY_NONE)\r\n        {\r\n          *tmp = (uint16_t)(husart->Instance->DR & (uint16_t)0x01FF);\r\n          pRxData += 2U;\r\n        }\r\n        else\r\n        {\r\n          *tmp = (uint16_t)(husart->Instance->DR & (uint16_t)0x00FF);\r\n          pRxData += 1U;\r\n        }\r\n      }\r\n      else\r\n      {\r\n        /* Wait until TXE flag is set to send dummy byte in order to generate the clock for the slave to send data */\r\n        if (USART_WaitOnFlagUntilTimeout(husart, USART_FLAG_TXE, RESET, tickstart, Timeout) != HAL_OK)\r\n        {\r\n          return HAL_TIMEOUT;\r\n        }\r\n\r\n        /* Send Dummy Byte in order to generate clock */\r\n        husart->Instance->DR = (DUMMY_DATA & (uint16_t)0x00FF);\r\n\r\n        /* Wait until RXNE flag is set to receive the byte */\r\n        if (USART_WaitOnFlagUntilTimeout(husart, USART_FLAG_RXNE, RESET, tickstart, Timeout) != HAL_OK)\r\n        {\r\n          return HAL_TIMEOUT;\r\n        }\r\n        if (husart->Init.Parity == USART_PARITY_NONE)\r\n        {\r\n          /* Receive data */\r\n          *pRxData++ = (uint8_t)(husart->Instance->DR & (uint8_t)0x00FF);\r\n        }\r\n        else\r\n        {\r\n          /* Receive data */\r\n          *pRxData++ = (uint8_t)(husart->Instance->DR & (uint8_t)0x007F);\r\n        }\r\n\r\n      }\r\n    }\r\n\r\n    husart->State = HAL_USART_STATE_READY;\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(husart);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_USART_TransmitReceive",
+      "sig": "HAL_StatusTypeDef HAL_USART_TransmitReceive(USART_HandleTypeDef *husart, uint8_t *pTxData, uint8_t *pRxData, uint16_t Size, uint32_t Timeout)",
+      "brief": "阻塞(轮询)模式全双工同时收发指定数量的数据, 等待 TXE/RXNE 标志, 支持超时。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        },
+        {
+          "name": "pTxData",
+          "type": "uint8_t *",
+          "desc": "指向发送数据缓冲的指针"
+        },
+        {
+          "name": "pRxData",
+          "type": "uint8_t *",
+          "desc": "指向接收数据缓冲的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "收发数据元素个数(发送与接收相同)"
+        },
+        {
+          "name": "Timeout",
+          "type": "uint32_t",
+          "desc": "超时时间, 单位 ms"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_TIMEOUT 超时; HAL_BUSY 忙; HAL_ERROR 参数错误"
+      },
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_USART_TransmitReceive(USART_HandleTypeDef *husart, uint8_t *pTxData, uint8_t *pRxData, uint16_t Size, uint32_t Timeout)\r\n{\r\n  uint16_t *tmp;\r\n  uint32_t tickstart = 0U;\r\n\r\n  if (husart->State == HAL_USART_STATE_READY)\r\n  {\r\n    if ((pTxData == NULL) || (pRxData == NULL) || (Size == 0))\r\n    {\r\n      return  HAL_ERROR;\r\n    }\r\n    /* Process Locked */\r\n    __HAL_LOCK(husart);\r\n\r\n    husart->ErrorCode = HAL_USART_ERROR_NONE;\r\n    husart->State = HAL_USART_STATE_BUSY_RX;\r\n\r\n    /* Init tickstart for timeout management */\r\n    tickstart = HAL_GetTick();\r\n\r\n    husart->RxXferSize = Size;\r\n    husart->TxXferSize = Size;\r\n    husart->TxXferCount = Size;\r\n    husart->RxXferCount = Size;\r\n\r\n    /* Check the remain data to be received */\r\n    while (husart->TxXferCount > 0U)\r\n    {\r\n      husart->TxXferCount--;\r\n      husart->RxXferCount--;\r\n      if (husart->Init.WordLength == USART_WORDLENGTH_9B)\r\n      {\r\n        /* Wait for TC flag in order to write data in DR */\r\n        if (USART_WaitOnFlagUntilTimeout(husart, USART_FLAG_TXE, RESET, tickstart, Timeout) != HAL_OK)\r\n        {\r\n          return HAL_TIMEOUT;\r\n        }\r\n        tmp = (uint16_t *) pTxData;\r\n        husart->Instance->DR = (*tmp & (uint16_t)0x01FF);\r\n        if (husart->Init.Parity == USART_PARITY_NONE)\r\n        {\r\n          pTxData += 2U;\r\n        }\r\n        else\r\n        {\r\n          pTxData += 1U;\r\n        }\r\n\r\n        /* Wait for RXNE Flag */\r\n        if (USART_WaitOnFlagUntilTimeout(husart, USART_FLAG_RXNE, RESET, tickstart, Timeout) != HAL_OK)\r\n        {\r\n          return HAL_TIMEOUT;\r\n        }\r\n        tmp = (uint16_t *) pRxData ;\r\n        if (husart->Init.Parity == USART_PARITY_NONE)\r\n        {\r\n          *tmp = (uint16_t)(husart->Instance->DR & (uint16_t)0x01FF);\r\n          pRxData += 2U;\r\n        }\r\n        else\r\n        {\r\n          *tmp = (uint16_t)(husart->Instance->DR & (uint16_t)0x00FF);\r\n          pRxData += 1U;\r\n        }\r\n      }\r\n      else\r\n      {\r\n        /* Wait for TC flag in order to write data in DR */\r\n        if (USART_WaitOnFlagUntilTimeout(husart, USART_FLAG_TXE, RESET, tickstart, Timeout) != HAL_OK)\r\n        {\r\n          return HAL_TIMEOUT;\r\n        }\r\n        husart->Instance->DR = (*pTxData++ & (uint8_t)0x00FF);\r\n\r\n        /* Wait for RXNE Flag */\r\n        if (USART_WaitOnFlagUntilTimeout(husart, USART_FLAG_RXNE, RESET, tickstart, Timeout) != HAL_OK)\r\n        {\r\n          return HAL_TIMEOUT;\r\n        }\r\n        if (husart->Init.Parity == USART_PARITY_NONE)\r\n        {\r\n          /* Receive data */\r\n          *pRxData++ = (uint8_t)(husart->Instance->DR & (uint8_t)0x00FF);\r\n        }\r\n        else\r\n        {\r\n          /* Receive data */\r\n          *pRxData++ = (uint8_t)(husart->Instance->DR & (uint8_t)0x007F);\r\n        }\r\n      }\r\n    }\r\n\r\n    husart->State = HAL_USART_STATE_READY;\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(husart);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_USART_Transmit_IT",
+      "sig": "HAL_StatusTypeDef HAL_USART_Transmit_IT(USART_HandleTypeDef *husart, uint8_t *pTxData, uint16_t Size)",
+      "brief": "非阻塞(中断)模式单工发送: 使能 TXE 中断, 数据在中断中逐字节发送, 结束回调 HAL_USART_TxCpltCallback()。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        },
+        {
+          "name": "pTxData",
+          "type": "uint8_t *",
+          "desc": "指向发送数据缓冲的指针(u8 或 u16 元素)"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要发送的数据元素个数"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 参数错误"
+      },
+      "notes": [
+        "发送流程不管理错误中断(帧/噪声/溢出), 以避免 TX_RX 模式下的溢出中断; 可用 __HAL_USART_ENABLE_IT(husart, USART_IT_ERR) 自行使能。"
+      ],
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_USART_Transmit_IT(USART_HandleTypeDef *husart, uint8_t *pTxData, uint16_t Size)\r\n{\r\n  if (husart->State == HAL_USART_STATE_READY)\r\n  {\r\n    if ((pTxData == NULL) || (Size == 0))\r\n    {\r\n      return HAL_ERROR;\r\n    }\r\n\r\n    /* Process Locked */\r\n    __HAL_LOCK(husart);\r\n\r\n    husart->pTxBuffPtr = pTxData;\r\n    husart->TxXferSize = Size;\r\n    husart->TxXferCount = Size;\r\n\r\n    husart->ErrorCode = HAL_USART_ERROR_NONE;\r\n    husart->State = HAL_USART_STATE_BUSY_TX;\r\n\r\n    /* The USART Error Interrupts: (Frame error, Noise error, Overrun error)\r\n       are not managed by the USART transmit process to avoid the overrun interrupt\r\n       when the USART mode is configured for transmit and receive \"USART_MODE_TX_RX\"\r\n       to benefit for the frame error and noise interrupts the USART mode should be\r\n       configured only for transmit \"USART_MODE_TX\"\r\n       The __HAL_USART_ENABLE_IT(husart, USART_IT_ERR) can be used to enable the Frame error,\r\n       Noise error interrupt */\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(husart);\r\n\r\n    /* Enable the USART Transmit Data Register Empty Interrupt */\r\n    SET_BIT(husart->Instance->CR1, USART_CR1_TXEIE);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_USART_Receive_IT",
+      "sig": "HAL_StatusTypeDef HAL_USART_Receive_IT(USART_HandleTypeDef *husart, uint8_t *pRxData, uint16_t Size)",
+      "brief": "非阻塞(中断)模式接收: 使能 PE/RXNE/EIE 中断并发送哑数据产生时钟, 接收结束回调 HAL_USART_RxCpltCallback()。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        },
+        {
+          "name": "pRxData",
+          "type": "uint8_t *",
+          "desc": "指向接收数据缓冲的指针(u8 或 u16 元素)"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "要接收的数据元素个数"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 参数错误"
+      },
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_USART_Receive_IT(USART_HandleTypeDef *husart, uint8_t *pRxData, uint16_t Size)\r\n{\r\n  if (husart->State == HAL_USART_STATE_READY)\r\n  {\r\n    if ((pRxData == NULL) || (Size == 0))\r\n    {\r\n      return HAL_ERROR;\r\n    }\r\n    /* Process Locked */\r\n    __HAL_LOCK(husart);\r\n\r\n    husart->pRxBuffPtr = pRxData;\r\n    husart->RxXferSize = Size;\r\n    husart->RxXferCount = Size;\r\n\r\n    husart->ErrorCode = HAL_USART_ERROR_NONE;\r\n    husart->State = HAL_USART_STATE_BUSY_RX;\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(husart);\r\n\r\n    /* Enable the USART Parity Error and Data Register not empty Interrupts */\r\n    SET_BIT(husart->Instance->CR1, USART_CR1_PEIE | USART_CR1_RXNEIE);\r\n\r\n    /* Enable the USART Error Interrupt: (Frame error, noise error, overrun error) */\r\n    SET_BIT(husart->Instance->CR3, USART_CR3_EIE);\r\n\r\n    /* Send dummy byte in order to generate the clock for the slave to send data */\r\n    husart->Instance->DR = (DUMMY_DATA & (uint16_t)0x01FF);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_USART_TransmitReceive_IT",
+      "sig": "HAL_StatusTypeDef HAL_USART_TransmitReceive_IT(USART_HandleTypeDef *husart, uint8_t *pTxData, uint8_t *pRxData, uint16_t Size)",
+      "brief": "非阻塞(中断)模式全双工收发: 使能 RXNE/PE/EIE/TXE 中断, 收发完成回调 HAL_USART_TxRxCpltCallback()。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        },
+        {
+          "name": "pTxData",
+          "type": "uint8_t *",
+          "desc": "指向发送数据缓冲的指针"
+        },
+        {
+          "name": "pRxData",
+          "type": "uint8_t *",
+          "desc": "指向接收数据缓冲的指针"
+        },
+        {
+          "name": "Size",
+          "type": "uint16_t",
+          "desc": "收发数据元素个数"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_BUSY 忙; HAL_ERROR 参数错误"
+      },
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_USART_TransmitReceive_IT(USART_HandleTypeDef *husart, uint8_t *pTxData, uint8_t *pRxData,  uint16_t Size)\r\n{\r\n  if (husart->State == HAL_USART_STATE_READY)\r\n  {\r\n    if ((pTxData == NULL) || (pRxData == NULL) || (Size == 0))\r\n    {\r\n      return HAL_ERROR;\r\n    }\r\n    /* Process Locked */\r\n    __HAL_LOCK(husart);\r\n\r\n    husart->pRxBuffPtr = pRxData;\r\n    husart->RxXferSize = Size;\r\n    husart->RxXferCount = Size;\r\n    husart->pTxBuffPtr = pTxData;\r\n    husart->TxXferSize = Size;\r\n    husart->TxXferCount = Size;\r\n\r\n    husart->ErrorCode = HAL_USART_ERROR_NONE;\r\n    husart->State = HAL_USART_STATE_BUSY_TX_RX;\r\n\r\n    /* Process Unlocked */\r\n    __HAL_UNLOCK(husart);\r\n\r\n    /* Enable the USART Data Register not empty Interrupt */\r\n    SET_BIT(husart->Instance->CR1, USART_CR1_RXNEIE);\r\n\r\n    /* Enable the USART Parity Error Interrupt */\r\n    SET_BIT(husart->Instance->CR1, USART_CR1_PEIE);\r\n\r\n    /* Enable the USART Error Interrupt: (Frame error, noise error, overrun error) */\r\n    SET_BIT(husart->Instance->CR3, USART_CR3_EIE);\r\n\r\n    /* Enable the USART Transmit Data Register Empty Interrupt */\r\n    SET_BIT(husart->Instance->CR1, USART_CR1_TXEIE);\r\n\r\n    return HAL_OK;\r\n  }\r\n  else\r\n  {\r\n    return HAL_BUSY;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_USART_Abort",
+      "sig": "HAL_StatusTypeDef HAL_USART_Abort(USART_HandleTypeDef *husart)",
+      "brief": "中止正在进行的传输(阻塞模式): 禁止 TXE/TC/RXNE/PE/ERR 中断, 清零传输计数器, 状态恢复 READY, 退出函数时中止即完成。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功"
+      },
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_USART_Abort(USART_HandleTypeDef *husart)\r\n{\r\n  /* Disable TXEIE, TCIE, RXNE, PE and ERR (Frame error, noise error, overrun error) interrupts */\r\n  CLEAR_BIT(husart->Instance->CR1, (USART_CR1_RXNEIE | USART_CR1_PEIE | USART_CR1_TXEIE | USART_CR1_TCIE));\r\n  CLEAR_BIT(husart->Instance->CR3, USART_CR3_EIE);\r\n\r\n  /* Reset Tx and Rx transfer counters */\r\n  husart->TxXferCount = 0x00U;\r\n  husart->RxXferCount = 0x00U;\r\n\r\n  /* Restore husart->State to Ready */\r\n  husart->State  = HAL_USART_STATE_READY;\r\n\r\n  /* Reset Handle ErrorCode to No Error */\r\n  husart->ErrorCode = HAL_USART_ERROR_NONE;\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_USART_Abort_IT",
+      "sig": "HAL_StatusTypeDef HAL_USART_Abort_IT(USART_HandleTypeDef *husart)",
+      "brief": "中止正在进行的传输(中断模式): 禁止相关中断, 清零计数器并调用中止完成回调 HAL_USART_AbortCpltCallback(); 中止完成以回调执行为准, 而非函数返回。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功"
+      },
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_USART_Abort_IT(USART_HandleTypeDef *husart)\r\n{\r\n  uint32_t AbortCplt = 0x01U;\r\n\r\n  /* Disable TXEIE, TCIE, RXNE, PE and ERR (Frame error, noise error, overrun error) interrupts */\r\n  CLEAR_BIT(husart->Instance->CR1, (USART_CR1_RXNEIE | USART_CR1_PEIE | USART_CR1_TXEIE | USART_CR1_TCIE));\r\n  CLEAR_BIT(husart->Instance->CR3, USART_CR3_EIE);\r\n\r\n  /* call user Abort Complete callback */\r\n  if (AbortCplt  == 0x01U)\r\n  {\r\n    /* Reset Tx and Rx transfer counters */\r\n    husart->TxXferCount = 0x00U;\r\n    husart->RxXferCount = 0x00U;\r\n\r\n    /* Reset errorCode */\r\n    husart->ErrorCode = HAL_USART_ERROR_NONE;\r\n\r\n    /* Restore husart->State to Ready */\r\n    husart->State  = HAL_USART_STATE_READY;\r\n\r\n    /* call directly user Abort complete callback */\r\n#if (USE_HAL_USART_REGISTER_CALLBACKS == 1)\r\n    /* Call registered Abort Complete Callback */\r\n    husart->AbortCpltCallback(husart);\r\n#else\r\n    /* Call legacy weak Abort Complete Callback */\r\n    HAL_USART_AbortCpltCallback(husart);\r\n#endif /* USE_HAL_USART_REGISTER_CALLBACKS */\r\n  }\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_USART_IRQHandler",
+      "sig": "void HAL_USART_IRQHandler(USART_HandleTypeDef *husart)",
+      "brief": "USART 中断服务处理函数: 检测 RXNE/TXE/TC 与 PE/NE/FE/ORE 错误标志, 分发到内部收发中断流程并调用相应回调。应在 USART IRQHandler 中调用。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "void HAL_USART_IRQHandler(USART_HandleTypeDef *husart)\r\n{\r\n  uint32_t isrflags = READ_REG(husart->Instance->SR);\r\n  uint32_t cr1its   = READ_REG(husart->Instance->CR1);\r\n  uint32_t cr3its   = READ_REG(husart->Instance->CR3);\r\n  uint32_t errorflags = 0x00U;\r\n\r\n  /* If no error occurs */\r\n  errorflags = (isrflags & (uint32_t)(USART_SR_PE | USART_SR_FE | USART_SR_ORE | USART_SR_NE));\r\n  if (errorflags == RESET)\r\n  {\r\n    /* USART in mode Receiver -------------------------------------------------*/\r\n    if (((isrflags & USART_SR_RXNE) != RESET) && ((cr1its & USART_CR1_RXNEIE) != RESET))\r\n    {\r\n      if (husart->State == HAL_USART_STATE_BUSY_RX)\r\n      {\r\n        USART_Receive_IT(husart);\r\n      }\r\n      else\r\n      {\r\n        USART_TransmitReceive_IT(husart);\r\n      }\r\n      return;\r\n    }\r\n  }\r\n  /* If some errors occur */\r\n  if ((errorflags != RESET) && (((cr3its & USART_CR3_EIE) != RESET) || ((cr1its & (USART_CR1_RXNEIE | USART_CR1_PEIE)) != RESET)))\r\n  {\r\n    /* USART parity error interrupt occurred ----------------------------------*/\r\n    if (((isrflags & USART_SR_PE) != RESET) && ((cr1its & USART_CR1_PEIE) != RESET))\r\n    {\r\n      husart->ErrorCode |= HAL_USART_ERROR_PE;\r\n    }\r\n\r\n    /* USART noise error interrupt occurred --------------------------------*/\r\n    if (((isrflags & USART_SR_NE) != RESET) && ((cr3its & USART_CR3_EIE) != RESET))\r\n    {\r\n      husart->ErrorCode |= HAL_USART_ERROR_NE;\r\n    }\r\n\r\n    /* USART frame error interrupt occurred --------------------------------*/\r\n    if (((isrflags & USART_SR_FE) != RESET) && ((cr3its & USART_CR3_EIE) != RESET))\r\n    {\r\n      husart->ErrorCode |= HAL_USART_ERROR_FE;\r\n    }\r\n\r\n    /* USART Over-Run interrupt occurred -----------------------------------*/\r\n    if (((isrflags & USART_SR_ORE) != RESET) && ((cr3its & USART_CR3_EIE) != RESET))\r\n    {\r\n      husart->ErrorCode |= HAL_USART_ERROR_ORE;\r\n    }\r\n\r\n    if (husart->ErrorCode != HAL_USART_ERROR_NONE)\r\n    {\r\n      /* USART in mode Receiver -----------------------------------------------*/\r\n      if (((isrflags & USART_SR_RXNE) != RESET) && ((cr1its & USART_CR1_RXNEIE) != RESET))\r\n      {\r\n        if (husart->State == HAL_USART_STATE_BUSY_RX)\r\n        {\r\n          USART_Receive_IT(husart);\r\n        }\r\n        else\r\n        {\r\n          USART_TransmitReceive_IT(husart);\r\n        }\r\n      }\r\n      /* If Overrun error occurs,\r\n      consider error as blocking */\r\n      if ((husart->ErrorCode & HAL_USART_ERROR_ORE) != RESET)\r\n      {\r\n        /* Set the USART state ready to be able to start again the process,\r\n        Disable Rx Interrupts, if ongoing */\r\n        USART_EndRxTransfer(husart);\r\n\r\n          /* Call user error callback */\r\n#if (USE_HAL_USART_REGISTER_CALLBACKS == 1)\r\n          /* Call registered Error Callback */\r\n          husart->ErrorCallback(husart);\r\n#else\r\n          /* Call legacy weak Error Callback */\r\n          HAL_USART_ErrorCallback(husart);\r\n#endif /* USE_HAL_USART_REGISTER_CALLBACKS */\r\n      }\r\n      else\r\n      {\r\n        /* Call user error callback */\r\n#if (USE_HAL_USART_REGISTER_CALLBACKS == 1)\r\n        /* Call registered Error Callback */\r\n        husart->ErrorCallback(husart);\r\n#else\r\n        /* Call legacy weak Error Callback */\r\n        HAL_USART_ErrorCallback(husart);\r\n#endif /* USE_HAL_USART_REGISTER_CALLBACKS */\r\n        husart->ErrorCode = HAL_USART_ERROR_NONE;\r\n      }\r\n    }\r\n    return;\r\n  }\r\n\r\n  /* USART in mode Transmitter -----------------------------------------------*/\r\n  if (((isrflags & USART_SR_TXE) != RESET) && ((cr1its & USART_CR1_TXEIE) != RESET))\r\n  {\r\n    if (husart->State == HAL_USART_STATE_BUSY_TX)\r\n    {\r\n      USART_Transmit_IT(husart);\r\n    }\r\n    else\r\n    {\r\n      USART_TransmitReceive_IT(husart);\r\n    }\r\n    return;\r\n  }\r\n\r\n  /* USART in mode Transmitter (transmission end) ----------------------------*/\r\n  if (((isrflags & USART_SR_TC) != RESET) && ((cr1its & USART_CR1_TCIE) != RESET))\r\n  {\r\n    USART_EndTransmit_IT(husart);\r\n    return;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_USART_TxCpltCallback",
+      "sig": "void HAL_USART_TxCpltCallback(USART_HandleTypeDef *husart)",
+      "brief": "发送完成回调(弱定义空函数): 非阻塞发送结束时由驱动调用, 用户在应用里重写以实现自己的处理。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 在用户文件重写同名函数。"
+      ],
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "__weak void HAL_USART_TxCpltCallback(USART_HandleTypeDef *husart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(husart);\r\n  /* NOTE: This function should not be modified, when the callback is needed,\r\n           the HAL_USART_TxCpltCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_USART_TxHalfCpltCallback",
+      "sig": "void HAL_USART_TxHalfCpltCallback(USART_HandleTypeDef *husart)",
+      "brief": "发送半程完成回调(弱定义空函数): 发送到一半时由驱动调用, 用户可重写。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "__weak void HAL_USART_TxHalfCpltCallback(USART_HandleTypeDef *husart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(husart);\r\n  /* NOTE: This function should not be modified, when the callback is needed,\r\n           the HAL_USART_TxHalfCpltCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_USART_RxCpltCallback",
+      "sig": "void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart)",
+      "brief": "接收完成回调(弱定义空函数): 非阻塞接收结束时由驱动调用, 用户可重写。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "__weak void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(husart);\r\n  /* NOTE: This function should not be modified, when the callback is needed,\r\n           the HAL_USART_RxCpltCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_USART_RxHalfCpltCallback",
+      "sig": "void HAL_USART_RxHalfCpltCallback(USART_HandleTypeDef *husart)",
+      "brief": "接收半程完成回调(弱定义空函数): 接收一半时由驱动调用, 用户可重写。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "__weak void HAL_USART_RxHalfCpltCallback(USART_HandleTypeDef *husart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(husart);\r\n  /* NOTE: This function should not be modified, when the callback is needed,\r\n           the HAL_USART_RxHalfCpltCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_USART_TxRxCpltCallback",
+      "sig": "void HAL_USART_TxRxCpltCallback(USART_HandleTypeDef *husart)",
+      "brief": "收发完成回调(弱定义空函数): 非阻塞全双工收发结束时由驱动调用, 用户可重写。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "__weak void HAL_USART_TxRxCpltCallback(USART_HandleTypeDef *husart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(husart);\r\n  /* NOTE: This function should not be modified, when the callback is needed,\r\n           the HAL_USART_TxRxCpltCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_USART_ErrorCallback",
+      "sig": "void HAL_USART_ErrorCallback(USART_HandleTypeDef *husart)",
+      "brief": "USART 错误回调(弱定义空函数): 通信出错(帧/噪声/溢出/校验错误)时由驱动调用, 用户可重写。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "__weak void HAL_USART_ErrorCallback(USART_HandleTypeDef *husart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(husart);\r\n  /* NOTE: This function should not be modified, when the callback is needed,\r\n           the HAL_USART_ErrorCallback could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_USART_AbortCpltCallback",
+      "sig": "void HAL_USART_AbortCpltCallback(USART_HandleTypeDef *husart)",
+      "brief": "中止完成回调(弱定义空函数): HAL_USART_Abort_IT() 中止流程结束时调用, 用户可重写。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 可在用户文件重写。"
+      ],
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "__weak void HAL_USART_AbortCpltCallback(USART_HandleTypeDef *husart)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(husart);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_USART_AbortCpltCallback can be implemented in the user file.\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_USART_GetState",
+      "sig": "HAL_USART_StateTypeDef HAL_USART_GetState(USART_HandleTypeDef *husart)",
+      "brief": "返回 USART 的当前状态(如 READY/BUSY_TX/BUSY_RX 等), 便于运行时检查外设状态。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_USART_StateTypeDef",
+        "desc": "USART 状态, 对应 HAL_USART_STATE_*"
+      },
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "HAL_USART_StateTypeDef HAL_USART_GetState(USART_HandleTypeDef *husart)\r\n{\r\n  return husart->State;\r\n}"
+    },
+    {
+      "name": "HAL_USART_GetError",
+      "sig": "uint32_t HAL_USART_GetError(USART_HandleTypeDef *husart)",
+      "brief": "返回通信过程中发生的 USART 错误码(可多个错误位相或)。",
+      "params": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "指向 USART 句柄结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "错误码, 对应 HAL_USART_ERROR_* 位组合"
+      },
+      "file": "py32f002b_hal_usart.c",
+      "kind": "function",
+      "src": "uint32_t HAL_USART_GetError(USART_HandleTypeDef *husart)\r\n{\r\n  return husart->ErrorCode;\r\n}"
+    },
+    {
+      "name": "__HAL_USART_RESET_HANDLE_STATE",
+      "sig": "#define __HAL_USART_RESET_HANDLE_STATE(__HANDLE__)  do{                                            \\\r\n                                                      (__HANDLE__)->State = HAL_USART_STATE_RESET; \\\r\n                                                      (__HANDLE__)->MspInitCallback = NULL;        \\\r\n                                                      (__HANDLE__)->MspDeInitCallback = NULL;      \\\r\n                                                    } while(0U)",
+      "brief": "宏: 将 USART 句柄状态复位为 HAL_USART_STATE_RESET(启用回调注册时同时清空 Msp 回调)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "USART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define __HAL_USART_RESET_HANDLE_STATE(__HANDLE__)  do{                                            \\\r\n                                                      (__HANDLE__)->State = HAL_USART_STATE_RESET; \\\r\n                                                      (__HANDLE__)->MspInitCallback = NULL;        \\\r\n                                                      (__HANDLE__)->MspDeInitCallback = NULL;      \\\r\n                                                    } while(0U)"
+    },
+    {
+      "name": "__HAL_USART_GET_FLAG",
+      "sig": "#define __HAL_USART_GET_FLAG(__HANDLE__, __FLAG__) (((__HANDLE__)->Instance->SR & (__FLAG__)) == (__FLAG__))",
+      "brief": "宏: 查询指定 USART 标志是否置位(读 SR 寄存器)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "USART 句柄"
+        },
+        {
+          "name": "__FLAG__",
+          "type": "宏参数",
+          "desc": "要查询的标志, 可取 USART_FLAG_TXE/TC/RXNE/IDLE/ORE/NE/FE/PE"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志新状态: 置位为 1, 否则 0"
+      },
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define __HAL_USART_GET_FLAG(__HANDLE__, __FLAG__) (((__HANDLE__)->Instance->SR & (__FLAG__)) == (__FLAG__))"
+    },
+    {
+      "name": "__HAL_USART_CLEAR_FLAG",
+      "sig": "#define __HAL_USART_CLEAR_FLAG(__HANDLE__, __FLAG__) ((__HANDLE__)->Instance->SR = ~(__FLAG__))",
+      "brief": "宏: 清除指定的 USART 挂起标志(写 SR 寄存器)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "USART 句柄"
+        },
+        {
+          "name": "__FLAG__",
+          "type": "宏参数",
+          "desc": "要清除的标志, 可取 USART_FLAG_TC / USART_FLAG_RXNE 等组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "notes": [
+        "PE/FE/NE/ORE/IDLE 标志通过读 SR 再读 DR 的软件序列清除; TXE 仅由写 DR 清除。"
+      ],
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define __HAL_USART_CLEAR_FLAG(__HANDLE__, __FLAG__) ((__HANDLE__)->Instance->SR = ~(__FLAG__))"
+    },
+    {
+      "name": "__HAL_USART_CLEAR_PEFLAG",
+      "sig": "#define __HAL_USART_CLEAR_PEFLAG(__HANDLE__)    \\\r\n  do{                                           \\\r\n    __IO uint32_t tmpreg = 0x00U;               \\\r\n    tmpreg = (__HANDLE__)->Instance->SR;        \\\r\n    tmpreg = (__HANDLE__)->Instance->DR;        \\\r\n    UNUSED(tmpreg);                             \\\r\n  } while(0U)",
+      "brief": "宏: 清除 USART 校验错误(PE)挂起标志, 通过读 SR 再读 DR 的序列实现。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "USART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define __HAL_USART_CLEAR_PEFLAG(__HANDLE__)    \\\r\n  do{                                           \\\r\n    __IO uint32_t tmpreg = 0x00U;               \\\r\n    tmpreg = (__HANDLE__)->Instance->SR;        \\\r\n    tmpreg = (__HANDLE__)->Instance->DR;        \\\r\n    UNUSED(tmpreg);                             \\\r\n  } while(0U)"
+    },
+    {
+      "name": "__HAL_USART_CLEAR_FEFLAG",
+      "sig": "#define __HAL_USART_CLEAR_FEFLAG(__HANDLE__) __HAL_USART_CLEAR_PEFLAG(__HANDLE__)",
+      "brief": "宏: 清除 USART 帧错误(FE)挂起标志(同 PE 清除序列)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "USART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define __HAL_USART_CLEAR_FEFLAG(__HANDLE__) __HAL_USART_CLEAR_PEFLAG(__HANDLE__)"
+    },
+    {
+      "name": "__HAL_USART_CLEAR_NEFLAG",
+      "sig": "#define __HAL_USART_CLEAR_NEFLAG(__HANDLE__) __HAL_USART_CLEAR_PEFLAG(__HANDLE__)",
+      "brief": "宏: 清除 USART 噪声错误(NE)挂起标志(同 PE 清除序列)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "USART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define __HAL_USART_CLEAR_NEFLAG(__HANDLE__) __HAL_USART_CLEAR_PEFLAG(__HANDLE__)"
+    },
+    {
+      "name": "__HAL_USART_CLEAR_OREFLAG",
+      "sig": "#define __HAL_USART_CLEAR_OREFLAG(__HANDLE__) __HAL_USART_CLEAR_PEFLAG(__HANDLE__)",
+      "brief": "宏: 清除 USART 溢出错误(ORE)挂起标志(同 PE 清除序列)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "USART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define __HAL_USART_CLEAR_OREFLAG(__HANDLE__) __HAL_USART_CLEAR_PEFLAG(__HANDLE__)"
+    },
+    {
+      "name": "__HAL_USART_CLEAR_IDLEFLAG",
+      "sig": "#define __HAL_USART_CLEAR_IDLEFLAG(__HANDLE__) __HAL_USART_CLEAR_PEFLAG(__HANDLE__)",
+      "brief": "宏: 清除 USART 空闲线检测(IDLE)挂起标志(同 PE 清除序列)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "USART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define __HAL_USART_CLEAR_IDLEFLAG(__HANDLE__) __HAL_USART_CLEAR_PEFLAG(__HANDLE__)"
+    },
+    {
+      "name": "__HAL_USART_ENABLE_IT",
+      "sig": "#define __HAL_USART_ENABLE_IT(__HANDLE__, __INTERRUPT__)   ((((__INTERRUPT__) >> 28U) == USART_CR1_REG_INDEX)? ((__HANDLE__)->Instance->CR1 |= ((__INTERRUPT__) & USART_IT_MASK)): \\\r\n                                                            (((__INTERRUPT__) >> 28U) == USART_CR2_REG_INDEX)? ((__HANDLE__)->Instance->CR2 |= ((__INTERRUPT__) & USART_IT_MASK)): \\\r\n                                                             ((__HANDLE__)->Instance->CR3 |= ((__INTERRUPT__) & USART_IT_MASK)))",
+      "brief": "宏: 使能指定的 USART 中断(按中断定义的高 4 位自动选择 CR1/CR2/CR3 寄存器)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "USART 句柄"
+        },
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "要使能的中断源, 可取 USART_IT_TXE/TC/RXNE/IDLE/PE/ERR"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define __HAL_USART_ENABLE_IT(__HANDLE__, __INTERRUPT__)   ((((__INTERRUPT__) >> 28U) == USART_CR1_REG_INDEX)? ((__HANDLE__)->Instance->CR1 |= ((__INTERRUPT__) & USART_IT_MASK)): \\\r\n                                                            (((__INTERRUPT__) >> 28U) == USART_CR2_REG_INDEX)? ((__HANDLE__)->Instance->CR2 |= ((__INTERRUPT__) & USART_IT_MASK)): \\\r\n                                                             ((__HANDLE__)->Instance->CR3 |= ((__INTERRUPT__) & USART_IT_MASK)))"
+    },
+    {
+      "name": "__HAL_USART_DISABLE_IT",
+      "sig": "#define __HAL_USART_DISABLE_IT(__HANDLE__, __INTERRUPT__)  ((((__INTERRUPT__) >> 28U) == USART_CR1_REG_INDEX)? ((__HANDLE__)->Instance->CR1 &= ~((__INTERRUPT__) & USART_IT_MASK)): \\\r\n                                                            (((__INTERRUPT__) >> 28U) == USART_CR2_REG_INDEX)? ((__HANDLE__)->Instance->CR2 &= ~((__INTERRUPT__) & USART_IT_MASK)): \\\r\n                                                             ((__HANDLE__)->Instance->CR3 &= ~ ((__INTERRUPT__) & USART_IT_MASK)))",
+      "brief": "宏: 禁止指定的 USART 中断(自动选择 CR1/CR2/CR3 寄存器)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "USART 句柄"
+        },
+        {
+          "name": "__INTERRUPT__",
+          "type": "宏参数",
+          "desc": "要禁止的中断源, 取值同使能宏"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define __HAL_USART_DISABLE_IT(__HANDLE__, __INTERRUPT__)  ((((__INTERRUPT__) >> 28U) == USART_CR1_REG_INDEX)? ((__HANDLE__)->Instance->CR1 &= ~((__INTERRUPT__) & USART_IT_MASK)): \\\r\n                                                            (((__INTERRUPT__) >> 28U) == USART_CR2_REG_INDEX)? ((__HANDLE__)->Instance->CR2 &= ~((__INTERRUPT__) & USART_IT_MASK)): \\\r\n                                                             ((__HANDLE__)->Instance->CR3 &= ~ ((__INTERRUPT__) & USART_IT_MASK)))"
+    },
+    {
+      "name": "__HAL_USART_GET_IT_SOURCE",
+      "sig": "#define __HAL_USART_GET_IT_SOURCE(__HANDLE__, __IT__) (((((__IT__) >> 28U) == USART_CR1_REG_INDEX)? (__HANDLE__)->Instance->CR1:(((((uint32_t)(__IT__)) >> 28U) == USART_CR2_REG_INDEX)? \\\r\n                                                      (__HANDLE__)->Instance->CR2 : (__HANDLE__)->Instance->CR3)) & (((uint32_t)(__IT__)) & USART_IT_MASK))",
+      "brief": "宏: 查询指定的 USART 中断源是否已使能(自动选择 CR1/CR2/CR3 寄存器)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "USART 句柄"
+        },
+        {
+          "name": "__IT__",
+          "type": "宏参数",
+          "desc": "要查询的中断源, 取值同使能宏"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "中断源状态: 使能为非 0, 否则 0"
+      },
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define __HAL_USART_GET_IT_SOURCE(__HANDLE__, __IT__) (((((__IT__) >> 28U) == USART_CR1_REG_INDEX)? (__HANDLE__)->Instance->CR1:(((((uint32_t)(__IT__)) >> 28U) == USART_CR2_REG_INDEX)? \\\r\n                                                      (__HANDLE__)->Instance->CR2 : (__HANDLE__)->Instance->CR3)) & (((uint32_t)(__IT__)) & USART_IT_MASK))"
+    },
+    {
+      "name": "__HAL_USART_ENABLE",
+      "sig": "#define __HAL_USART_ENABLE(__HANDLE__)               ((__HANDLE__)->Instance->CR1 |= USART_CR1_UE)",
+      "brief": "宏: 使能 USART 外设(置 CR1 的 UE 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "USART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define __HAL_USART_ENABLE(__HANDLE__)               ((__HANDLE__)->Instance->CR1 |= USART_CR1_UE)"
+    },
+    {
+      "name": "__HAL_USART_DISABLE",
+      "sig": "#define __HAL_USART_DISABLE(__HANDLE__)              ((__HANDLE__)->Instance->CR1 &= ~USART_CR1_UE)",
+      "brief": "宏: 禁止 USART 外设(清 CR1 的 UE 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "USART 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_usart.h",
+      "kind": "macro",
+      "src": "#define __HAL_USART_DISABLE(__HANDLE__)              ((__HANDLE__)->Instance->CR1 &= ~USART_CR1_UE)"
+    }
+  ],
+  "ll": [
+    {
+      "name": "LL_USART_Enable",
+      "sig": "void LL_USART_Enable(USART_TypeDef *USARTx)",
+      "brief": "使能 USART 外设(置 CR1 的 UE 位)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针, 如 USART1"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_Enable(USART_TypeDef *USARTx)\r\n{\r\n  SET_BIT(USARTx->CR1, USART_CR1_UE);\r\n}"
+    },
+    {
+      "name": "LL_USART_Disable",
+      "sig": "void LL_USART_Disable(USART_TypeDef *USARTx)",
+      "brief": "禁止 USART 外设: 分频器与输出立即停止, 当前操作被丢弃, SR 各标志恢复默认值, 但配置保留。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_Disable(USART_TypeDef *USARTx)\r\n{\r\n  CLEAR_BIT(USARTx->CR1, USART_CR1_UE);\r\n}"
+    },
+    {
+      "name": "LL_USART_IsEnabled",
+      "sig": "uint32_t LL_USART_IsEnabled(USART_TypeDef *USARTx)",
+      "brief": "查询 USART 是否已使能。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsEnabled(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->CR1, USART_CR1_UE) == (USART_CR1_UE));\r\n}"
+    },
+    {
+      "name": "LL_USART_EnableDirectionRx",
+      "sig": "void LL_USART_EnableDirectionRx(USART_TypeDef *USARTx)",
+      "brief": "使能接收器, 开始搜索起始位。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_EnableDirectionRx(USART_TypeDef *USARTx)\r\n{\r\n  SET_BIT(USARTx->CR1, USART_CR1_RE);\r\n}"
+    },
+    {
+      "name": "LL_USART_DisableDirectionRx",
+      "sig": "void LL_USART_DisableDirectionRx(USART_TypeDef *USARTx)",
+      "brief": "禁止接收器。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_DisableDirectionRx(USART_TypeDef *USARTx)\r\n{\r\n  CLEAR_BIT(USARTx->CR1, USART_CR1_RE);\r\n}"
+    },
+    {
+      "name": "LL_USART_EnableDirectionTx",
+      "sig": "void LL_USART_EnableDirectionTx(USART_TypeDef *USARTx)",
+      "brief": "使能发送器。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_EnableDirectionTx(USART_TypeDef *USARTx)\r\n{\r\n  SET_BIT(USARTx->CR1, USART_CR1_TE);\r\n}"
+    },
+    {
+      "name": "LL_USART_DisableDirectionTx",
+      "sig": "void LL_USART_DisableDirectionTx(USART_TypeDef *USARTx)",
+      "brief": "禁止发送器。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_DisableDirectionTx(USART_TypeDef *USARTx)\r\n{\r\n  CLEAR_BIT(USARTx->CR1, USART_CR1_TE);\r\n}"
+    },
+    {
+      "name": "LL_USART_SetTransferDirection",
+      "sig": "void LL_USART_SetTransferDirection(USART_TypeDef *USARTx, uint32_t TransferDirection)",
+      "brief": "同时配置发送器/接收器的使能与禁止状态。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "TransferDirection",
+          "type": "uint32_t",
+          "desc": "传输方向: LL_USART_DIRECTION_NONE / RX / TX / TX_RX"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_SetTransferDirection(USART_TypeDef *USARTx, uint32_t TransferDirection)\r\n{\r\n  MODIFY_REG(USARTx->CR1, USART_CR1_RE | USART_CR1_TE, TransferDirection);\r\n}"
+    },
+    {
+      "name": "LL_USART_GetTransferDirection",
+      "sig": "uint32_t LL_USART_GetTransferDirection(USART_TypeDef *USARTx)",
+      "brief": "返回发送器/接收器当前的使能状态组合。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "传输方向, 对应 LL_USART_DIRECTION_*"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_GetTransferDirection(USART_TypeDef *USARTx)\r\n{\r\n  return (uint32_t)(READ_BIT(USARTx->CR1, USART_CR1_RE | USART_CR1_TE));\r\n}"
+    },
+    {
+      "name": "LL_USART_SetParity",
+      "sig": "void LL_USART_SetParity(USART_TypeDef *USARTx, uint32_t Parity)",
+      "brief": "配置校验: 使能/禁止硬件校验控制并选择奇偶模式; 使能时校验位插入数据 MSB 位并对接收数据做校验。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "Parity",
+          "type": "uint32_t",
+          "desc": "校验模式: LL_USART_PARITY_NONE / EVEN / ODD"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_SetParity(USART_TypeDef *USARTx, uint32_t Parity)\r\n{\r\n  MODIFY_REG(USARTx->CR1, USART_CR1_PS | USART_CR1_PCE, Parity);\r\n}"
+    },
+    {
+      "name": "LL_USART_GetParity",
+      "sig": "uint32_t LL_USART_GetParity(USART_TypeDef *USARTx)",
+      "brief": "返回当前校验配置。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验配置, 对应 LL_USART_PARITY_*"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_GetParity(USART_TypeDef *USARTx)\r\n{\r\n  return (uint32_t)(READ_BIT(USARTx->CR1, USART_CR1_PS | USART_CR1_PCE));\r\n}"
+    },
+    {
+      "name": "LL_USART_SetWakeUpMethod",
+      "sig": "void LL_USART_SetWakeUpMethod(USART_TypeDef *USARTx, uint32_t Method)",
+      "brief": "设置接收器从静默模式唤醒的方法。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "Method",
+          "type": "uint32_t",
+          "desc": "唤醒方式: LL_USART_WAKEUP_IDLELINE / LL_USART_WAKEUP_ADDRESSMARK"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_SetWakeUpMethod(USART_TypeDef *USARTx, uint32_t Method)\r\n{\r\n  MODIFY_REG(USARTx->CR1, USART_CR1_WAKE, Method);\r\n}"
+    },
+    {
+      "name": "LL_USART_GetWakeUpMethod",
+      "sig": "uint32_t LL_USART_GetWakeUpMethod(USART_TypeDef *USARTx)",
+      "brief": "返回当前从静默模式唤醒的方法。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "唤醒方式, 对应 LL_USART_WAKEUP_*"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_GetWakeUpMethod(USART_TypeDef *USARTx)\r\n{\r\n  return (uint32_t)(READ_BIT(USARTx->CR1, USART_CR1_WAKE));\r\n}"
+    },
+    {
+      "name": "LL_USART_SetDataWidth",
+      "sig": "void LL_USART_SetDataWidth(USART_TypeDef *USARTx, uint32_t DataWidth)",
+      "brief": "设置帧字长(数据位数, 不含起始/停止位)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "DataWidth",
+          "type": "uint32_t",
+          "desc": "数据宽度: LL_USART_DATAWIDTH_8B / LL_USART_DATAWIDTH_9B"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_SetDataWidth(USART_TypeDef *USARTx, uint32_t DataWidth)\r\n{\r\n  MODIFY_REG(USARTx->CR1, USART_CR1_M, DataWidth);\r\n}"
+    },
+    {
+      "name": "LL_USART_GetDataWidth",
+      "sig": "uint32_t LL_USART_GetDataWidth(USART_TypeDef *USARTx)",
+      "brief": "返回当前帧字长。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "数据宽度, 对应 LL_USART_DATAWIDTH_*"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_GetDataWidth(USART_TypeDef *USARTx)\r\n{\r\n  return (uint32_t)(READ_BIT(USARTx->CR1, USART_CR1_M));\r\n}"
+    },
+    {
+      "name": "LL_USART_SetOverSampling",
+      "sig": "void LL_USART_SetOverSampling(USART_TypeDef *USARTx, uint32_t OverSampling)",
+      "brief": "设置过采样模式为 8 位或 16 位。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "OverSampling",
+          "type": "uint32_t",
+          "desc": "过采样: LL_USART_OVERSAMPLING_16 / LL_USART_OVERSAMPLING_8"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_SetOverSampling(USART_TypeDef *USARTx, uint32_t OverSampling)\r\n{\r\n  MODIFY_REG(USARTx->CR3, USART_CR3_OVER8, OverSampling);\r\n}"
+    },
+    {
+      "name": "LL_USART_GetOverSampling",
+      "sig": "uint32_t LL_USART_GetOverSampling(USART_TypeDef *USARTx)",
+      "brief": "返回当前过采样模式。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "过采样模式, 对应 LL_USART_OVERSAMPLING_*"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_GetOverSampling(USART_TypeDef *USARTx)\r\n{\r\n  return (uint32_t)(READ_BIT(USARTx->CR3, USART_CR3_OVER8));\r\n}"
+    },
+    {
+      "name": "LL_USART_SetLastClkPulseOutput",
+      "sig": "void LL_USART_SetLastClkPulseOutput(USART_TypeDef *USARTx, uint32_t LastBitClockPulse)",
+      "brief": "配置最后一位数据(MSB)的时钟脉冲是否输出到 SCLK 引脚(同步模式)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "LastBitClockPulse",
+          "type": "uint32_t",
+          "desc": "最后位时钟脉冲: LL_USART_LASTCLKPULSE_NO_OUTPUT / OUTPUT"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_SetLastClkPulseOutput(USART_TypeDef *USARTx, uint32_t LastBitClockPulse)\r\n{\r\n  MODIFY_REG(USARTx->CR2, USART_CR2_LBCL, LastBitClockPulse);\r\n}"
+    },
+    {
+      "name": "LL_USART_GetLastClkPulseOutput",
+      "sig": "uint32_t LL_USART_GetLastClkPulseOutput(USART_TypeDef *USARTx)",
+      "brief": "返回最后位时钟脉冲的输出配置。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "配置值, 对应 LL_USART_LASTCLKPULSE_*"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_GetLastClkPulseOutput(USART_TypeDef *USARTx)\r\n{\r\n  return (uint32_t)(READ_BIT(USARTx->CR2, USART_CR2_LBCL));\r\n}"
+    },
+    {
+      "name": "LL_USART_SetClockPhase",
+      "sig": "void LL_USART_SetClockPhase(USART_TypeDef *USARTx, uint32_t ClockPhase)",
+      "brief": "选择同步模式下 SCLK 引脚时钟输出的相位。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "ClockPhase",
+          "type": "uint32_t",
+          "desc": "时钟相位: LL_USART_PHASE_1EDGE / LL_USART_PHASE_2EDGE"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_SetClockPhase(USART_TypeDef *USARTx, uint32_t ClockPhase)\r\n{\r\n  MODIFY_REG(USARTx->CR2, USART_CR2_CPHA, ClockPhase);\r\n}"
+    },
+    {
+      "name": "LL_USART_GetClockPhase",
+      "sig": "uint32_t LL_USART_GetClockPhase(USART_TypeDef *USARTx)",
+      "brief": "返回同步模式下 SCLK 时钟输出相位。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "时钟相位, 对应 LL_USART_PHASE_*"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_GetClockPhase(USART_TypeDef *USARTx)\r\n{\r\n  return (uint32_t)(READ_BIT(USARTx->CR2, USART_CR2_CPHA));\r\n}"
+    },
+    {
+      "name": "LL_USART_SetClockPolarity",
+      "sig": "void LL_USART_SetClockPolarity(USART_TypeDef *USARTx, uint32_t ClockPolarity)",
+      "brief": "选择同步模式下 SCLK 引脚时钟输出的极性(传输窗口外的稳态电平)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "ClockPolarity",
+          "type": "uint32_t",
+          "desc": "时钟极性: LL_USART_POLARITY_LOW / LL_USART_POLARITY_HIGH"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_SetClockPolarity(USART_TypeDef *USARTx, uint32_t ClockPolarity)\r\n{\r\n  MODIFY_REG(USARTx->CR2, USART_CR2_CPOL, ClockPolarity);\r\n}"
+    },
+    {
+      "name": "LL_USART_GetClockPolarity",
+      "sig": "uint32_t LL_USART_GetClockPolarity(USART_TypeDef *USARTx)",
+      "brief": "返回同步模式下 SCLK 时钟输出极性。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "时钟极性, 对应 LL_USART_POLARITY_*"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_GetClockPolarity(USART_TypeDef *USARTx)\r\n{\r\n  return (uint32_t)(READ_BIT(USARTx->CR2, USART_CR2_CPOL));\r\n}"
+    },
+    {
+      "name": "LL_USART_ConfigClock",
+      "sig": "void LL_USART_ConfigClock(USART_TypeDef *USARTx, uint32_t Phase, uint32_t Polarity, uint32_t LBCPOutput)",
+      "brief": "一次性配置时钟信号格式: 相位、极性以及最后位时钟脉冲是否输出。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "Phase",
+          "type": "uint32_t",
+          "desc": "时钟相位: LL_USART_PHASE_1EDGE / 2EDGE"
+        },
+        {
+          "name": "Polarity",
+          "type": "uint32_t",
+          "desc": "时钟极性: LL_USART_POLARITY_LOW / HIGH"
+        },
+        {
+          "name": "LBCPOutput",
+          "type": "uint32_t",
+          "desc": "最后位时钟脉冲: LL_USART_LASTCLKPULSE_NO_OUTPUT / OUTPUT"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_ConfigClock(USART_TypeDef *USARTx, uint32_t Phase, uint32_t Polarity, uint32_t LBCPOutput)\r\n{\r\n  MODIFY_REG(USARTx->CR2, USART_CR2_CPHA | USART_CR2_CPOL | USART_CR2_LBCL, Phase | Polarity | LBCPOutput);\r\n}"
+    },
+    {
+      "name": "LL_USART_EnableSCLKOutput",
+      "sig": "void LL_USART_EnableSCLKOutput(USART_TypeDef *USARTx)",
+      "brief": "使能 SCLK 引脚时钟输出(同步模式)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_EnableSCLKOutput(USART_TypeDef *USARTx)\r\n{\r\n  SET_BIT(USARTx->CR2, USART_CR2_CLKEN);\r\n}"
+    },
+    {
+      "name": "LL_USART_DisableSCLKOutput",
+      "sig": "void LL_USART_DisableSCLKOutput(USART_TypeDef *USARTx)",
+      "brief": "禁止 SCLK 引脚时钟输出。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_DisableSCLKOutput(USART_TypeDef *USARTx)\r\n{\r\n  CLEAR_BIT(USARTx->CR2, USART_CR2_CLKEN);\r\n}"
+    },
+    {
+      "name": "LL_USART_IsEnabledSCLKOutput",
+      "sig": "uint32_t LL_USART_IsEnabledSCLKOutput(USART_TypeDef *USARTx)",
+      "brief": "查询 SCLK 时钟输出是否已使能。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsEnabledSCLKOutput(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->CR2, USART_CR2_CLKEN) == (USART_CR2_CLKEN));\r\n}"
+    },
+    {
+      "name": "LL_USART_SetStopBitsLength",
+      "sig": "void LL_USART_SetStopBitsLength(USART_TypeDef *USARTx, uint32_t StopBits)",
+      "brief": "设置停止位长度。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "StopBits",
+          "type": "uint32_t",
+          "desc": "停止位: LL_USART_STOPBITS_1 / LL_USART_STOPBITS_2"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_SetStopBitsLength(USART_TypeDef *USARTx, uint32_t StopBits)\r\n{\r\n  MODIFY_REG(USARTx->CR2, USART_CR2_STOP, StopBits);\r\n}"
+    },
+    {
+      "name": "LL_USART_GetStopBitsLength",
+      "sig": "uint32_t LL_USART_GetStopBitsLength(USART_TypeDef *USARTx)",
+      "brief": "返回当前停止位长度。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "停止位配置, 对应 LL_USART_STOPBITS_*"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_GetStopBitsLength(USART_TypeDef *USARTx)\r\n{\r\n  return (uint32_t)(READ_BIT(USARTx->CR2, USART_CR2_STOP));\r\n}"
+    },
+    {
+      "name": "LL_USART_ConfigCharacter",
+      "sig": "void LL_USART_ConfigCharacter(USART_TypeDef *USARTx, uint32_t DataWidth, uint32_t Parity, uint32_t StopBits)",
+      "brief": "一次性配置字符帧格式: 数据宽度、校验控制与停止位。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "DataWidth",
+          "type": "uint32_t",
+          "desc": "数据宽度: LL_USART_DATAWIDTH_8B / 9B"
+        },
+        {
+          "name": "Parity",
+          "type": "uint32_t",
+          "desc": "校验: LL_USART_PARITY_NONE / EVEN / ODD"
+        },
+        {
+          "name": "StopBits",
+          "type": "uint32_t",
+          "desc": "停止位: LL_USART_STOPBITS_1 / 2"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_ConfigCharacter(USART_TypeDef *USARTx, uint32_t DataWidth, uint32_t Parity,\r\n    uint32_t StopBits)\r\n{\r\n  MODIFY_REG(USARTx->CR1, USART_CR1_PS | USART_CR1_PCE | USART_CR1_M, Parity | DataWidth);\r\n  MODIFY_REG(USARTx->CR2, USART_CR2_STOP, StopBits);\r\n}"
+    },
+    {
+      "name": "LL_USART_SetNodeAddress",
+      "sig": "void LL_USART_SetNodeAddress(USART_TypeDef *USARTx, uint32_t NodeAddress)",
+      "brief": "设置 USART 节点的 4 位地址(用于多机通信的地址标记唤醒)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "NodeAddress",
+          "type": "uint32_t",
+          "desc": "节点地址, 4 位值"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_SetNodeAddress(USART_TypeDef *USARTx, uint32_t NodeAddress)\r\n{\r\n  MODIFY_REG(USARTx->CR2, USART_CR2_ADD, (NodeAddress & USART_CR2_ADD));\r\n}"
+    },
+    {
+      "name": "LL_USART_GetNodeAddress",
+      "sig": "uint32_t LL_USART_GetNodeAddress(USART_TypeDef *USARTx)",
+      "brief": "返回 CR2 中 ADD 字段设置的 USART 节点地址。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "节点地址(0~255, 仅低 4 位有效)"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_GetNodeAddress(USART_TypeDef *USARTx)\r\n{\r\n  return (uint32_t)(READ_BIT(USARTx->CR2, USART_CR2_ADD));\r\n}"
+    },
+    {
+      "name": "LL_USART_EnableRTSHWFlowCtrl",
+      "sig": "void LL_USART_EnableRTSHWFlowCtrl(USART_TypeDef *USARTx)",
+      "brief": "使能 RTS 硬件流控: 接收缓冲有空闲时才请求发送方发数据。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_EnableRTSHWFlowCtrl(USART_TypeDef *USARTx)\r\n{\r\n  SET_BIT(USARTx->CR3, USART_CR3_RTSE);\r\n}"
+    },
+    {
+      "name": "LL_USART_DisableRTSHWFlowCtrl",
+      "sig": "void LL_USART_DisableRTSHWFlowCtrl(USART_TypeDef *USARTx)",
+      "brief": "禁止 RTS 硬件流控。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_DisableRTSHWFlowCtrl(USART_TypeDef *USARTx)\r\n{\r\n  CLEAR_BIT(USARTx->CR3, USART_CR3_RTSE);\r\n}"
+    },
+    {
+      "name": "LL_USART_EnableCTSHWFlowCtrl",
+      "sig": "void LL_USART_EnableCTSHWFlowCtrl(USART_TypeDef *USARTx)",
+      "brief": "使能 CTS 硬件流控: 仅当 nCTS 输入有效(拉低)时才发送数据。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_EnableCTSHWFlowCtrl(USART_TypeDef *USARTx)\r\n{\r\n  SET_BIT(USARTx->CR3, USART_CR3_CTSE);\r\n}"
+    },
+    {
+      "name": "LL_USART_DisableCTSHWFlowCtrl",
+      "sig": "void LL_USART_DisableCTSHWFlowCtrl(USART_TypeDef *USARTx)",
+      "brief": "禁止 CTS 硬件流控。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_DisableCTSHWFlowCtrl(USART_TypeDef *USARTx)\r\n{\r\n  CLEAR_BIT(USARTx->CR3, USART_CR3_CTSE);\r\n}"
+    },
+    {
+      "name": "LL_USART_SetHWFlowCtrl",
+      "sig": "void LL_USART_SetHWFlowCtrl(USART_TypeDef *USARTx, uint32_t HardwareFlowControl)",
+      "brief": "配置硬件流控模式(CTS 与 RTS 的组合)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "HardwareFlowControl",
+          "type": "uint32_t",
+          "desc": "流控模式: LL_USART_HWCONTROL_NONE / RTS / CTS / RTS_CTS"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_SetHWFlowCtrl(USART_TypeDef *USARTx, uint32_t HardwareFlowControl)\r\n{\r\n  MODIFY_REG(USARTx->CR3, USART_CR3_RTSE | USART_CR3_CTSE, HardwareFlowControl);\r\n}"
+    },
+    {
+      "name": "LL_USART_GetHWFlowCtrl",
+      "sig": "uint32_t LL_USART_GetHWFlowCtrl(USART_TypeDef *USARTx)",
+      "brief": "返回当前硬件流控配置(CTS 与 RTS 组合)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "流控配置, 对应 LL_USART_HWCONTROL_*"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_GetHWFlowCtrl(USART_TypeDef *USARTx)\r\n{\r\n  return (uint32_t)(READ_BIT(USARTx->CR3, USART_CR3_RTSE | USART_CR3_CTSE));\r\n}"
+    },
+    {
+      "name": "LL_USART_SetBaudRate",
+      "sig": "void LL_USART_SetBaudRate(USART_TypeDef *USARTx, uint32_t PeriphClk, uint32_t OverSampling, uint32_t BaudRate)",
+      "brief": "根据外设时钟、过采样模式与期望波特率计算 USARTDIV 并写入 BRR 寄存器。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "PeriphClk",
+          "type": "uint32_t",
+          "desc": "外设时钟频率(Hz)"
+        },
+        {
+          "name": "OverSampling",
+          "type": "uint32_t",
+          "desc": "过采样: LL_USART_OVERSAMPLING_16 / 8"
+        },
+        {
+          "name": "BaudRate",
+          "type": "uint32_t",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "波特率与外设时钟值必须有效(波特率不为 0)。"
+      ],
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_SetBaudRate(USART_TypeDef *USARTx, uint32_t PeriphClk, uint32_t OverSampling,\r\n                                          uint32_t BaudRate)\r\n{\r\n  if (OverSampling == LL_USART_OVERSAMPLING_8)\r\n  {\r\n    USARTx->BRR = (uint16_t)(__LL_USART_DIV_SAMPLING8(PeriphClk, BaudRate));\r\n  }\r\n  else\r\n  {\r\n    USARTx->BRR = (uint16_t)(__LL_USART_DIV_SAMPLING16(PeriphClk, BaudRate));\r\n  }\r\n}"
+    },
+    {
+      "name": "LL_USART_GetBaudRate",
+      "sig": "uint32_t LL_USART_GetBaudRate(USART_TypeDef *USARTx, uint32_t PeriphClk, uint32_t OverSampling)",
+      "brief": "根据 BRR 寄存器当前内容、外设时钟与过采样模式反算当前波特率。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "PeriphClk",
+          "type": "uint32_t",
+          "desc": "外设时钟频率(Hz)"
+        },
+        {
+          "name": "OverSampling",
+          "type": "uint32_t",
+          "desc": "过采样: LL_USART_OVERSAMPLING_16 / 8"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "当前波特率; BRR 无效或未初始化时返回 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_GetBaudRate(USART_TypeDef *USARTx, uint32_t PeriphClk, uint32_t OverSampling)\r\n{\r\n  register uint32_t usartdiv = 0x0U;\r\n  register uint32_t brrresult = 0x0U;\r\n\r\n  usartdiv = USARTx->BRR;\r\n\r\n  if (OverSampling == LL_USART_OVERSAMPLING_8)\r\n  {\r\n    if ((usartdiv & 0xFFF7U) != 0U)\r\n    {\r\n      usartdiv = (uint16_t)((usartdiv & 0xFFF0U) | ((usartdiv & 0x0007U) << 1U)) ;\r\n      brrresult = (PeriphClk * 2U) / usartdiv;\r\n    }\r\n  }\r\n  else\r\n  {\r\n    if ((usartdiv & 0xFFFFU) != 0U)\r\n    {\r\n      brrresult = PeriphClk / usartdiv;\r\n    }\r\n  }\r\n  return (brrresult);\r\n}"
+    },
+    {
+      "name": "LL_USART_EnableHalfDuplex",
+      "sig": "void LL_USART_EnableHalfDuplex(USART_TypeDef *USARTx)",
+      "brief": "使能单线半双工模式。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_EnableHalfDuplex(USART_TypeDef *USARTx)\r\n{\r\n  SET_BIT(USARTx->CR3, USART_CR3_HDSEL);\r\n}"
+    },
+    {
+      "name": "LL_USART_DisableHalfDuplex",
+      "sig": "void LL_USART_DisableHalfDuplex(USART_TypeDef *USARTx)",
+      "brief": "禁止单线半双工模式。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_DisableHalfDuplex(USART_TypeDef *USARTx)\r\n{\r\n  CLEAR_BIT(USARTx->CR3, USART_CR3_HDSEL);\r\n}"
+    },
+    {
+      "name": "LL_USART_IsEnabledHalfDuplex",
+      "sig": "uint32_t LL_USART_IsEnabledHalfDuplex(USART_TypeDef *USARTx)",
+      "brief": "查询单线半双工模式是否已使能。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsEnabledHalfDuplex(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->CR3, USART_CR3_HDSEL) == (USART_CR3_HDSEL));\r\n}"
+    },
+    {
+      "name": "LL_USART_ConfigAsyncMode",
+      "sig": "void LL_USART_ConfigAsyncMode(USART_TypeDef *USARTx)",
+      "brief": "执行异步模式(UART)的基础配置: 清除 CLKEN(CR2)与 HDSEL(CR3)位; 波特率/字长/校验等其余项用专门函数配置。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_ConfigAsyncMode(USART_TypeDef *USARTx)\r\n{\r\n  /* In Asynchronous mode, the following bits must be kept cleared:\r\n  - CLKEN bits in the USART_CR2 register,\r\n  - HDSEL bits in the USART_CR3 register.*/\r\n  CLEAR_BIT(USARTx->CR2, USART_CR2_CLKEN);\r\n  CLEAR_BIT(USARTx->CR3, USART_CR3_HDSEL);\r\n}"
+    },
+    {
+      "name": "LL_USART_ConfigSyncMode",
+      "sig": "void LL_USART_ConfigSyncMode(USART_TypeDef *USARTx)",
+      "brief": "执行同步模式的基础配置: 清除 HDSEL 并置位 CLKEN, 使 USART 进入同步模式。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_ConfigSyncMode(USART_TypeDef *USARTx)\r\n{\r\n  /* In Synchronous mode, the following bits must be kept cleared:\r\n  - HDSEL bits in the USART_CR3 register.*/\r\n  CLEAR_BIT(USARTx->CR3, USART_CR3_HDSEL);\r\n  /* set the UART/USART in Synchronous mode */\r\n  SET_BIT(USARTx->CR2, USART_CR2_CLKEN);\r\n}"
+    },
+    {
+      "name": "LL_USART_ConfigHalfDuplexMode",
+      "sig": "void LL_USART_ConfigHalfDuplexMode(USART_TypeDef *USARTx)",
+      "brief": "执行半双工模式的基础配置: 清除 CLKEN 并置位 HDSEL, 使 USART 进入半双工模式。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_ConfigHalfDuplexMode(USART_TypeDef *USARTx)\r\n{\r\n  /* In Half Duplex mode, the following bits must be kept cleared:\r\n  - CLKEN bits in the USART_CR2 register */\r\n  CLEAR_BIT(USARTx->CR2, USART_CR2_CLKEN);\r\n  /* set the UART/USART in Half Duplex mode */\r\n  SET_BIT(USARTx->CR3, USART_CR3_HDSEL);\r\n}"
+    },
+    {
+      "name": "LL_USART_ConfigMultiProcessMode",
+      "sig": "void LL_USART_ConfigMultiProcessMode(USART_TypeDef *USARTx)",
+      "brief": "执行多处理器模式的基础配置: 清除 CLKEN 与 HDSEL 位; 波特率/唤醒方式/节点地址等用专门函数配置。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_ConfigMultiProcessMode(USART_TypeDef *USARTx)\r\n{\r\n  /* In Multi Processor mode, the following bits must be kept cleared:\r\n  - CLKEN bits in the USART_CR2 register,\r\n  - HDSEL bits in the USART_CR3 register.*/\r\n  CLEAR_BIT(USARTx->CR2, USART_CR2_CLKEN);\r\n  CLEAR_BIT(USARTx->CR3, USART_CR3_HDSEL);\r\n}"
+    },
+    {
+      "name": "LL_USART_IsActiveFlag_PE",
+      "sig": "uint32_t LL_USART_IsActiveFlag_PE(USART_TypeDef *USARTx)",
+      "brief": "查询校验错误(PE)标志是否置位。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsActiveFlag_PE(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->SR, USART_SR_PE) == (USART_SR_PE));\r\n}"
+    },
+    {
+      "name": "LL_USART_IsActiveFlag_FE",
+      "sig": "uint32_t LL_USART_IsActiveFlag_FE(USART_TypeDef *USARTx)",
+      "brief": "查询帧错误(FE)标志是否置位。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsActiveFlag_FE(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->SR, USART_SR_FE) == (USART_SR_FE));\r\n}"
+    },
+    {
+      "name": "LL_USART_IsActiveFlag_NE",
+      "sig": "uint32_t LL_USART_IsActiveFlag_NE(USART_TypeDef *USARTx)",
+      "brief": "查询噪声检测(NE)标志是否置位。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsActiveFlag_NE(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->SR, USART_SR_NE) == (USART_SR_NE));\r\n}"
+    },
+    {
+      "name": "LL_USART_IsActiveFlag_ORE",
+      "sig": "uint32_t LL_USART_IsActiveFlag_ORE(USART_TypeDef *USARTx)",
+      "brief": "查询溢出错误(ORE)标志是否置位。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsActiveFlag_ORE(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->SR, USART_SR_ORE) == (USART_SR_ORE));\r\n}"
+    },
+    {
+      "name": "LL_USART_IsActiveFlag_IDLE",
+      "sig": "uint32_t LL_USART_IsActiveFlag_IDLE(USART_TypeDef *USARTx)",
+      "brief": "查询空闲线检测(IDLE)标志是否置位。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsActiveFlag_IDLE(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->SR, USART_SR_IDLE) == (USART_SR_IDLE));\r\n}"
+    },
+    {
+      "name": "LL_USART_IsActiveFlag_RXNE",
+      "sig": "uint32_t LL_USART_IsActiveFlag_RXNE(USART_TypeDef *USARTx)",
+      "brief": "查询接收数据寄存器非空(RXNE)标志是否置位。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsActiveFlag_RXNE(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->SR, USART_SR_RXNE) == (USART_SR_RXNE));\r\n}"
+    },
+    {
+      "name": "LL_USART_IsActiveFlag_TC",
+      "sig": "uint32_t LL_USART_IsActiveFlag_TC(USART_TypeDef *USARTx)",
+      "brief": "查询发送完成(TC)标志是否置位。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsActiveFlag_TC(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->SR, USART_SR_TC) == (USART_SR_TC));\r\n}"
+    },
+    {
+      "name": "LL_USART_IsActiveFlag_TXE",
+      "sig": "uint32_t LL_USART_IsActiveFlag_TXE(USART_TypeDef *USARTx)",
+      "brief": "查询发送数据寄存器空(TXE)标志是否置位。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsActiveFlag_TXE(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->SR, USART_SR_TXE) == (USART_SR_TXE));\r\n}"
+    },
+    {
+      "name": "LL_USART_IsActiveFlag_nCTS",
+      "sig": "uint32_t LL_USART_IsActiveFlag_nCTS(USART_TypeDef *USARTx)",
+      "brief": "查询 CTS 标志是否置位。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsActiveFlag_nCTS(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->SR, USART_SR_CTS) == (USART_SR_CTS));\r\n}"
+    },
+    {
+      "name": "LL_USART_IsActiveFlag_ABRF",
+      "sig": "uint32_t LL_USART_IsActiveFlag_ABRF(USART_TypeDef *USARTx)",
+      "brief": "查询自动波特率检测完成(ABRF)标志是否置位。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsActiveFlag_ABRF(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->SR, USART_SR_ABRF) == (USART_SR_ABRF));\r\n}"
+    },
+    {
+      "name": "LL_USART_IsActiveFlag_ABRE",
+      "sig": "uint32_t LL_USART_IsActiveFlag_ABRE(USART_TypeDef *USARTx)",
+      "brief": "查询自动波特率检测错误(ABRE)标志是否置位。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsActiveFlag_ABRE(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->SR, USART_SR_ABRE) == (USART_SR_ABRE));\r\n}"
+    },
+    {
+      "name": "LL_USART_IsActiveFlag_RWU",
+      "sig": "uint32_t LL_USART_IsActiveFlag_RWU(USART_TypeDef *USARTx)",
+      "brief": "查询接收器从静默模式唤醒(RWU)标志是否置位。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsActiveFlag_RWU(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->CR1, USART_CR1_RWU) == (USART_CR1_RWU));\r\n}"
+    },
+    {
+      "name": "LL_USART_ClearFlag_PE",
+      "sig": "void LL_USART_ClearFlag_PE(USART_TypeDef *USARTx)",
+      "brief": "清除校验错误标志(读 SR 再读 DR 的软件序列)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "清除该标志时 NE/FE/ORE/IDLE 标志也会一并清除。"
+      ],
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_ClearFlag_PE(USART_TypeDef *USARTx)\r\n{\r\n  __IO uint32_t tmpreg;\r\n  tmpreg = USARTx->SR;\r\n  (void) tmpreg;\r\n  tmpreg = USARTx->DR;\r\n  (void) tmpreg;\r\n}"
+    },
+    {
+      "name": "LL_USART_ClearFlag_FE",
+      "sig": "void LL_USART_ClearFlag_FE(USART_TypeDef *USARTx)",
+      "brief": "清除帧错误标志(读 SR 再读 DR 的软件序列)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "清除该标志时 PE/NE/ORE/IDLE 标志也会一并清除。"
+      ],
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_ClearFlag_FE(USART_TypeDef *USARTx)\r\n{\r\n  __IO uint32_t tmpreg;\r\n  tmpreg = USARTx->SR;\r\n  (void) tmpreg;\r\n  tmpreg = USARTx->DR;\r\n  (void) tmpreg;\r\n}"
+    },
+    {
+      "name": "LL_USART_ClearFlag_NE",
+      "sig": "void LL_USART_ClearFlag_NE(USART_TypeDef *USARTx)",
+      "brief": "清除噪声检测标志(读 SR 再读 DR 的软件序列)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "清除该标志时 PE/FE/ORE/IDLE 标志也会一并清除。"
+      ],
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_ClearFlag_NE(USART_TypeDef *USARTx)\r\n{\r\n  __IO uint32_t tmpreg;\r\n  tmpreg = USARTx->SR;\r\n  (void) tmpreg;\r\n  tmpreg = USARTx->DR;\r\n  (void) tmpreg;\r\n}"
+    },
+    {
+      "name": "LL_USART_ClearFlag_ORE",
+      "sig": "void LL_USART_ClearFlag_ORE(USART_TypeDef *USARTx)",
+      "brief": "清除溢出错误标志(读 SR 再读 DR 的软件序列)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "清除该标志时 PE/NE/FE/IDLE 标志也会一并清除。"
+      ],
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_ClearFlag_ORE(USART_TypeDef *USARTx)\r\n{\r\n  __IO uint32_t tmpreg;\r\n  tmpreg = USARTx->SR;\r\n  (void) tmpreg;\r\n  tmpreg = USARTx->DR;\r\n  (void) tmpreg;\r\n}"
+    },
+    {
+      "name": "LL_USART_ClearFlag_IDLE",
+      "sig": "void LL_USART_ClearFlag_IDLE(USART_TypeDef *USARTx)",
+      "brief": "清除空闲线检测标志(读 SR 再读 DR 的软件序列)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "清除该标志时 PE/NE/FE/ORE 标志也会一并清除。"
+      ],
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_ClearFlag_IDLE(USART_TypeDef *USARTx)\r\n{\r\n  __IO uint32_t tmpreg;\r\n  tmpreg = USARTx->SR;\r\n  (void) tmpreg;\r\n  tmpreg = USARTx->DR;\r\n  (void) tmpreg;\r\n}"
+    },
+    {
+      "name": "LL_USART_ClearFlag_TC",
+      "sig": "void LL_USART_ClearFlag_TC(USART_TypeDef *USARTx)",
+      "brief": "清除发送完成标志(写 SR 寄存器)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_ClearFlag_TC(USART_TypeDef *USARTx)\r\n{\r\n  WRITE_REG(USARTx->SR, ~(USART_SR_TC));\r\n}"
+    },
+    {
+      "name": "LL_USART_ClearFlag_RXNE",
+      "sig": "void LL_USART_ClearFlag_RXNE(USART_TypeDef *USARTx)",
+      "brief": "清除接收数据寄存器非空标志(写 SR 寄存器)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_ClearFlag_RXNE(USART_TypeDef *USARTx)\r\n{\r\n  WRITE_REG(USARTx->SR, ~(USART_SR_RXNE));\r\n}"
+    },
+    {
+      "name": "LL_USART_ClearFlag_nCTS",
+      "sig": "void LL_USART_ClearFlag_nCTS(USART_TypeDef *USARTx)",
+      "brief": "清除 CTS 中断标志(写 SR 寄存器)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_ClearFlag_nCTS(USART_TypeDef *USARTx)\r\n{\r\n  WRITE_REG(USARTx->SR, ~(USART_SR_CTS));\r\n}"
+    },
+    {
+      "name": "LL_USART_EnableIT_IDLE",
+      "sig": "void LL_USART_EnableIT_IDLE(USART_TypeDef *USARTx)",
+      "brief": "使能空闲线检测(IDLE)中断。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_EnableIT_IDLE(USART_TypeDef *USARTx)\r\n{\r\n  SET_BIT(USARTx->CR1, USART_CR1_IDLEIE);\r\n}"
+    },
+    {
+      "name": "LL_USART_EnableIT_RXNE",
+      "sig": "void LL_USART_EnableIT_RXNE(USART_TypeDef *USARTx)",
+      "brief": "使能接收数据寄存器非空(RXNE)中断。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_EnableIT_RXNE(USART_TypeDef *USARTx)\r\n{\r\n  SET_BIT(USARTx->CR1, USART_CR1_RXNEIE);\r\n}"
+    },
+    {
+      "name": "LL_USART_EnableIT_TC",
+      "sig": "void LL_USART_EnableIT_TC(USART_TypeDef *USARTx)",
+      "brief": "使能发送完成(TC)中断。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_EnableIT_TC(USART_TypeDef *USARTx)\r\n{\r\n  SET_BIT(USARTx->CR1, USART_CR1_TCIE);\r\n}"
+    },
+    {
+      "name": "LL_USART_EnableIT_TXE",
+      "sig": "void LL_USART_EnableIT_TXE(USART_TypeDef *USARTx)",
+      "brief": "使能发送数据寄存器空(TXE)中断。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_EnableIT_TXE(USART_TypeDef *USARTx)\r\n{\r\n  SET_BIT(USARTx->CR1, USART_CR1_TXEIE);\r\n}"
+    },
+    {
+      "name": "LL_USART_EnableIT_PE",
+      "sig": "void LL_USART_EnableIT_PE(USART_TypeDef *USARTx)",
+      "brief": "使能校验错误(PE)中断。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_EnableIT_PE(USART_TypeDef *USARTx)\r\n{\r\n  SET_BIT(USARTx->CR1, USART_CR1_PEIE);\r\n}"
+    },
+    {
+      "name": "LL_USART_EnableIT_ERROR",
+      "sig": "void LL_USART_EnableIT_ERROR(USART_TypeDef *USARTx)",
+      "brief": "使能错误中断: 帧错误、溢出错误或噪声标志置位时产生中断。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_EnableIT_ERROR(USART_TypeDef *USARTx)\r\n{\r\n  SET_BIT(USARTx->CR3, USART_CR3_EIE);\r\n}"
+    },
+    {
+      "name": "LL_USART_EnableIT_CTS",
+      "sig": "void LL_USART_EnableIT_CTS(USART_TypeDef *USARTx)",
+      "brief": "使能 CTS 中断。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_EnableIT_CTS(USART_TypeDef *USARTx)\r\n{\r\n  SET_BIT(USARTx->CR3, USART_CR3_CTSIE);\r\n}"
+    },
+    {
+      "name": "LL_USART_DisableIT_IDLE",
+      "sig": "void LL_USART_DisableIT_IDLE(USART_TypeDef *USARTx)",
+      "brief": "禁止空闲线检测(IDLE)中断。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_DisableIT_IDLE(USART_TypeDef *USARTx)\r\n{\r\n  CLEAR_BIT(USARTx->CR1, USART_CR1_IDLEIE);\r\n}"
+    },
+    {
+      "name": "LL_USART_DisableIT_RXNE",
+      "sig": "void LL_USART_DisableIT_RXNE(USART_TypeDef *USARTx)",
+      "brief": "禁止接收数据寄存器非空(RXNE)中断。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_DisableIT_RXNE(USART_TypeDef *USARTx)\r\n{\r\n  CLEAR_BIT(USARTx->CR1, USART_CR1_RXNEIE);\r\n}"
+    },
+    {
+      "name": "LL_USART_DisableIT_TC",
+      "sig": "void LL_USART_DisableIT_TC(USART_TypeDef *USARTx)",
+      "brief": "禁止发送完成(TC)中断。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_DisableIT_TC(USART_TypeDef *USARTx)\r\n{\r\n  CLEAR_BIT(USARTx->CR1, USART_CR1_TCIE);\r\n}"
+    },
+    {
+      "name": "LL_USART_DisableIT_TXE",
+      "sig": "void LL_USART_DisableIT_TXE(USART_TypeDef *USARTx)",
+      "brief": "禁止发送数据寄存器空(TXE)中断。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_DisableIT_TXE(USART_TypeDef *USARTx)\r\n{\r\n  CLEAR_BIT(USARTx->CR1, USART_CR1_TXEIE);\r\n}"
+    },
+    {
+      "name": "LL_USART_DisableIT_PE",
+      "sig": "void LL_USART_DisableIT_PE(USART_TypeDef *USARTx)",
+      "brief": "禁止校验错误(PE)中断。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_DisableIT_PE(USART_TypeDef *USARTx)\r\n{\r\n  CLEAR_BIT(USARTx->CR1, USART_CR1_PEIE);\r\n}"
+    },
+    {
+      "name": "LL_USART_DisableIT_ERROR",
+      "sig": "void LL_USART_DisableIT_ERROR(USART_TypeDef *USARTx)",
+      "brief": "禁止错误中断(帧/溢出/噪声)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_DisableIT_ERROR(USART_TypeDef *USARTx)\r\n{\r\n  CLEAR_BIT(USARTx->CR3, USART_CR3_EIE);\r\n}"
+    },
+    {
+      "name": "LL_USART_DisableIT_CTS",
+      "sig": "void LL_USART_DisableIT_CTS(USART_TypeDef *USARTx)",
+      "brief": "禁止 CTS 中断。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_DisableIT_CTS(USART_TypeDef *USARTx)\r\n{\r\n  CLEAR_BIT(USARTx->CR3, USART_CR3_CTSIE);\r\n}"
+    },
+    {
+      "name": "LL_USART_IsEnabledIT_IDLE",
+      "sig": "uint32_t LL_USART_IsEnabledIT_IDLE(USART_TypeDef *USARTx)",
+      "brief": "查询空闲线检测(IDLE)中断是否已使能。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsEnabledIT_IDLE(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->CR1, USART_CR1_IDLEIE) == (USART_CR1_IDLEIE));\r\n}"
+    },
+    {
+      "name": "LL_USART_IsEnabledIT_RXNE",
+      "sig": "uint32_t LL_USART_IsEnabledIT_RXNE(USART_TypeDef *USARTx)",
+      "brief": "查询接收数据寄存器非空(RXNE)中断是否已使能。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsEnabledIT_RXNE(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->CR1, USART_CR1_RXNEIE) == (USART_CR1_RXNEIE));\r\n}"
+    },
+    {
+      "name": "LL_USART_IsEnabledIT_TC",
+      "sig": "uint32_t LL_USART_IsEnabledIT_TC(USART_TypeDef *USARTx)",
+      "brief": "查询发送完成(TC)中断是否已使能。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsEnabledIT_TC(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->CR1, USART_CR1_TCIE) == (USART_CR1_TCIE));\r\n}"
+    },
+    {
+      "name": "LL_USART_IsEnabledIT_TXE",
+      "sig": "uint32_t LL_USART_IsEnabledIT_TXE(USART_TypeDef *USARTx)",
+      "brief": "查询发送数据寄存器空(TXE)中断是否已使能。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsEnabledIT_TXE(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->CR1, USART_CR1_TXEIE) == (USART_CR1_TXEIE));\r\n}"
+    },
+    {
+      "name": "LL_USART_IsEnabledIT_PE",
+      "sig": "uint32_t LL_USART_IsEnabledIT_PE(USART_TypeDef *USARTx)",
+      "brief": "查询校验错误(PE)中断是否已使能。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsEnabledIT_PE(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->CR1, USART_CR1_PEIE) == (USART_CR1_PEIE));\r\n}"
+    },
+    {
+      "name": "LL_USART_IsEnabledIT_ERROR",
+      "sig": "uint32_t LL_USART_IsEnabledIT_ERROR(USART_TypeDef *USARTx)",
+      "brief": "查询错误中断(帧/溢出/噪声)是否已使能。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsEnabledIT_ERROR(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->CR3, USART_CR3_EIE) == (USART_CR3_EIE));\r\n}"
+    },
+    {
+      "name": "LL_USART_IsEnabledIT_CTS",
+      "sig": "uint32_t LL_USART_IsEnabledIT_CTS(USART_TypeDef *USARTx)",
+      "brief": "查询 CTS 中断是否已使能。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsEnabledIT_CTS(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->CR3, USART_CR3_CTSIE) == (USART_CR3_CTSIE));\r\n}"
+    },
+    {
+      "name": "LL_USART_ReceiveData8",
+      "sig": "uint8_t LL_USART_ReceiveData8(USART_TypeDef *USARTx)",
+      "brief": "读取接收数据寄存器(8 位数据)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint8_t",
+        "desc": "接收数据值, 范围 0x00~0xFF"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint8_t LL_USART_ReceiveData8(USART_TypeDef *USARTx)\r\n{\r\n  return (uint8_t)(READ_BIT(USARTx->DR, USART_DR_DR));\r\n}"
+    },
+    {
+      "name": "LL_USART_ReceiveData9",
+      "sig": "uint16_t LL_USART_ReceiveData9(USART_TypeDef *USARTx)",
+      "brief": "读取接收数据寄存器(9 位数据)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint16_t",
+        "desc": "接收数据值, 范围 0x000~0x1FF"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint16_t LL_USART_ReceiveData9(USART_TypeDef *USARTx)\r\n{\r\n  return (uint16_t)(READ_BIT(USARTx->DR, USART_DR_DR));\r\n}"
+    },
+    {
+      "name": "LL_USART_TransmitData8",
+      "sig": "void LL_USART_TransmitData8(USART_TypeDef *USARTx, uint8_t Value)",
+      "brief": "向发送数据寄存器写入 8 位数据。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "Value",
+          "type": "uint8_t",
+          "desc": "发送数据值, 范围 0x00~0xFF"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_TransmitData8(USART_TypeDef *USARTx, uint8_t Value)\r\n{\r\n  USARTx->DR = Value;\r\n}"
+    },
+    {
+      "name": "LL_USART_TransmitData9",
+      "sig": "void LL_USART_TransmitData9(USART_TypeDef *USARTx, uint16_t Value)",
+      "brief": "向发送数据寄存器写入 9 位数据。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "Value",
+          "type": "uint16_t",
+          "desc": "发送数据值, 范围 0x000~0x1FF"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_TransmitData9(USART_TypeDef *USARTx, uint16_t Value)\r\n{\r\n  USARTx->DR = Value & 0x1FFU;\r\n}"
+    },
+    {
+      "name": "LL_USART_RequestEnterMuteMode",
+      "sig": "void LL_USART_RequestEnterMuteMode(USART_TypeDef *USARTx)",
+      "brief": "使 USART 进入静默模式(置 CR1 的 RWU 位)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_RequestEnterMuteMode(USART_TypeDef *USARTx)\r\n{\r\n  SET_BIT(USARTx->CR1, USART_CR1_RWU);\r\n}"
+    },
+    {
+      "name": "LL_USART_RequestExitMuteMode",
+      "sig": "void LL_USART_RequestExitMuteMode(USART_TypeDef *USARTx)",
+      "brief": "使 USART 退出静默模式进入活动模式(清 CR1 的 RWU 位)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_RequestExitMuteMode(USART_TypeDef *USARTx)\r\n{\r\n  CLEAR_BIT(USARTx->CR1, USART_CR1_RWU);\r\n}"
+    },
+    {
+      "name": "LL_USART_EnableAutoBaudRate",
+      "sig": "void LL_USART_EnableAutoBaudRate(USART_TypeDef *USARTx)",
+      "brief": "使能自动波特率检测。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_EnableAutoBaudRate(USART_TypeDef *USARTx)\r\n{\r\n  SET_BIT(USARTx->CR3, USART_CR3_ABREN);\r\n}"
+    },
+    {
+      "name": "LL_USART_DisableAutoBaudRate",
+      "sig": "void LL_USART_DisableAutoBaudRate(USART_TypeDef *USARTx)",
+      "brief": "禁止自动波特率检测。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_DisableAutoBaudRate(USART_TypeDef *USARTx)\r\n{\r\n  CLEAR_BIT(USARTx->CR3, USART_CR3_ABREN);\r\n}"
+    },
+    {
+      "name": "LL_USART_IsEnabledAutoBaudRate",
+      "sig": "uint32_t LL_USART_IsEnabledAutoBaudRate(USART_TypeDef *USARTx)",
+      "brief": "查询自动波特率检测是否已使能。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "已使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_IsEnabledAutoBaudRate(USART_TypeDef *USARTx)\r\n{\r\n  return (READ_BIT(USARTx->CR3, USART_CR3_ABREN) == (USART_CR3_ABREN));\r\n}"
+    },
+    {
+      "name": "LL_USART_SetAutoBaudRateMode",
+      "sig": "void LL_USART_SetAutoBaudRateMode(USART_TypeDef *USARTx, uint32_t mode)",
+      "brief": "设置自动波特率检测模式。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "mode",
+          "type": "uint32_t",
+          "desc": "检测模式: LL_USART_AUTOBAUDRATE_ONSTARTBIT / ONFALLINGEDGE"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_SetAutoBaudRateMode(USART_TypeDef *USARTx, uint32_t mode)\r\n{\r\n  MODIFY_REG(USARTx->CR3, USART_CR3_ABRMODE, mode);\r\n}"
+    },
+    {
+      "name": "LL_USART_GetAutoBaudRateMode",
+      "sig": "uint32_t LL_USART_GetAutoBaudRateMode(USART_TypeDef *USARTx)",
+      "brief": "返回当前自动波特率检测模式。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "检测模式, 对应 LL_USART_AUTOBAUDRATE_*"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_USART_GetAutoBaudRateMode(USART_TypeDef *USARTx)\r\n{\r\n  return (uint32_t)(READ_BIT(USARTx->CR3, USART_CR3_ABRMODE));\r\n}"
+    },
+    {
+      "name": "LL_USART_SendAutoBaudRateReq",
+      "sig": "void LL_USART_SendAutoBaudRateReq(USART_TypeDef *USARTx)",
+      "brief": "请求执行一次自动波特率检测(置 SR 的 ABRRQ 位)。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_USART_SendAutoBaudRateReq(USART_TypeDef *USARTx)\r\n{\r\n  SET_BIT(USARTx->SR, USART_SR_ABRRQ);\r\n}"
+    },
+    {
+      "name": "LL_USART_WriteReg",
+      "sig": "#define LL_USART_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG(__INSTANCE__->__REG__, (__VALUE__))",
+      "brief": "宏: 向 USART 指定寄存器写入值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "USART 实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要写入的寄存器名"
+        },
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "要写入的值"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "macro",
+      "src": "#define LL_USART_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG(__INSTANCE__->__REG__, (__VALUE__))"
+    },
+    {
+      "name": "LL_USART_ReadReg",
+      "sig": "#define LL_USART_ReadReg(__INSTANCE__, __REG__) READ_REG(__INSTANCE__->__REG__)",
+      "brief": "宏: 读取 USART 指定寄存器的值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "USART 实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要读取的寄存器名"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "寄存器值"
+      },
+      "file": "py32f002b_ll_usart.h",
+      "kind": "macro",
+      "src": "#define LL_USART_ReadReg(__INSTANCE__, __REG__) READ_REG(__INSTANCE__->__REG__)"
+    },
+    {
+      "name": "LL_USART_DeInit",
+      "sig": "ErrorStatus LL_USART_DeInit(USART_TypeDef *USARTx)",
+      "brief": "将 USART 寄存器恢复为默认值(对 USART1 执行时钟强制复位再释放复位)。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 成功; ERROR 失败(实例不受支持)"
+      },
+      "file": "py32f002b_ll_usart.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_USART_DeInit(USART_TypeDef *USARTx)\r\n{\r\n  ErrorStatus status = SUCCESS;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_UART_INSTANCE(USARTx));\r\n\r\n  if (USARTx == USART1)\r\n  {\r\n    /* Force reset of USART clock */\r\n    LL_APB1_GRP2_ForceReset(LL_APB1_GRP2_PERIPH_USART1);\r\n\r\n    /* Release reset of USART clock */\r\n    LL_APB1_GRP2_ReleaseReset(LL_APB1_GRP2_PERIPH_USART1);\r\n  }\r\n  else\r\n  {\r\n    status = ERROR;\r\n  }\r\n\r\n  return (status);\r\n}"
+    },
+    {
+      "name": "LL_USART_Init",
+      "sig": "ErrorStatus LL_USART_Init(USART_TypeDef *USARTx, LL_USART_InitTypeDef *USART_InitStruct)",
+      "brief": "根据 LL_USART_InitTypeDef 结构体初始化 USART 寄存器(CR1/CR2/CR3/BRR: 字长、校验、方向、停止位、流控、波特率)。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "USART_InitStruct",
+          "type": "LL_USART_InitTypeDef *",
+          "desc": "指向配置结构体的指针, 含 BaudRate/DataWidth/StopBits/Parity/TransferDirection/HardwareFlowControl/OverSampling"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 成功; ERROR 失败(USART 未处于禁止态或波特率无效)"
+      },
+      "notes": [
+        "部分配置位只能在 USART 禁止(UE=0)时写入, 调用前应先禁止 USART。"
+      ],
+      "file": "py32f002b_ll_usart.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_USART_Init(USART_TypeDef *USARTx, LL_USART_InitTypeDef *USART_InitStruct)\r\n{\r\n  ErrorStatus status = ERROR;\r\n  uint32_t periphclk = LL_RCC_PERIPH_FREQUENCY_NO;\r\n  LL_RCC_ClocksTypeDef rcc_clocks;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_UART_INSTANCE(USARTx));\r\n  assert_param(IS_LL_USART_BAUDRATE(USART_InitStruct->BaudRate));\r\n  assert_param(IS_LL_USART_DATAWIDTH(USART_InitStruct->DataWidth));\r\n  assert_param(IS_LL_USART_STOPBITS(USART_InitStruct->StopBits));\r\n  assert_param(IS_LL_USART_PARITY(USART_InitStruct->Parity));\r\n  assert_param(IS_LL_USART_DIRECTION(USART_InitStruct->TransferDirection));\r\n  assert_param(IS_LL_USART_HWCONTROL(USART_InitStruct->HardwareFlowControl));\r\n#if defined(USART_CR3_OVER8)\r\n  assert_param(IS_LL_USART_OVERSAMPLING(USART_InitStruct->OverSampling));\r\n#endif /* USART_OverSampling_Feature */\r\n\r\n  /* USART needs to be in disabled state, in order to be able to configure some bits in\r\n     CRx registers */\r\n  if (LL_USART_IsEnabled(USARTx) == 0U)\r\n  {\r\n    /*---------------------------- USART CR1 Configuration -----------------------\r\n     * Configure USARTx CR1 (USART Word Length, Parity, Mode and Oversampling bits) with parameters:\r\n     * - DataWidth:          USART_CR1_M bits according to USART_InitStruct->DataWidth value\r\n     * - Parity:             USART_CR1_PCE, USART_CR1_PS bits according to USART_InitStruct->Parity value\r\n     * - TransferDirection:  USART_CR1_TE, USART_CR1_RE bits according to USART_InitStruct->TransferDirection value\r\n     * - Oversampling:       USART_CR3_OVER8 bit according to USART_InitStruct->OverSampling value.\r\n     */\r\n#if defined(USART_CR3_OVER8)\r\n    MODIFY_REG(USARTx->CR1,\r\n               (USART_CR1_M | USART_CR1_PCE | USART_CR1_PS |\r\n                    USART_CR1_TE | USART_CR1_RE),\r\n               (USART_InitStruct->DataWidth | USART_InitStruct->Parity |\r\n                USART_InitStruct->TransferDirection));\r\n        MODIFY_REG(USARTx->CR3, USART_CR3_OVER8, USART_InitStruct->OverSampling);\r\n#else\r\n        MODIFY_REG(USARTx->CR1,\r\n               (USART_CR1_M | USART_CR1_PCE | USART_CR1_PS |\r\n                USART_CR1_TE | USART_CR1_RE),\r\n               (USART_InitStruct->DataWidth | USART_InitStruct->Parity |\r\n                USART_InitStruct->TransferDirection));\r\n#endif /* USART_OverSampling_Feature */\r\n    /*---------------------------- USART CR2 Configuration -----------------------\r\n     * Configure USARTx CR2 (Stop bits) with parameters:\r\n     * - Stop Bits:          USART_CR2_STOP bits according to USART_InitStruct->StopBits value.\r\n     * - CLKEN, CPOL, CPHA and LBCL bits are to be configured using LL_USART_ClockInit().\r\n     */\r\n    LL_USART_SetStopBitsLength(USARTx, USART_InitStruct->StopBits);\r\n\r\n    /*---------------------------- USART CR3 Configuration -----------------------\r\n     * Configure USARTx CR3 (Hardware Flow Control) with parameters:\r\n     * - HardwareFlowControl: USART_CR3_RTSE, USART_CR3_CTSE bits according to USART_InitStruct->HardwareFlowControl value.\r\n     */\r\n    LL_USART_SetHWFlowCtrl(USARTx, USART_InitStruct->HardwareFlowControl);\r\n\r\n    /*---------------------------- USART BRR Configuration -----------------------\r\n     * Retrieve Clock frequency used for USART Peripheral\r\n     */\r\n    LL_RCC_GetSystemClocksFreq(&rcc_clocks);\r\n    periphclk = rcc_clocks.PCLK1_Frequency;\r\n\r\n    /* Configure the USART Baud Rate :\r\n       - valid baud rate value (different from 0) is required\r\n       - Peripheral clock as returned by RCC service, should be valid (different from 0).\r\n    */\r\n    if ((periphclk != LL_RCC_PERIPH_FREQUENCY_NO)\r\n        && (USART_InitStruct->BaudRate != 0U))\r\n    {\r\n      status = SUCCESS;\r\n#if defined(USART_CR3_OVER8)\r\n            LL_USART_SetBaudRate(USARTx,\r\n                           periphclk,\r\n                           USART_InitStruct->OverSampling,\r\n                           USART_InitStruct->BaudRate);\r\n#else\r\n      LL_USART_SetBaudRate(USARTx,\r\n                           periphclk,\r\n                           USART_InitStruct->BaudRate);\r\n#endif /* USART_OverSampling_Feature */\r\n      /* Check BRR is greater than or equal to 16d */\r\n      assert_param(IS_LL_USART_BRR_MIN(USARTx->BRR));\r\n\r\n      /* Check BRR is greater than or equal to 16d */\r\n      assert_param(IS_LL_USART_BRR_MAX(USARTx->BRR));\r\n    }\r\n  }\r\n  /* Endif (=> USART not in Disabled state => return ERROR) */\r\n\r\n  return (status);\r\n}"
+    },
+    {
+      "name": "LL_USART_StructInit",
+      "sig": "void LL_USART_StructInit(LL_USART_InitTypeDef *USART_InitStruct)",
+      "brief": "将 LL_USART_InitTypeDef 结构体各成员填充为默认值(9600 波特、8 位、1 停止位、无校验、TX_RX、无流控、16 倍过采样)。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "USART_InitStruct",
+          "type": "LL_USART_InitTypeDef *",
+          "desc": "指向要填充默认值的结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.c",
+      "kind": "function",
+      "src": "void LL_USART_StructInit(LL_USART_InitTypeDef *USART_InitStruct)\r\n{\r\n  /* Set USART_InitStruct fields to default values */\r\n  USART_InitStruct->BaudRate            = 9600U;\r\n  USART_InitStruct->DataWidth           = LL_USART_DATAWIDTH_8B;\r\n  USART_InitStruct->StopBits            = LL_USART_STOPBITS_1;\r\n  USART_InitStruct->Parity              = LL_USART_PARITY_NONE ;\r\n  USART_InitStruct->TransferDirection   = LL_USART_DIRECTION_TX_RX;\r\n  USART_InitStruct->HardwareFlowControl = LL_USART_HWCONTROL_NONE;\r\n#if defined(USART_CR3_OVER8)\r\n  USART_InitStruct->OverSampling        = LL_USART_OVERSAMPLING_16;\r\n#endif /* USART_OverSampling_Feature */\r\n}"
+    },
+    {
+      "name": "LL_USART_ClockInit",
+      "sig": "ErrorStatus LL_USART_ClockInit(USART_TypeDef *USARTx, LL_USART_ClockInitTypeDef *USART_ClockInitStruct)",
+      "brief": "根据 LL_USART_ClockInitTypeDef 结构体初始化 USART 时钟相关设置(CR2: CLKEN/CPOL/CPHA/LBCL)。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "USARTx",
+          "type": "USART_TypeDef *",
+          "desc": "USART 实例指针"
+        },
+        {
+          "name": "USART_ClockInitStruct",
+          "type": "LL_USART_ClockInitTypeDef *",
+          "desc": "指向时钟配置结构体的指针, 含 ClockOutput/ClockPolarity/ClockPhase/LastBitClockPulse"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 成功; ERROR 失败(USART 未处于禁止态)"
+      },
+      "notes": [
+        "调用前应确保 USART 处于禁止态。"
+      ],
+      "file": "py32f002b_ll_usart.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_USART_ClockInit(USART_TypeDef *USARTx, LL_USART_ClockInitTypeDef *USART_ClockInitStruct)\r\n{\r\n  ErrorStatus status = SUCCESS;\r\n\r\n  /* Check USART Instance and Clock signal output parameters */\r\n  assert_param(IS_UART_INSTANCE(USARTx));\r\n  assert_param(IS_LL_USART_CLOCKOUTPUT(USART_ClockInitStruct->ClockOutput));\r\n\r\n  /* USART needs to be in disabled state, in order to be able to configure some bits in\r\n     CRx registers */\r\n  if (LL_USART_IsEnabled(USARTx) == 0U)\r\n  {\r\n    /*---------------------------- USART CR2 Configuration -----------------------*/\r\n    /* If Clock signal has to be output */\r\n    if (USART_ClockInitStruct->ClockOutput == LL_USART_CLOCK_DISABLE)\r\n    {\r\n      /* Deactivate Clock signal delivery :\r\n       * - Disable Clock Output:        USART_CR2_CLKEN cleared\r\n       */\r\n      LL_USART_DisableSCLKOutput(USARTx);\r\n    }\r\n    else\r\n    {\r\n      /* Ensure USART instance is USART capable */\r\n      assert_param(IS_USART_INSTANCE(USARTx));\r\n\r\n      /* Check clock related parameters */\r\n      assert_param(IS_LL_USART_CLOCKPOLARITY(USART_ClockInitStruct->ClockPolarity));\r\n      assert_param(IS_LL_USART_CLOCKPHASE(USART_ClockInitStruct->ClockPhase));\r\n      assert_param(IS_LL_USART_LASTBITCLKOUTPUT(USART_ClockInitStruct->LastBitClockPulse));\r\n\r\n      /*---------------------------- USART CR2 Configuration -----------------------\r\n       * Configure USARTx CR2 (Clock signal related bits) with parameters:\r\n       * - Enable Clock Output:         USART_CR2_CLKEN set\r\n       * - Clock Polarity:              USART_CR2_CPOL bit according to USART_ClockInitStruct->ClockPolarity value\r\n       * - Clock Phase:                 USART_CR2_CPHA bit according to USART_ClockInitStruct->ClockPhase value\r\n       * - Last Bit Clock Pulse Output: USART_CR2_LBCL bit according to USART_ClockInitStruct->LastBitClockPulse value.\r\n       */\r\n      MODIFY_REG(USARTx->CR2,\r\n                 USART_CR2_CLKEN | USART_CR2_CPHA | USART_CR2_CPOL | USART_CR2_LBCL,\r\n                 USART_CR2_CLKEN | USART_ClockInitStruct->ClockPolarity |\r\n                 USART_ClockInitStruct->ClockPhase | USART_ClockInitStruct->LastBitClockPulse);\r\n    }\r\n  }\r\n  /* Else (USART not in Disabled state => return ERROR */\r\n  else\r\n  {\r\n    status = ERROR;\r\n  }\r\n\r\n  return (status);\r\n}"
+    },
+    {
+      "name": "LL_USART_ClockStructInit",
+      "sig": "void LL_USART_ClockStructInit(LL_USART_ClockInitTypeDef *USART_ClockInitStruct)",
+      "brief": "将 LL_USART_ClockInitTypeDef 结构体各成员填充为默认值(时钟禁止、低极性、第一边沿采样、最后位无脉冲输出)。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "USART_ClockInitStruct",
+          "type": "LL_USART_ClockInitTypeDef *",
+          "desc": "指向要填充默认值的结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_usart.c",
+      "kind": "function",
+      "src": "void LL_USART_ClockStructInit(LL_USART_ClockInitTypeDef *USART_ClockInitStruct)\r\n{\r\n  /* Set LL_USART_ClockInitStruct fields with default values */\r\n  USART_ClockInitStruct->ClockOutput       = LL_USART_CLOCK_DISABLE;\r\n  USART_ClockInitStruct->ClockPolarity     = LL_USART_POLARITY_LOW;            /* Not relevant when ClockOutput = LL_USART_CLOCK_DISABLE */\r\n  USART_ClockInitStruct->ClockPhase        = LL_USART_PHASE_1EDGE;             /* Not relevant when ClockOutput = LL_USART_CLOCK_DISABLE */\r\n  USART_ClockInitStruct->LastBitClockPulse = LL_USART_LASTCLKPULSE_NO_OUTPUT;  /* Not relevant when ClockOutput = LL_USART_CLOCK_DISABLE */\r\n}"
+    }
+  ],
+  "types": [
+    {
+      "name": "USART_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t BaudRate; uint32_t WordLength; uint32_t StopBits; uint32_t Parity; uint32_t Mode; uint32_t CLKPolarity; uint32_t CLKPhase; uint32_t CLKLastBit; } USART_InitTypeDef;",
+      "desc": "USART 初始化配置结构体, 作为 HAL_USART_Init() 的参数。",
+      "members": [
+        {
+          "name": "BaudRate",
+          "type": "uint32_t",
+          "desc": "通信波特率, 由 PCLK 与波特率公式计算 BRR 分频值"
+        },
+        {
+          "name": "WordLength",
+          "type": "uint32_t",
+          "desc": "帧数据位数, 可取 USART_WORDLENGTH_8B / 9B"
+        },
+        {
+          "name": "StopBits",
+          "type": "uint32_t",
+          "desc": "停止位数, 可取 USART_STOPBITS_1 / 2"
+        },
+        {
+          "name": "Parity",
+          "type": "uint32_t",
+          "desc": "校验模式, 可取 USART_PARITY_NONE / EVEN / ODD"
+        },
+        {
+          "name": "Mode",
+          "type": "uint32_t",
+          "desc": "收发模式, 可取 USART_MODE_RX / TX / TX_RX"
+        },
+        {
+          "name": "CLKPolarity",
+          "type": "uint32_t",
+          "desc": "同步时钟稳态极性, 可取 USART_POLARITY_LOW / HIGH"
+        },
+        {
+          "name": "CLKPhase",
+          "type": "uint32_t",
+          "desc": "同步时钟采样沿, 可取 USART_PHASE_1EDGE / 2EDGE"
+        },
+        {
+          "name": "CLKLastBit",
+          "type": "uint32_t",
+          "desc": "最后位时钟脉冲是否输出到 SCLK, 可取 USART_LASTBIT_DISABLE / ENABLE"
+        }
+      ],
+      "file": "py32f002b_hal_usart.h"
+    },
+    {
+      "name": "HAL_USART_StateTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_USART_STATE_RESET = 0x00U, HAL_USART_STATE_READY = 0x01U, HAL_USART_STATE_BUSY = 0x02U, HAL_USART_STATE_BUSY_TX = 0x12U, HAL_USART_STATE_BUSY_RX = 0x22U, HAL_USART_STATE_BUSY_TX_RX = 0x32U, HAL_USART_STATE_TIMEOUT = 0x03U, HAL_USART_STATE_ERROR = 0x04U } HAL_USART_StateTypeDef;",
+      "desc": "HAL USART 状态枚举, 用于句柄 State 成员, 由 HAL_USART_GetState() 返回。",
+      "members": [
+        {
+          "name": "HAL_USART_STATE_RESET",
+          "value": "0x00U",
+          "desc": "外设尚未初始化"
+        },
+        {
+          "name": "HAL_USART_STATE_READY",
+          "value": "0x01U",
+          "desc": "外设已初始化, 可投入使用"
+        },
+        {
+          "name": "HAL_USART_STATE_BUSY",
+          "value": "0x02U",
+          "desc": "内部流程进行中"
+        },
+        {
+          "name": "HAL_USART_STATE_BUSY_TX",
+          "value": "0x12U",
+          "desc": "数据发送流程进行中"
+        },
+        {
+          "name": "HAL_USART_STATE_BUSY_RX",
+          "value": "0x22U",
+          "desc": "数据接收流程进行中"
+        },
+        {
+          "name": "HAL_USART_STATE_BUSY_TX_RX",
+          "value": "0x32U",
+          "desc": "数据收发流程进行中"
+        },
+        {
+          "name": "HAL_USART_STATE_TIMEOUT",
+          "value": "0x03U",
+          "desc": "超时状态"
+        },
+        {
+          "name": "HAL_USART_STATE_ERROR",
+          "value": "0x04U",
+          "desc": "错误状态"
+        }
+      ],
+      "file": "py32f002b_hal_usart.h"
+    },
+    {
+      "name": "USART_HandleTypeDef",
+      "kind": "struct",
+      "def": "typedef struct __USART_HandleTypeDef { USART_TypeDef *Instance; USART_InitTypeDef Init; uint8_t *pTxBuffPtr; uint16_t TxXferSize; __IO uint16_t TxXferCount; uint8_t *pRxBuffPtr; uint16_t RxXferSize; __IO uint16_t RxXferCount; HAL_LockTypeDef Lock; __IO HAL_USART_StateTypeDef State; __IO uint32_t ErrorCode; void (*TxHalfCpltCallback)(...); void (*TxCpltCallback)(...); void (*RxHalfCpltCallback)(...); void (*RxCpltCallback)(...); void (*TxRxCpltCallback)(...); void (*ErrorCallback)(...); void (*AbortCpltCallback)(...); void (*MspInitCallback)(...); void (*MspDeInitCallback)(...); } USART_HandleTypeDef;",
+      "desc": "USART 句柄结构体: 外设实例指针、初始化参数、收发缓冲与计数、锁定对象、状态与错误码, 以及(启用回调注册时)各回调函数指针。",
+      "members": [
+        {
+          "name": "Instance",
+          "type": "USART_TypeDef *",
+          "desc": "USART 寄存器基地址"
+        },
+        {
+          "name": "Init",
+          "type": "USART_InitTypeDef",
+          "desc": "USART 通信参数"
+        },
+        {
+          "name": "pTxBuffPtr",
+          "type": "uint8_t *",
+          "desc": "指向发送缓冲的指针"
+        },
+        {
+          "name": "TxXferSize",
+          "type": "uint16_t",
+          "desc": "发送传输大小"
+        },
+        {
+          "name": "TxXferCount",
+          "type": "__IO uint16_t",
+          "desc": "发送传输计数器"
+        },
+        {
+          "name": "pRxBuffPtr",
+          "type": "uint8_t *",
+          "desc": "指向接收缓冲的指针"
+        },
+        {
+          "name": "RxXferSize",
+          "type": "uint16_t",
+          "desc": "接收传输大小"
+        },
+        {
+          "name": "RxXferCount",
+          "type": "__IO uint16_t",
+          "desc": "接收传输计数器"
+        },
+        {
+          "name": "Lock",
+          "type": "HAL_LockTypeDef",
+          "desc": "锁定对象"
+        },
+        {
+          "name": "State",
+          "type": "__IO HAL_USART_StateTypeDef",
+          "desc": "USART 通信状态"
+        },
+        {
+          "name": "ErrorCode",
+          "type": "__IO uint32_t",
+          "desc": "USART 错误码"
+        },
+        {
+          "name": "TxHalfCpltCallback 等 9 个回调指针",
+          "type": "void (*)(struct __USART_HandleTypeDef *)",
+          "desc": "USE_HAL_USART_REGISTER_CALLBACKS=1 时: TxHalfCplt/TxCplt/RxHalfCplt/RxCplt/TxRxCplt/Error/AbortCplt/MspInit/MspDeInit 回调函数指针"
+        }
+      ],
+      "file": "py32f002b_hal_usart.h"
+    },
+    {
+      "name": "HAL_USART_CallbackIDTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_USART_TX_HALFCOMPLETE_CB_ID = 0x00U, HAL_USART_TX_COMPLETE_CB_ID = 0x01U, HAL_USART_RX_HALFCOMPLETE_CB_ID = 0x02U, HAL_USART_RX_COMPLETE_CB_ID = 0x03U, HAL_USART_TX_RX_COMPLETE_CB_ID = 0x04U, HAL_USART_ERROR_CB_ID = 0x05U, HAL_USART_ABORT_COMPLETE_CB_ID = 0x06U, HAL_USART_MSPINIT_CB_ID = 0x07U, HAL_USART_MSPDEINIT_CB_ID = 0x08U } HAL_USART_CallbackIDTypeDef;",
+      "desc": "HAL USART 回调 ID 枚举, 作为 HAL_USART_RegisterCallback()/UnRegisterCallback() 的选择参数(需 USE_HAL_USART_REGISTER_CALLBACKS=1)。",
+      "members": [
+        {
+          "name": "HAL_USART_TX_HALFCOMPLETE_CB_ID",
+          "value": "0x00U",
+          "desc": "发送半程完成回调 ID"
+        },
+        {
+          "name": "HAL_USART_TX_COMPLETE_CB_ID",
+          "value": "0x01U",
+          "desc": "发送完成回调 ID"
+        },
+        {
+          "name": "HAL_USART_RX_HALFCOMPLETE_CB_ID",
+          "value": "0x02U",
+          "desc": "接收半程完成回调 ID"
+        },
+        {
+          "name": "HAL_USART_RX_COMPLETE_CB_ID",
+          "value": "0x03U",
+          "desc": "接收完成回调 ID"
+        },
+        {
+          "name": "HAL_USART_TX_RX_COMPLETE_CB_ID",
+          "value": "0x04U",
+          "desc": "收发完成回调 ID"
+        },
+        {
+          "name": "HAL_USART_ERROR_CB_ID",
+          "value": "0x05U",
+          "desc": "错误回调 ID"
+        },
+        {
+          "name": "HAL_USART_ABORT_COMPLETE_CB_ID",
+          "value": "0x06U",
+          "desc": "中止完成回调 ID"
+        },
+        {
+          "name": "HAL_USART_MSPINIT_CB_ID",
+          "value": "0x07U",
+          "desc": "MspInit 回调 ID"
+        },
+        {
+          "name": "HAL_USART_MSPDEINIT_CB_ID",
+          "value": "0x08U",
+          "desc": "MspDeInit 回调 ID"
+        }
+      ],
+      "file": "py32f002b_hal_usart.h"
+    },
+    {
+      "name": "LL_USART_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t BaudRate; uint32_t DataWidth; uint32_t StopBits; uint32_t Parity; uint32_t TransferDirection; uint32_t HardwareFlowControl; uint32_t OverSampling; } LL_USART_InitTypeDef;",
+      "desc": "LL 库 USART 初始化配置结构体, 作为 LL_USART_Init() 的参数(需定义 USE_FULL_LL_DRIVER)。",
+      "members": [
+        {
+          "name": "BaudRate",
+          "type": "uint32_t",
+          "desc": "期望波特率, 可用 LL_USART_SetBaudRate() 修改"
+        },
+        {
+          "name": "DataWidth",
+          "type": "uint32_t",
+          "desc": "数据位数, 可取 LL_USART_DATAWIDTH_8B / 9B"
+        },
+        {
+          "name": "StopBits",
+          "type": "uint32_t",
+          "desc": "停止位, 可取 LL_USART_STOPBITS_1 / 2"
+        },
+        {
+          "name": "Parity",
+          "type": "uint32_t",
+          "desc": "校验模式, 可取 LL_USART_PARITY_NONE / EVEN / ODD"
+        },
+        {
+          "name": "TransferDirection",
+          "type": "uint32_t",
+          "desc": "收发方向, 可取 LL_USART_DIRECTION_*"
+        },
+        {
+          "name": "HardwareFlowControl",
+          "type": "uint32_t",
+          "desc": "硬件流控, 可取 LL_USART_HWCONTROL_*"
+        },
+        {
+          "name": "OverSampling",
+          "type": "uint32_t",
+          "desc": "过采样, 可取 LL_USART_OVERSAMPLING_16 / 8"
+        }
+      ],
+      "file": "py32f002b_ll_usart.h"
+    },
+    {
+      "name": "LL_USART_ClockInitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t ClockOutput; uint32_t ClockPolarity; uint32_t ClockPhase; uint32_t LastBitClockPulse; } LL_USART_ClockInitTypeDef;",
+      "desc": "LL 库 USART 时钟初始化配置结构体, 作为 LL_USART_ClockInit() 的参数(需定义 USE_FULL_LL_DRIVER)。",
+      "members": [
+        {
+          "name": "ClockOutput",
+          "type": "uint32_t",
+          "desc": "时钟输出使能, 可取 LL_USART_CLOCK_DISABLE / ENABLE"
+        },
+        {
+          "name": "ClockPolarity",
+          "type": "uint32_t",
+          "desc": "时钟极性, 可取 LL_USART_POLARITY_LOW / HIGH"
+        },
+        {
+          "name": "ClockPhase",
+          "type": "uint32_t",
+          "desc": "时钟相位, 可取 LL_USART_PHASE_1EDGE / 2EDGE"
+        },
+        {
+          "name": "LastBitClockPulse",
+          "type": "uint32_t",
+          "desc": "最后位时钟脉冲, 可取 LL_USART_LASTCLKPULSE_NO_OUTPUT / OUTPUT"
+        }
+      ],
+      "file": "py32f002b_ll_usart.h"
+    },
+    {
+      "name": "USART_TypeDef",
+      "kind": "periph",
+      "def": "typedef struct { __IO uint32_t SR; __IO uint32_t DR; __IO uint32_t BRR; __IO uint32_t CR1; __IO uint32_t CR2; __IO uint32_t CR3; } USART_TypeDef;",
+      "desc": "USART 外设寄存器结构体。实例: USART1。注意 CR1 的 UE 使能位在 bit13。",
+      "members": [
+        {
+          "name": "SR",
+          "type": "__IO uint32_t",
+          "desc": "状态寄存器: TXE/TC/RXNE/IDLE/ORE/NE/FE/PE/CTS/ABRF/ABRE 等标志, 偏移 0x00"
+        },
+        {
+          "name": "DR",
+          "type": "__IO uint32_t",
+          "desc": "数据寄存器(收发共用), 偏移 0x04"
+        },
+        {
+          "name": "BRR",
+          "type": "__IO uint32_t",
+          "desc": "波特率寄存器(USARTDIV), 偏移 0x08"
+        },
+        {
+          "name": "CR1",
+          "type": "__IO uint32_t",
+          "desc": "控制寄存器 1: UE(bit13)/M/WAKE/PCE/PS/TE/RE/RWU 等, 偏移 0x0C"
+        },
+        {
+          "name": "CR2",
+          "type": "__IO uint32_t",
+          "desc": "控制寄存器 2: CLKEN/CPOL/CPHA/LBCL/STOP/ADD 等, 偏移 0x10"
+        },
+        {
+          "name": "CR3",
+          "type": "__IO uint32_t",
+          "desc": "控制寄存器 3: EIE/RTSE/CTSE/CTSIE/HDSEL/OVER8/ABREN/ABRMODE 等, 偏移 0x14"
+        }
+      ],
+      "file": "py32f002xx5.h"
+    },
+    {
+      "name": "pUSART_CallbackTypeDef",
+      "kind": "typedef",
+      "def": "typedef void (*pUSART_CallbackTypeDef)(USART_HandleTypeDef *husart);",
+      "desc": "USART 回调函数指针类型(用于 HAL_USART_RegisterCallback)。",
+      "members": [
+        {
+          "name": "husart",
+          "type": "USART_HandleTypeDef *",
+          "desc": "USART 句柄"
+        }
+      ],
+      "file": "py32f002b_hal_usart.h"
+    }
+  ],
+  "consts": [
+    {
+      "name": "HAL_USART_ERROR_NONE",
+      "value": "0x00000000U",
+      "desc": "无错误",
+      "group": "USART 错误码",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define HAL_USART_ERROR_NONE             0x00000000U   /*!< No error                */"
+    },
+    {
+      "name": "HAL_USART_ERROR_PE",
+      "value": "0x00000001U",
+      "desc": "校验错误",
+      "group": "USART 错误码",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define HAL_USART_ERROR_PE               0x00000001U   /*!< Parity error            */"
+    },
+    {
+      "name": "HAL_USART_ERROR_NE",
+      "value": "0x00000002U",
+      "desc": "噪声错误",
+      "group": "USART 错误码",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define HAL_USART_ERROR_NE               0x00000002U   /*!< Noise error             */"
+    },
+    {
+      "name": "HAL_USART_ERROR_FE",
+      "value": "0x00000004U",
+      "desc": "帧错误",
+      "group": "USART 错误码",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define HAL_USART_ERROR_FE               0x00000004U   /*!< Frame error             */"
+    },
+    {
+      "name": "HAL_USART_ERROR_ORE",
+      "value": "0x00000008U",
+      "desc": "溢出错误",
+      "group": "USART 错误码",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define HAL_USART_ERROR_ORE              0x00000008U   /*!< Overrun error           */"
+    },
+    {
+      "name": "HAL_USART_ERROR_INVALID_CALLBACK",
+      "value": "0x00000020U",
+      "desc": "无效回调错误(回调注册功能启用时)",
+      "group": "USART 错误码",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define HAL_USART_ERROR_INVALID_CALLBACK 0x00000020U    /*!< Invalid Callback error */"
+    },
+    {
+      "name": "USART_WORDLENGTH_8B",
+      "value": "0x00000000U",
+      "desc": "8 位字长",
+      "group": "USART 字长",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_WORDLENGTH_8B          0x00000000U"
+    },
+    {
+      "name": "USART_WORDLENGTH_9B",
+      "value": "((uint32_t)USART_CR1_M)",
+      "desc": "9 位字长",
+      "group": "USART 字长",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_WORDLENGTH_9B          ((uint32_t)USART_CR1_M)"
+    },
+    {
+      "name": "USART_STOPBITS_1",
+      "value": "0x00000000U",
+      "desc": "1 个停止位",
+      "group": "USART 停止位",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_STOPBITS_1             0x00000000U"
+    },
+    {
+      "name": "USART_STOPBITS_2",
+      "value": "((uint32_t)USART_CR2_STOP)",
+      "desc": "2 个停止位",
+      "group": "USART 停止位",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_STOPBITS_2             ((uint32_t)USART_CR2_STOP)"
+    },
+    {
+      "name": "USART_PARITY_NONE",
+      "value": "0x00000000U",
+      "desc": "无校验",
+      "group": "USART 校验",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_PARITY_NONE            0x00000000U"
+    },
+    {
+      "name": "USART_PARITY_EVEN",
+      "value": "((uint32_t)USART_CR1_PCE)",
+      "desc": "偶校验",
+      "group": "USART 校验",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_PARITY_EVEN            ((uint32_t)USART_CR1_PCE)"
+    },
+    {
+      "name": "USART_PARITY_ODD",
+      "value": "((uint32_t)(USART_CR1_PCE | USART_CR1_PS))",
+      "desc": "奇校验",
+      "group": "USART 校验",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_PARITY_ODD             ((uint32_t)(USART_CR1_PCE | USART_CR1_PS))"
+    },
+    {
+      "name": "USART_MODE_RX",
+      "value": "((uint32_t)USART_CR1_RE)",
+      "desc": "仅接收模式",
+      "group": "USART 模式",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_MODE_RX                ((uint32_t)USART_CR1_RE)"
+    },
+    {
+      "name": "USART_MODE_TX",
+      "value": "((uint32_t)USART_CR1_TE)",
+      "desc": "仅发送模式",
+      "group": "USART 模式",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_MODE_TX                ((uint32_t)USART_CR1_TE)"
+    },
+    {
+      "name": "USART_MODE_TX_RX",
+      "value": "((uint32_t)(USART_CR1_TE | USART_CR1_RE))",
+      "desc": "收发模式",
+      "group": "USART 模式",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_MODE_TX_RX             ((uint32_t)(USART_CR1_TE | USART_CR1_RE))"
+    },
+    {
+      "name": "USART_CLOCK_DISABLE",
+      "value": "0x00000000U",
+      "desc": "禁止同步时钟输出",
+      "group": "USART 时钟",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_CLOCK_DISABLE          0x00000000U"
+    },
+    {
+      "name": "USART_CLOCK_ENABLE",
+      "value": "((uint32_t)USART_CR2_CLKEN)",
+      "desc": "使能同步时钟输出",
+      "group": "USART 时钟",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_CLOCK_ENABLE           ((uint32_t)USART_CR2_CLKEN)"
+    },
+    {
+      "name": "USART_POLARITY_LOW",
+      "value": "0x00000000U",
+      "desc": "SCLK 空闲为低电平",
+      "group": "USART 时钟极性",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_POLARITY_LOW           0x00000000U"
+    },
+    {
+      "name": "USART_POLARITY_HIGH",
+      "value": "((uint32_t)USART_CR2_CPOL)",
+      "desc": "SCLK 空闲为高电平",
+      "group": "USART 时钟极性",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_POLARITY_HIGH          ((uint32_t)USART_CR2_CPOL)"
+    },
+    {
+      "name": "USART_PHASE_1EDGE",
+      "value": "0x00000000U",
+      "desc": "第一个时钟沿进行数据采样",
+      "group": "USART 时钟相位",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_PHASE_1EDGE            0x00000000U"
+    },
+    {
+      "name": "USART_PHASE_2EDGE",
+      "value": "((uint32_t)USART_CR2_CPHA)",
+      "desc": "第二个时钟沿进行数据采样",
+      "group": "USART 时钟相位",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_PHASE_2EDGE            ((uint32_t)USART_CR2_CPHA)"
+    },
+    {
+      "name": "USART_LASTBIT_DISABLE",
+      "value": "0x00000000U",
+      "desc": "最后位数据不输出时钟脉冲",
+      "group": "USART 最后位",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_LASTBIT_DISABLE        0x00000000U"
+    },
+    {
+      "name": "USART_LASTBIT_ENABLE",
+      "value": "((uint32_t)USART_CR2_LBCL)",
+      "desc": "最后位数据输出时钟脉冲到 SCLK",
+      "group": "USART 最后位",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_LASTBIT_ENABLE         ((uint32_t)USART_CR2_LBCL)"
+    },
+    {
+      "name": "USART_FLAG_TXE",
+      "value": "((uint32_t)USART_SR_TXE)",
+      "desc": "发送数据寄存器空标志",
+      "group": "USART 标志",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_FLAG_TXE               ((uint32_t)USART_SR_TXE)"
+    },
+    {
+      "name": "USART_FLAG_TC",
+      "value": "((uint32_t)USART_SR_TC)",
+      "desc": "发送完成标志",
+      "group": "USART 标志",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_FLAG_TC                ((uint32_t)USART_SR_TC)"
+    },
+    {
+      "name": "USART_FLAG_RXNE",
+      "value": "((uint32_t)USART_SR_RXNE)",
+      "desc": "接收数据寄存器非空标志",
+      "group": "USART 标志",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_FLAG_RXNE              ((uint32_t)USART_SR_RXNE)"
+    },
+    {
+      "name": "USART_FLAG_IDLE",
+      "value": "((uint32_t)USART_SR_IDLE)",
+      "desc": "空闲线检测标志",
+      "group": "USART 标志",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_FLAG_IDLE              ((uint32_t)USART_SR_IDLE)"
+    },
+    {
+      "name": "USART_FLAG_ORE",
+      "value": "((uint32_t)USART_SR_ORE)",
+      "desc": "溢出错误标志",
+      "group": "USART 标志",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_FLAG_ORE               ((uint32_t)USART_SR_ORE)"
+    },
+    {
+      "name": "USART_FLAG_NE",
+      "value": "((uint32_t)USART_SR_NE)",
+      "desc": "噪声错误标志",
+      "group": "USART 标志",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_FLAG_NE                ((uint32_t)USART_SR_NE)"
+    },
+    {
+      "name": "USART_FLAG_FE",
+      "value": "((uint32_t)USART_SR_FE)",
+      "desc": "帧错误标志",
+      "group": "USART 标志",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_FLAG_FE                ((uint32_t)USART_SR_FE)"
+    },
+    {
+      "name": "USART_FLAG_PE",
+      "value": "((uint32_t)USART_SR_PE)",
+      "desc": "校验错误标志",
+      "group": "USART 标志",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_FLAG_PE                ((uint32_t)USART_SR_PE)"
+    },
+    {
+      "name": "USART_IT_PE",
+      "value": "((uint32_t)(USART_CR1_REG_INDEX << 28U | USART_CR1_PEIE))",
+      "desc": "校验错误中断",
+      "group": "USART 中断",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_IT_PE                  ((uint32_t)(USART_CR1_REG_INDEX << 28U | USART_CR1_PEIE))"
+    },
+    {
+      "name": "USART_IT_TXE",
+      "value": "((uint32_t)(USART_CR1_REG_INDEX << 28U | USART_CR1_TXEIE))",
+      "desc": "发送数据寄存器空中断",
+      "group": "USART 中断",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_IT_TXE                 ((uint32_t)(USART_CR1_REG_INDEX << 28U | USART_CR1_TXEIE))"
+    },
+    {
+      "name": "USART_IT_TC",
+      "value": "((uint32_t)(USART_CR1_REG_INDEX << 28U | USART_CR1_TCIE))",
+      "desc": "发送完成中断",
+      "group": "USART 中断",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_IT_TC                  ((uint32_t)(USART_CR1_REG_INDEX << 28U | USART_CR1_TCIE))"
+    },
+    {
+      "name": "USART_IT_RXNE",
+      "value": "((uint32_t)(USART_CR1_REG_INDEX << 28U | USART_CR1_RXNEIE))",
+      "desc": "接收数据寄存器非空中断",
+      "group": "USART 中断",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_IT_RXNE                ((uint32_t)(USART_CR1_REG_INDEX << 28U | USART_CR1_RXNEIE))"
+    },
+    {
+      "name": "USART_IT_IDLE",
+      "value": "((uint32_t)(USART_CR1_REG_INDEX << 28U | USART_CR1_IDLEIE))",
+      "desc": "空闲线中断",
+      "group": "USART 中断",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_IT_IDLE                ((uint32_t)(USART_CR1_REG_INDEX << 28U | USART_CR1_IDLEIE))"
+    },
+    {
+      "name": "USART_IT_ERR",
+      "value": "((uint32_t)(USART_CR3_REG_INDEX << 28U | USART_CR3_EIE))",
+      "desc": "错误中断(帧/噪声/溢出错误)",
+      "group": "USART 中断",
+      "file": "py32f002b_hal_usart.h",
+      "src": "#define USART_IT_ERR                 ((uint32_t)(USART_CR3_REG_INDEX << 28U | USART_CR3_EIE))"
+    },
+    {
+      "name": "LL_USART_SR_PE",
+      "value": "USART_SR_PE",
+      "desc": "校验错误标志",
+      "group": "LL_USART 标志",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_SR_PE                          USART_SR_PE                   /*!< Parity error flag */"
+    },
+    {
+      "name": "LL_USART_SR_FE",
+      "value": "USART_SR_FE",
+      "desc": "帧错误标志",
+      "group": "LL_USART 标志",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_SR_FE                          USART_SR_FE                   /*!< Framing error flag */"
+    },
+    {
+      "name": "LL_USART_SR_NE",
+      "value": "USART_SR_NE",
+      "desc": "噪声检测标志",
+      "group": "LL_USART 标志",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_SR_NE                          USART_SR_NE                   /*!< Noise detected flag */"
+    },
+    {
+      "name": "LL_USART_SR_ORE",
+      "value": "USART_SR_ORE",
+      "desc": "溢出错误标志",
+      "group": "LL_USART 标志",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_SR_ORE                         USART_SR_ORE                  /*!< Overrun error flag */"
+    },
+    {
+      "name": "LL_USART_SR_IDLE",
+      "value": "USART_SR_IDLE",
+      "desc": "空闲线检测标志",
+      "group": "LL_USART 标志",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_SR_IDLE                        USART_SR_IDLE                 /*!< Idle line detected flag */"
+    },
+    {
+      "name": "LL_USART_SR_RXNE",
+      "value": "USART_SR_RXNE",
+      "desc": "接收数据寄存器非空标志",
+      "group": "LL_USART 标志",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_SR_RXNE                        USART_SR_RXNE                 /*!< Read data register not empty flag */"
+    },
+    {
+      "name": "LL_USART_SR_TC",
+      "value": "USART_SR_TC",
+      "desc": "发送完成标志",
+      "group": "LL_USART 标志",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_SR_TC                          USART_SR_TC                   /*!< Transmission complete flag */"
+    },
+    {
+      "name": "LL_USART_SR_TXE",
+      "value": "USART_SR_TXE",
+      "desc": "发送数据寄存器空标志",
+      "group": "LL_USART 标志",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_SR_TXE                         USART_SR_TXE                  /*!< Transmit data register empty flag */"
+    },
+    {
+      "name": "LL_USART_SR_CTS",
+      "value": "USART_SR_CTS",
+      "desc": "CTS 标志",
+      "group": "LL_USART 标志",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_SR_CTS                         USART_SR_CTS                  /*!< CTS flag */"
+    },
+    {
+      "name": "LL_USART_CR1_IDLEIE",
+      "value": "USART_CR1_IDLEIE",
+      "desc": "空闲线中断使能位",
+      "group": "LL_USART 中断",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_CR1_IDLEIE                     USART_CR1_IDLEIE              /*!< IDLE interrupt enable */"
+    },
+    {
+      "name": "LL_USART_CR1_RXNEIE",
+      "value": "USART_CR1_RXNEIE",
+      "desc": "接收寄存器非空中断使能位",
+      "group": "LL_USART 中断",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_CR1_RXNEIE                     USART_CR1_RXNEIE              /*!< Read data register not empty interrupt enable */"
+    },
+    {
+      "name": "LL_USART_CR1_TCIE",
+      "value": "USART_CR1_TCIE",
+      "desc": "发送完成中断使能位",
+      "group": "LL_USART 中断",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_CR1_TCIE                       USART_CR1_TCIE                /*!< Transmission complete interrupt enable */"
+    },
+    {
+      "name": "LL_USART_CR1_TXEIE",
+      "value": "USART_CR1_TXEIE",
+      "desc": "发送寄存器空中断使能位",
+      "group": "LL_USART 中断",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_CR1_TXEIE                      USART_CR1_TXEIE               /*!< Transmit data register empty interrupt enable */"
+    },
+    {
+      "name": "LL_USART_CR1_PEIE",
+      "value": "USART_CR1_PEIE",
+      "desc": "校验错误中断使能位",
+      "group": "LL_USART 中断",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_CR1_PEIE                       USART_CR1_PEIE                /*!< Parity error */"
+    },
+    {
+      "name": "LL_USART_CR3_EIE",
+      "value": "USART_CR3_EIE",
+      "desc": "错误中断使能位(帧/噪声/溢出)",
+      "group": "LL_USART 中断",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_CR3_EIE                        USART_CR3_EIE                 /*!< Error interrupt enable */"
+    },
+    {
+      "name": "LL_USART_CR3_CTSIE",
+      "value": "USART_CR3_CTSIE",
+      "desc": "CTS 中断使能位",
+      "group": "LL_USART 中断",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_CR3_CTSIE                      USART_CR3_CTSIE               /*!< CTS interrupt enable */"
+    },
+    {
+      "name": "LL_USART_DIRECTION_NONE",
+      "value": "0x00000000U",
+      "desc": "发送与接收均禁止",
+      "group": "LL_USART 传输方向",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_DIRECTION_NONE                 0x00000000U                        /*!< Transmitter and Receiver are disabled */"
+    },
+    {
+      "name": "LL_USART_DIRECTION_RX",
+      "value": "USART_CR1_RE",
+      "desc": "仅接收使能",
+      "group": "LL_USART 传输方向",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_DIRECTION_RX                   USART_CR1_RE                       /*!< Transmitter is disabled and Receiver is enabled */"
+    },
+    {
+      "name": "LL_USART_DIRECTION_TX",
+      "value": "USART_CR1_TE",
+      "desc": "仅发送使能",
+      "group": "LL_USART 传输方向",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_DIRECTION_TX                   USART_CR1_TE                       /*!< Transmitter is enabled and Receiver is disabled */"
+    },
+    {
+      "name": "LL_USART_DIRECTION_TX_RX",
+      "value": "(USART_CR1_TE |USART_CR1_RE)",
+      "desc": "收发均使能",
+      "group": "LL_USART 传输方向",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_DIRECTION_TX_RX                (USART_CR1_TE |USART_CR1_RE)       /*!< Transmitter and Receiver are enabled */"
+    },
+    {
+      "name": "LL_USART_PARITY_NONE",
+      "value": "0x00000000U",
+      "desc": "禁止校验控制",
+      "group": "LL_USART 校验",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_PARITY_NONE                    0x00000000U                          /*!< Parity control disabled */"
+    },
+    {
+      "name": "LL_USART_PARITY_EVEN",
+      "value": "USART_CR1_PCE",
+      "desc": "使能校验并选择偶校验",
+      "group": "LL_USART 校验",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_PARITY_EVEN                    USART_CR1_PCE                        /*!< Parity control enabled and Even Parity is selected */"
+    },
+    {
+      "name": "LL_USART_PARITY_ODD",
+      "value": "(USART_CR1_PCE | USART_CR1_PS)",
+      "desc": "使能校验并选择奇校验",
+      "group": "LL_USART 校验",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_PARITY_ODD                     (USART_CR1_PCE | USART_CR1_PS)       /*!< Parity control enabled and Odd Parity is selected */"
+    },
+    {
+      "name": "LL_USART_WAKEUP_IDLELINE",
+      "value": "0x00000000U",
+      "desc": "空闲线唤醒(静默模式)",
+      "group": "LL_USART 唤醒方式",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_WAKEUP_IDLELINE                0x00000000U           /*!<  USART wake up from Mute mode on Idle Line */"
+    },
+    {
+      "name": "LL_USART_WAKEUP_ADDRESSMARK",
+      "value": "USART_CR1_WAKE",
+      "desc": "地址标记唤醒(静默模式)",
+      "group": "LL_USART 唤醒方式",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_WAKEUP_ADDRESSMARK             USART_CR1_WAKE        /*!<  USART wake up from Mute mode on Address Mark */"
+    },
+    {
+      "name": "LL_USART_DATAWIDTH_8B",
+      "value": "0x00000000U",
+      "desc": "8 位字长: 起始位+8 数据位+停止位",
+      "group": "LL_USART 数据宽度",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_DATAWIDTH_8B                   0x00000000U             /*!< 8 bits word length : Start bit, 8 data bits, n stop bits */"
+    },
+    {
+      "name": "LL_USART_DATAWIDTH_9B",
+      "value": "USART_CR1_M",
+      "desc": "9 位字长: 起始位+9 数据位+停止位",
+      "group": "LL_USART 数据宽度",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_DATAWIDTH_9B                   USART_CR1_M             /*!< 9 bits word length : Start bit, 9 data bits, n stop bits */"
+    },
+    {
+      "name": "LL_USART_OVERSAMPLING_16",
+      "value": "0x00000000U",
+      "desc": "16 倍过采样",
+      "group": "LL_USART 过采样",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_OVERSAMPLING_16                0x00000000U            /*!< Oversampling by 16 */"
+    },
+    {
+      "name": "LL_USART_OVERSAMPLING_8",
+      "value": "USART_CR3_OVER8",
+      "desc": "8 倍过采样",
+      "group": "LL_USART 过采样",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_OVERSAMPLING_8                 USART_CR3_OVER8        /*!< Oversampling by 8 */"
+    },
+    {
+      "name": "LL_USART_CLOCK_DISABLE",
+      "value": "0x00000000U",
+      "desc": "不提供时钟信号",
+      "group": "LL_USART 时钟",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_CLOCK_DISABLE                  0x00000000U            /*!< Clock signal not provided */"
+    },
+    {
+      "name": "LL_USART_CLOCK_ENABLE",
+      "value": "USART_CR2_CLKEN",
+      "desc": "提供时钟信号",
+      "group": "LL_USART 时钟",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_CLOCK_ENABLE                   USART_CR2_CLKEN        /*!< Clock signal provided */"
+    },
+    {
+      "name": "LL_USART_LASTCLKPULSE_NO_OUTPUT",
+      "value": "0x00000000U",
+      "desc": "最后一位数据的时钟脉冲不输出到 SCLK",
+      "group": "LL_USART 最后位时钟脉冲",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_LASTCLKPULSE_NO_OUTPUT         0x00000000U           /*!< The clock pulse of the last data bit is not output to the SCLK pin */"
+    },
+    {
+      "name": "LL_USART_LASTCLKPULSE_OUTPUT",
+      "value": "USART_CR2_LBCL",
+      "desc": "最后一位数据的时钟脉冲输出到 SCLK",
+      "group": "LL_USART 最后位时钟脉冲",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_LASTCLKPULSE_OUTPUT            USART_CR2_LBCL        /*!< The clock pulse of the last data bit is output to the SCLK pin */"
+    },
+    {
+      "name": "LL_USART_PHASE_1EDGE",
+      "value": "0x00000000U",
+      "desc": "第一个时钟沿为数据采样沿",
+      "group": "LL_USART 时钟相位",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_PHASE_1EDGE                    0x00000000U           /*!< The first clock transition is the first data capture edge */"
+    },
+    {
+      "name": "LL_USART_PHASE_2EDGE",
+      "value": "USART_CR2_CPHA",
+      "desc": "第二个时钟沿为数据采样沿",
+      "group": "LL_USART 时钟相位",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_PHASE_2EDGE                    USART_CR2_CPHA        /*!< The second clock transition is the first data capture edge */"
+    },
+    {
+      "name": "LL_USART_POLARITY_LOW",
+      "value": "0x00000000U",
+      "desc": "SCLK 传输窗口外稳态为低",
+      "group": "LL_USART 时钟极性",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_POLARITY_LOW                   0x00000000U           /*!< Steady low value on SCLK pin outside transmission window*/"
+    },
+    {
+      "name": "LL_USART_POLARITY_HIGH",
+      "value": "USART_CR2_CPOL",
+      "desc": "SCLK 传输窗口外稳态为高",
+      "group": "LL_USART 时钟极性",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_POLARITY_HIGH                  USART_CR2_CPOL        /*!< Steady high value on SCLK pin outside transmission window */"
+    },
+    {
+      "name": "LL_USART_STOPBITS_1",
+      "value": "0x00000000U",
+      "desc": "1 个停止位",
+      "group": "LL_USART 停止位",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_STOPBITS_1                     0x00000000U                                /*!< 1 stop bit */"
+    },
+    {
+      "name": "LL_USART_STOPBITS_2",
+      "value": "USART_CR2_STOP",
+      "desc": "2 个停止位",
+      "group": "LL_USART 停止位",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_STOPBITS_2                     USART_CR2_STOP                             /*!< 2 stop bits */"
+    },
+    {
+      "name": "LL_USART_HWCONTROL_NONE",
+      "value": "0x00000000U",
+      "desc": "禁止 CTS/RTS 硬件流控",
+      "group": "LL_USART 硬件流控",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_HWCONTROL_NONE                 0x00000000U                          /*!< CTS and RTS hardware flow control disabled */"
+    },
+    {
+      "name": "LL_USART_HWCONTROL_RTS",
+      "value": "USART_CR3_RTSE",
+      "desc": "使能 RTS 输出, 接收缓冲有空闲时才请求数据",
+      "group": "LL_USART 硬件流控",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_HWCONTROL_RTS                  USART_CR3_RTSE                       /*!< RTS output enabled, data is only requested when there is space in the receive buffer */"
+    },
+    {
+      "name": "LL_USART_HWCONTROL_CTS",
+      "value": "USART_CR3_CTSE",
+      "desc": "使能 CTS 模式, 仅当 nCTS 有效(拉低)时发送",
+      "group": "LL_USART 硬件流控",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_HWCONTROL_CTS                  USART_CR3_CTSE                       /*!< CTS mode enabled, data is only transmitted when the nCTS input is asserted (tied to 0) */"
+    },
+    {
+      "name": "LL_USART_HWCONTROL_RTS_CTS",
+      "value": "(USART_CR3_RTSE | USART_CR3_CTSE)",
+      "desc": "CTS 与 RTS 硬件流控均使能",
+      "group": "LL_USART 硬件流控",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_HWCONTROL_RTS_CTS              (USART_CR3_RTSE | USART_CR3_CTSE)    /*!< CTS and RTS hardware flow control enabled */"
+    },
+    {
+      "name": "LL_USART_AUTOBAUDRATE_ONSTARTBIT",
+      "value": "0x00000000U",
+      "desc": "在起始位上进行自动波特率检测",
+      "group": "LL_USART 自动波特率模式",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_AUTOBAUDRATE_ONSTARTBIT    0x00000000U           /*!< Auto Baud rate detection on start bit            */"
+    },
+    {
+      "name": "LL_USART_AUTOBAUDRATE_ONFALLINGEDGE",
+      "value": "USART_CR3_ABRMODE_0",
+      "desc": "在下降沿上进行自动波特率检测",
+      "group": "LL_USART 自动波特率模式",
+      "file": "py32f002b_ll_usart.h",
+      "src": "#define LL_USART_AUTOBAUDRATE_ONFALLINGEDGE USART_CR3_ABRMODE_0   /*!< Auto Baud rate detection on falling edge         */"
+    }
+  ]
+}

@@ -171,6 +171,14 @@
     border-radius:5px;padding:2px 9px;cursor:pointer;margin-left:auto;
   }
   .copybtn:hover{background:#2b2e34;color:var(--ink)}
+  /* 迷你"复制名称"按钮: 卡片头紧跟在名字后面 */
+  .copybtn.mini{
+    margin-left:0;padding:0 5px;font-size:11px;line-height:16px;border-radius:4px;
+    color:var(--ink3);border-color:var(--line);flex:none;
+  }
+  .copybtn.mini:hover{color:var(--ink);background:#26303c}
+  .card-head .copybtn.mini{opacity:.55;transition:opacity .15s ease}
+  .card-head:hover .copybtn.mini{opacity:1}
 
   /* ===== 类型/常量 ===== */
   details.grp-box{border:1px solid var(--line);border-radius:7px;background:var(--panel);margin-top:14px;overflow:hidden}
@@ -353,6 +361,44 @@
 <script type="application/json" id="docdata">/*__DATA_JSON__*/</script>
 <script>
 "use strict";
+/* ================= 模块合并(构建期与浏览器共用同一份实现, 由 build.mjs 内联) ================= */
+function mergeModules(mods, order, displayName){
+  const dedupByName = (arr) => {
+    const seen = new Set(); const out = [];
+    for (const x of arr || []) {
+      if (!x || !x.name) continue;
+      if (seen.has(x.name)) continue;
+      seen.add(x.name); out.push(x);
+    }
+    return out;
+  };
+  const merged = [];
+  for (const m of mods) {
+    if (!m || !m.moduleId) continue;
+    const exist = merged.find(x => x.moduleId === m.moduleId);
+    if (!exist) {
+      merged.push({
+        ...m,
+        module: (displayName && displayName[m.moduleId]) || m.module,
+        hal: dedupByName(m.hal), ll: dedupByName(m.ll),
+        types: dedupByName(m.types), consts: dedupByName(m.consts)
+      });
+    } else {
+      exist.hal    = dedupByName([...(exist.hal || []),    ...(m.hal || [])]);
+      exist.ll     = dedupByName([...(exist.ll || []),     ...(m.ll || [])]);
+      exist.types  = dedupByName([...(exist.types || []),  ...(m.types || [])]);
+      exist.consts = dedupByName([...(exist.consts || []), ...(m.consts || [])]);
+      exist.files  = [...new Set([...(exist.files || []), ...(m.files || [])])];
+      if (!exist.intro && m.intro) exist.intro = m.intro;   // 保留第一个(主文件)的 intro
+    }
+  }
+  const ord = order || [];
+  merged.sort((a, b) => {
+    const ia = ord.indexOf(a.moduleId), ib = ord.indexOf(b.moduleId);
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  });
+  return merged;
+}
 /* ================= 展开状态持久化(重渲染不丢) ================= */
 const openSet = new Set();    // 已展开: 'fn:名字' / 'type:名字' / 'src:名字' / 'grp:类型或常量'
 const closedSrc = new Set();  // 用户手动收起的源码折叠(搜索命中时不再自动展开)
@@ -382,16 +428,72 @@ const regReg = new Map();    // 寄存器名 -> entry
 const callGraph = new Map(); // 函数名 -> {calls, refs, calledBy, refBy, priv}
 const entryNameSet = new Set();   // 文档化函数/宏名(源码内可点击跳转)
 let codeHLModule = '';            // 当前渲染卡片的模块 id(源码内 ->REG 的上下文兜底)
+const memberTypeReg = new Map();  // '所属类型|成员名' -> 成员类型(用于 -> / . 链式类型跳转)
+const memberGlobalReg = new Map(); // '成员名' -> { type, owners:Set } 成员名唯一时的兜底
 function buildIndex(){
   typeReg.clear(); constReg.clear(); regReg.clear(); entryNameSet.clear();
+  memberTypeReg.clear(); memberGlobalReg.clear();
   for (const m of MODULES) {
-    for (const t of (m.types || [])) typeReg.set(t.name, { entry: t, mod: m });
+    for (const t of (m.types || [])) {
+      typeReg.set(t.name, { entry: t, mod: m });
+      // 结构体成员的类型索引: 供源码里 huart->Init 这样的链式跳转(Init → UART_InitTypeDef 卡片)
+      for (const mem of (t.members || [])) {
+        const mt = baseTypeOf(mem.type);
+        if (!mem.name || !mt) continue;
+        memberTypeReg.set(t.name + '|' + mem.name, mt);
+        if (!memberGlobalReg.has(mem.name)) memberGlobalReg.set(mem.name, { type: mt, owners: new Set() });
+        const g = memberGlobalReg.get(mem.name);
+        g.owners.add(t.name);
+        if (g.type !== mt) g.type = '';   // 同名成员在不同结构体里类型不一致 → 不能兜底
+      }
+    }
     for (const c of (m.consts || [])) constReg.set(c.name, { entry: c, mod: m });
     for (const lib of ['hal', 'll']) for (const f of (m[lib] || [])) entryNameSet.add(f.name);
   }
   for (const r of REGS) regReg.set(r.name, r);
 }
-/* 调用图来自构建期预计算数据(含私有函数), 见 build_callgraph.mjs */
+/* 去掉指针/限定符/数组, 取基础类型名: 'const UART_InitTypeDef *' → 'UART_InitTypeDef'
+   注意: 限定符 __IO/__I/__O 以 `_` 开头, **不能用 \b 前缀**(起始处无词边界, 会匹配失败);
+        也不能整体删数字(会把 uint16_t 拆成 uint _t) */
+function baseTypeOf(t){
+  let s = String(t || '');
+  s = s.replace(/\b(?:const|volatile|struct|enum|union|unsigned|signed)\b/g, ' ');
+  s = s.replace(/__IOM|__IO|__I|__O/g, ' ');
+  s = s.replace(/\*/g, ' ').replace(/\[[^\]]*\]/g, ' ');
+  s = s.replace(/\b\d+\b/g, ' ');   // 独立的位数/维度数字(不会切断 uint16_t 这类词)
+  const m = s.trim().match(/([A-Za-z_]\w*)\s*$/);
+  return m ? m[1] : '';
+}
+/* 成员类型查询: 优先按所属类型精确查, 否则用"成员名唯一"的兜底 */
+function memberTypeOf(ownerType, member){
+  if (ownerType) {
+    const hit = memberTypeReg.get(ownerType + '|' + member);
+    if (hit) return hit;
+  }
+  const g = memberGlobalReg.get(member);
+  if (g && g.type && g.owners.size === 1) return g.type;
+  return '';
+}
+/* 当前卡片的"变量 → 类型"表(源码里 huart → UART_HandleTypeDef 的起点), 见 setCodeHLCtx */
+let codeHLVars = new Map();
+/* 从函数参数 + 源码里的局部声明, 收集 变量名 → 基础类型名 */
+function collectVars(f){
+  const vars = new Map();
+  const put = (name, type) => {
+    const bt = baseTypeOf(type);
+    if (name && bt && !vars.has(name)) vars.set(name, bt);
+  };
+  for (const p of (f.params || [])) put(p.name, p.type);
+  const src = String(f.src || '');
+  // 局部声明: "  UART_InitTypeDef Init; " / "  const uint8_t *p = ..." / "  uint32_t a, b;"
+  const re = /^[ \t]*(?:register\s+|static\s+|const\s+|volatile\s+|__IO\s+)*([A-Za-z_]\w*)\s+(\*?\s*[A-Za-z_]\w*)\s*(?:\[[^\]]*\])?\s*[;=,)]/gm;
+  let m;
+  while ((m = re.exec(src)) !== null) put(m[2].replace('*', '').trim(), m[1]);
+  return vars;
+}
+function setCodeHLCtx(f){
+  codeHLVars = f ? collectVars(f) : new Map();
+}
 function loadCallGraph(g){
   callGraph.clear();
   for (const [n, node] of Object.entries(g || {})) callGraph.set(n, node);
@@ -502,6 +604,8 @@ function codeHL(text){
   const TOKEN = /\/\*[\s\S]*?\*\/|\/\/[^\n]*|&(?:amp|lt|gt|quot|apos|nbsp|#\d+|#x[0-9A-Fa-f]+);|0[xX][0-9A-Fa-f]+[uUlL]*|\d+[uUlL]*|-&gt;[A-Za-z_]\w*|[A-Za-z_]\w*|[^A-Za-z0-9_]/y;
   let out = '', i = 0;
   let prevIdent = '';   // 上一个标识符: 用于在 ->NAME 处推断"从哪个外设实例点进来"
+  let lastType = '';    // 上一个标识符/成员的类型: 供 -> 与 . 做链式类型跳转
+  let pendingMember = false;   // 上一个 token 是 -> 或 .: 下一个标识符按成员解析
   while (i < s.length) {
     if (s[i] === '<') {                 // 已有标签(搜索高亮的 mark), 原样跳过
       let j = s.indexOf('>', i);
@@ -533,26 +637,46 @@ function codeHL(text){
     } else if (tok.startsWith('&') && tok.endsWith(';')) {
       out += tok;   // HTML 实体(&amp; &lt; 等): 原样输出, 不再当标识符处理
     } else if (tok === ';' || tok === '}' || tok === '{') {
-      prevIdent = '';
+      prevIdent = ''; lastType = ''; pendingMember = false;
+      out += tok;
+    } else if (tok === '.') {
+      pendingMember = true;   // 结构体成员访问: 下一个标识符按"上一个类型"的成员解析
       out += tok;
     } else if (/^0[xX]/.test(tok) || /^\d/.test(tok)) {
       out += `<span class="c-num">${tok}</span>`;
     } else if (tok.startsWith('-&gt;')) {
       const reg = tok.slice('-&gt;'.length);
+      const mType = (!regReg.has(reg) && lastType) ? memberTypeOf(lastType, reg) : '';
       if (regReg.has(reg)) {
         // 上下文外设: 优先用 -> 前面的实例名, 其次用当前卡片所属模块
         const ctx = periphFromInstance(prevIdent) || MODULE_PERIPH[codeHLModule] || '';
         out += `<span class="c-op">-&gt;</span><a class="tlink t-reg" data-reg="${esc(reg)}" data-var="${esc(reg)}" data-ctx="${esc(ctx)}" title="点击查看寄存器详情${ctx ? '（' + periphShortName(ctx) + ' 上下文）' : ''}">${reg}</a>`;
+        lastType = ''; pendingMember = false;
+      } else if (mType && typeReg.has(mType)) {
+        // 链式成员跳转: huart->Init 里的 Init → UART_InitTypeDef 卡片
+        out += `<span class="c-op">-&gt;</span><span class="vtok" data-var="${esc(reg)}"><a class="tlink ${typeClass(mType)}" data-type="${esc(mType)}" title="点击查看 ${esc(mType)} 定义（${esc(lastType)} 的成员）">${esc(reg)}</a></span>`;
+        prevIdent = reg; lastType = mType; pendingMember = false;
       } else {
         out += `<span class="c-reg" data-var="${esc(reg)}">${tok}</span>`;
+        lastType = ''; pendingMember = false;
       }
     } else if (/^[A-Za-z_]/.test(tok)) {
       const w = tok;
       prevIdent = w;
       let inner;
       let hoverable = true;   // 关键字不参与同名高亮(否则悬停 if/return 会满屏标亮)
-      if (typeReg.has(w)) {
+      let newLastType = '';
+      const varType = pendingMember ? '' : codeHLVars.get(w);          // 参数/局部变量 → 其类型
+      const memType = (pendingMember && lastType) ? memberTypeOf(lastType, w) : '';   // 成员 → 成员类型
+      if (memType && typeReg.has(memType)) {
+        inner = `<a class="tlink ${typeClass(memType)}" data-type="${esc(memType)}" title="点击查看 ${esc(memType)} 定义（${esc(lastType)} 的成员）">${w}</a>`;
+        newLastType = memType;
+      } else if (varType && typeReg.has(varType)) {
+        inner = `<a class="tlink ${typeClass(varType)}" data-type="${esc(varType)}" title="点击查看 ${esc(varType)} 定义">${w}</a>`;
+        newLastType = varType;
+      } else if (typeReg.has(w)) {
         inner = `<a class="tlink ${typeClass(w)}" data-type="${w}" title="点击查看定义">${w}</a>`;
+        newLastType = w;
       } else {
         const cls = typeClass(w);
         if (cls !== 't-unk') inner = `<span class="tp ${cls}">${w}</span>`;
@@ -566,8 +690,11 @@ function codeHL(text){
       }
       // 包一层便于悬停(保留内层链接/着色的语义与样式)
       out += hoverable ? `<span class="vtok" data-var="${esc(w)}">${inner}</span>` : inner;
+      lastType = newLastType;
+      pendingMember = false;
     } else {
       out += tok;
+      pendingMember = false;   // 其它符号(括号/逗号/运算符等)中断成员链
     }
     i += tok.length;
   }
@@ -576,11 +703,11 @@ function codeHL(text){
 
 /* ================= 卡片渲染 ================= */
 function renderFuncCard(f, lib, showMod){
+  setCodeHLCtx(f);   // 采集 变量→类型(参数 + 局部声明), 供源码里的链式类型跳转
   const ps = (f.params || []);
   const nameHL = hl(f.name, curTokens, curCase);
-  // 卡片头的参数列表也可悬停(作用域退化到整卡, 见 applyVarHl)
-  const argsHL = ps.map(p => `<span class="vtok" data-var="${esc(p.name)}">${hl(p.name, curTokens, curCase)}</span>`).join(', ') +
-    (ps.length > 6 ? ', …' : '');
+  // 卡片摘要(展开前的预览)里的简写参数列表: 只做搜索高亮, **不参与悬停高亮**(用户要求)
+  const argsHL = ps.map(p => hl(p.name, curTokens, curCase)).join(', ') + (ps.length > 6 ? ', …' : '');
   const brief = hl(f.brief || '', curTokens, curCase);
   const params = ps.map(p => `
     <tr>
@@ -594,7 +721,9 @@ function renderFuncCard(f, lib, showMod){
     ? `<span class="rt">#define</span> ${codeHL(String(f.src || f.sig).replace(/^#define\s*/, ''))}`
     : f.kind === 'priv'
       ? `<span class="fnn">${codeHL(f.sig)}</span>`
-      : `<span class="rt">${renderType(f.retval ? f.retval.type : 'void')}</span> <span class="fnn">${esc(f.name)}</span>(${ps.map(p => `<span class="vtok" data-var="${esc(p.name)}"><span>${renderType(p.type || '')}</span> <span>${esc(p.name)}</span></span>`).join(', ')})`;
+      // 类型与参数名各自独立成 span(不能把类型嵌进参数名的 span 里 — 否则高亮参数名时
+      // 外层背景会把前面的类型一起染色, 踩过坑: 悬停 huart 连带 UART_HandleTypeDef 也亮)
+      : `<span class="rt">${renderType(f.retval ? f.retval.type : 'void')}</span> <span class="fnn">${esc(f.name)}</span>(${ps.map(p => `<span>${renderType(p.type || '')}</span> <span class="vtok" data-var="${esc(p.name)}">${esc(p.name)}</span>`).join(', ')})`;
   const notes = (f.notes || []).length ? `<ul class="notes">${f.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : '';
   const retval = f.retval && f.retval.desc ? `<div class="retval"><b>返回:</b> ${esc(f.retval.desc)}</div>` : '';
   const srcLines = f.src ? f.src.split('\n').length : 0;
@@ -613,6 +742,7 @@ function renderFuncCard(f, lib, showMod){
       <div class="card-head">
         <span class="badge ${f.kind || ''}">${KIND_LABEL[f.kind] || '函数'}</span>
         <span class="fn-name">${nameHL}</span><span class="fn-args">(${argsHL})</span>
+        <button class="copybtn mini" data-copy="${esc(f.name)}" title="复制名称: ${esc(f.name)}">⧉</button>
         <span class="file">${esc(f.file || '')}</span>
       </div>
       <div class="brief">${brief}</div>
@@ -641,14 +771,19 @@ function memberNameCell(name, ctxPeriph){
 }
 
 function renderTypeCard(t, showMod){
-  const members = (t.members || []).map(m => `
-    <tr><td>${memberNameCell(m.name, t.name)}</td><td><code>${esc(m.value || m.type || '')}</code></td><td>${esc(m.desc || '')}</td></tr>`).join('');
+  setCodeHLCtx(null);
+  // 成员的类型列: 是已文档化的类型就渲染成可点链接(结构体嵌套结构体时能一路点下去)
+  const members = (t.members || []).map(m => {
+    const valCell = m.type ? renderType(m.type) : `<code>${esc(m.value || '')}</code>`;
+    return `<tr><td>${memberNameCell(m.name, t.name)}</td><td>${valCell}</td><td>${esc(m.desc || '')}</td></tr>`;
+  }).join('');
   return `
   <details class="card typecard" data-name="${esc(t.name)}"${openSet.has('type:' + t.name) ? ' open' : ''}>
     <summary>
       <div class="card-head">
         <span class="badge ${t.kind}">${TY_KIND_LABEL[t.kind] || t.kind}</span>
         <span class="fn-name">${hl(t.name, curTokens, curCase)}</span>
+        <button class="copybtn mini" data-copy="${esc(t.name)}" title="复制名称: ${esc(t.name)}">⧉</button>
         <span class="file">${esc(t.file || '')}</span>
       </div>
       <div class="brief">${hl(t.desc || '', curTokens, curCase)}</div>
@@ -936,6 +1071,7 @@ function instanceNames(periph){
   return map[periph] || '';
 }
 function openModal(name, rec){
+  setCodeHLCtx(null);   // 弹窗内不参与函数源码的变量类型推导
   const el = document.getElementById('typeModal');
   const e = rec.entry;
   const isConst = e.value !== undefined && e.def === undefined;
@@ -952,6 +1088,7 @@ function openModal(name, rec){
     <div class="m-head">
       <span class="badge ${isConst ? 'const' : e.kind}">${kindLabel}</span>
       <span class="m-name">${esc(name)}</span>
+      <button class="copybtn mini" data-copy="${esc(name)}" title="复制名称: ${esc(name)}">⧉</button>
       <span class="m-file">${esc(e.file || '')} · ${esc(rec.mod.module || '')} 模块</span>
       <button class="m-close" title="关闭 (Esc)">✕</button>
     </div>
@@ -1104,8 +1241,8 @@ function clearVarHl(){
   hlVarEls = []; hlVarName = ''; hlVarScope = null;
 }
 function applyVarHl(el){
-  // 作用域 = 整张卡片正文(签名 + 源码 + 参数表同享); 卡片头的参数名则退化到整张卡片
-  const scope = el.closest('.card-body') || el.closest('details.card') || el.closest('pre.codehl') || el.parentElement;
+  // 作用域 = 卡片正文(签名 + 参数表 + 源码联动); 卡片摘要(展开前预览)不参与, 见 renderFuncCard
+  const scope = el.closest('.card-body') || el.closest('pre.codehl') || el.parentElement;
   if (!scope) return;
   const name = el.dataset.var;
   if (!name) return;
@@ -1161,17 +1298,40 @@ function applyData(d){
   loadCallGraph(d.callgraph);
   init();
 }
+/* 拆分版加载器: 按 data/index.json 清单逐个取原始模块 JSON, 用与构建期同一份 mergeModules 在运行期组装。
+   好处: 部署目录 = 工程 data/ 的镜像, 改哪个模块只需重传那一个文件, 不再有巨型合并产物。 */
+async function loadSplitData(){
+  const base = 'data/';
+  const getJson = async (name) => {
+    const r = await fetch(base + name);
+    if (!r.ok) throw new Error(name + ' HTTP ' + r.status);
+    return r.json();
+  };
+  const idx = await getJson('index.json');
+  const mods = await Promise.all((idx.moduleFiles || []).map(getJson));
+  const regs = await getJson(idx.registersFile || 'registers_merged.json');
+  const cg = idx.callgraphFile ? await getJson(idx.callgraphFile) : { callgraph: {}, privates: [] };
+  applyData({
+    modules: mergeModules(mods, idx.order, idx.displayName),
+    registers: (regs && regs.registers) || [],
+    callgraph: (cg && cg.callgraph) || {},
+    privates: (cg && cg.privates) || []
+  });
+}
+function loadFail(msg){
+  document.getElementById('main').innerHTML =
+    '<div class="empty-hint">' + msg + ' —— 请通过 HTTP 服务(如 nginx / GitHub Pages)访问本目录, 或改用单文件版手册。</div>';
+}
 if (embeddedText && embeddedText !== '/*__DATA_JSON__*/') {
-  applyData(JSON.parse(embeddedText));
+  applyData(JSON.parse(embeddedText));          // 单文件版: 数据已内嵌
 } else {
-  /* nginx 拆分版: 同目录下 data.json */
-  fetch('data.json')
-    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(applyData)
-    .catch(() => {
-      document.getElementById('main').innerHTML =
-        '<div class="empty-hint">无法加载 data.json —— 请通过 HTTP 服务(如 nginx)访问本目录, 或改用单文件版手册。</div>';
-    });
+  /* 拆分版: 优先走 data/index.json + 逐模块加载; 万一目录里还留着旧的 data.json 则回退 */
+  loadSplitData().catch(err => {
+    fetch('data.json')
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(applyData)
+      .catch(() => loadFail('无法加载 data/index.json 与 data.json(' + (err && err.message ? err.message : err) + ')'));
+  });
 }
 </script>
 </body>

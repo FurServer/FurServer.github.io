@@ -1,0 +1,1575 @@
+{
+  "module": "TIM",
+  "moduleId": "tim",
+  "hal": [
+    {
+      "name": "TIM_RESET_CAPTUREPOLARITY",
+      "sig": "#define TIM_RESET_CAPTUREPOLARITY(__HANDLE__, __CHANNEL__) \\\n  (((__CHANNEL__) == TIM_CHANNEL_1) ? ((__HANDLE__)->Instance->CCER &= ~(TIM_CCER_CC1P | TIM_CCER_CC1NP)) :\\\n   ((__CHANNEL__) == TIM_CHANNEL_2) ? ((__HANDLE__)->Instance->CCER &= ~(TIM_CCER_CC2P | TIM_CCER_CC2NP)) :\\\n   ((__CHANNEL__) == TIM_CHANNEL_3) ? ((__HANDLE__)->Instance->CCER &= ~(TIM_CCER_CC3P | TIM_CCER_CC3NP)) :\\\n   ((__HANDLE__)->Instance->CCER &= ~(TIM_CCER_CC4P)))",
+      "brief": "按通道清除 CCER 寄存器对应 CCxP/CCxNP 位, 复位捕获极性(本芯片无 CC4NP 位, 通道 4 仅清 CC4P)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "TIM 句柄"
+        },
+        {
+          "name": "__CHANNEL__",
+          "type": "宏参数",
+          "desc": "捕获通道, 可取 TIM_CHANNEL_1..4"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define TIM_RESET_CAPTUREPOLARITY(__HANDLE__, __CHANNEL__) \\\r\n  (((__CHANNEL__) == TIM_CHANNEL_1) ? ((__HANDLE__)->Instance->CCER &= ~(TIM_CCER_CC1P | TIM_CCER_CC1NP)) :\\\r\n   ((__CHANNEL__) == TIM_CHANNEL_2) ? ((__HANDLE__)->Instance->CCER &= ~(TIM_CCER_CC2P | TIM_CCER_CC2NP)) :\\\r\n   ((__CHANNEL__) == TIM_CHANNEL_3) ? ((__HANDLE__)->Instance->CCER &= ~(TIM_CCER_CC3P | TIM_CCER_CC3NP)) :\\\r\n   ((__HANDLE__)->Instance->CCER &= ~(TIM_CCER_CC4P | TIM_CCER_CC4NP)))"
+    },
+    {
+      "name": "TIM_RESET_ICPRESCALERVALUE",
+      "sig": "#define TIM_RESET_ICPRESCALERVALUE(__HANDLE__, __CHANNEL__) \\\n  (((__CHANNEL__) == TIM_CHANNEL_1) ? ((__HANDLE__)->Instance->CCMR1 &= ~TIM_CCMR1_IC1PSC) :\\\n   ((__CHANNEL__) == TIM_CHANNEL_2) ? ((__HANDLE__)->Instance->CCMR1 &= ~TIM_CCMR1_IC2PSC) :\\\n   ((__CHANNEL__) == TIM_CHANNEL_3) ? ((__HANDLE__)->Instance->CCMR2 &= ~TIM_CCMR2_IC3PSC) :\\\n   ((__HANDLE__)->Instance->CCMR2 &= ~TIM_CCMR2_IC4PSC))",
+      "brief": "按通道清除 CCMR1/CCMR2 寄存器对应 ICxPSC 位, 将输入捕获预分频值复位。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "TIM 句柄"
+        },
+        {
+          "name": "__CHANNEL__",
+          "type": "宏参数",
+          "desc": "捕获通道, 可取 TIM_CHANNEL_1..4"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define TIM_RESET_ICPRESCALERVALUE(__HANDLE__, __CHANNEL__) \\\r\n  (((__CHANNEL__) == TIM_CHANNEL_1) ? ((__HANDLE__)->Instance->CCMR1 &= ~TIM_CCMR1_IC1PSC) :\\\r\n   ((__CHANNEL__) == TIM_CHANNEL_2) ? ((__HANDLE__)->Instance->CCMR1 &= ~TIM_CCMR1_IC2PSC) :\\\r\n   ((__CHANNEL__) == TIM_CHANNEL_3) ? ((__HANDLE__)->Instance->CCMR2 &= ~TIM_CCMR2_IC3PSC) :\\\r\n   ((__HANDLE__)->Instance->CCMR2 &= ~TIM_CCMR2_IC4PSC))"
+    },
+    {
+      "name": "TIM_SET_CAPTUREPOLARITY",
+      "sig": "#define TIM_SET_CAPTUREPOLARITY(__HANDLE__, __CHANNEL__, __POLARITY__) \\\n  (((__CHANNEL__) == TIM_CHANNEL_1) ? ((__HANDLE__)->Instance->CCER |= (__POLARITY__)) :\\\n   ((__CHANNEL__) == TIM_CHANNEL_2) ? ((__HANDLE__)->Instance->CCER |= ((__POLARITY__) << 4U)) :\\\n   ((__CHANNEL__) == TIM_CHANNEL_3) ? ((__HANDLE__)->Instance->CCER |= ((__POLARITY__) << 8U)) :\\\n   ((__HANDLE__)->Instance->CCER |= (((__POLARITY__) << 12U))))",
+      "brief": "按通道将捕获极性值写入 CCER 寄存器对应 CCxP 位(通道 1~4 分别偏移 0/4/8/12 位)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "TIM 句柄"
+        },
+        {
+          "name": "__CHANNEL__",
+          "type": "宏参数",
+          "desc": "捕获通道, 可取 TIM_CHANNEL_1..4"
+        },
+        {
+          "name": "__POLARITY__",
+          "type": "宏参数",
+          "desc": "捕获极性值(如 TIM_INPUTCHANNELPOLARITY_*)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define TIM_SET_CAPTUREPOLARITY(__HANDLE__, __CHANNEL__, __POLARITY__) \\\r\n  (((__CHANNEL__) == TIM_CHANNEL_1) ? ((__HANDLE__)->Instance->CCER |= (__POLARITY__)) :\\\r\n   ((__CHANNEL__) == TIM_CHANNEL_2) ? ((__HANDLE__)->Instance->CCER |= ((__POLARITY__) << 4U)) :\\\r\n   ((__CHANNEL__) == TIM_CHANNEL_3) ? ((__HANDLE__)->Instance->CCER |= ((__POLARITY__) << 8U)) :\\\r\n   ((__HANDLE__)->Instance->CCER |= (((__POLARITY__) << 12U))))"
+    },
+    {
+      "name": "TIM_SET_ICPRESCALERVALUE",
+      "sig": "#define TIM_SET_ICPRESCALERVALUE(__HANDLE__, __CHANNEL__, __ICPSC__) \\\n  (((__CHANNEL__) == TIM_CHANNEL_1) ? ((__HANDLE__)->Instance->CCMR1 |= (__ICPSC__)) :\\\n   ((__CHANNEL__) == TIM_CHANNEL_2) ? ((__HANDLE__)->Instance->CCMR1 |= ((__ICPSC__) << 8U)) :\\\n   ((__CHANNEL__) == TIM_CHANNEL_3) ? ((__HANDLE__)->Instance->CCMR2 |= (__ICPSC__)) :\\\n   ((__HANDLE__)->Instance->CCMR2 |= ((__ICPSC__) << 8U)))",
+      "brief": "按通道将输入捕获预分频值写入 CCMR1/CCMR2 寄存器对应 ICxPSC 位(通道 1/3 偏移 0, 通道 2/4 偏移 8)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "TIM 句柄"
+        },
+        {
+          "name": "__CHANNEL__",
+          "type": "宏参数",
+          "desc": "捕获通道, 可取 TIM_CHANNEL_1..4"
+        },
+        {
+          "name": "__ICPSC__",
+          "type": "宏参数",
+          "desc": "输入捕获预分频值"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define TIM_SET_ICPRESCALERVALUE(__HANDLE__, __CHANNEL__, __ICPSC__) \\\r\n  (((__CHANNEL__) == TIM_CHANNEL_1) ? ((__HANDLE__)->Instance->CCMR1 |= (__ICPSC__)) :\\\r\n   ((__CHANNEL__) == TIM_CHANNEL_2) ? ((__HANDLE__)->Instance->CCMR1 |= ((__ICPSC__) << 8U)) :\\\r\n   ((__CHANNEL__) == TIM_CHANNEL_3) ? ((__HANDLE__)->Instance->CCMR2 |= (__ICPSC__)) :\\\r\n   ((__HANDLE__)->Instance->CCMR2 |= ((__ICPSC__) << 8U)))"
+    },
+    {
+      "name": "IS_TIM_AUTOMATIC_OUTPUT_STATE",
+      "sig": "#define IS_TIM_AUTOMATIC_OUTPUT_STATE(__STATE__) (((__STATE__) == TIM_AUTOMATICOUTPUT_ENABLE) || \\\n                                                  ((__STATE__) == TIM_AUTOMATICOUTPUT_DISABLE))",
+      "brief": "校验自动输出状态(AOE)是否为使能或禁用",
+      "params": [
+        {
+          "name": "__STATE__",
+          "type": "宏参数",
+          "desc": "待校验的自动输出状态取值(TIM_AUTOMATICOUTPUT_ENABLE / DISABLE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_AUTOMATIC_OUTPUT_STATE(__STATE__) (((__STATE__) == TIM_AUTOMATICOUTPUT_ENABLE) || \\\r\n                                                  ((__STATE__) == TIM_AUTOMATICOUTPUT_DISABLE))"
+    },
+    {
+      "name": "IS_TIM_AUTORELOAD_PRELOAD",
+      "sig": "#define IS_TIM_AUTORELOAD_PRELOAD(PRELOAD) (((PRELOAD) == TIM_AUTORELOAD_PRELOAD_DISABLE) || \\\n                                            ((PRELOAD) == TIM_AUTORELOAD_PRELOAD_ENABLE))",
+      "brief": "校验自动重装载预装载(ARPE)是否为使能或禁用",
+      "params": [
+        {
+          "name": "PRELOAD",
+          "type": "宏参数",
+          "desc": "待校验的自动重装载预装载取值(TIM_AUTORELOAD_PRELOAD_DISABLE / ENABLE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_AUTORELOAD_PRELOAD(PRELOAD) (((PRELOAD) == TIM_AUTORELOAD_PRELOAD_DISABLE) || \\\r\n                                            ((PRELOAD) == TIM_AUTORELOAD_PRELOAD_ENABLE))"
+    },
+    {
+      "name": "IS_TIM_BREAK_FILTER",
+      "sig": "#define IS_TIM_BREAK_FILTER(__BRKFILTER__) ((__BRKFILTER__) <= 0xFUL)",
+      "brief": "校验刹车输入滤波(BKF)取值是否不超过 0xF(0~15)",
+      "params": [
+        {
+          "name": "__BRKFILTER__",
+          "type": "宏参数",
+          "desc": "待校验的刹车输入滤波值, 合法范围为 0~0xF"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_BREAK_FILTER(__BRKFILTER__) ((__BRKFILTER__) <= 0xFUL)"
+    },
+    {
+      "name": "IS_TIM_BREAK_POLARITY",
+      "sig": "#define IS_TIM_BREAK_POLARITY(__POLARITY__) (((__POLARITY__) == TIM_BREAKPOLARITY_LOW) || \\\n                                             ((__POLARITY__) == TIM_BREAKPOLARITY_HIGH))",
+      "brief": "校验刹车输入极性(BKP)是否为低电平有效或高电平有效",
+      "params": [
+        {
+          "name": "__POLARITY__",
+          "type": "宏参数",
+          "desc": "待校验的刹车极性取值(TIM_BREAKPOLARITY_LOW / HIGH 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_BREAK_POLARITY(__POLARITY__) (((__POLARITY__) == TIM_BREAKPOLARITY_LOW) || \\\r\n                                             ((__POLARITY__) == TIM_BREAKPOLARITY_HIGH))"
+    },
+    {
+      "name": "IS_TIM_BREAK_STATE",
+      "sig": "#define IS_TIM_BREAK_STATE(__STATE__)      (((__STATE__) == TIM_BREAK_ENABLE) || \\\n                                            ((__STATE__) == TIM_BREAK_DISABLE))",
+      "brief": "校验刹车功能(BKE)是否为使能或禁用",
+      "params": [
+        {
+          "name": "__STATE__",
+          "type": "宏参数",
+          "desc": "待校验的刹车功能状态取值(TIM_BREAK_ENABLE / DISABLE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_BREAK_STATE(__STATE__)      (((__STATE__) == TIM_BREAK_ENABLE) || \\\r\n                                            ((__STATE__) == TIM_BREAK_DISABLE))"
+    },
+    {
+      "name": "IS_TIM_CHANNELS",
+      "sig": "#define IS_TIM_CHANNELS(__CHANNEL__)       (((__CHANNEL__) == TIM_CHANNEL_1) || \\\n                                            ((__CHANNEL__) == TIM_CHANNEL_2) || \\\n                                            ((__CHANNEL__) == TIM_CHANNEL_3) || \\\n                                            ((__CHANNEL__) == TIM_CHANNEL_4) || \\\n                                            ((__CHANNEL__) == TIM_CHANNEL_ALL))",
+      "brief": "校验通道号是否为通道 1、2、3、4 或 TIM_CHANNEL_ALL",
+      "params": [
+        {
+          "name": "__CHANNEL__",
+          "type": "宏参数",
+          "desc": "待校验的通道号取值(TIM_CHANNEL_1 / _2 / _3 / _4 / ALL 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CHANNELS(__CHANNEL__)       (((__CHANNEL__) == TIM_CHANNEL_1) || \\\r\n                                            ((__CHANNEL__) == TIM_CHANNEL_2) || \\\r\n                                            ((__CHANNEL__) == TIM_CHANNEL_3) || \\\r\n                                            ((__CHANNEL__) == TIM_CHANNEL_4) || \\\r\n                                            ((__CHANNEL__) == TIM_CHANNEL_ALL))"
+    },
+    {
+      "name": "IS_TIM_CLEARINPUT_FILTER",
+      "sig": "#define IS_TIM_CLEARINPUT_FILTER(__ICFILTER__) ((__ICFILTER__) <= 0xFU)",
+      "brief": "校验清除输入(OCREF 清零)滤波值是否不超过 0xF(0~15)",
+      "params": [
+        {
+          "name": "__ICFILTER__",
+          "type": "宏参数",
+          "desc": "待校验的清除输入滤波值, 合法范围为 0~0xF"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CLEARINPUT_FILTER(__ICFILTER__) ((__ICFILTER__) <= 0xFU)"
+    },
+    {
+      "name": "IS_TIM_CLEARINPUT_POLARITY",
+      "sig": "#define IS_TIM_CLEARINPUT_POLARITY(__POLARITY__) (((__POLARITY__) == TIM_CLEARINPUTPOLARITY_INVERTED) || \\\n                                                  ((__POLARITY__) == TIM_CLEARINPUTPOLARITY_NONINVERTED))",
+      "brief": "校验清除输入(OCREF 清零)极性是否为反相或非反相",
+      "params": [
+        {
+          "name": "__POLARITY__",
+          "type": "宏参数",
+          "desc": "待校验的清除输入极性取值(TIM_CLEARINPUTPOLARITY_INVERTED / NONINVERTED 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CLEARINPUT_POLARITY(__POLARITY__) (((__POLARITY__) == TIM_CLEARINPUTPOLARITY_INVERTED) || \\\r\n                                                  ((__POLARITY__) == TIM_CLEARINPUTPOLARITY_NONINVERTED))"
+    },
+    {
+      "name": "IS_TIM_CLEARINPUT_PRESCALER",
+      "sig": "#define IS_TIM_CLEARINPUT_PRESCALER(__PRESCALER__) (((__PRESCALER__) == TIM_CLEARINPUTPRESCALER_DIV1) || \\\n                                                    ((__PRESCALER__) == TIM_CLEARINPUTPRESCALER_DIV2) || \\\n                                                    ((__PRESCALER__) == TIM_CLEARINPUTPRESCALER_DIV4) || \\\n                                                    ((__PRESCALER__) == TIM_CLEARINPUTPRESCALER_DIV8))",
+      "brief": "校验清除输入(OCREF 清零)预分频值是否为 DIV1、DIV2、DIV4 或 DIV8",
+      "params": [
+        {
+          "name": "__PRESCALER__",
+          "type": "宏参数",
+          "desc": "待校验的清除输入预分频取值(TIM_CLEARINPUTPRESCALER_DIV1 / DIV2 / DIV4 / DIV8 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CLEARINPUT_PRESCALER(__PRESCALER__) (((__PRESCALER__) == TIM_CLEARINPUTPRESCALER_DIV1) || \\\r\n                                                    ((__PRESCALER__) == TIM_CLEARINPUTPRESCALER_DIV2) || \\\r\n                                                    ((__PRESCALER__) == TIM_CLEARINPUTPRESCALER_DIV4) || \\\r\n                                                    ((__PRESCALER__) == TIM_CLEARINPUTPRESCALER_DIV8))"
+    },
+    {
+      "name": "IS_TIM_CLEARINPUT_SOURCE",
+      "sig": "#define IS_TIM_CLEARINPUT_SOURCE(__MODE__)  (((__MODE__) == TIM_CLEARINPUTSOURCE_NONE)      || \\\n                                             ((__MODE__) == TIM_CLEARINPUTSOURCE_ETR)       || \\\n                                             ((__MODE__) == TIM_CLEARINPUTSOURCE_OCREFCLR))",
+      "brief": "校验清除输入(OCREF 清零)源是否为 NONE、ETR 或 OCREFCLR",
+      "params": [
+        {
+          "name": "__MODE__",
+          "type": "宏参数",
+          "desc": "待校验的清除输入源取值(TIM_CLEARINPUTSOURCE_NONE / ETR / OCREFCLR 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CLEARINPUT_SOURCE(__MODE__)  (((__MODE__) == TIM_CLEARINPUTSOURCE_NONE)      || \\\r\n                                             ((__MODE__) == TIM_CLEARINPUTSOURCE_ETR)       || \\\r\n                                             ((__MODE__) == TIM_CLEARINPUTSOURCE_OCREFCLR))"
+    },
+    {
+      "name": "IS_TIM_CLOCKDIVISION_DIV",
+      "sig": "#define IS_TIM_CLOCKDIVISION_DIV(__DIV__)  (((__DIV__) == TIM_CLOCKDIVISION_DIV1) || \\\n                                            ((__DIV__) == TIM_CLOCKDIVISION_DIV2) || \\\n                                            ((__DIV__) == TIM_CLOCKDIVISION_DIV4))",
+      "brief": "校验时钟分频(CKD)值是否为 DIV1、DIV2 或 DIV4",
+      "params": [
+        {
+          "name": "__DIV__",
+          "type": "宏参数",
+          "desc": "待校验的时钟分频取值(TIM_CLOCKDIVISION_DIV1 / DIV2 / DIV4 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CLOCKDIVISION_DIV(__DIV__)  (((__DIV__) == TIM_CLOCKDIVISION_DIV1) || \\\r\n                                            ((__DIV__) == TIM_CLOCKDIVISION_DIV2) || \\\r\n                                            ((__DIV__) == TIM_CLOCKDIVISION_DIV4))"
+    },
+    {
+      "name": "IS_TIM_CLOCKFILTER",
+      "sig": "#define IS_TIM_CLOCKFILTER(__ICFILTER__)      ((__ICFILTER__) <= 0xFU)",
+      "brief": "校验外部时钟滤波(ETF)值是否不超过 0xF(0~15)",
+      "params": [
+        {
+          "name": "__ICFILTER__",
+          "type": "宏参数",
+          "desc": "待校验的时钟滤波值, 合法范围为 0~0xF"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CLOCKFILTER(__ICFILTER__)      ((__ICFILTER__) <= 0xFU)"
+    },
+    {
+      "name": "IS_TIM_CLOCKPOLARITY",
+      "sig": "#define IS_TIM_CLOCKPOLARITY(__POLARITY__) (((__POLARITY__) == TIM_CLOCKPOLARITY_INVERTED)    || \\\n                                            ((__POLARITY__) == TIM_CLOCKPOLARITY_NONINVERTED) || \\\n                                            ((__POLARITY__) == TIM_CLOCKPOLARITY_RISING)      || \\\n                                            ((__POLARITY__) == TIM_CLOCKPOLARITY_FALLING)     || \\\n                                            ((__POLARITY__) == TIM_CLOCKPOLARITY_BOTHEDGE))",
+      "brief": "校验外部时钟极性(ETP)是否为反相、非反相、上升沿、下降沿或双边沿",
+      "params": [
+        {
+          "name": "__POLARITY__",
+          "type": "宏参数",
+          "desc": "待校验的时钟极性取值(TIM_CLOCKPOLARITY_INVERTED / NONINVERTED / RISING / FALLING / BOTHEDGE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CLOCKPOLARITY(__POLARITY__) (((__POLARITY__) == TIM_CLOCKPOLARITY_INVERTED)    || \\\r\n                                            ((__POLARITY__) == TIM_CLOCKPOLARITY_NONINVERTED) || \\\r\n                                            ((__POLARITY__) == TIM_CLOCKPOLARITY_RISING)      || \\\r\n                                            ((__POLARITY__) == TIM_CLOCKPOLARITY_FALLING)     || \\\r\n                                            ((__POLARITY__) == TIM_CLOCKPOLARITY_BOTHEDGE))"
+    },
+    {
+      "name": "IS_TIM_CLOCKPRESCALER",
+      "sig": "#define IS_TIM_CLOCKPRESCALER(__PRESCALER__) (((__PRESCALER__) == TIM_CLOCKPRESCALER_DIV1) || \\\n                                              ((__PRESCALER__) == TIM_CLOCKPRESCALER_DIV2) || \\\n                                              ((__PRESCALER__) == TIM_CLOCKPRESCALER_DIV4) || \\\n                                              ((__PRESCALER__) == TIM_CLOCKPRESCALER_DIV8))",
+      "brief": "校验外部时钟预分频(ETPS)值是否为 DIV1、DIV2、DIV4 或 DIV8",
+      "params": [
+        {
+          "name": "__PRESCALER__",
+          "type": "宏参数",
+          "desc": "待校验的时钟预分频取值(TIM_CLOCKPRESCALER_DIV1 / DIV2 / DIV4 / DIV8 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CLOCKPRESCALER(__PRESCALER__) (((__PRESCALER__) == TIM_CLOCKPRESCALER_DIV1) || \\\r\n                                              ((__PRESCALER__) == TIM_CLOCKPRESCALER_DIV2) || \\\r\n                                              ((__PRESCALER__) == TIM_CLOCKPRESCALER_DIV4) || \\\r\n                                              ((__PRESCALER__) == TIM_CLOCKPRESCALER_DIV8))"
+    },
+    {
+      "name": "IS_TIM_CLOCKSOURCE",
+      "sig": "#define IS_TIM_CLOCKSOURCE(__CLOCK__) (((__CLOCK__) == TIM_CLOCKSOURCE_INTERNAL) || \\\n                                       ((__CLOCK__) == TIM_CLOCKSOURCE_ETRMODE2) || \\\n                                       ((__CLOCK__) == TIM_CLOCKSOURCE_ITR0)     || \\\n                                       ((__CLOCK__) == TIM_CLOCKSOURCE_ITR1)     || \\\n                                       ((__CLOCK__) == TIM_CLOCKSOURCE_ITR2)     || \\\n                                       ((__CLOCK__) == TIM_CLOCKSOURCE_ITR3)     || \\\n                                       ((__CLOCK__) == TIM_CLOCKSOURCE_TI1ED)    || \\\n                                       ((__CLOCK__) == TIM_CLOCKSOURCE_TI1)      || \\\n                                       ((__CLOCK__) == TIM_CLOCKSOURCE_TI2)      || \\\n                                       ((__CLOCK__) == TIM_CLOCKSOURCE_ETRMODE1))",
+      "brief": "校验时钟源选择是否为内部时钟、ETR 模式 1/2、ITR0~ITR3、TI1ED、TI1、TI2 之一",
+      "params": [
+        {
+          "name": "__CLOCK__",
+          "type": "宏参数",
+          "desc": "待校验的时钟源取值(TIM_CLOCKSOURCE_INTERNAL / ETRMODE2 / ITR0~ITR3 / TI1ED / TI1 / TI2 / ETRMODE1 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_CLOCKSOURCE(__CLOCK__) (((__CLOCK__) == TIM_CLOCKSOURCE_INTERNAL) || \\\r\n                                       ((__CLOCK__) == TIM_CLOCKSOURCE_ETRMODE2) || \\\r\n                                       ((__CLOCK__) == TIM_CLOCKSOURCE_ITR0)     || \\\r\n                                       ((__CLOCK__) == TIM_CLOCKSOURCE_ITR1)     || \\\r\n                                       ((__CLOCK__) == TIM_CLOCKSOURCE_ITR2)     || \\\r\n                                       ((__CLOCK__) == TIM_CLOCKSOURCE_ITR3)     || \\\r\n                                       ((__CLOCK__) == TIM_CLOCKSOURCE_TI1ED)    || \\\r\n                                       ((__CLOCK__) == TIM_CLOCKSOURCE_TI1)      || \\\r\n                                       ((__CLOCK__) == TIM_CLOCKSOURCE_TI2)      || \\\r\n                                       ((__CLOCK__) == TIM_CLOCKSOURCE_ETRMODE1))"
+    },
+    {
+      "name": "IS_TIM_COMPLEMENTARY_CHANNELS",
+      "sig": "#define IS_TIM_COMPLEMENTARY_CHANNELS(__CHANNEL__) (((__CHANNEL__) == TIM_CHANNEL_1) || \\\n                                                    ((__CHANNEL__) == TIM_CHANNEL_2) || \\\n                                                    ((__CHANNEL__) == TIM_CHANNEL_3))",
+      "brief": "校验互补通道号是否为通道 1、2 或 3(仅这些通道存在互补输出)",
+      "params": [
+        {
+          "name": "__CHANNEL__",
+          "type": "宏参数",
+          "desc": "待校验的互补通道号取值(TIM_CHANNEL_1 / _2 / _3 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_COMPLEMENTARY_CHANNELS(__CHANNEL__) (((__CHANNEL__) == TIM_CHANNEL_1) || \\\r\n                                                    ((__CHANNEL__) == TIM_CHANNEL_2) || \\\r\n                                                    ((__CHANNEL__) == TIM_CHANNEL_3))"
+    },
+    {
+      "name": "IS_TIM_COUNTER_MODE",
+      "sig": "#define IS_TIM_COUNTER_MODE(__MODE__)      (((__MODE__) == TIM_COUNTERMODE_UP)              || \\\n                                            ((__MODE__) == TIM_COUNTERMODE_DOWN)            || \\\n                                            ((__MODE__) == TIM_COUNTERMODE_CENTERALIGNED1)  || \\\n                                            ((__MODE__) == TIM_COUNTERMODE_CENTERALIGNED2)  || \\\n                                            ((__MODE__) == TIM_COUNTERMODE_CENTERALIGNED3))",
+      "brief": "校验计数模式是否为向上、向下或中央对齐 1/2/3 之一",
+      "params": [
+        {
+          "name": "__MODE__",
+          "type": "宏参数",
+          "desc": "待校验的计数模式取值(TIM_COUNTERMODE_UP / DOWN / CENTERALIGNED1 / CENTERALIGNED2 / CENTERALIGNED3 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_COUNTER_MODE(__MODE__)      (((__MODE__) == TIM_COUNTERMODE_UP)              || \\\r\n                                            ((__MODE__) == TIM_COUNTERMODE_DOWN)            || \\\r\n                                            ((__MODE__) == TIM_COUNTERMODE_CENTERALIGNED1)  || \\\r\n                                            ((__MODE__) == TIM_COUNTERMODE_CENTERALIGNED2)  || \\\r\n                                            ((__MODE__) == TIM_COUNTERMODE_CENTERALIGNED3))"
+    },
+    {
+      "name": "IS_TIM_DEADTIME",
+      "sig": "#define IS_TIM_DEADTIME(__DEADTIME__)    ((__DEADTIME__) <= 0xFFU)",
+      "brief": "校验死区时间(DTG)取值是否不超过 0xFF(0~255)",
+      "params": [
+        {
+          "name": "__DEADTIME__",
+          "type": "宏参数",
+          "desc": "待校验的死区时间值, 合法范围为 0~0xFF"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_DEADTIME(__DEADTIME__)    ((__DEADTIME__) <= 0xFFU)"
+    },
+    {
+      "name": "IS_TIM_DMA_BASE",
+      "sig": "#define IS_TIM_DMA_BASE(__BASE__) (((__BASE__) == TIM_DMABASE_CR1)   || \\\n                                   ((__BASE__) == TIM_DMABASE_CR2)   || \\\n                                   ((__BASE__) == TIM_DMABASE_SMCR)  || \\\n                                   ((__BASE__) == TIM_DMABASE_DIER)  || \\\n                                   ((__BASE__) == TIM_DMABASE_SR)    || \\\n                                   ((__BASE__) == TIM_DMABASE_EGR)   || \\\n                                   ((__BASE__) == TIM_DMABASE_CCMR1) || \\\n                                   ((__BASE__) == TIM_DMABASE_CCMR2) || \\\n                                   ((__BASE__) == TIM_DMABASE_CCER)  || \\\n                                   ((__BASE__) == TIM_DMABASE_CNT)   || \\\n                                   ((__BASE__) == TIM_DMABASE_PSC)   || \\\n                                   ((__BASE__) == TIM_DMABASE_ARR)   || \\\n                                   ((__BASE__) == TIM_DMABASE_RCR)   || \\\n                                   ((__BASE__) == TIM_DMABASE_CCR1)  || \\\n                                   ((__BASE__) == TIM_DMABASE_CCR2)  || \\\n                                   ((__BASE__) == TIM_DMABASE_CCR3)  || \\\n                                   ((__BASE__) == TIM_DMABASE_CCR4)  || \\\n                                   ((__BASE__) == TIM_DMABASE_BDTR))",
+      "brief": "校验 DMA 突发基址(DBA)是否为合法的寄存器基址之一(CR1、CR2、SMCR、DIER、SR、EGR、CCMR1、CCMR2、CCER、CNT、PSC、ARR、RCR、CCR1~CCR4、BDTR)",
+      "params": [
+        {
+          "name": "__BASE__",
+          "type": "宏参数",
+          "desc": "待校验的 DMA 基址选择取值(TIM_DMABASE_CR1 至 TIM_DMABASE_BDTR 共 18 个之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_DMA_BASE(__BASE__) (((__BASE__) == TIM_DMABASE_CR1)   || \\\r\n                                   ((__BASE__) == TIM_DMABASE_CR2)   || \\\r\n                                   ((__BASE__) == TIM_DMABASE_SMCR)  || \\\r\n                                   ((__BASE__) == TIM_DMABASE_DIER)  || \\\r\n                                   ((__BASE__) == TIM_DMABASE_SR)    || \\\r\n                                   ((__BASE__) == TIM_DMABASE_EGR)   || \\\r\n                                   ((__BASE__) == TIM_DMABASE_CCMR1) || \\\r\n                                   ((__BASE__) == TIM_DMABASE_CCMR2) || \\\r\n                                   ((__BASE__) == TIM_DMABASE_CCER)  || \\\r\n                                   ((__BASE__) == TIM_DMABASE_CNT)   || \\\r\n                                   ((__BASE__) == TIM_DMABASE_PSC)   || \\\r\n                                   ((__BASE__) == TIM_DMABASE_ARR)   || \\\r\n                                   ((__BASE__) == TIM_DMABASE_RCR)   || \\\r\n                                   ((__BASE__) == TIM_DMABASE_CCR1)  || \\\r\n                                   ((__BASE__) == TIM_DMABASE_CCR2)  || \\\r\n                                   ((__BASE__) == TIM_DMABASE_CCR3)  || \\\r\n                                   ((__BASE__) == TIM_DMABASE_CCR4)  || \\\r\n                                   ((__BASE__) == TIM_DMABASE_BDTR))"
+    },
+    {
+      "name": "IS_TIM_DMA_DATA_LENGTH",
+      "sig": "#define IS_TIM_DMA_DATA_LENGTH(LENGTH) (((LENGTH) >= 0x1U) && ((LENGTH) < 0x10000U))",
+      "brief": "校验 DMA 突发传输数据长度是否在 1~0xFFFF 范围内",
+      "params": [
+        {
+          "name": "LENGTH",
+          "type": "宏参数",
+          "desc": "待校验的 DMA 传输数据长度, 合法范围为 1~0xFFFF"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_DMA_DATA_LENGTH(LENGTH) (((LENGTH) >= 0x1U) && ((LENGTH) < 0x10000U))"
+    },
+    {
+      "name": "IS_TIM_DMA_LENGTH",
+      "sig": "#define IS_TIM_DMA_LENGTH(__LENGTH__)      (((__LENGTH__) == TIM_DMABURSTLENGTH_1TRANSFER) || \\\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_2TRANSFERS) || \\\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_3TRANSFERS) || \\\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_4TRANSFERS) || \\\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_5TRANSFERS) || \\\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_6TRANSFERS) || \\\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_7TRANSFERS) || \\\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_8TRANSFERS) || \\\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_9TRANSFERS) || \\\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_10TRANSFERS) || \\\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_11TRANSFERS) || \\\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_12TRANSFERS) || \\\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_13TRANSFERS) || \\\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_14TRANSFERS) || \\\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_15TRANSFERS) || \\\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_16TRANSFERS) || \\\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_17TRANSFERS) || \\\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_18TRANSFERS))",
+      "brief": "校验 DMA 突发长度(DBL)是否为 1~18 次传输的合法枚举之一",
+      "params": [
+        {
+          "name": "__LENGTH__",
+          "type": "宏参数",
+          "desc": "待校验的 DMA 突发长度取值(TIM_DMABURSTLENGTH_1TRANSFER 至 _18TRANSFERS 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_DMA_LENGTH(__LENGTH__)      (((__LENGTH__) == TIM_DMABURSTLENGTH_1TRANSFER) || \\\r\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_2TRANSFERS) || \\\r\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_3TRANSFERS) || \\\r\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_4TRANSFERS) || \\\r\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_5TRANSFERS) || \\\r\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_6TRANSFERS) || \\\r\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_7TRANSFERS) || \\\r\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_8TRANSFERS) || \\\r\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_9TRANSFERS) || \\\r\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_10TRANSFERS) || \\\r\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_11TRANSFERS) || \\\r\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_12TRANSFERS) || \\\r\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_13TRANSFERS) || \\\r\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_14TRANSFERS) || \\\r\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_15TRANSFERS) || \\\r\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_16TRANSFERS) || \\\r\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_17TRANSFERS) || \\\r\n                                            ((__LENGTH__) == TIM_DMABURSTLENGTH_18TRANSFERS))"
+    },
+    {
+      "name": "IS_TIM_DMA_SOURCE",
+      "sig": "#define IS_TIM_DMA_SOURCE(__SOURCE__) ((((__SOURCE__) & 0xFFFF80FFU) == 0x00000000U) && ((__SOURCE__) != 0x00000000U))",
+      "brief": "校验 DMA 请求源位掩码非零, 且仅由 DMA 请求使能位(bit8~bit14)组成, 无其它非法置位",
+      "params": [
+        {
+          "name": "__SOURCE__",
+          "type": "宏参数",
+          "desc": "待校验的 DMA 源位掩码(各 DMA 请求使能位的组合, 不可为零)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [
+        "通过 (__SOURCE__ & 0xFFFF80FFU) == 0 检查: 除 bit8~bit14 外不允许其它位被置位"
+      ],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_DMA_SOURCE(__SOURCE__) ((((__SOURCE__) & 0xFFFF80FFU) == 0x00000000U) && ((__SOURCE__) != 0x00000000U))"
+    },
+    {
+      "name": "IS_TIM_ENCODER_MODE",
+      "sig": "#define IS_TIM_ENCODER_MODE(__MODE__)      (((__MODE__) == TIM_ENCODERMODE_TI1) || \\\n                                            ((__MODE__) == TIM_ENCODERMODE_TI2) || \\\n                                            ((__MODE__) == TIM_ENCODERMODE_TI12))",
+      "brief": "校验编码器模式是否为 TI1、TI2 或 TI12",
+      "params": [
+        {
+          "name": "__MODE__",
+          "type": "宏参数",
+          "desc": "待校验的编码器模式取值(TIM_ENCODERMODE_TI1 / TI2 / TI12 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_ENCODER_MODE(__MODE__)      (((__MODE__) == TIM_ENCODERMODE_TI1) || \\\r\n                                            ((__MODE__) == TIM_ENCODERMODE_TI2) || \\\r\n                                            ((__MODE__) == TIM_ENCODERMODE_TI12))"
+    },
+    {
+      "name": "IS_TIM_ENCODERINPUT_POLARITY",
+      "sig": "#define IS_TIM_ENCODERINPUT_POLARITY(__POLARITY__)   (((__POLARITY__) == TIM_ENCODERINPUTPOLARITY_RISING)   || \\\n                                                      ((__POLARITY__) == TIM_ENCODERINPUTPOLARITY_FALLING)  || \\\n                                                      ((__POLARITY__) == TIM_ENCODERINPUTPOLARITY_BOTHEDGE))",
+      "brief": "校验编码器输入极性是否为上升沿、下降沿或双边沿",
+      "params": [
+        {
+          "name": "__POLARITY__",
+          "type": "宏参数",
+          "desc": "待校验的编码器输入极性取值(TIM_ENCODERINPUTPOLARITY_RISING / FALLING / BOTHEDGE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_ENCODERINPUT_POLARITY(__POLARITY__)   (((__POLARITY__) == TIM_ENCODERINPUTPOLARITY_RISING)   || \\\r\n                                                      ((__POLARITY__) == TIM_ENCODERINPUTPOLARITY_FALLING)  || \\\r\n                                                      ((__POLARITY__) == TIM_ENCODERINPUTPOLARITY_BOTHEDGE))"
+    },
+    {
+      "name": "IS_TIM_EVENT_SOURCE",
+      "sig": "#define IS_TIM_EVENT_SOURCE(__SOURCE__) ((((__SOURCE__) & 0xFFFFFF00U) == 0x00000000U) && ((__SOURCE__) != 0x00000000U))",
+      "brief": "校验事件源(中断使能位掩码)非零, 且高 24 位无置位(仅低 8 位中断使能位允许置位)",
+      "params": [
+        {
+          "name": "__SOURCE__",
+          "type": "宏参数",
+          "desc": "待校验的事件源位掩码(各中断使能位的组合, 不可为零)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [
+        "通过 (__SOURCE__ & 0xFFFFFF00U) == 0 检查: 仅允许低 8 位(bit0~bit7)被置位"
+      ],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_EVENT_SOURCE(__SOURCE__) ((((__SOURCE__) & 0xFFFFFF00U) == 0x00000000U) && ((__SOURCE__) != 0x00000000U))"
+    },
+    {
+      "name": "IS_TIM_FAST_STATE",
+      "sig": "#define IS_TIM_FAST_STATE(__STATE__)       (((__STATE__) == TIM_OCFAST_DISABLE) || \\\n                                            ((__STATE__) == TIM_OCFAST_ENABLE))",
+      "brief": "校验输出比较快速模式(OCxFE)状态是否为禁用或使能",
+      "params": [
+        {
+          "name": "__STATE__",
+          "type": "宏参数",
+          "desc": "待校验的快速模式状态取值(TIM_OCFAST_DISABLE / ENABLE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_FAST_STATE(__STATE__)       (((__STATE__) == TIM_OCFAST_DISABLE) || \\\r\n                                            ((__STATE__) == TIM_OCFAST_ENABLE))"
+    },
+    {
+      "name": "IS_TIM_IC_FILTER",
+      "sig": "#define IS_TIM_IC_FILTER(__ICFILTER__)   ((__ICFILTER__) <= 0xFU)",
+      "brief": "校验输入捕获滤波(ICxF)值是否不超过 0xF(0~15)",
+      "params": [
+        {
+          "name": "__ICFILTER__",
+          "type": "宏参数",
+          "desc": "待校验的输入捕获滤波值, 合法范围为 0~0xF"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_IC_FILTER(__ICFILTER__)   ((__ICFILTER__) <= 0xFU)"
+    },
+    {
+      "name": "IS_TIM_IC_POLARITY",
+      "sig": "#define IS_TIM_IC_POLARITY(__POLARITY__)   (((__POLARITY__) == TIM_ICPOLARITY_RISING)   || \\\n                                            ((__POLARITY__) == TIM_ICPOLARITY_FALLING)  || \\\n                                            ((__POLARITY__) == TIM_ICPOLARITY_BOTHEDGE))",
+      "brief": "校验输入捕获极性(CCxP)是否为上升沿、下降沿或双边沿",
+      "params": [
+        {
+          "name": "__POLARITY__",
+          "type": "宏参数",
+          "desc": "待校验的输入捕获极性取值(TIM_ICPOLARITY_RISING / FALLING / BOTHEDGE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_IC_POLARITY(__POLARITY__)   (((__POLARITY__) == TIM_ICPOLARITY_RISING)   || \\\r\n                                            ((__POLARITY__) == TIM_ICPOLARITY_FALLING)  || \\\r\n                                            ((__POLARITY__) == TIM_ICPOLARITY_BOTHEDGE))"
+    },
+    {
+      "name": "IS_TIM_IC_PRESCALER",
+      "sig": "#define IS_TIM_IC_PRESCALER(__PRESCALER__) (((__PRESCALER__) == TIM_ICPSC_DIV1) || \\\n                                            ((__PRESCALER__) == TIM_ICPSC_DIV2) || \\\n                                            ((__PRESCALER__) == TIM_ICPSC_DIV4) || \\\n                                            ((__PRESCALER__) == TIM_ICPSC_DIV8))",
+      "brief": "校验输入捕获预分频(ICxPSC)值是否为 DIV1、DIV2、DIV4 或 DIV8",
+      "params": [
+        {
+          "name": "__PRESCALER__",
+          "type": "宏参数",
+          "desc": "待校验的输入捕获预分频取值(TIM_ICPSC_DIV1 / DIV2 / DIV4 / DIV8 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_IC_PRESCALER(__PRESCALER__) (((__PRESCALER__) == TIM_ICPSC_DIV1) || \\\r\n                                            ((__PRESCALER__) == TIM_ICPSC_DIV2) || \\\r\n                                            ((__PRESCALER__) == TIM_ICPSC_DIV4) || \\\r\n                                            ((__PRESCALER__) == TIM_ICPSC_DIV8))"
+    },
+    {
+      "name": "IS_TIM_IC_SELECTION",
+      "sig": "#define IS_TIM_IC_SELECTION(__SELECTION__) (((__SELECTION__) == TIM_ICSELECTION_DIRECTTI) || \\\n                                            ((__SELECTION__) == TIM_ICSELECTION_INDIRECTTI) || \\\n                                            ((__SELECTION__) == TIM_ICSELECTION_TRC))",
+      "brief": "校验输入捕获映射选择(CCxS)是否为直接 TI、间接 TI 或 TRC",
+      "params": [
+        {
+          "name": "__SELECTION__",
+          "type": "宏参数",
+          "desc": "待校验的输入捕获选择取值(TIM_ICSELECTION_DIRECTTI / INDIRECTTI / TRC 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_IC_SELECTION(__SELECTION__) (((__SELECTION__) == TIM_ICSELECTION_DIRECTTI) || \\\r\n                                            ((__SELECTION__) == TIM_ICSELECTION_INDIRECTTI) || \\\r\n                                            ((__SELECTION__) == TIM_ICSELECTION_TRC))"
+    },
+    {
+      "name": "IS_TIM_INTERNAL_TRIGGEREVENT_SELECTION",
+      "sig": "#define IS_TIM_INTERNAL_TRIGGEREVENT_SELECTION(__SELECTION__) (((__SELECTION__) == TIM_TS_ITR0) || \\\n                                                               ((__SELECTION__) == TIM_TS_ITR1) || \\\n                                                               ((__SELECTION__) == TIM_TS_ITR2) || \\\n                                                               ((__SELECTION__) == TIM_TS_ITR3) || \\\n                                                               ((__SELECTION__) == TIM_TS_NONE))",
+      "brief": "校验内部触发事件选择(TS)是否为 ITR0、ITR1、ITR2、ITR3 或 NONE",
+      "params": [
+        {
+          "name": "__SELECTION__",
+          "type": "宏参数",
+          "desc": "待校验的内部触发事件选择取值(TIM_TS_ITR0 / ITR1 / ITR2 / ITR3 / NONE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_INTERNAL_TRIGGEREVENT_SELECTION(__SELECTION__) (((__SELECTION__) == TIM_TS_ITR0) || \\\r\n                                                               ((__SELECTION__) == TIM_TS_ITR1) || \\\r\n                                                               ((__SELECTION__) == TIM_TS_ITR2) || \\\r\n                                                               ((__SELECTION__) == TIM_TS_ITR3) || \\\r\n                                                               ((__SELECTION__) == TIM_TS_NONE))"
+    },
+    {
+      "name": "IS_TIM_LOCK_LEVEL",
+      "sig": "#define IS_TIM_LOCK_LEVEL(__LEVEL__)       (((__LEVEL__) == TIM_LOCKLEVEL_OFF) || \\\n                                            ((__LEVEL__) == TIM_LOCKLEVEL_1)   || \\\n                                            ((__LEVEL__) == TIM_LOCKLEVEL_2)   || \\\n                                            ((__LEVEL__) == TIM_LOCKLEVEL_3))",
+      "brief": "校验寄存器锁定级别(LOCK)是否为 OFF、级别 1、级别 2 或级别 3",
+      "params": [
+        {
+          "name": "__LEVEL__",
+          "type": "宏参数",
+          "desc": "待校验的锁定级别取值(TIM_LOCKLEVEL_OFF / _1 / _2 / _3 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_LOCK_LEVEL(__LEVEL__)       (((__LEVEL__) == TIM_LOCKLEVEL_OFF) || \\\r\n                                            ((__LEVEL__) == TIM_LOCKLEVEL_1)   || \\\r\n                                            ((__LEVEL__) == TIM_LOCKLEVEL_2)   || \\\r\n                                            ((__LEVEL__) == TIM_LOCKLEVEL_3))"
+    },
+    {
+      "name": "IS_TIM_MSM_STATE",
+      "sig": "#define IS_TIM_MSM_STATE(__STATE__)      (((__STATE__) == TIM_MASTERSLAVEMODE_ENABLE) || \\\n                                          ((__STATE__) == TIM_MASTERSLAVEMODE_DISABLE))",
+      "brief": "校验主从模式(MSM)状态是否为使能或禁用",
+      "params": [
+        {
+          "name": "__STATE__",
+          "type": "宏参数",
+          "desc": "待校验的主从模式状态取值(TIM_MASTERSLAVEMODE_ENABLE / DISABLE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_MSM_STATE(__STATE__)      (((__STATE__) == TIM_MASTERSLAVEMODE_ENABLE) || \\\r\n                                          ((__STATE__) == TIM_MASTERSLAVEMODE_DISABLE))"
+    },
+    {
+      "name": "IS_TIM_OC_MODE",
+      "sig": "#define IS_TIM_OC_MODE(__MODE__)  (((__MODE__) == TIM_OCMODE_TIMING)             || \\\n                                   ((__MODE__) == TIM_OCMODE_ACTIVE)             || \\\n                                   ((__MODE__) == TIM_OCMODE_INACTIVE)           || \\\n                                   ((__MODE__) == TIM_OCMODE_TOGGLE)             || \\\n                                   ((__MODE__) == TIM_OCMODE_FORCED_ACTIVE)      || \\\n                                   ((__MODE__) == TIM_OCMODE_FORCED_INACTIVE))",
+      "brief": "校验输出比较模式(OCxM)是否为时序、有效、无效、翻转、强制有效或强制无效之一(不含 PWM 模式)",
+      "params": [
+        {
+          "name": "__MODE__",
+          "type": "宏参数",
+          "desc": "待校验的输出比较模式取值(TIM_OCMODE_TIMING / ACTIVE / INACTIVE / TOGGLE / FORCED_ACTIVE / FORCED_INACTIVE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [
+        "PWM1/PWM2 不在此宏校验范围内, 需用 IS_TIM_PWM_MODE 校验"
+      ],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_OC_MODE(__MODE__)  (((__MODE__) == TIM_OCMODE_TIMING)             || \\\r\n                                   ((__MODE__) == TIM_OCMODE_ACTIVE)             || \\\r\n                                   ((__MODE__) == TIM_OCMODE_INACTIVE)           || \\\r\n                                   ((__MODE__) == TIM_OCMODE_TOGGLE)             || \\\r\n                                   ((__MODE__) == TIM_OCMODE_FORCED_ACTIVE)      || \\\r\n                                   ((__MODE__) == TIM_OCMODE_FORCED_INACTIVE))"
+    },
+    {
+      "name": "IS_TIM_OC_POLARITY",
+      "sig": "#define IS_TIM_OC_POLARITY(__POLARITY__)   (((__POLARITY__) == TIM_OCPOLARITY_HIGH) || \\\n                                            ((__POLARITY__) == TIM_OCPOLARITY_LOW))",
+      "brief": "校验输出比较输出极性(CCxP)是否为高电平或低电平",
+      "params": [
+        {
+          "name": "__POLARITY__",
+          "type": "宏参数",
+          "desc": "待校验的输出极性取值(TIM_OCPOLARITY_HIGH / LOW 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_OC_POLARITY(__POLARITY__)   (((__POLARITY__) == TIM_OCPOLARITY_HIGH) || \\\r\n                                            ((__POLARITY__) == TIM_OCPOLARITY_LOW))"
+    },
+    {
+      "name": "IS_TIM_OCIDLE_STATE",
+      "sig": "#define IS_TIM_OCIDLE_STATE(__STATE__)     (((__STATE__) == TIM_OCIDLESTATE_SET) || \\\n                                            ((__STATE__) == TIM_OCIDLESTATE_RESET))",
+      "brief": "校验输出比较空闲状态(OISx)是否为置位(高电平)或复位(低电平)",
+      "params": [
+        {
+          "name": "__STATE__",
+          "type": "宏参数",
+          "desc": "待校验的输出空闲状态取值(TIM_OCIDLESTATE_SET / RESET 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_OCIDLE_STATE(__STATE__)     (((__STATE__) == TIM_OCIDLESTATE_SET) || \\\r\n                                            ((__STATE__) == TIM_OCIDLESTATE_RESET))"
+    },
+    {
+      "name": "IS_TIM_OCN_POLARITY",
+      "sig": "#define IS_TIM_OCN_POLARITY(__POLARITY__)  (((__POLARITY__) == TIM_OCNPOLARITY_HIGH) || \\\n                                            ((__POLARITY__) == TIM_OCNPOLARITY_LOW))",
+      "brief": "校验互补输出极性(CCxNP)是否为高电平或低电平",
+      "params": [
+        {
+          "name": "__POLARITY__",
+          "type": "宏参数",
+          "desc": "待校验的互补输出极性取值(TIM_OCNPOLARITY_HIGH / LOW 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_OCN_POLARITY(__POLARITY__)  (((__POLARITY__) == TIM_OCNPOLARITY_HIGH) || \\\r\n                                            ((__POLARITY__) == TIM_OCNPOLARITY_LOW))"
+    },
+    {
+      "name": "IS_TIM_OCNIDLE_STATE",
+      "sig": "#define IS_TIM_OCNIDLE_STATE(__STATE__)    (((__STATE__) == TIM_OCNIDLESTATE_SET) || \\\n                                            ((__STATE__) == TIM_OCNIDLESTATE_RESET))",
+      "brief": "校验互补输出空闲状态(OISxN)是否为置位(高电平)或复位(低电平)",
+      "params": [
+        {
+          "name": "__STATE__",
+          "type": "宏参数",
+          "desc": "待校验的互补输出空闲状态取值(TIM_OCNIDLESTATE_SET / RESET 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_OCNIDLE_STATE(__STATE__)    (((__STATE__) == TIM_OCNIDLESTATE_SET) || \\\r\n                                            ((__STATE__) == TIM_OCNIDLESTATE_RESET))"
+    },
+    {
+      "name": "IS_TIM_OPM_CHANNELS",
+      "sig": "#define IS_TIM_OPM_CHANNELS(__CHANNEL__)   (((__CHANNEL__) == TIM_CHANNEL_1) || \\\n                                            ((__CHANNEL__) == TIM_CHANNEL_2))",
+      "brief": "校验单脉冲模式(OPM)通道是否为通道 1 或通道 2",
+      "params": [
+        {
+          "name": "__CHANNEL__",
+          "type": "宏参数",
+          "desc": "待校验的单脉冲通道号取值(TIM_CHANNEL_1 / _2 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_OPM_CHANNELS(__CHANNEL__)   (((__CHANNEL__) == TIM_CHANNEL_1) || \\\r\n                                            ((__CHANNEL__) == TIM_CHANNEL_2))"
+    },
+    {
+      "name": "IS_TIM_OPM_MODE",
+      "sig": "#define IS_TIM_OPM_MODE(__MODE__)          (((__MODE__) == TIM_OPMODE_SINGLE) || \\\n                                            ((__MODE__) == TIM_OPMODE_REPETITIVE))",
+      "brief": "校验单脉冲模式(OPM)是否为单次或重复",
+      "params": [
+        {
+          "name": "__MODE__",
+          "type": "宏参数",
+          "desc": "待校验的单脉冲模式取值(TIM_OPMODE_SINGLE / REPETITIVE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_OPM_MODE(__MODE__)          (((__MODE__) == TIM_OPMODE_SINGLE) || \\\r\n                                            ((__MODE__) == TIM_OPMODE_REPETITIVE))"
+    },
+    {
+      "name": "IS_TIM_OSSI_STATE",
+      "sig": "#define IS_TIM_OSSI_STATE(__STATE__)       (((__STATE__) == TIM_OSSI_ENABLE) || \\\n                                            ((__STATE__) == TIM_OSSI_DISABLE))",
+      "brief": "校验 OSSI(空闲模式下非有效电平输出)状态是否为使能或禁用",
+      "params": [
+        {
+          "name": "__STATE__",
+          "type": "宏参数",
+          "desc": "待校验的 OSSI 状态取值(TIM_OSSI_ENABLE / DISABLE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_OSSI_STATE(__STATE__)       (((__STATE__) == TIM_OSSI_ENABLE) || \\\r\n                                            ((__STATE__) == TIM_OSSI_DISABLE))"
+    },
+    {
+      "name": "IS_TIM_OSSR_STATE",
+      "sig": "#define IS_TIM_OSSR_STATE(__STATE__)       (((__STATE__) == TIM_OSSR_ENABLE) || \\\n                                            ((__STATE__) == TIM_OSSR_DISABLE))",
+      "brief": "校验 OSSR(运行模式下非有效电平输出)状态是否为使能或禁用",
+      "params": [
+        {
+          "name": "__STATE__",
+          "type": "宏参数",
+          "desc": "待校验的 OSSR 状态取值(TIM_OSSR_ENABLE / DISABLE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_OSSR_STATE(__STATE__)       (((__STATE__) == TIM_OSSR_ENABLE) || \\\r\n                                            ((__STATE__) == TIM_OSSR_DISABLE))"
+    },
+    {
+      "name": "IS_TIM_PWM_MODE",
+      "sig": "#define IS_TIM_PWM_MODE(__MODE__) (((__MODE__) == TIM_OCMODE_PWM1)               || \\\n                                   ((__MODE__) == TIM_OCMODE_PWM2))",
+      "brief": "校验 PWM 模式(OCxM)是否为 PWM1 或 PWM2",
+      "params": [
+        {
+          "name": "__MODE__",
+          "type": "宏参数",
+          "desc": "待校验的 PWM 模式取值(TIM_OCMODE_PWM1 / PWM2 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_PWM_MODE(__MODE__) (((__MODE__) == TIM_OCMODE_PWM1)               || \\\r\n                                   ((__MODE__) == TIM_OCMODE_PWM2))"
+    },
+    {
+      "name": "IS_TIM_REMAP",
+      "sig": "#define IS_TIM_REMAP(__INSTANCE__, __REMAP__)                                             \\\n          (((__INSTANCE__) == TIM14)  && (((__REMAP__) & 0xFFFFFFFCU) == 0x00000000U))",
+      "brief": "校验定时器重映射参数: 实例必须为 TIM14, 且重映射值 bit2~bit31 必须为 0(仅低 2 位可置位)",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "定时器外设实例(本校验仅接受 TIM14)"
+        },
+        {
+          "name": "__REMAP__",
+          "type": "宏参数",
+          "desc": "待校验的重映射取值, 只允许低 2 位被置位"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [
+        "仅 TIM14 支持引脚重映射, 重映射值高 30 位必须为 0"
+      ],
+      "file": "py32f002b_hal_tim_ex.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_REMAP(__INSTANCE__, __REMAP__)                                             \\\r\n          (((__INSTANCE__) == TIM14)  && (((__REMAP__) & 0xFFFFFFFCU) == 0x00000000U))"
+    },
+    {
+      "name": "IS_TIM_SLAVE_MODE",
+      "sig": "#define IS_TIM_SLAVE_MODE(__MODE__) (((__MODE__) == TIM_SLAVEMODE_DISABLE)   || \\\n                                     ((__MODE__) == TIM_SLAVEMODE_RESET)     || \\\n                                     ((__MODE__) == TIM_SLAVEMODE_GATED)     || \\\n                                     ((__MODE__) == TIM_SLAVEMODE_TRIGGER)   || \\\n                                     ((__MODE__) == TIM_SLAVEMODE_EXTERNAL1))",
+      "brief": "校验从模式(SMS)是否为禁用、复位、门控、触发或外部时钟模式 1",
+      "params": [
+        {
+          "name": "__MODE__",
+          "type": "宏参数",
+          "desc": "待校验的从模式取值(TIM_SLAVEMODE_DISABLE / RESET / GATED / TRIGGER / EXTERNAL1 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_SLAVE_MODE(__MODE__) (((__MODE__) == TIM_SLAVEMODE_DISABLE)   || \\\r\n                                     ((__MODE__) == TIM_SLAVEMODE_RESET)     || \\\r\n                                     ((__MODE__) == TIM_SLAVEMODE_GATED)     || \\\r\n                                     ((__MODE__) == TIM_SLAVEMODE_TRIGGER)   || \\\r\n                                     ((__MODE__) == TIM_SLAVEMODE_EXTERNAL1))"
+    },
+    {
+      "name": "IS_TIM_SLAVEMODE_TRIGGER_ENABLED",
+      "sig": "#define IS_TIM_SLAVEMODE_TRIGGER_ENABLED(__TRIGGER__) ((__TRIGGER__) == TIM_SLAVEMODE_TRIGGER)",
+      "brief": "校验从模式是否配置为 TIM_SLAVEMODE_TRIGGER(触发模式)",
+      "params": [
+        {
+          "name": "__TRIGGER__",
+          "type": "宏参数",
+          "desc": "待校验的从模式取值(须等于 TIM_SLAVEMODE_TRIGGER)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_SLAVEMODE_TRIGGER_ENABLED(__TRIGGER__) ((__TRIGGER__) == TIM_SLAVEMODE_TRIGGER)"
+    },
+    {
+      "name": "IS_TIM_TI1SELECTION",
+      "sig": "#define IS_TIM_TI1SELECTION(__TI1SELECTION__)  (((__TI1SELECTION__) == TIM_TI1SELECTION_CH1) || \\\n                                                ((__TI1SELECTION__) == TIM_TI1SELECTION_XORCOMBINATION))",
+      "brief": "校验 TI1 选择是否为 CH1(直接映射)或异或组合(XOR)",
+      "params": [
+        {
+          "name": "__TI1SELECTION__",
+          "type": "宏参数",
+          "desc": "待校验的 TI1 选择取值(TIM_TI1SELECTION_CH1 / XORCOMBINATION 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_TI1SELECTION(__TI1SELECTION__)  (((__TI1SELECTION__) == TIM_TI1SELECTION_CH1) || \\\r\n                                                ((__TI1SELECTION__) == TIM_TI1SELECTION_XORCOMBINATION))"
+    },
+    {
+      "name": "IS_TIM_TRGO_SOURCE",
+      "sig": "#define IS_TIM_TRGO_SOURCE(__SOURCE__) (((__SOURCE__) == TIM_TRGO_RESET)  || \\\n                                        ((__SOURCE__) == TIM_TRGO_ENABLE) || \\\n                                        ((__SOURCE__) == TIM_TRGO_UPDATE) || \\\n                                        ((__SOURCE__) == TIM_TRGO_OC1)    || \\\n                                        ((__SOURCE__) == TIM_TRGO_OC1REF) || \\\n                                        ((__SOURCE__) == TIM_TRGO_OC2REF) || \\\n                                        ((__SOURCE__) == TIM_TRGO_OC3REF) || \\\n                                        ((__SOURCE__) == TIM_TRGO_OC4REF))",
+      "brief": "校验主模式输出 TRGO 源(MMS)是否为复位、使能、更新、OC1、OC1REF、OC2REF、OC3REF 或 OC4REF 之一",
+      "params": [
+        {
+          "name": "__SOURCE__",
+          "type": "宏参数",
+          "desc": "待校验的 TRGO 源取值(TIM_TRGO_RESET / ENABLE / UPDATE / OC1 / OC1REF / OC2REF / OC3REF / OC4REF 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_TRGO_SOURCE(__SOURCE__) (((__SOURCE__) == TIM_TRGO_RESET)  || \\\r\n                                        ((__SOURCE__) == TIM_TRGO_ENABLE) || \\\r\n                                        ((__SOURCE__) == TIM_TRGO_UPDATE) || \\\r\n                                        ((__SOURCE__) == TIM_TRGO_OC1)    || \\\r\n                                        ((__SOURCE__) == TIM_TRGO_OC1REF) || \\\r\n                                        ((__SOURCE__) == TIM_TRGO_OC2REF) || \\\r\n                                        ((__SOURCE__) == TIM_TRGO_OC3REF) || \\\r\n                                        ((__SOURCE__) == TIM_TRGO_OC4REF))"
+    },
+    {
+      "name": "IS_TIM_TRIGGER_SELECTION",
+      "sig": "#define IS_TIM_TRIGGER_SELECTION(__SELECTION__) (((__SELECTION__) == TIM_TS_ITR0) || \\\n                                                 ((__SELECTION__) == TIM_TS_ITR1) || \\\n                                                 ((__SELECTION__) == TIM_TS_ITR2) || \\\n                                                 ((__SELECTION__) == TIM_TS_ITR3) || \\\n                                                 ((__SELECTION__) == TIM_TS_TI1F_ED) || \\\n                                                 ((__SELECTION__) == TIM_TS_TI1FP1) || \\\n                                                 ((__SELECTION__) == TIM_TS_TI2FP2) || \\\n                                                 ((__SELECTION__) == TIM_TS_ETRF))",
+      "brief": "校验触发选择(TS)是否为 ITR0~ITR3、TI1F_ED、TI1FP1、TI2FP2 或 ETRF 之一",
+      "params": [
+        {
+          "name": "__SELECTION__",
+          "type": "宏参数",
+          "desc": "待校验的触发选择取值(TIM_TS_ITR0 / ITR1 / ITR2 / ITR3 / TI1F_ED / TI1FP1 / TI2FP2 / ETRF 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_TRIGGER_SELECTION(__SELECTION__) (((__SELECTION__) == TIM_TS_ITR0) || \\\r\n                                                 ((__SELECTION__) == TIM_TS_ITR1) || \\\r\n                                                 ((__SELECTION__) == TIM_TS_ITR2) || \\\r\n                                                 ((__SELECTION__) == TIM_TS_ITR3) || \\\r\n                                                 ((__SELECTION__) == TIM_TS_TI1F_ED) || \\\r\n                                                 ((__SELECTION__) == TIM_TS_TI1FP1) || \\\r\n                                                 ((__SELECTION__) == TIM_TS_TI2FP2) || \\\r\n                                                 ((__SELECTION__) == TIM_TS_ETRF))"
+    },
+    {
+      "name": "IS_TIM_TRIGGERFILTER",
+      "sig": "#define IS_TIM_TRIGGERFILTER(__ICFILTER__) ((__ICFILTER__) <= 0xFU)",
+      "brief": "校验触发滤波(ETF)值是否不超过 0xF(0~15)",
+      "params": [
+        {
+          "name": "__ICFILTER__",
+          "type": "宏参数",
+          "desc": "待校验的触发滤波值, 合法范围为 0~0xF"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_TRIGGERFILTER(__ICFILTER__) ((__ICFILTER__) <= 0xFU)"
+    },
+    {
+      "name": "IS_TIM_TRIGGERPOLARITY",
+      "sig": "#define IS_TIM_TRIGGERPOLARITY(__POLARITY__)   (((__POLARITY__) == TIM_TRIGGERPOLARITY_INVERTED   ) || \\\n                                                ((__POLARITY__) == TIM_TRIGGERPOLARITY_NONINVERTED) || \\\n                                                ((__POLARITY__) == TIM_TRIGGERPOLARITY_RISING     ) || \\\n                                                ((__POLARITY__) == TIM_TRIGGERPOLARITY_FALLING    ) || \\\n                                                ((__POLARITY__) == TIM_TRIGGERPOLARITY_BOTHEDGE   ))",
+      "brief": "校验触发极性(ETP)是否为反相、非反相、上升沿、下降沿或双边沿",
+      "params": [
+        {
+          "name": "__POLARITY__",
+          "type": "宏参数",
+          "desc": "待校验的触发极性取值(TIM_TRIGGERPOLARITY_INVERTED / NONINVERTED / RISING / FALLING / BOTHEDGE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_TRIGGERPOLARITY(__POLARITY__)   (((__POLARITY__) == TIM_TRIGGERPOLARITY_INVERTED   ) || \\\r\n                                                ((__POLARITY__) == TIM_TRIGGERPOLARITY_NONINVERTED) || \\\r\n                                                ((__POLARITY__) == TIM_TRIGGERPOLARITY_RISING     ) || \\\r\n                                                ((__POLARITY__) == TIM_TRIGGERPOLARITY_FALLING    ) || \\\r\n                                                ((__POLARITY__) == TIM_TRIGGERPOLARITY_BOTHEDGE   ))"
+    },
+    {
+      "name": "IS_TIM_TRIGGERPRESCALER",
+      "sig": "#define IS_TIM_TRIGGERPRESCALER(__PRESCALER__) (((__PRESCALER__) == TIM_TRIGGERPRESCALER_DIV1) || \\\n                                                ((__PRESCALER__) == TIM_TRIGGERPRESCALER_DIV2) || \\\n                                                ((__PRESCALER__) == TIM_TRIGGERPRESCALER_DIV4) || \\\n                                                ((__PRESCALER__) == TIM_TRIGGERPRESCALER_DIV8))",
+      "brief": "校验触发预分频(ETPS)值是否为 DIV1、DIV2、DIV4 或 DIV8",
+      "params": [
+        {
+          "name": "__PRESCALER__",
+          "type": "宏参数",
+          "desc": "待校验的触发预分频取值(TIM_TRIGGERPRESCALER_DIV1 / DIV2 / DIV4 / DIV8 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_tim.h",
+      "kind": "macro",
+      "src": "#define IS_TIM_TRIGGERPRESCALER(__PRESCALER__) (((__PRESCALER__) == TIM_TRIGGERPRESCALER_DIV1) || \\\r\n                                                ((__PRESCALER__) == TIM_TRIGGERPRESCALER_DIV2) || \\\r\n                                                ((__PRESCALER__) == TIM_TRIGGERPRESCALER_DIV4) || \\\r\n                                                ((__PRESCALER__) == TIM_TRIGGERPRESCALER_DIV8))"
+    }
+  ],
+  "ll": [
+    {
+      "name": "TIM_CALC_DTS",
+      "sig": "#define TIM_CALC_DTS(__TIMCLK__, __CKD__)                                                        \\\n  (((__CKD__) == LL_TIM_CLOCKDIVISION_DIV1) ? ((uint64_t)1000000000000U/(__TIMCLK__))         : \\\n   ((__CKD__) == LL_TIM_CLOCKDIVISION_DIV2) ? ((uint64_t)1000000000000U/((__TIMCLK__) >> 1U)) : \\\n   ((uint64_t)1000000000000U/((__TIMCLK__) >> 2U)))",
+      "brief": "按 CKD 时钟分频计算死区采样周期(皮秒): 1000000000000 除以定时器时钟, 分频 1/2/4 对应除数 1/2/4。",
+      "params": [
+        {
+          "name": "__TIMCLK__",
+          "type": "宏参数",
+          "desc": "定时器输入时钟频率(Hz)"
+        },
+        {
+          "name": "__CKD__",
+          "type": "宏参数",
+          "desc": "时钟分频, 可取 LL_TIM_CLOCKDIVISION_DIV1 / _DIV2 / _DIV4"
+        }
+      ],
+      "retval": {
+        "type": "uint64_t",
+        "desc": "死区采样周期(皮秒)"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "macro",
+      "src": "#define TIM_CALC_DTS(__TIMCLK__, __CKD__)                                                        \\\r\n  (((__CKD__) == LL_TIM_CLOCKDIVISION_DIV1) ? ((uint64_t)1000000000000U/(__TIMCLK__))         : \\\r\n   ((__CKD__) == LL_TIM_CLOCKDIVISION_DIV2) ? ((uint64_t)1000000000000U/((__TIMCLK__) >> 1U)) : \\\r\n   ((uint64_t)1000000000000U/((__TIMCLK__) >> 2U)))"
+    },
+    {
+      "name": "IS_LL_TIM_ACTIVEINPUT",
+      "sig": "#define IS_LL_TIM_ACTIVEINPUT(__VALUE__) (((__VALUE__) == LL_TIM_ACTIVEINPUT_DIRECTTI) \\\n                                          || ((__VALUE__) == LL_TIM_ACTIVEINPUT_INDIRECTTI) \\\n                                          || ((__VALUE__) == LL_TIM_ACTIVEINPUT_TRC))",
+      "brief": "校验输入捕获有效输入源(CCxS)是否为直接 TI、间接 TI 或 TRC 之一",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的有效输入源取值(LL_TIM_ACTIVEINPUT_DIRECTTI / INDIRECTTI / TRC 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_TIM_ACTIVEINPUT(__VALUE__) (((__VALUE__) == LL_TIM_ACTIVEINPUT_DIRECTTI) \\\r\n                                          || ((__VALUE__) == LL_TIM_ACTIVEINPUT_INDIRECTTI) \\\r\n                                          || ((__VALUE__) == LL_TIM_ACTIVEINPUT_TRC))"
+    },
+    {
+      "name": "IS_LL_TIM_AUTOMATIC_OUTPUT_STATE",
+      "sig": "#define IS_LL_TIM_AUTOMATIC_OUTPUT_STATE(__VALUE__) (((__VALUE__) == LL_TIM_AUTOMATICOUTPUT_DISABLE) \\\n                                                     || ((__VALUE__) == LL_TIM_AUTOMATICOUTPUT_ENABLE))",
+      "brief": "校验自动输出状态(AOE)配置是否为禁用或使能",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的自动输出状态取值(LL_TIM_AUTOMATICOUTPUT_DISABLE / ENABLE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_TIM_AUTOMATIC_OUTPUT_STATE(__VALUE__) (((__VALUE__) == LL_TIM_AUTOMATICOUTPUT_DISABLE) \\\r\n                                                     || ((__VALUE__) == LL_TIM_AUTOMATICOUTPUT_ENABLE))"
+    },
+    {
+      "name": "IS_LL_TIM_BREAK_POLARITY",
+      "sig": "#define IS_LL_TIM_BREAK_POLARITY(__VALUE__) (((__VALUE__) == LL_TIM_BREAK_POLARITY_LOW) \\\n                                             || ((__VALUE__) == LL_TIM_BREAK_POLARITY_HIGH))",
+      "brief": "校验刹车输入极性(BKP)是否为低电平有效或高电平有效",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的刹车极性取值(LL_TIM_BREAK_POLARITY_LOW / HIGH 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_TIM_BREAK_POLARITY(__VALUE__) (((__VALUE__) == LL_TIM_BREAK_POLARITY_LOW) \\\r\n                                             || ((__VALUE__) == LL_TIM_BREAK_POLARITY_HIGH))"
+    },
+    {
+      "name": "IS_LL_TIM_BREAK_STATE",
+      "sig": "#define IS_LL_TIM_BREAK_STATE(__VALUE__) (((__VALUE__) == LL_TIM_BREAK_DISABLE) \\\n                                          || ((__VALUE__) == LL_TIM_BREAK_ENABLE))",
+      "brief": "校验刹车功能(BKE)状态是否为禁用或使能",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的刹车功能状态取值(LL_TIM_BREAK_DISABLE / ENABLE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_TIM_BREAK_STATE(__VALUE__) (((__VALUE__) == LL_TIM_BREAK_DISABLE) \\\r\n                                          || ((__VALUE__) == LL_TIM_BREAK_ENABLE))"
+    },
+    {
+      "name": "IS_LL_TIM_CLOCKDIVISION",
+      "sig": "#define IS_LL_TIM_CLOCKDIVISION(__VALUE__) (((__VALUE__) == LL_TIM_CLOCKDIVISION_DIV1) \\\n                                            || ((__VALUE__) == LL_TIM_CLOCKDIVISION_DIV2) \\\n                                            || ((__VALUE__) == LL_TIM_CLOCKDIVISION_DIV4))",
+      "brief": "校验时钟分频(CKD)值是否为 DIV1、DIV2 或 DIV4",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的时钟分频取值(LL_TIM_CLOCKDIVISION_DIV1 / DIV2 / DIV4 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_TIM_CLOCKDIVISION(__VALUE__) (((__VALUE__) == LL_TIM_CLOCKDIVISION_DIV1) \\\r\n                                            || ((__VALUE__) == LL_TIM_CLOCKDIVISION_DIV2) \\\r\n                                            || ((__VALUE__) == LL_TIM_CLOCKDIVISION_DIV4))"
+    },
+    {
+      "name": "IS_LL_TIM_COUNTERMODE",
+      "sig": "#define IS_LL_TIM_COUNTERMODE(__VALUE__) (((__VALUE__) == LL_TIM_COUNTERMODE_UP) \\\n                                          || ((__VALUE__) == LL_TIM_COUNTERMODE_DOWN) \\\n                                          || ((__VALUE__) == LL_TIM_COUNTERMODE_CENTER_UP) \\\n                                          || ((__VALUE__) == LL_TIM_COUNTERMODE_CENTER_DOWN) \\\n                                          || ((__VALUE__) == LL_TIM_COUNTERMODE_CENTER_UP_DOWN))",
+      "brief": "校验计数器计数模式是否为向上、向下或三种中央对齐模式之一",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的计数模式取值(LL_TIM_COUNTERMODE_UP / DOWN / CENTER_UP / CENTER_DOWN / CENTER_UP_DOWN 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_TIM_COUNTERMODE(__VALUE__) (((__VALUE__) == LL_TIM_COUNTERMODE_UP) \\\r\n                                          || ((__VALUE__) == LL_TIM_COUNTERMODE_DOWN) \\\r\n                                          || ((__VALUE__) == LL_TIM_COUNTERMODE_CENTER_UP) \\\r\n                                          || ((__VALUE__) == LL_TIM_COUNTERMODE_CENTER_DOWN) \\\r\n                                          || ((__VALUE__) == LL_TIM_COUNTERMODE_CENTER_UP_DOWN))"
+    },
+    {
+      "name": "IS_LL_TIM_ENCODERMODE",
+      "sig": "#define IS_LL_TIM_ENCODERMODE(__VALUE__) (((__VALUE__) == LL_TIM_ENCODERMODE_X2_TI1) \\\n                                          || ((__VALUE__) == LL_TIM_ENCODERMODE_X2_TI2) \\\n                                          || ((__VALUE__) == LL_TIM_ENCODERMODE_X4_TI12))",
+      "brief": "校验编码器模式是否为 X2_TI1、X2_TI2 或 X4_TI12",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的编码器模式取值(LL_TIM_ENCODERMODE_X2_TI1 / X2_TI2 / X4_TI12 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_TIM_ENCODERMODE(__VALUE__) (((__VALUE__) == LL_TIM_ENCODERMODE_X2_TI1) \\\r\n                                          || ((__VALUE__) == LL_TIM_ENCODERMODE_X2_TI2) \\\r\n                                          || ((__VALUE__) == LL_TIM_ENCODERMODE_X4_TI12))"
+    },
+    {
+      "name": "IS_LL_TIM_IC_FILTER",
+      "sig": "#define IS_LL_TIM_IC_FILTER(__VALUE__) (((__VALUE__) == LL_TIM_IC_FILTER_FDIV1) \\\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV1_N2) \\\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV1_N4) \\\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV1_N8) \\\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV2_N6) \\\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV2_N8) \\\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV4_N6) \\\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV4_N8) \\\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV8_N6) \\\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV8_N8) \\\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV16_N5) \\\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV16_N6) \\\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV16_N8) \\\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV32_N5) \\\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV32_N6) \\\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV32_N8))",
+      "brief": "校验输入捕获滤波器(ICxF)取值是否为 16 种合法滤波组合之一",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的输入捕获滤波取值(LL_TIM_IC_FILTER_FDIV1 至 FDIV32_N8 共 16 种之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_TIM_IC_FILTER(__VALUE__) (((__VALUE__) == LL_TIM_IC_FILTER_FDIV1) \\\r\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV1_N2) \\\r\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV1_N4) \\\r\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV1_N8) \\\r\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV2_N6) \\\r\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV2_N8) \\\r\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV4_N6) \\\r\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV4_N8) \\\r\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV8_N6) \\\r\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV8_N8) \\\r\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV16_N5) \\\r\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV16_N6) \\\r\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV16_N8) \\\r\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV32_N5) \\\r\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV32_N6) \\\r\n                                        || ((__VALUE__) == LL_TIM_IC_FILTER_FDIV32_N8))"
+    },
+    {
+      "name": "IS_LL_TIM_IC_POLARITY",
+      "sig": "#define IS_LL_TIM_IC_POLARITY(__VALUE__) (((__VALUE__) == LL_TIM_IC_POLARITY_RISING) \\\n                                          || ((__VALUE__) == LL_TIM_IC_POLARITY_FALLING))",
+      "brief": "校验输入捕获极性(CCxP)是否为上升沿或下降沿",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的输入捕获极性取值(LL_TIM_IC_POLARITY_RISING / FALLING 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_TIM_IC_POLARITY(__VALUE__) (((__VALUE__) == LL_TIM_IC_POLARITY_RISING) \\\r\n                                          || ((__VALUE__) == LL_TIM_IC_POLARITY_FALLING))"
+    },
+    {
+      "name": "IS_LL_TIM_IC_POLARITY_ENCODER",
+      "sig": "#define IS_LL_TIM_IC_POLARITY_ENCODER(__VALUE__) (((__VALUE__) == LL_TIM_IC_POLARITY_RISING) \\\n                                                  || ((__VALUE__) == LL_TIM_IC_POLARITY_FALLING))",
+      "brief": "校验编码器模式下输入捕获极性(CCxP)是否为上升沿或下降沿",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的输入捕获极性取值(LL_TIM_IC_POLARITY_RISING / FALLING 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_TIM_IC_POLARITY_ENCODER(__VALUE__) (((__VALUE__) == LL_TIM_IC_POLARITY_RISING) \\\r\n                                                  || ((__VALUE__) == LL_TIM_IC_POLARITY_FALLING))"
+    },
+    {
+      "name": "IS_LL_TIM_ICPSC",
+      "sig": "#define IS_LL_TIM_ICPSC(__VALUE__) (((__VALUE__) == LL_TIM_ICPSC_DIV1) \\\n                                    || ((__VALUE__) == LL_TIM_ICPSC_DIV2) \\\n                                    || ((__VALUE__) == LL_TIM_ICPSC_DIV4) \\\n                                    || ((__VALUE__) == LL_TIM_ICPSC_DIV8))",
+      "brief": "校验输入捕获预分频(ICxPSC)值是否为 DIV1、DIV2、DIV4 或 DIV8",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的输入捕获预分频取值(LL_TIM_ICPSC_DIV1 / DIV2 / DIV4 / DIV8 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_TIM_ICPSC(__VALUE__) (((__VALUE__) == LL_TIM_ICPSC_DIV1) \\\r\n                                    || ((__VALUE__) == LL_TIM_ICPSC_DIV2) \\\r\n                                    || ((__VALUE__) == LL_TIM_ICPSC_DIV4) \\\r\n                                    || ((__VALUE__) == LL_TIM_ICPSC_DIV8))"
+    },
+    {
+      "name": "IS_LL_TIM_LOCK_LEVEL",
+      "sig": "#define IS_LL_TIM_LOCK_LEVEL(__VALUE__) (((__VALUE__) == LL_TIM_LOCKLEVEL_OFF) \\\n                                         || ((__VALUE__) == LL_TIM_LOCKLEVEL_1)   \\\n                                         || ((__VALUE__) == LL_TIM_LOCKLEVEL_2)   \\\n                                         || ((__VALUE__) == LL_TIM_LOCKLEVEL_3))",
+      "brief": "校验寄存器锁定级别(LOCK)是否为 OFF、级别 1、级别 2 或级别 3",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的锁定级别取值(LL_TIM_LOCKLEVEL_OFF / _1 / _2 / _3 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_TIM_LOCK_LEVEL(__VALUE__) (((__VALUE__) == LL_TIM_LOCKLEVEL_OFF) \\\r\n                                         || ((__VALUE__) == LL_TIM_LOCKLEVEL_1)   \\\r\n                                         || ((__VALUE__) == LL_TIM_LOCKLEVEL_2)   \\\r\n                                         || ((__VALUE__) == LL_TIM_LOCKLEVEL_3))"
+    },
+    {
+      "name": "IS_LL_TIM_OCIDLESTATE",
+      "sig": "#define IS_LL_TIM_OCIDLESTATE(__VALUE__) (((__VALUE__) == LL_TIM_OCIDLESTATE_LOW) \\\n                                          || ((__VALUE__) == LL_TIM_OCIDLESTATE_HIGH))",
+      "brief": "校验输出比较空闲状态(OISx)是否为低电平或高电平",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的输出空闲状态取值(LL_TIM_OCIDLESTATE_LOW / HIGH 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_TIM_OCIDLESTATE(__VALUE__) (((__VALUE__) == LL_TIM_OCIDLESTATE_LOW) \\\r\n                                          || ((__VALUE__) == LL_TIM_OCIDLESTATE_HIGH))"
+    },
+    {
+      "name": "IS_LL_TIM_OCMODE",
+      "sig": "#define IS_LL_TIM_OCMODE(__VALUE__) (((__VALUE__) == LL_TIM_OCMODE_FROZEN) \\\n                                     || ((__VALUE__) == LL_TIM_OCMODE_ACTIVE) \\\n                                     || ((__VALUE__) == LL_TIM_OCMODE_INACTIVE) \\\n                                     || ((__VALUE__) == LL_TIM_OCMODE_TOGGLE) \\\n                                     || ((__VALUE__) == LL_TIM_OCMODE_FORCED_INACTIVE) \\\n                                     || ((__VALUE__) == LL_TIM_OCMODE_FORCED_ACTIVE) \\\n                                     || ((__VALUE__) == LL_TIM_OCMODE_PWM1) \\\n                                     || ((__VALUE__) == LL_TIM_OCMODE_PWM2))",
+      "brief": "校验输出比较模式(OCxM)是否为冻结、有效、无效、翻转、强制无效、强制有效、PWM1、PWM2 之一",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的输出比较模式取值(LL_TIM_OCMODE_FROZEN / ACTIVE / INACTIVE / TOGGLE / FORCED_INACTIVE / FORCED_ACTIVE / PWM1 / PWM2 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_TIM_OCMODE(__VALUE__) (((__VALUE__) == LL_TIM_OCMODE_FROZEN) \\\r\n                                     || ((__VALUE__) == LL_TIM_OCMODE_ACTIVE) \\\r\n                                     || ((__VALUE__) == LL_TIM_OCMODE_INACTIVE) \\\r\n                                     || ((__VALUE__) == LL_TIM_OCMODE_TOGGLE) \\\r\n                                     || ((__VALUE__) == LL_TIM_OCMODE_FORCED_INACTIVE) \\\r\n                                     || ((__VALUE__) == LL_TIM_OCMODE_FORCED_ACTIVE) \\\r\n                                     || ((__VALUE__) == LL_TIM_OCMODE_PWM1) \\\r\n                                     || ((__VALUE__) == LL_TIM_OCMODE_PWM2))"
+    },
+    {
+      "name": "IS_LL_TIM_OCPOLARITY",
+      "sig": "#define IS_LL_TIM_OCPOLARITY(__VALUE__) (((__VALUE__) == LL_TIM_OCPOLARITY_HIGH) \\\n                                         || ((__VALUE__) == LL_TIM_OCPOLARITY_LOW))",
+      "brief": "校验输出比较输出极性(CCxP)是否为高电平或低电平",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的输出极性取值(LL_TIM_OCPOLARITY_HIGH / LOW 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_TIM_OCPOLARITY(__VALUE__) (((__VALUE__) == LL_TIM_OCPOLARITY_HIGH) \\\r\n                                         || ((__VALUE__) == LL_TIM_OCPOLARITY_LOW))"
+    },
+    {
+      "name": "IS_LL_TIM_OCSTATE",
+      "sig": "#define IS_LL_TIM_OCSTATE(__VALUE__) (((__VALUE__) == LL_TIM_OCSTATE_DISABLE) \\\n                                      || ((__VALUE__) == LL_TIM_OCSTATE_ENABLE))",
+      "brief": "校验输出比较通道使能状态(CCxE)是否为禁用或使能",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的输出通道状态取值(LL_TIM_OCSTATE_DISABLE / ENABLE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_TIM_OCSTATE(__VALUE__) (((__VALUE__) == LL_TIM_OCSTATE_DISABLE) \\\r\n                                      || ((__VALUE__) == LL_TIM_OCSTATE_ENABLE))"
+    },
+    {
+      "name": "IS_LL_TIM_OSSI_STATE",
+      "sig": "#define IS_LL_TIM_OSSI_STATE(__VALUE__) (((__VALUE__) == LL_TIM_OSSI_DISABLE) \\\n                                         || ((__VALUE__) == LL_TIM_OSSI_ENABLE))",
+      "brief": "校验 OSSI(空闲模式下非有效电平输出)状态是否为禁用或使能",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的 OSSI 状态取值(LL_TIM_OSSI_DISABLE / ENABLE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_TIM_OSSI_STATE(__VALUE__) (((__VALUE__) == LL_TIM_OSSI_DISABLE) \\\r\n                                         || ((__VALUE__) == LL_TIM_OSSI_ENABLE))"
+    },
+    {
+      "name": "IS_LL_TIM_OSSR_STATE",
+      "sig": "#define IS_LL_TIM_OSSR_STATE(__VALUE__) (((__VALUE__) == LL_TIM_OSSR_DISABLE) \\\n                                         || ((__VALUE__) == LL_TIM_OSSR_ENABLE))",
+      "brief": "校验 OSSR(运行模式下非有效电平输出)状态是否为禁用或使能",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的 OSSR 状态取值(LL_TIM_OSSR_DISABLE / ENABLE 之一)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_TIM_OSSR_STATE(__VALUE__) (((__VALUE__) == LL_TIM_OSSR_DISABLE) \\\r\n                                         || ((__VALUE__) == LL_TIM_OSSR_ENABLE))"
+    },
+    {
+      "name": "TIM_GET_CHANNEL_INDEX",
+      "sig": "#define TIM_GET_CHANNEL_INDEX( __CHANNEL__) \\\n  (((__CHANNEL__) == LL_TIM_CHANNEL_CH1) ? 0U :\\\n   ((__CHANNEL__) == LL_TIM_CHANNEL_CH1N) ? 1U :\\\n   ((__CHANNEL__) == LL_TIM_CHANNEL_CH2) ? 2U :\\\n   ((__CHANNEL__) == LL_TIM_CHANNEL_CH2N) ? 3U :\\\n   ((__CHANNEL__) == LL_TIM_CHANNEL_CH3) ? 4U :\\\n   ((__CHANNEL__) == LL_TIM_CHANNEL_CH3N) ? 5U : 6U)",
+      "brief": "把 LL 通道枚举值转换为 0~6 的通道索引, 供数组或寄存器位定位使用",
+      "params": [
+        {
+          "name": "__CHANNEL__",
+          "type": "宏参数",
+          "desc": "LL 通道枚举(LL_TIM_CHANNEL_CH1 / CH1N / CH2 / CH2N / CH3 / CH3N 或其它值)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "返回通道索引: CH1→0、CH1N→1、CH2→2、CH2N→3、CH3→4、CH3N→5, 其它通道→6"
+      },
+      "notes": [
+        "非法或未识别的通道值统一返回 6"
+      ],
+      "file": "py32f002b_ll_tim.h",
+      "kind": "macro",
+      "src": "#define TIM_GET_CHANNEL_INDEX( __CHANNEL__) \\\r\n  (((__CHANNEL__) == LL_TIM_CHANNEL_CH1) ? 0U :\\\r\n   ((__CHANNEL__) == LL_TIM_CHANNEL_CH1N) ? 1U :\\\r\n   ((__CHANNEL__) == LL_TIM_CHANNEL_CH2) ? 2U :\\\r\n   ((__CHANNEL__) == LL_TIM_CHANNEL_CH2N) ? 3U :\\\r\n   ((__CHANNEL__) == LL_TIM_CHANNEL_CH3) ? 4U :\\\r\n   ((__CHANNEL__) == LL_TIM_CHANNEL_CH3N) ? 5U : 6U)"
+    }
+  ],
+  "types": [],
+  "consts": []
+}

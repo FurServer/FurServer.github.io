@@ -1,0 +1,3415 @@
+{
+  "module": "TIM 定时器",
+  "moduleId": "tim",
+  "intro": "定时器(TIM)LL 驱动: 时基配置(预分频/自动重载/计数模式/重复计数/更新源), 捕获/比较通道配置(输出比较、PWM、输入捕获、编码器与 Hall 接口), 计数器时钟选择(内部/外部模式/编码器), 从模式与触发同步(TRGO/TRGI), 刹车与死区(BDTR)以及 OCREF 清零源。含头文件内联函数(py32f002b_ll_tim.h)与初始化/反初始化函数(py32f002b_ll_tim.c, 需 USE_FULL_LL_DRIVER)。",
+  "files": [
+    "py32f002b_ll_tim.h",
+    "py32f002b_ll_tim.c"
+  ],
+  "hal": [],
+  "ll": [
+    {
+      "name": "LL_TIM_ClearFlag_UPDATE",
+      "sig": "void LL_TIM_ClearFlag_UPDATE(TIM_TypeDef *TIMx)",
+      "brief": "清除更新中断标志(UIF)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_UPDATE(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_UIF));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_UPDATE",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_UPDATE(TIM_TypeDef *TIMx)",
+      "brief": "查询更新中断标志(UIF)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_UPDATE(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_UIF) == (TIM_SR_UIF)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_CC1",
+      "sig": "void LL_TIM_ClearFlag_CC1(TIM_TypeDef *TIMx)",
+      "brief": "清除捕获/比较 1 中断标志(CC1IF)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_CC1(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_CC1IF));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_CC1",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_CC1(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获/比较 1 中断标志(CC1IF)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_CC1(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_CC1IF) == (TIM_SR_CC1IF)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_CC2",
+      "sig": "void LL_TIM_ClearFlag_CC2(TIM_TypeDef *TIMx)",
+      "brief": "清除捕获/比较 2 中断标志(CC2IF)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_CC2(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_CC2IF));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_CC2",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_CC2(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获/比较 2 中断标志(CC2IF)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_CC2(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_CC2IF) == (TIM_SR_CC2IF)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_CC3",
+      "sig": "void LL_TIM_ClearFlag_CC3(TIM_TypeDef *TIMx)",
+      "brief": "清除捕获/比较 3 中断标志(CC3IF)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_CC3(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_CC3IF));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_CC3",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_CC3(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获/比较 3 中断标志(CC3IF)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_CC3(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_CC3IF) == (TIM_SR_CC3IF)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_CC4",
+      "sig": "void LL_TIM_ClearFlag_CC4(TIM_TypeDef *TIMx)",
+      "brief": "清除捕获/比较 4 中断标志(CC4IF)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_CC4(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_CC4IF));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_CC4",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_CC4(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获/比较 4 中断标志(CC4IF)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_CC4(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_CC4IF) == (TIM_SR_CC4IF)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_COM",
+      "sig": "void LL_TIM_ClearFlag_COM(TIM_TypeDef *TIMx)",
+      "brief": "清除换相中断标志(COMIF)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_COM(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_COMIF));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_COM",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_COM(TIM_TypeDef *TIMx)",
+      "brief": "查询换相中断标志(COMIF)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_COM(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_COMIF) == (TIM_SR_COMIF)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_TRIG",
+      "sig": "void LL_TIM_ClearFlag_TRIG(TIM_TypeDef *TIMx)",
+      "brief": "清除触发中断标志(TIF)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_TRIG(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_TIF));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_TRIG",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_TRIG(TIM_TypeDef *TIMx)",
+      "brief": "查询触发中断标志(TIF)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_TRIG(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_TIF) == (TIM_SR_TIF)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_BRK",
+      "sig": "void LL_TIM_ClearFlag_BRK(TIM_TypeDef *TIMx)",
+      "brief": "清除刹车中断标志(BIF)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_BRK(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_BIF));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_BRK",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_BRK(TIM_TypeDef *TIMx)",
+      "brief": "查询刹车中断标志(BIF)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_BRK(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_BIF) == (TIM_SR_BIF)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_CC1OVR",
+      "sig": "void LL_TIM_ClearFlag_CC1OVR(TIM_TypeDef *TIMx)",
+      "brief": "清除捕获/比较 1 重复捕获标志(CC1OF)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_CC1OVR(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_CC1OF));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_CC1OVR",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_CC1OVR(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获/比较 1 重复捕获标志(CC1OF)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_CC1OVR(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_CC1OF) == (TIM_SR_CC1OF)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_CC2OVR",
+      "sig": "void LL_TIM_ClearFlag_CC2OVR(TIM_TypeDef *TIMx)",
+      "brief": "清除捕获/比较 2 重复捕获标志(CC2OF)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_CC2OVR(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_CC2OF));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_CC2OVR",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_CC2OVR(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获/比较 2 重复捕获标志(CC2OF)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_CC2OVR(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_CC2OF) == (TIM_SR_CC2OF)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_CC3OVR",
+      "sig": "void LL_TIM_ClearFlag_CC3OVR(TIM_TypeDef *TIMx)",
+      "brief": "清除捕获/比较 3 重复捕获标志(CC3OF)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_CC3OVR(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_CC3OF));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_CC3OVR",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_CC3OVR(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获/比较 3 重复捕获标志(CC3OF)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_CC3OVR(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_CC3OF) == (TIM_SR_CC3OF)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_CC4OVR",
+      "sig": "void LL_TIM_ClearFlag_CC4OVR(TIM_TypeDef *TIMx)",
+      "brief": "清除捕获/比较 4 重复捕获标志(CC4OF)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_CC4OVR(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_CC4OF));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_CC4OVR",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_CC4OVR(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获/比较 4 重复捕获标志(CC4OF)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_CC4OVR(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_CC4OF) == (TIM_SR_CC4OF)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_IC1RisingEdge",
+      "sig": "void LL_TIM_ClearFlag_IC1RisingEdge(TIM_TypeDef *TIMx)",
+      "brief": "清除捕获 1 上升沿标志(IC1IR)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_IC1RisingEdge(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_IC1IR));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_IC1RisingEdge",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_IC1RisingEdge(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获 1 上升沿标志(IC1IR)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_IC1RisingEdge(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_IC1IR) == (TIM_SR_IC1IR)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_IC2RisingEdge",
+      "sig": "void LL_TIM_ClearFlag_IC2RisingEdge(TIM_TypeDef *TIMx)",
+      "brief": "清除捕获 2 上升沿标志(IC2IR)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_IC2RisingEdge(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_IC2IR));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_IC2RisingEdge",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_IC2RisingEdge(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获 2 上升沿标志(IC2IR)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_IC2RisingEdge(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_IC2IR) == (TIM_SR_IC2IR)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_IC3RisingEdge",
+      "sig": "void LL_TIM_ClearFlag_IC3RisingEdge(TIM_TypeDef *TIMx)",
+      "brief": "清除捕获 3 上升沿标志(IC3IR)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_IC3RisingEdge(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_IC3IR));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_IC3RisingEdge",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_IC3RisingEdge(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获 3 上升沿标志(IC3IR)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_IC3RisingEdge(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_IC3IR) == (TIM_SR_IC3IR)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_IC4RisingEdge",
+      "sig": "void LL_TIM_ClearFlag_IC4RisingEdge(TIM_TypeDef *TIMx)",
+      "brief": "清除捕获 4 上升沿标志(IC4IR)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_IC4RisingEdge(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_IC4IR));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_IC4RisingEdge",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_IC4RisingEdge(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获 4 上升沿标志(IC4IR)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_IC4RisingEdge(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_IC4IR) == (TIM_SR_IC4IR)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_IC1FallingEdge",
+      "sig": "void LL_TIM_ClearFlag_IC1FallingEdge(TIM_TypeDef *TIMx)",
+      "brief": "清除捕获 1 下降沿标志(IC1IF)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_IC1FallingEdge(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_IC1IF));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_IC1FallingEdge",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_IC1FallingEdge(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获 1 下降沿标志(IC1IF)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_IC1FallingEdge(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_IC1IF) == (TIM_SR_IC1IF)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_IC2FallingEdge",
+      "sig": "void LL_TIM_ClearFlag_IC2FallingEdge(TIM_TypeDef *TIMx)",
+      "brief": "清除捕获 2 下降沿标志(IC2IF)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_IC2FallingEdge(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_IC2IF));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_IC2FallingEdge",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_IC2FallingEdge(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获 2 下降沿标志(IC2IF)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_IC2FallingEdge(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_IC2IF) == (TIM_SR_IC2IF)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_IC3FallingEdge",
+      "sig": "void LL_TIM_ClearFlag_IC3FallingEdge(TIM_TypeDef *TIMx)",
+      "brief": "清除捕获 3 下降沿标志(IC3IF)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_IC3FallingEdge(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_IC3IF));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_IC3FallingEdge",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_IC3FallingEdge(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获 3 下降沿标志(IC3IF)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_IC3FallingEdge(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_IC3IF) == (TIM_SR_IC3IF)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_ClearFlag_IC4FallingEdge",
+      "sig": "void LL_TIM_ClearFlag_IC4FallingEdge(TIM_TypeDef *TIMx)",
+      "brief": "清除捕获 4 下降沿标志(IC4IF)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_ClearFlag_IC4FallingEdge(TIM_TypeDef *TIMx)\r\n{\r\n  WRITE_REG(TIMx->SR, ~(TIM_SR_IC4IF));\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsActiveFlag_IC4FallingEdge",
+      "sig": "uint32_t LL_TIM_IsActiveFlag_IC4FallingEdge(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获 4 下降沿标志(IC4IF)是否置位。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "置位返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsActiveFlag_IC4FallingEdge(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->SR, TIM_SR_IC4IF) == (TIM_SR_IC4IF)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_EnableIT_UPDATE",
+      "sig": "void LL_TIM_EnableIT_UPDATE(TIM_TypeDef *TIMx)",
+      "brief": "使能更新中断(UIE)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_EnableIT_UPDATE(TIM_TypeDef *TIMx)\r\n{\r\n  SET_BIT(TIMx->DIER, TIM_DIER_UIE);\r\n}"
+    },
+    {
+      "name": "LL_TIM_DisableIT_UPDATE",
+      "sig": "void LL_TIM_DisableIT_UPDATE(TIM_TypeDef *TIMx)",
+      "brief": "禁止更新中断(UIE)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_DisableIT_UPDATE(TIM_TypeDef *TIMx)\r\n{\r\n  CLEAR_BIT(TIMx->DIER, TIM_DIER_UIE);\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsEnabledIT_UPDATE",
+      "sig": "uint32_t LL_TIM_IsEnabledIT_UPDATE(TIM_TypeDef *TIMx)",
+      "brief": "查询更新中断(UIE)是否已使能。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsEnabledIT_UPDATE(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->DIER, TIM_DIER_UIE) == (TIM_DIER_UIE)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_EnableIT_CC1",
+      "sig": "void LL_TIM_EnableIT_CC1(TIM_TypeDef *TIMx)",
+      "brief": "使能捕获/比较 1 中断(CC1IE)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_EnableIT_CC1(TIM_TypeDef *TIMx)\r\n{\r\n  SET_BIT(TIMx->DIER, TIM_DIER_CC1IE);\r\n}"
+    },
+    {
+      "name": "LL_TIM_DisableIT_CC1",
+      "sig": "void LL_TIM_DisableIT_CC1(TIM_TypeDef *TIMx)",
+      "brief": "禁止捕获/比较 1 中断(CC1IE)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_DisableIT_CC1(TIM_TypeDef *TIMx)\r\n{\r\n  CLEAR_BIT(TIMx->DIER, TIM_DIER_CC1IE);\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsEnabledIT_CC1",
+      "sig": "uint32_t LL_TIM_IsEnabledIT_CC1(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获/比较 1 中断(CC1IE)是否已使能。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsEnabledIT_CC1(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->DIER, TIM_DIER_CC1IE) == (TIM_DIER_CC1IE)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_EnableIT_CC2",
+      "sig": "void LL_TIM_EnableIT_CC2(TIM_TypeDef *TIMx)",
+      "brief": "使能捕获/比较 2 中断(CC2IE)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_EnableIT_CC2(TIM_TypeDef *TIMx)\r\n{\r\n  SET_BIT(TIMx->DIER, TIM_DIER_CC2IE);\r\n}"
+    },
+    {
+      "name": "LL_TIM_DisableIT_CC2",
+      "sig": "void LL_TIM_DisableIT_CC2(TIM_TypeDef *TIMx)",
+      "brief": "禁止捕获/比较 2 中断(CC2IE)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_DisableIT_CC2(TIM_TypeDef *TIMx)\r\n{\r\n  CLEAR_BIT(TIMx->DIER, TIM_DIER_CC2IE);\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsEnabledIT_CC2",
+      "sig": "uint32_t LL_TIM_IsEnabledIT_CC2(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获/比较 2 中断(CC2IE)是否已使能。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsEnabledIT_CC2(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->DIER, TIM_DIER_CC2IE) == (TIM_DIER_CC2IE)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_EnableIT_CC3",
+      "sig": "void LL_TIM_EnableIT_CC3(TIM_TypeDef *TIMx)",
+      "brief": "使能捕获/比较 3 中断(CC3IE)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_EnableIT_CC3(TIM_TypeDef *TIMx)\r\n{\r\n  SET_BIT(TIMx->DIER, TIM_DIER_CC3IE);\r\n}"
+    },
+    {
+      "name": "LL_TIM_DisableIT_CC3",
+      "sig": "void LL_TIM_DisableIT_CC3(TIM_TypeDef *TIMx)",
+      "brief": "禁止捕获/比较 3 中断(CC3IE)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_DisableIT_CC3(TIM_TypeDef *TIMx)\r\n{\r\n  CLEAR_BIT(TIMx->DIER, TIM_DIER_CC3IE);\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsEnabledIT_CC3",
+      "sig": "uint32_t LL_TIM_IsEnabledIT_CC3(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获/比较 3 中断(CC3IE)是否已使能。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsEnabledIT_CC3(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->DIER, TIM_DIER_CC3IE) == (TIM_DIER_CC3IE)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_EnableIT_CC4",
+      "sig": "void LL_TIM_EnableIT_CC4(TIM_TypeDef *TIMx)",
+      "brief": "使能捕获/比较 4 中断(CC4IE)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_EnableIT_CC4(TIM_TypeDef *TIMx)\r\n{\r\n  SET_BIT(TIMx->DIER, TIM_DIER_CC4IE);\r\n}"
+    },
+    {
+      "name": "LL_TIM_DisableIT_CC4",
+      "sig": "void LL_TIM_DisableIT_CC4(TIM_TypeDef *TIMx)",
+      "brief": "禁止捕获/比较 4 中断(CC4IE)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_DisableIT_CC4(TIM_TypeDef *TIMx)\r\n{\r\n  CLEAR_BIT(TIMx->DIER, TIM_DIER_CC4IE);\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsEnabledIT_CC4",
+      "sig": "uint32_t LL_TIM_IsEnabledIT_CC4(TIM_TypeDef *TIMx)",
+      "brief": "查询捕获/比较 4 中断(CC4IE)是否已使能。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsEnabledIT_CC4(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->DIER, TIM_DIER_CC4IE) == (TIM_DIER_CC4IE)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_EnableIT_COM",
+      "sig": "void LL_TIM_EnableIT_COM(TIM_TypeDef *TIMx)",
+      "brief": "使能换相中断(COMIE)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_EnableIT_COM(TIM_TypeDef *TIMx)\r\n{\r\n  SET_BIT(TIMx->DIER, TIM_DIER_COMIE);\r\n}"
+    },
+    {
+      "name": "LL_TIM_DisableIT_COM",
+      "sig": "void LL_TIM_DisableIT_COM(TIM_TypeDef *TIMx)",
+      "brief": "禁止换相中断(COMIE)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_DisableIT_COM(TIM_TypeDef *TIMx)\r\n{\r\n  CLEAR_BIT(TIMx->DIER, TIM_DIER_COMIE);\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsEnabledIT_COM",
+      "sig": "uint32_t LL_TIM_IsEnabledIT_COM(TIM_TypeDef *TIMx)",
+      "brief": "查询换相中断(COMIE)是否已使能。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsEnabledIT_COM(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->DIER, TIM_DIER_COMIE) == (TIM_DIER_COMIE)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_EnableIT_TRIG",
+      "sig": "void LL_TIM_EnableIT_TRIG(TIM_TypeDef *TIMx)",
+      "brief": "使能触发中断(TIE)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_EnableIT_TRIG(TIM_TypeDef *TIMx)\r\n{\r\n  SET_BIT(TIMx->DIER, TIM_DIER_TIE);\r\n}"
+    },
+    {
+      "name": "LL_TIM_DisableIT_TRIG",
+      "sig": "void LL_TIM_DisableIT_TRIG(TIM_TypeDef *TIMx)",
+      "brief": "禁止触发中断(TIE)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_DisableIT_TRIG(TIM_TypeDef *TIMx)\r\n{\r\n  CLEAR_BIT(TIMx->DIER, TIM_DIER_TIE);\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsEnabledIT_TRIG",
+      "sig": "uint32_t LL_TIM_IsEnabledIT_TRIG(TIM_TypeDef *TIMx)",
+      "brief": "查询触发中断(TIE)是否已使能。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsEnabledIT_TRIG(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->DIER, TIM_DIER_TIE) == (TIM_DIER_TIE)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_EnableIT_BRK",
+      "sig": "void LL_TIM_EnableIT_BRK(TIM_TypeDef *TIMx)",
+      "brief": "使能刹车中断(BIE)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_EnableIT_BRK(TIM_TypeDef *TIMx)\r\n{\r\n  SET_BIT(TIMx->DIER, TIM_DIER_BIE);\r\n}"
+    },
+    {
+      "name": "LL_TIM_DisableIT_BRK",
+      "sig": "void LL_TIM_DisableIT_BRK(TIM_TypeDef *TIMx)",
+      "brief": "禁止刹车中断(BIE)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_DisableIT_BRK(TIM_TypeDef *TIMx)\r\n{\r\n  CLEAR_BIT(TIMx->DIER, TIM_DIER_BIE);\r\n}"
+    },
+    {
+      "name": "LL_TIM_IsEnabledIT_BRK",
+      "sig": "uint32_t LL_TIM_IsEnabledIT_BRK(TIM_TypeDef *TIMx)",
+      "brief": "查询刹车中断(BIE)是否已使能。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_TIM_IsEnabledIT_BRK(TIM_TypeDef *TIMx)\r\n{\r\n  return ((READ_BIT(TIMx->DIER, TIM_DIER_BIE) == (TIM_DIER_BIE)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_TIM_GenerateEvent_UPDATE",
+      "sig": "void LL_TIM_GenerateEvent_UPDATE(TIM_TypeDef *TIMx)",
+      "brief": "产生一个更新事件(置位 EGR 的 UG 位)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_GenerateEvent_UPDATE(TIM_TypeDef *TIMx)\r\n{\r\n  SET_BIT(TIMx->EGR, TIM_EGR_UG);\r\n}"
+    },
+    {
+      "name": "LL_TIM_GenerateEvent_CC1",
+      "sig": "void LL_TIM_GenerateEvent_CC1(TIM_TypeDef *TIMx)",
+      "brief": "产生捕获/比较 1 事件(置位 CC1G)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_GenerateEvent_CC1(TIM_TypeDef *TIMx)\r\n{\r\n  SET_BIT(TIMx->EGR, TIM_EGR_CC1G);\r\n}"
+    },
+    {
+      "name": "LL_TIM_GenerateEvent_CC2",
+      "sig": "void LL_TIM_GenerateEvent_CC2(TIM_TypeDef *TIMx)",
+      "brief": "产生捕获/比较 2 事件(置位 CC2G)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_GenerateEvent_CC2(TIM_TypeDef *TIMx)\r\n{\r\n  SET_BIT(TIMx->EGR, TIM_EGR_CC2G);\r\n}"
+    },
+    {
+      "name": "LL_TIM_GenerateEvent_CC3",
+      "sig": "void LL_TIM_GenerateEvent_CC3(TIM_TypeDef *TIMx)",
+      "brief": "产生捕获/比较 3 事件(置位 CC3G)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_GenerateEvent_CC3(TIM_TypeDef *TIMx)\r\n{\r\n  SET_BIT(TIMx->EGR, TIM_EGR_CC3G);\r\n}"
+    },
+    {
+      "name": "LL_TIM_GenerateEvent_CC4",
+      "sig": "void LL_TIM_GenerateEvent_CC4(TIM_TypeDef *TIMx)",
+      "brief": "产生捕获/比较 4 事件(置位 CC4G)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_GenerateEvent_CC4(TIM_TypeDef *TIMx)\r\n{\r\n  SET_BIT(TIMx->EGR, TIM_EGR_CC4G);\r\n}"
+    },
+    {
+      "name": "LL_TIM_GenerateEvent_COM",
+      "sig": "void LL_TIM_GenerateEvent_COM(TIM_TypeDef *TIMx)",
+      "brief": "产生换相事件(置位 COMG)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_GenerateEvent_COM(TIM_TypeDef *TIMx)\r\n{\r\n  SET_BIT(TIMx->EGR, TIM_EGR_COMG);\r\n}"
+    },
+    {
+      "name": "LL_TIM_GenerateEvent_TRIG",
+      "sig": "void LL_TIM_GenerateEvent_TRIG(TIM_TypeDef *TIMx)",
+      "brief": "产生触发事件(置位 TG)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_GenerateEvent_TRIG(TIM_TypeDef *TIMx)\r\n{\r\n  SET_BIT(TIMx->EGR, TIM_EGR_TG);\r\n}"
+    },
+    {
+      "name": "LL_TIM_GenerateEvent_BRK",
+      "sig": "void LL_TIM_GenerateEvent_BRK(TIM_TypeDef *TIMx)",
+      "brief": "产生刹车事件(置位 BG)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_TIM_GenerateEvent_BRK(TIM_TypeDef *TIMx)\r\n{\r\n  SET_BIT(TIMx->EGR, TIM_EGR_BG);\r\n}"
+    },
+    {
+      "name": "LL_TIM_WriteReg",
+      "sig": "#define LL_TIM_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG((__INSTANCE__)->__REG__, (__VALUE__))",
+      "brief": "宏: 向定时器指定寄存器写入值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "定时器实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要写入的寄存器名"
+        },
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "要写入寄存器的值"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "macro",
+      "src": "#define LL_TIM_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG((__INSTANCE__)->__REG__, (__VALUE__))"
+    },
+    {
+      "name": "LL_TIM_ReadReg",
+      "sig": "#define LL_TIM_ReadReg(__INSTANCE__, __REG__) READ_REG((__INSTANCE__)->__REG__)",
+      "brief": "宏: 读取定时器指定寄存器的值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "定时器实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要读取的寄存器名"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "寄存器值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "macro",
+      "src": "#define LL_TIM_ReadReg(__INSTANCE__, __REG__) READ_REG((__INSTANCE__)->__REG__)"
+    },
+    {
+      "name": "__LL_TIM_CALC_DEADTIME",
+      "sig": "#define __LL_TIM_CALC_DEADTIME(__TIMCLK__, __CKD__, __DT__)  \\\r\n  ( (((uint64_t)((__DT__)*1000U)) < ((DT_DELAY_1+1U) * TIM_CALC_DTS((__TIMCLK__), (__CKD__))))    ? (uint8_t)(((uint64_t)((__DT__)*1000U) / TIM_CALC_DTS((__TIMCLK__), (__CKD__)))  & DT_DELAY_1) :                                               \\\r\n    (((uint64_t)((__DT__)*1000U)) < ((64U + (DT_DELAY_2+1U)) * 2U * TIM_CALC_DTS((__TIMCLK__), (__CKD__))))  ? (uint8_t)(DT_RANGE_2 | ((uint8_t)((uint8_t)((((uint64_t)((__DT__)*1000U))/ TIM_CALC_DTS((__TIMCLK__), (__CKD__))) >> 1U) - (uint8_t) 64) & DT_DELAY_2)) :\\\r\n    (((uint64_t)((__DT__)*1000U)) < ((32U + (DT_DELAY_3+1U)) * 8U * TIM_CALC_DTS((__TIMCLK__), (__CKD__))))  ? (uint8_t)(DT_RANGE_3 | ((uint8_t)((uint8_t)(((((uint64_t)(__DT__)*1000U))/ TIM_CALC_DTS((__TIMCLK__), (__CKD__))) >> 3U) - (uint8_t) 32) & DT_DELAY_3)) :\\\r\n    (((uint64_t)((__DT__)*1000U)) < ((32U + (DT_DELAY_4+1U)) * 16U * TIM_CALC_DTS((__TIMCLK__), (__CKD__)))) ? (uint8_t)(DT_RANGE_4 | ((uint8_t)((uint8_t)(((((uint64_t)(__DT__)*1000U))/ TIM_CALC_DTS((__TIMCLK__), (__CKD__))) >> 4U) - (uint8_t) 32) & DT_DELAY_4)) :\\\r\n    0U)",
+      "brief": "辅助宏: 根据定时器时钟、时钟分频与所需死区时间(纳秒)计算 BDTR 的 DTG[7:0] 编码值。",
+      "params": [
+        {
+          "name": "__TIMCLK__",
+          "type": "宏参数",
+          "desc": "定时器输入时钟频率(Hz)"
+        },
+        {
+          "name": "__CKD__",
+          "type": "宏参数",
+          "desc": "时钟分频: LL_TIM_CLOCKDIVISION_DIV1 / DIV2 / DIV4"
+        },
+        {
+          "name": "__DT__",
+          "type": "宏参数",
+          "desc": "死区时间(ns)"
+        }
+      ],
+      "retval": {
+        "type": "uint8_t",
+        "desc": "DTG[7:0] 编码值"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "macro",
+      "src": "#define __LL_TIM_CALC_DEADTIME(__TIMCLK__, __CKD__, __DT__)  \\\r\n  ( (((uint64_t)((__DT__)*1000U)) < ((DT_DELAY_1+1U) * TIM_CALC_DTS((__TIMCLK__), (__CKD__))))    ? (uint8_t)(((uint64_t)((__DT__)*1000U) / TIM_CALC_DTS((__TIMCLK__), (__CKD__)))  & DT_DELAY_1) :                                               \\\r\n    (((uint64_t)((__DT__)*1000U)) < ((64U + (DT_DELAY_2+1U)) * 2U * TIM_CALC_DTS((__TIMCLK__), (__CKD__))))  ? (uint8_t)(DT_RANGE_2 | ((uint8_t)((uint8_t)((((uint64_t)((__DT__)*1000U))/ TIM_CALC_DTS((__TIMCLK__), (__CKD__))) >> 1U) - (uint8_t) 64) & DT_DELAY_2)) :\\\r\n    (((uint64_t)((__DT__)*1000U)) < ((32U + (DT_DELAY_3+1U)) * 8U * TIM_CALC_DTS((__TIMCLK__), (__CKD__))))  ? (uint8_t)(DT_RANGE_3 | ((uint8_t)((uint8_t)(((((uint64_t)(__DT__)*1000U))/ TIM_CALC_DTS((__TIMCLK__), (__CKD__))) >> 3U) - (uint8_t) 32) & DT_DELAY_3)) :\\\r\n    (((uint64_t)((__DT__)*1000U)) < ((32U + (DT_DELAY_4+1U)) * 16U * TIM_CALC_DTS((__TIMCLK__), (__CKD__)))) ? (uint8_t)(DT_RANGE_4 | ((uint8_t)((uint8_t)(((((uint64_t)(__DT__)*1000U))/ TIM_CALC_DTS((__TIMCLK__), (__CKD__))) >> 4U) - (uint8_t) 32) & DT_DELAY_4)) :\\\r\n    0U)"
+    },
+    {
+      "name": "__LL_TIM_CALC_PSC",
+      "sig": "#define __LL_TIM_CALC_PSC(__TIMCLK__, __CNTCLK__)   \\\r\n  (((__TIMCLK__) >= (__CNTCLK__)) ? (uint32_t)(((__TIMCLK__)/(__CNTCLK__)) - 1U) : 0U)",
+      "brief": "辅助宏: 根据定时器输入时钟与目标计数器时钟频率计算预分频值。",
+      "params": [
+        {
+          "name": "__TIMCLK__",
+          "type": "宏参数",
+          "desc": "定时器输入时钟频率(Hz)"
+        },
+        {
+          "name": "__CNTCLK__",
+          "type": "宏参数",
+          "desc": "目标计数器时钟频率(Hz)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "预分频值, 范围 0~65535"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "macro",
+      "src": "#define __LL_TIM_CALC_PSC(__TIMCLK__, __CNTCLK__)   \\\r\n  (((__TIMCLK__) >= (__CNTCLK__)) ? (uint32_t)(((__TIMCLK__)/(__CNTCLK__)) - 1U) : 0U)"
+    },
+    {
+      "name": "__LL_TIM_CALC_ARR",
+      "sig": "#define __LL_TIM_CALC_ARR(__TIMCLK__, __PSC__, __FREQ__) \\\r\n  ((((__TIMCLK__)/((__PSC__) + 1U)) >= (__FREQ__)) ? (((__TIMCLK__)/((__FREQ__) * ((__PSC__) + 1U))) - 1U) : 0U)",
+      "brief": "辅助宏: 根据计数器时钟、预分频与目标输出信号频率计算自动重载值。",
+      "params": [
+        {
+          "name": "__TIMCLK__",
+          "type": "宏参数",
+          "desc": "定时器输入时钟频率(Hz)"
+        },
+        {
+          "name": "__PSC__",
+          "type": "宏参数",
+          "desc": "预分频值"
+        },
+        {
+          "name": "__FREQ__",
+          "type": "宏参数",
+          "desc": "目标输出信号频率(Hz)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "自动重载值, 范围 0~65535"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "macro",
+      "src": "#define __LL_TIM_CALC_ARR(__TIMCLK__, __PSC__, __FREQ__) \\\r\n  ((((__TIMCLK__)/((__PSC__) + 1U)) >= (__FREQ__)) ? (((__TIMCLK__)/((__FREQ__) * ((__PSC__) + 1U))) - 1U) : 0U)"
+    },
+    {
+      "name": "__LL_TIM_CALC_DELAY",
+      "sig": "#define __LL_TIM_CALC_DELAY(__TIMCLK__, __PSC__, __DELAY__)  \\\r\n  ((uint32_t)(((uint64_t)(__TIMCLK__) * (uint64_t)(__DELAY__)) \\\r\n              / ((uint64_t)1000000U * (uint64_t)((__PSC__) + 1U))))",
+      "brief": "辅助宏: 根据计数器时钟、预分频与所需延迟(微秒)计算比较值。",
+      "params": [
+        {
+          "name": "__TIMCLK__",
+          "type": "宏参数",
+          "desc": "定时器输入时钟频率(Hz)"
+        },
+        {
+          "name": "__PSC__",
+          "type": "宏参数",
+          "desc": "预分频值"
+        },
+        {
+          "name": "__DELAY__",
+          "type": "宏参数",
+          "desc": "输出比较有效/无效延迟(us)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "比较值, 范围 0~65535"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "macro",
+      "src": "#define __LL_TIM_CALC_DELAY(__TIMCLK__, __PSC__, __DELAY__)  \\\r\n  ((uint32_t)(((uint64_t)(__TIMCLK__) * (uint64_t)(__DELAY__)) \\\r\n              / ((uint64_t)1000000U * (uint64_t)((__PSC__) + 1U))))"
+    },
+    {
+      "name": "__LL_TIM_CALC_PULSE",
+      "sig": "#define __LL_TIM_CALC_PULSE(__TIMCLK__, __PSC__, __DELAY__, __PULSE__)  \\\r\n  ((uint32_t)(__LL_TIM_CALC_DELAY((__TIMCLK__), (__PSC__), (__PULSE__)) \\\r\n              + __LL_TIM_CALC_DELAY((__TIMCLK__), (__PSC__), (__DELAY__))))",
+      "brief": "辅助宏: 单脉冲模式下根据时钟、预分频、延迟与脉冲宽度(微秒)计算自动重载值。",
+      "params": [
+        {
+          "name": "__TIMCLK__",
+          "type": "宏参数",
+          "desc": "定时器输入时钟频率(Hz)"
+        },
+        {
+          "name": "__PSC__",
+          "type": "宏参数",
+          "desc": "预分频值"
+        },
+        {
+          "name": "__DELAY__",
+          "type": "宏参数",
+          "desc": "输出比较有效/无效延迟(us)"
+        },
+        {
+          "name": "__PULSE__",
+          "type": "宏参数",
+          "desc": "脉冲宽度(us)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "自动重载值, 范围 0~65535"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "macro",
+      "src": "#define __LL_TIM_CALC_PULSE(__TIMCLK__, __PSC__, __DELAY__, __PULSE__)  \\\r\n  ((uint32_t)(__LL_TIM_CALC_DELAY((__TIMCLK__), (__PSC__), (__PULSE__)) \\\r\n              + __LL_TIM_CALC_DELAY((__TIMCLK__), (__PSC__), (__DELAY__))))"
+    },
+    {
+      "name": "__LL_TIM_GET_ICPSC_RATIO",
+      "sig": "#define __LL_TIM_GET_ICPSC_RATIO(__ICPSC__)  \\\r\n  ((uint32_t)(0x01U << (((__ICPSC__) >> 16U) >> TIM_CCMR1_IC1PSC_Pos)))",
+      "brief": "辅助宏: 将捕获预分频配置换算成分频比(1/2/4/8)。",
+      "params": [
+        {
+          "name": "__ICPSC__",
+          "type": "宏参数",
+          "desc": "捕获预分频: LL_TIM_ICPSC_DIV1 / DIV2 / DIV4 / DIV8"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "分频比(1、2、4 或 8)"
+      },
+      "file": "py32f002b_ll_tim.h",
+      "kind": "macro",
+      "src": "#define __LL_TIM_GET_ICPSC_RATIO(__ICPSC__)  \\\r\n  ((uint32_t)(0x01U << (((__ICPSC__) >> 16U) >> TIM_CCMR1_IC1PSC_Pos)))"
+    },
+    {
+      "name": "LL_TIM_DeInit",
+      "sig": "ErrorStatus LL_TIM_DeInit(TIM_TypeDef *TIMx)",
+      "brief": "将指定定时器的寄存器恢复为复位值(通过复位对应外设时钟)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 反初始化成功; ERROR 定时器实例无效"
+      },
+      "notes": [
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_TIM_DeInit(TIM_TypeDef *TIMx)\r\n{\r\n  ErrorStatus result = SUCCESS;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_TIM_INSTANCE(TIMx));\r\n\r\n  if (TIMx == TIM1)\r\n  {\r\n    LL_APB1_GRP2_ForceReset(LL_APB1_GRP2_PERIPH_TIM1);\r\n    LL_APB1_GRP2_ReleaseReset(LL_APB1_GRP2_PERIPH_TIM1);\r\n  }\r\n#if defined(TIM2)\r\n  if (TIMx == TIM2)\r\n  {\r\n    LL_APB1_GRP1_ForceReset(LL_APB1_GRP1_PERIPH_TIM2);\r\n    LL_APB1_GRP1_ReleaseReset(LL_APB1_GRP1_PERIPH_TIM2);\r\n  }\r\n#endif\r\n#if defined(TIM3)\r\n  else if (TIMx == TIM3)\r\n  {\r\n    LL_APB1_GRP1_ForceReset(LL_APB1_GRP1_PERIPH_TIM3);\r\n    LL_APB1_GRP1_ReleaseReset(LL_APB1_GRP1_PERIPH_TIM3);\r\n  }\r\n#endif\r\n#if defined(TIM4)\r\n  else if (TIMx == TIM4)\r\n  {\r\n    LL_APB1_GRP1_ForceReset(LL_APB1_GRP1_PERIPH_TIM4);\r\n    LL_APB1_GRP1_ReleaseReset(LL_APB1_GRP1_PERIPH_TIM4);\r\n  }\r\n#endif\r\n#if defined(TIM5)\r\n  else if (TIMx == TIM5)\r\n  {\r\n    LL_APB1_GRP1_ForceReset(LL_APB1_GRP1_PERIPH_TIM5);\r\n    LL_APB1_GRP1_ReleaseReset(LL_APB1_GRP1_PERIPH_TIM5);\r\n  }\r\n#endif\r\n#if defined(TIM6)\r\n  else if (TIMx == TIM6)\r\n  {\r\n    LL_APB1_GRP1_ForceReset(LL_APB1_GRP1_PERIPH_TIM6);\r\n    LL_APB1_GRP1_ReleaseReset(LL_APB1_GRP1_PERIPH_TIM6);\r\n  }\r\n#endif\r\n#if defined (TIM7)\r\n  else if (TIMx == TIM7)\r\n  {\r\n    LL_APB1_GRP1_ForceReset(LL_APB1_GRP1_PERIPH_TIM7);\r\n    LL_APB1_GRP1_ReleaseReset(LL_APB1_GRP1_PERIPH_TIM7);\r\n  }\r\n#endif\r\n#if defined(TIM8)\r\n  else if (TIMx == TIM8)\r\n  {\r\n    LL_APB1_GRP2_ForceReset(LL_APB1_GRP2_PERIPH_TIM8);\r\n    LL_APB1_GRP2_ReleaseReset(LL_APB1_GRP2_PERIPH_TIM8);\r\n  }\r\n#endif\r\n#if defined(TIM9)\r\n  else if (TIMx == TIM9)\r\n  {\r\n    LL_APB1_GRP2_ForceReset(LL_APB1_GRP2_PERIPH_TIM9);\r\n    LL_APB1_GRP2_ReleaseReset(LL_APB1_GRP2_PERIPH_TIM9);\r\n  }\r\n#endif\r\n#if defined(TIM10)\r\n  else if (TIMx == TIM10)\r\n  {\r\n    LL_APB1_GRP2_ForceReset(LL_APB1_GRP2_PERIPH_TIM10);\r\n    LL_APB1_GRP2_ReleaseReset(LL_APB1_GRP2_PERIPH_TIM10);\r\n  }\r\n#endif\r\n#if defined(TIM11)\r\n  else if (TIMx == TIM11)\r\n  {\r\n    LL_APB1_GRP2_ForceReset(LL_APB1_GRP2_PERIPH_TIM11);\r\n    LL_APB1_GRP2_ReleaseReset(LL_APB1_GRP2_PERIPH_TIM11);\r\n  }\r\n#endif\r\n#if defined(TIM12)\r\n  else if (TIMx == TIM12)\r\n  {\r\n    LL_APB1_GRP1_ForceReset(LL_APB1_GRP1_PERIPH_TIM12);\r\n    LL_APB1_GRP1_ReleaseReset(LL_APB1_GRP1_PERIPH_TIM12);\r\n  }\r\n#endif\r\n#if defined(TIM13)\r\n  else if (TIMx == TIM13)\r\n  {\r\n    LL_APB1_GRP1_ForceReset(LL_APB1_GRP1_PERIPH_TIM13);\r\n    LL_APB1_GRP1_ReleaseReset(LL_APB1_GRP1_PERIPH_TIM13);\r\n  }\r\n#endif\r\n#if defined(TIM14)\r\n  else if (TIMx == TIM14)\r\n  {\r\n    LL_APB1_GRP2_ForceReset(LL_APB1_GRP2_PERIPH_TIM14);\r\n    LL_APB1_GRP2_ReleaseReset(LL_APB1_GRP2_PERIPH_TIM14);\r\n  }\r\n#endif\r\n#if defined(TIM15)\r\n  else if (TIMx == TIM15)\r\n  {\r\n    LL_APB1_GRP2_ForceReset(LL_APB1_GRP2_PERIPH_TIM15);\r\n    LL_APB1_GRP2_ReleaseReset(LL_APB1_GRP2_PERIPH_TIM15);\r\n  }\r\n#endif\r\n#if defined(TIM16)\r\n  else if (TIMx == TIM16)\r\n  {\r\n    LL_APB1_GRP2_ForceReset(LL_APB1_GRP2_PERIPH_TIM16);\r\n    LL_APB1_GRP2_ReleaseReset(LL_APB1_GRP2_PERIPH_TIM16);\r\n  }\r\n#endif\r\n#if defined(TIM17)\r\n  else if (TIMx == TIM17)\r\n  {\r\n    LL_APB1_GRP2_ForceReset(LL_APB1_GRP2_PERIPH_TIM17);\r\n    LL_APB1_GRP2_ReleaseReset(LL_APB1_GRP2_PERIPH_TIM17);\r\n  }\r\n#endif\r\n  else\r\n  {\r\n    result = ERROR;\r\n  }\r\n\r\n  return result;\r\n}"
+    },
+    {
+      "name": "LL_TIM_StructInit",
+      "sig": "void LL_TIM_StructInit(LL_TIM_InitTypeDef *TIM_InitStruct)",
+      "brief": "将 LL_TIM_InitTypeDef 时基配置结构体各成员填充为默认值。",
+      "params": [
+        {
+          "name": "TIM_InitStruct",
+          "type": "LL_TIM_InitTypeDef *",
+          "desc": "指向要填充的时基配置结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "默认值: 预分频 0, 向上计数, ARR 0xFFFFFFFF, 时钟分频 DIV1, 重复计数 0。",
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "function",
+      "src": "void LL_TIM_StructInit(LL_TIM_InitTypeDef *TIM_InitStruct)\r\n{\r\n  /* Set the default configuration */\r\n  TIM_InitStruct->Prescaler         = (uint16_t)0x0000;\r\n  TIM_InitStruct->CounterMode       = LL_TIM_COUNTERMODE_UP;\r\n  TIM_InitStruct->Autoreload        = 0xFFFFFFFFU;\r\n  TIM_InitStruct->ClockDivision     = LL_TIM_CLOCKDIVISION_DIV1;\r\n  TIM_InitStruct->RepetitionCounter = (uint8_t)0x00;\r\n}"
+    },
+    {
+      "name": "LL_TIM_Init",
+      "sig": "ErrorStatus LL_TIM_Init(TIM_TypeDef *TIMx, LL_TIM_InitTypeDef *TIM_InitStruct)",
+      "brief": "按 LL_TIM_InitTypeDef 结构体配置定时器时基单元: 计数模式、时钟分频、自动重载、预分频与重复计数。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        },
+        {
+          "name": "TIM_InitStruct",
+          "type": "LL_TIM_InitTypeDef *",
+          "desc": "指向时基配置结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 配置成功"
+      },
+      "notes": [
+        "函数末尾产生一次更新事件, 使预分频与重复计数值立即生效。",
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_TIM_Init(TIM_TypeDef *TIMx, LL_TIM_InitTypeDef *TIM_InitStruct)\r\n{\r\n  uint32_t tmpcr1;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_TIM_INSTANCE(TIMx));\r\n  assert_param(IS_LL_TIM_COUNTERMODE(TIM_InitStruct->CounterMode));\r\n  assert_param(IS_LL_TIM_CLOCKDIVISION(TIM_InitStruct->ClockDivision));\r\n\r\n  tmpcr1 = LL_TIM_ReadReg(TIMx, CR1);\r\n\r\n  if (IS_TIM_COUNTER_MODE_SELECT_INSTANCE(TIMx))\r\n  {\r\n    /* Select the Counter Mode */\r\n    MODIFY_REG(tmpcr1, (TIM_CR1_DIR | TIM_CR1_CMS), TIM_InitStruct->CounterMode);\r\n  }\r\n\r\n  if (IS_TIM_CLOCK_DIVISION_INSTANCE(TIMx))\r\n  {\r\n    /* Set the clock division */\r\n    MODIFY_REG(tmpcr1, TIM_CR1_CKD, TIM_InitStruct->ClockDivision);\r\n  }\r\n\r\n  /* Write to TIMx CR1 */\r\n  LL_TIM_WriteReg(TIMx, CR1, tmpcr1);\r\n\r\n  /* Set the Autoreload value */\r\n  LL_TIM_SetAutoReload(TIMx, TIM_InitStruct->Autoreload);\r\n\r\n  /* Set the Prescaler value */\r\n  LL_TIM_SetPrescaler(TIMx, TIM_InitStruct->Prescaler);\r\n\r\n  if (IS_TIM_REPETITION_COUNTER_INSTANCE(TIMx))\r\n  {\r\n    /* Set the Repetition Counter value */\r\n    LL_TIM_SetRepetitionCounter(TIMx, TIM_InitStruct->RepetitionCounter);\r\n  }\r\n\r\n  /* Generate an update event to reload the Prescaler\r\n     and the repetition counter value (if applicable) immediately */\r\n  LL_TIM_GenerateEvent_UPDATE(TIMx);\r\n\r\n  return SUCCESS;\r\n}"
+    },
+    {
+      "name": "LL_TIM_OC_StructInit",
+      "sig": "void LL_TIM_OC_StructInit(LL_TIM_OC_InitTypeDef *TIM_OC_InitStruct)",
+      "brief": "将 LL_TIM_OC_InitTypeDef 输出通道配置结构体各成员填充为默认值。",
+      "params": [
+        {
+          "name": "TIM_OC_InitStruct",
+          "type": "LL_TIM_OC_InitTypeDef *",
+          "desc": "指向要填充的输出通道配置结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "默认值: 模式 FROZEN, 主/互补输出均禁止, 比较值 0, 极性均 HIGH, 空闲态均 LOW。",
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "function",
+      "src": "void LL_TIM_OC_StructInit(LL_TIM_OC_InitTypeDef *TIM_OC_InitStruct)\r\n{\r\n  /* Set the default configuration */\r\n  TIM_OC_InitStruct->OCMode       = LL_TIM_OCMODE_FROZEN;\r\n  TIM_OC_InitStruct->OCState      = LL_TIM_OCSTATE_DISABLE;\r\n  TIM_OC_InitStruct->OCNState     = LL_TIM_OCSTATE_DISABLE;\r\n  TIM_OC_InitStruct->CompareValue = 0x00000000U;\r\n  TIM_OC_InitStruct->OCPolarity   = LL_TIM_OCPOLARITY_HIGH;\r\n  TIM_OC_InitStruct->OCNPolarity  = LL_TIM_OCPOLARITY_HIGH;\r\n  TIM_OC_InitStruct->OCIdleState  = LL_TIM_OCIDLESTATE_LOW;\r\n  TIM_OC_InitStruct->OCNIdleState = LL_TIM_OCIDLESTATE_LOW;\r\n}"
+    },
+    {
+      "name": "LL_TIM_OC_Init",
+      "sig": "ErrorStatus LL_TIM_OC_Init(TIM_TypeDef *TIMx, uint32_t Channel, LL_TIM_OC_InitTypeDef *TIM_OC_InitStruct)",
+      "brief": "按 LL_TIM_OC_InitTypeDef 结构体配置指定输出通道(模式/状态/极性/空闲态/比较值)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        },
+        {
+          "name": "Channel",
+          "type": "uint32_t",
+          "desc": "通道: LL_TIM_CHANNEL_CH1 / CH2 / CH3 / CH4"
+        },
+        {
+          "name": "TIM_OC_InitStruct",
+          "type": "LL_TIM_OC_InitTypeDef *",
+          "desc": "指向输出通道配置结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 配置成功; ERROR 通道无效或配置失败"
+      },
+      "notes": [
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_TIM_OC_Init(TIM_TypeDef *TIMx, uint32_t Channel, LL_TIM_OC_InitTypeDef *TIM_OC_InitStruct)\r\n{\r\n  ErrorStatus result = ERROR;\r\n\r\n  switch (Channel)\r\n  {\r\n    case LL_TIM_CHANNEL_CH1:\r\n      result = OC1Config(TIMx, TIM_OC_InitStruct);\r\n      break;\r\n    case LL_TIM_CHANNEL_CH2:\r\n      result = OC2Config(TIMx, TIM_OC_InitStruct);\r\n      break;\r\n    case LL_TIM_CHANNEL_CH3:\r\n      result = OC3Config(TIMx, TIM_OC_InitStruct);\r\n      break;\r\n    case LL_TIM_CHANNEL_CH4:\r\n      result = OC4Config(TIMx, TIM_OC_InitStruct);\r\n      break;\r\n    default:\r\n      break;\r\n  }\r\n\r\n  return result;\r\n}"
+    },
+    {
+      "name": "LL_TIM_IC_StructInit",
+      "sig": "void LL_TIM_IC_StructInit(LL_TIM_IC_InitTypeDef *TIM_ICInitStruct)",
+      "brief": "将 LL_TIM_IC_InitTypeDef 输入捕获配置结构体各成员填充为默认值。",
+      "params": [
+        {
+          "name": "TIM_ICInitStruct",
+          "type": "LL_TIM_IC_InitTypeDef *",
+          "desc": "指向要填充的输入捕获配置结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "默认值: 上升沿, 直接输入 TIx, 预分频 DIV1, 无滤波。",
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "function",
+      "src": "void LL_TIM_IC_StructInit(LL_TIM_IC_InitTypeDef *TIM_ICInitStruct)\r\n{\r\n  /* Set the default configuration */\r\n  TIM_ICInitStruct->ICPolarity    = LL_TIM_IC_POLARITY_RISING;\r\n  TIM_ICInitStruct->ICActiveInput = LL_TIM_ACTIVEINPUT_DIRECTTI;\r\n  TIM_ICInitStruct->ICPrescaler   = LL_TIM_ICPSC_DIV1;\r\n  TIM_ICInitStruct->ICFilter      = LL_TIM_IC_FILTER_FDIV1;\r\n}"
+    },
+    {
+      "name": "LL_TIM_IC_Init",
+      "sig": "ErrorStatus LL_TIM_IC_Init(TIM_TypeDef *TIMx, uint32_t Channel, LL_TIM_IC_InitTypeDef *TIM_IC_InitStruct)",
+      "brief": "按 LL_TIM_IC_InitTypeDef 结构体配置指定输入捕获通道(极性/输入源/预分频/滤波)。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        },
+        {
+          "name": "Channel",
+          "type": "uint32_t",
+          "desc": "通道: LL_TIM_CHANNEL_CH1 / CH2 / CH3 / CH4"
+        },
+        {
+          "name": "TIM_IC_InitStruct",
+          "type": "LL_TIM_IC_InitTypeDef *",
+          "desc": "指向输入捕获配置结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 配置成功; ERROR 通道无效或配置失败"
+      },
+      "notes": [
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_TIM_IC_Init(TIM_TypeDef *TIMx, uint32_t Channel, LL_TIM_IC_InitTypeDef *TIM_IC_InitStruct)\r\n{\r\n  ErrorStatus result = ERROR;\r\n\r\n  switch (Channel)\r\n  {\r\n    case LL_TIM_CHANNEL_CH1:\r\n      result = IC1Config(TIMx, TIM_IC_InitStruct);\r\n      break;\r\n    case LL_TIM_CHANNEL_CH2:\r\n      result = IC2Config(TIMx, TIM_IC_InitStruct);\r\n      break;\r\n    case LL_TIM_CHANNEL_CH3:\r\n      result = IC3Config(TIMx, TIM_IC_InitStruct);\r\n      break;\r\n    case LL_TIM_CHANNEL_CH4:\r\n      result = IC4Config(TIMx, TIM_IC_InitStruct);\r\n      break;\r\n    default:\r\n      break;\r\n  }\r\n\r\n  return result;\r\n}"
+    },
+    {
+      "name": "LL_TIM_ENCODER_StructInit",
+      "sig": "void LL_TIM_ENCODER_StructInit(LL_TIM_ENCODER_InitTypeDef *TIM_EncoderInitStruct)",
+      "brief": "将 LL_TIM_ENCODER_InitTypeDef 编码器接口配置结构体各成员填充为默认值。",
+      "params": [
+        {
+          "name": "TIM_EncoderInitStruct",
+          "type": "LL_TIM_ENCODER_InitTypeDef *",
+          "desc": "指向要填充的编码器配置结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "默认值: X2_TI1 模式, 两路输入均上升沿/直接输入/DIV1/无滤波。",
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "function",
+      "src": "void LL_TIM_ENCODER_StructInit(LL_TIM_ENCODER_InitTypeDef *TIM_EncoderInitStruct)\r\n{\r\n  /* Set the default configuration */\r\n  TIM_EncoderInitStruct->EncoderMode    = LL_TIM_ENCODERMODE_X2_TI1;\r\n  TIM_EncoderInitStruct->IC1Polarity    = LL_TIM_IC_POLARITY_RISING;\r\n  TIM_EncoderInitStruct->IC1ActiveInput = LL_TIM_ACTIVEINPUT_DIRECTTI;\r\n  TIM_EncoderInitStruct->IC1Prescaler   = LL_TIM_ICPSC_DIV1;\r\n  TIM_EncoderInitStruct->IC1Filter      = LL_TIM_IC_FILTER_FDIV1;\r\n  TIM_EncoderInitStruct->IC2Polarity    = LL_TIM_IC_POLARITY_RISING;\r\n  TIM_EncoderInitStruct->IC2ActiveInput = LL_TIM_ACTIVEINPUT_DIRECTTI;\r\n  TIM_EncoderInitStruct->IC2Prescaler   = LL_TIM_ICPSC_DIV1;\r\n  TIM_EncoderInitStruct->IC2Filter      = LL_TIM_IC_FILTER_FDIV1;\r\n}"
+    },
+    {
+      "name": "LL_TIM_ENCODER_Init",
+      "sig": "ErrorStatus LL_TIM_ENCODER_Init(TIM_TypeDef *TIMx, LL_TIM_ENCODER_InitTypeDef *TIM_EncoderInitStruct)",
+      "brief": "配置定时器编码器接口: 设置 TI1/TI2 的输入源、滤波、预分频、极性并使能两通道, 选择编码器模式。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        },
+        {
+          "name": "TIM_EncoderInitStruct",
+          "type": "LL_TIM_ENCODER_InitTypeDef *",
+          "desc": "指向编码器配置结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 配置成功"
+      },
+      "notes": [
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_TIM_ENCODER_Init(TIM_TypeDef *TIMx, LL_TIM_ENCODER_InitTypeDef *TIM_EncoderInitStruct)\r\n{\r\n  uint32_t tmpccmr1;\r\n  uint32_t tmpccer;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_TIM_ENCODER_INTERFACE_INSTANCE(TIMx));\r\n  assert_param(IS_LL_TIM_ENCODERMODE(TIM_EncoderInitStruct->EncoderMode));\r\n  assert_param(IS_LL_TIM_IC_POLARITY_ENCODER(TIM_EncoderInitStruct->IC1Polarity));\r\n  assert_param(IS_LL_TIM_ACTIVEINPUT(TIM_EncoderInitStruct->IC1ActiveInput));\r\n  assert_param(IS_LL_TIM_ICPSC(TIM_EncoderInitStruct->IC1Prescaler));\r\n  assert_param(IS_LL_TIM_IC_FILTER(TIM_EncoderInitStruct->IC1Filter));\r\n  assert_param(IS_LL_TIM_IC_POLARITY_ENCODER(TIM_EncoderInitStruct->IC2Polarity));\r\n  assert_param(IS_LL_TIM_ACTIVEINPUT(TIM_EncoderInitStruct->IC2ActiveInput));\r\n  assert_param(IS_LL_TIM_ICPSC(TIM_EncoderInitStruct->IC2Prescaler));\r\n  assert_param(IS_LL_TIM_IC_FILTER(TIM_EncoderInitStruct->IC2Filter));\r\n\r\n  /* Disable the CC1 and CC2: Reset the CC1E and CC2E Bits */\r\n  TIMx->CCER &= (uint32_t)~(TIM_CCER_CC1E | TIM_CCER_CC2E);\r\n\r\n  /* Get the TIMx CCMR1 register value */\r\n  tmpccmr1 = LL_TIM_ReadReg(TIMx, CCMR1);\r\n\r\n  /* Get the TIMx CCER register value */\r\n  tmpccer = LL_TIM_ReadReg(TIMx, CCER);\r\n\r\n  /* Configure TI1 */\r\n  tmpccmr1 &= (uint32_t)~(TIM_CCMR1_CC1S | TIM_CCMR1_IC1F  | TIM_CCMR1_IC1PSC);\r\n  tmpccmr1 |= (uint32_t)(TIM_EncoderInitStruct->IC1ActiveInput >> 16U);\r\n  tmpccmr1 |= (uint32_t)(TIM_EncoderInitStruct->IC1Filter >> 16U);\r\n  tmpccmr1 |= (uint32_t)(TIM_EncoderInitStruct->IC1Prescaler >> 16U);\r\n\r\n  /* Configure TI2 */\r\n  tmpccmr1 &= (uint32_t)~(TIM_CCMR1_CC2S | TIM_CCMR1_IC2F  | TIM_CCMR1_IC2PSC);\r\n  tmpccmr1 |= (uint32_t)(TIM_EncoderInitStruct->IC2ActiveInput >> 8U);\r\n  tmpccmr1 |= (uint32_t)(TIM_EncoderInitStruct->IC2Filter >> 8U);\r\n  tmpccmr1 |= (uint32_t)(TIM_EncoderInitStruct->IC2Prescaler >> 8U);\r\n\r\n  /* Set TI1 and TI2 polarity and enable TI1 and TI2 */\r\n  tmpccer &= (uint32_t)~(TIM_CCER_CC1P | TIM_CCER_CC1NP | TIM_CCER_CC2P | TIM_CCER_CC2NP);\r\n  tmpccer |= (uint32_t)(TIM_EncoderInitStruct->IC1Polarity);\r\n  tmpccer |= (uint32_t)(TIM_EncoderInitStruct->IC2Polarity << 4U);\r\n  tmpccer |= (uint32_t)(TIM_CCER_CC1E | TIM_CCER_CC2E);\r\n\r\n  /* Set encoder mode */\r\n  LL_TIM_SetEncoderMode(TIMx, TIM_EncoderInitStruct->EncoderMode);\r\n\r\n  /* Write to TIMx CCMR1 */\r\n  LL_TIM_WriteReg(TIMx, CCMR1, tmpccmr1);\r\n\r\n  /* Write to TIMx CCER */\r\n  LL_TIM_WriteReg(TIMx, CCER, tmpccer);\r\n\r\n  return SUCCESS;\r\n}"
+    },
+    {
+      "name": "LL_TIM_HALLSENSOR_StructInit",
+      "sig": "void LL_TIM_HALLSENSOR_StructInit(LL_TIM_HALLSENSOR_InitTypeDef *TIM_HallSensorInitStruct)",
+      "brief": "将 LL_TIM_HALLSENSOR_InitTypeDef Hall 传感器接口配置结构体各成员填充为默认值。",
+      "params": [
+        {
+          "name": "TIM_HallSensorInitStruct",
+          "type": "LL_TIM_HALLSENSOR_InitTypeDef *",
+          "desc": "指向要填充的 Hall 传感器配置结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "默认值: 上升沿, 预分频 DIV1, 无滤波, 换相延迟 0。",
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "function",
+      "src": "void LL_TIM_HALLSENSOR_StructInit(LL_TIM_HALLSENSOR_InitTypeDef *TIM_HallSensorInitStruct)\r\n{\r\n  /* Set the default configuration */\r\n  TIM_HallSensorInitStruct->IC1Polarity       = LL_TIM_IC_POLARITY_RISING;\r\n  TIM_HallSensorInitStruct->IC1Prescaler      = LL_TIM_ICPSC_DIV1;\r\n  TIM_HallSensorInitStruct->IC1Filter         = LL_TIM_IC_FILTER_FDIV1;\r\n  TIM_HallSensorInitStruct->CommutationDelay  = 0U;\r\n}"
+    },
+    {
+      "name": "LL_TIM_HALLSENSOR_Init",
+      "sig": "ErrorStatus LL_TIM_HALLSENSOR_Init(TIM_TypeDef *TIMx, LL_TIM_HALLSENSOR_InitTypeDef *TIM_HallSensorInitStruct)",
+      "brief": "配置定时器 Hall 传感器接口: CH1/CH2/CH3 异或接入 TI1, 从模式复位 + TI1F_ED 触发, CH1 捕获(映射 TRC), CH2 输出 PWM2 作为换相延迟, TRGO 输出 OC2REF。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        },
+        {
+          "name": "TIM_HallSensorInitStruct",
+          "type": "LL_TIM_HALLSENSOR_InitTypeDef *",
+          "desc": "指向 Hall 传感器配置结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 配置成功"
+      },
+      "notes": [
+        "CCR1 捕获值对应两次输入变化的时间间隔, 反映电机转速; CCR2 比较值对应换相延迟。",
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_TIM_HALLSENSOR_Init(TIM_TypeDef *TIMx, LL_TIM_HALLSENSOR_InitTypeDef *TIM_HallSensorInitStruct)\r\n{\r\n  uint32_t tmpcr2;\r\n  uint32_t tmpccmr1;\r\n  uint32_t tmpccer;\r\n  uint32_t tmpsmcr;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_TIM_HALL_SENSOR_INTERFACE_INSTANCE(TIMx));\r\n  assert_param(IS_LL_TIM_IC_POLARITY_ENCODER(TIM_HallSensorInitStruct->IC1Polarity));\r\n  assert_param(IS_LL_TIM_ICPSC(TIM_HallSensorInitStruct->IC1Prescaler));\r\n  assert_param(IS_LL_TIM_IC_FILTER(TIM_HallSensorInitStruct->IC1Filter));\r\n\r\n  /* Disable the CC1 and CC2: Reset the CC1E and CC2E Bits */\r\n  TIMx->CCER &= (uint32_t)~(TIM_CCER_CC1E | TIM_CCER_CC2E);\r\n\r\n  /* Get the TIMx CR2 register value */\r\n  tmpcr2 = LL_TIM_ReadReg(TIMx, CR2);\r\n\r\n  /* Get the TIMx CCMR1 register value */\r\n  tmpccmr1 = LL_TIM_ReadReg(TIMx, CCMR1);\r\n\r\n  /* Get the TIMx CCER register value */\r\n  tmpccer = LL_TIM_ReadReg(TIMx, CCER);\r\n\r\n  /* Get the TIMx SMCR register value */\r\n  tmpsmcr = LL_TIM_ReadReg(TIMx, SMCR);\r\n\r\n  /* Connect TIMx_CH1, CH2 and CH3 pins to the TI1 input */\r\n  tmpcr2 |= TIM_CR2_TI1S;\r\n\r\n  /* OC2REF signal is used as trigger output (TRGO) */\r\n  tmpcr2 |= LL_TIM_TRGO_OC2REF;\r\n\r\n  /* Configure the slave mode controller */\r\n  tmpsmcr &= (uint32_t)~(TIM_SMCR_TS | TIM_SMCR_SMS);\r\n  tmpsmcr |= LL_TIM_TS_TI1F_ED;\r\n  tmpsmcr |= LL_TIM_SLAVEMODE_RESET;\r\n\r\n  /* Configure input channel 1 */\r\n  tmpccmr1 &= (uint32_t)~(TIM_CCMR1_CC1S | TIM_CCMR1_IC1F  | TIM_CCMR1_IC1PSC);\r\n  tmpccmr1 |= (uint32_t)(LL_TIM_ACTIVEINPUT_TRC >> 16U);\r\n  tmpccmr1 |= (uint32_t)(TIM_HallSensorInitStruct->IC1Filter >> 16U);\r\n  tmpccmr1 |= (uint32_t)(TIM_HallSensorInitStruct->IC1Prescaler >> 16U);\r\n\r\n  /* Configure input channel 2 */\r\n  tmpccmr1 &= (uint32_t)~(TIM_CCMR1_OC2M | TIM_CCMR1_OC2FE  | TIM_CCMR1_OC2PE  | TIM_CCMR1_OC2CE);\r\n  tmpccmr1 |= (uint32_t)(LL_TIM_OCMODE_PWM2 << 8U);\r\n\r\n  /* Set Channel 1 polarity and enable Channel 1 and Channel2 */\r\n  tmpccer &= (uint32_t)~(TIM_CCER_CC1P | TIM_CCER_CC1NP | TIM_CCER_CC2P | TIM_CCER_CC2NP);\r\n  tmpccer |= (uint32_t)(TIM_HallSensorInitStruct->IC1Polarity);\r\n  tmpccer |= (uint32_t)(TIM_CCER_CC1E | TIM_CCER_CC2E);\r\n\r\n  /* Write to TIMx CR2 */\r\n  LL_TIM_WriteReg(TIMx, CR2, tmpcr2);\r\n\r\n  /* Write to TIMx SMCR */\r\n  LL_TIM_WriteReg(TIMx, SMCR, tmpsmcr);\r\n\r\n  /* Write to TIMx CCMR1 */\r\n  LL_TIM_WriteReg(TIMx, CCMR1, tmpccmr1);\r\n\r\n  /* Write to TIMx CCER */\r\n  LL_TIM_WriteReg(TIMx, CCER, tmpccer);\r\n\r\n  /* Write to TIMx CCR2 */\r\n  LL_TIM_OC_SetCompareCH2(TIMx, TIM_HallSensorInitStruct->CommutationDelay);\r\n\r\n  return SUCCESS;\r\n}"
+    },
+    {
+      "name": "LL_TIM_BDTR_StructInit",
+      "sig": "void LL_TIM_BDTR_StructInit(LL_TIM_BDTR_InitTypeDef *TIM_BDTRInitStruct)",
+      "brief": "将 LL_TIM_BDTR_InitTypeDef 刹车与死区配置结构体各成员填充为默认值。",
+      "params": [
+        {
+          "name": "TIM_BDTRInitStruct",
+          "type": "LL_TIM_BDTR_InitTypeDef *",
+          "desc": "指向要填充的刹车/死区配置结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "默认值: OSSR/OSSI 禁止, 无锁定, 死区 0, 刹车禁止且低有效, 自动输出禁止。",
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "function",
+      "src": "void LL_TIM_BDTR_StructInit(LL_TIM_BDTR_InitTypeDef *TIM_BDTRInitStruct)\r\n{\r\n  /* Set the default configuration */\r\n  TIM_BDTRInitStruct->OSSRState       = LL_TIM_OSSR_DISABLE;\r\n  TIM_BDTRInitStruct->OSSIState       = LL_TIM_OSSI_DISABLE;\r\n  TIM_BDTRInitStruct->LockLevel       = LL_TIM_LOCKLEVEL_OFF;\r\n  TIM_BDTRInitStruct->DeadTime        = (uint8_t)0x00;\r\n  TIM_BDTRInitStruct->BreakState      = LL_TIM_BREAK_DISABLE;\r\n  TIM_BDTRInitStruct->BreakPolarity   = LL_TIM_BREAK_POLARITY_LOW;\r\n  TIM_BDTRInitStruct->AutomaticOutput = LL_TIM_AUTOMATICOUTPUT_DISABLE;\r\n}"
+    },
+    {
+      "name": "LL_TIM_BDTR_Init",
+      "sig": "ErrorStatus LL_TIM_BDTR_Init(TIM_TypeDef *TIMx, LL_TIM_BDTR_InitTypeDef *TIM_BDTRInitStruct)",
+      "brief": "配置定时器刹车与死区(BDTR)特性: 锁定级别、刹车使能与极性、OSSR/OSSI、死区时间与自动输出。",
+      "params": [
+        {
+          "name": "TIMx",
+          "type": "TIM_TypeDef *",
+          "desc": "定时器实例"
+        },
+        {
+          "name": "TIM_BDTRInitStruct",
+          "type": "LL_TIM_BDTR_InitTypeDef *",
+          "desc": "指向刹车/死区配置结构体的指针"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 配置成功"
+      },
+      "notes": [
+        "AOE/BKP/BKE/OSSR/OSSI/DTG 位可能被锁定级别写保护, 首次写入 BDTR 时应一次配好所有位。",
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_tim.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_TIM_BDTR_Init(TIM_TypeDef *TIMx, LL_TIM_BDTR_InitTypeDef *TIM_BDTRInitStruct)\r\n{\r\n  uint32_t tmpbdtr = 0;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_TIM_BREAK_INSTANCE(TIMx));\r\n  assert_param(IS_LL_TIM_OSSR_STATE(TIM_BDTRInitStruct->OSSRState));\r\n  assert_param(IS_LL_TIM_OSSI_STATE(TIM_BDTRInitStruct->OSSIState));\r\n  assert_param(IS_LL_TIM_LOCK_LEVEL(TIM_BDTRInitStruct->LockLevel));\r\n  assert_param(IS_LL_TIM_BREAK_STATE(TIM_BDTRInitStruct->BreakState));\r\n  assert_param(IS_LL_TIM_BREAK_POLARITY(TIM_BDTRInitStruct->BreakPolarity));\r\n  assert_param(IS_LL_TIM_AUTOMATIC_OUTPUT_STATE(TIM_BDTRInitStruct->AutomaticOutput));\r\n\r\n  /* Set the Lock level, the Break enable Bit and the Polarity, the OSSR State,\r\n  the OSSI State, the dead time value and the Automatic Output Enable Bit */\r\n\r\n  /* Set the BDTR bits */\r\n  MODIFY_REG(tmpbdtr, TIM_BDTR_DTG, TIM_BDTRInitStruct->DeadTime);\r\n  MODIFY_REG(tmpbdtr, TIM_BDTR_LOCK, TIM_BDTRInitStruct->LockLevel);\r\n  MODIFY_REG(tmpbdtr, TIM_BDTR_OSSI, TIM_BDTRInitStruct->OSSIState);\r\n  MODIFY_REG(tmpbdtr, TIM_BDTR_OSSR, TIM_BDTRInitStruct->OSSRState);\r\n  MODIFY_REG(tmpbdtr, TIM_BDTR_BKE, TIM_BDTRInitStruct->BreakState);\r\n  MODIFY_REG(tmpbdtr, TIM_BDTR_BKP, TIM_BDTRInitStruct->BreakPolarity);\r\n  MODIFY_REG(tmpbdtr, TIM_BDTR_AOE, TIM_BDTRInitStruct->AutomaticOutput);\r\n  MODIFY_REG(tmpbdtr, TIM_BDTR_MOE, TIM_BDTRInitStruct->AutomaticOutput);\r\n\r\n  /* Set TIMx_BDTR */\r\n  LL_TIM_WriteReg(TIMx, BDTR, tmpbdtr);\r\n\r\n  return SUCCESS;\r\n}"
+    }
+  ],
+  "types": [
+    {
+      "name": "LL_TIM_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint16_t Prescaler; uint32_t CounterMode; uint32_t Autoreload; uint32_t ClockDivision; uint8_t RepetitionCounter; } LL_TIM_InitTypeDef;",
+      "desc": "定时器时基配置结构体, 作为 LL_TIM_Init() 的参数(需定义 USE_FULL_LL_DRIVER)。",
+      "members": [
+        {
+          "name": "Prescaler",
+          "type": "uint16_t",
+          "desc": "预分频值, 计数器时钟 CK_CNT = fCK_PSC/(PSC+1), 范围 0x0000~0xFFFF"
+        },
+        {
+          "name": "CounterMode",
+          "type": "uint32_t",
+          "desc": "计数模式, 可取 LL_TIM_COUNTERMODE_*"
+        },
+        {
+          "name": "Autoreload",
+          "type": "uint32_t",
+          "desc": "自动重载值(ARR), 范围 0~0xFFFF"
+        },
+        {
+          "name": "ClockDivision",
+          "type": "uint32_t",
+          "desc": "时钟分频, 可取 LL_TIM_CLOCKDIVISION_*"
+        },
+        {
+          "name": "RepetitionCounter",
+          "type": "uint8_t",
+          "desc": "重复计数器值, 每 (N+1) 个更新事件产生一次更新"
+        }
+      ],
+      "file": "py32f002b_ll_tim.h"
+    },
+    {
+      "name": "LL_TIM_OC_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t OCMode; uint32_t OCState; uint32_t OCNState; uint32_t CompareValue; uint32_t OCPolarity; uint32_t OCNPolarity; uint32_t OCIdleState; uint32_t OCNIdleState; } LL_TIM_OC_InitTypeDef;",
+      "desc": "定时器输出通道配置结构体, 作为 LL_TIM_OC_Init() 的参数(需定义 USE_FULL_LL_DRIVER)。",
+      "members": [
+        {
+          "name": "OCMode",
+          "type": "uint32_t",
+          "desc": "输出模式, 可取 LL_TIM_OCMODE_*"
+        },
+        {
+          "name": "OCState",
+          "type": "uint32_t",
+          "desc": "主输出通道状态, 可取 LL_TIM_OCSTATE_*"
+        },
+        {
+          "name": "OCNState",
+          "type": "uint32_t",
+          "desc": "互补输出通道状态, 可取 LL_TIM_OCSTATE_*"
+        },
+        {
+          "name": "CompareValue",
+          "type": "uint32_t",
+          "desc": "比较值(CCRx), 范围 0~0xFFFF"
+        },
+        {
+          "name": "OCPolarity",
+          "type": "uint32_t",
+          "desc": "输出极性, 可取 LL_TIM_OCPOLARITY_*"
+        },
+        {
+          "name": "OCNPolarity",
+          "type": "uint32_t",
+          "desc": "互补输出极性, 可取 LL_TIM_OCPOLARITY_*"
+        },
+        {
+          "name": "OCIdleState",
+          "type": "uint32_t",
+          "desc": "空闲态输出电平, 可取 LL_TIM_OCIDLESTATE_*"
+        },
+        {
+          "name": "OCNIdleState",
+          "type": "uint32_t",
+          "desc": "互补输出空闲态电平, 可取 LL_TIM_OCIDLESTATE_*"
+        }
+      ],
+      "file": "py32f002b_ll_tim.h"
+    },
+    {
+      "name": "LL_TIM_IC_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t ICPolarity; uint32_t ICActiveInput; uint32_t ICPrescaler; uint32_t ICFilter; } LL_TIM_IC_InitTypeDef;",
+      "desc": "定时器输入捕获配置结构体, 作为 LL_TIM_IC_Init() 的参数(需定义 USE_FULL_LL_DRIVER)。",
+      "members": [
+        {
+          "name": "ICPolarity",
+          "type": "uint32_t",
+          "desc": "输入有效边沿, 可取 LL_TIM_IC_POLARITY_*"
+        },
+        {
+          "name": "ICActiveInput",
+          "type": "uint32_t",
+          "desc": "输入源选择, 可取 LL_TIM_ACTIVEINPUT_*"
+        },
+        {
+          "name": "ICPrescaler",
+          "type": "uint32_t",
+          "desc": "捕获预分频, 可取 LL_TIM_ICPSC_*"
+        },
+        {
+          "name": "ICFilter",
+          "type": "uint32_t",
+          "desc": "输入滤波, 可取 LL_TIM_IC_FILTER_*"
+        }
+      ],
+      "file": "py32f002b_ll_tim.h"
+    },
+    {
+      "name": "LL_TIM_ENCODER_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t EncoderMode; uint32_t IC1Polarity; uint32_t IC1ActiveInput; uint32_t IC1Prescaler; uint32_t IC1Filter; uint32_t IC2Polarity; uint32_t IC2ActiveInput; uint32_t IC2Prescaler; uint32_t IC2Filter; } LL_TIM_ENCODER_InitTypeDef;",
+      "desc": "定时器编码器接口配置结构体, 作为 LL_TIM_ENCODER_Init() 的参数(需定义 USE_FULL_LL_DRIVER)。",
+      "members": [
+        {
+          "name": "EncoderMode",
+          "type": "uint32_t",
+          "desc": "编码器分辨率(x2/x4), 可取 LL_TIM_ENCODERMODE_*"
+        },
+        {
+          "name": "IC1Polarity",
+          "type": "uint32_t",
+          "desc": "TI1 输入有效边沿, 可取 LL_TIM_IC_POLARITY_*"
+        },
+        {
+          "name": "IC1ActiveInput",
+          "type": "uint32_t",
+          "desc": "TI1 输入源, 可取 LL_TIM_ACTIVEINPUT_*"
+        },
+        {
+          "name": "IC1Prescaler",
+          "type": "uint32_t",
+          "desc": "TI1 预分频, 可取 LL_TIM_ICPSC_*"
+        },
+        {
+          "name": "IC1Filter",
+          "type": "uint32_t",
+          "desc": "TI1 输入滤波, 可取 LL_TIM_IC_FILTER_*"
+        },
+        {
+          "name": "IC2Polarity",
+          "type": "uint32_t",
+          "desc": "TI2 输入有效边沿, 可取 LL_TIM_IC_POLARITY_*"
+        },
+        {
+          "name": "IC2ActiveInput",
+          "type": "uint32_t",
+          "desc": "TI2 输入源, 可取 LL_TIM_ACTIVEINPUT_*"
+        },
+        {
+          "name": "IC2Prescaler",
+          "type": "uint32_t",
+          "desc": "TI2 预分频, 可取 LL_TIM_ICPSC_*"
+        },
+        {
+          "name": "IC2Filter",
+          "type": "uint32_t",
+          "desc": "TI2 输入滤波, 可取 LL_TIM_IC_FILTER_*"
+        }
+      ],
+      "file": "py32f002b_ll_tim.h"
+    },
+    {
+      "name": "LL_TIM_HALLSENSOR_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t IC1Polarity; uint32_t IC1Prescaler; uint32_t IC1Filter; uint32_t CommutationDelay; } LL_TIM_HALLSENSOR_InitTypeDef;",
+      "desc": "定时器 Hall 传感器接口配置结构体, 作为 LL_TIM_HALLSENSOR_Init() 的参数(需定义 USE_FULL_LL_DRIVER)。",
+      "members": [
+        {
+          "name": "IC1Polarity",
+          "type": "uint32_t",
+          "desc": "TI1 输入有效边沿, 可取 LL_TIM_IC_POLARITY_*"
+        },
+        {
+          "name": "IC1Prescaler",
+          "type": "uint32_t",
+          "desc": "TI1 预分频, 需保证计数周期大于两次 Hall 输入变化的时间间隔"
+        },
+        {
+          "name": "IC1Filter",
+          "type": "uint32_t",
+          "desc": "TI1 输入滤波, 可取 LL_TIM_IC_FILTER_*"
+        },
+        {
+          "name": "CommutationDelay",
+          "type": "uint32_t",
+          "desc": "换相延迟比较值(写入 CCR2), 每次 Hall 输入变化后经可编程延迟产生 TRGO 正脉冲"
+        }
+      ],
+      "file": "py32f002b_ll_tim.h"
+    },
+    {
+      "name": "LL_TIM_BDTR_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t OSSRState; uint32_t OSSIState; uint32_t LockLevel; uint8_t DeadTime; uint16_t BreakState; uint32_t BreakPolarity; uint32_t AutomaticOutput; } LL_TIM_BDTR_InitTypeDef;",
+      "desc": "定时器刹车与死区(BDTR)配置结构体, 作为 LL_TIM_BDTR_Init() 的参数(需定义 USE_FULL_LL_DRIVER)。",
+      "members": [
+        {
+          "name": "OSSRState",
+          "type": "uint32_t",
+          "desc": "运行态关断选择, 可取 LL_TIM_OSSR_*"
+        },
+        {
+          "name": "OSSIState",
+          "type": "uint32_t",
+          "desc": "空闲态关断选择, 可取 LL_TIM_OSSI_*"
+        },
+        {
+          "name": "LockLevel",
+          "type": "uint32_t",
+          "desc": "锁定级别, 可取 LL_TIM_LOCKLEVEL_*"
+        },
+        {
+          "name": "DeadTime",
+          "type": "uint8_t",
+          "desc": "死区时间 DTG, 范围 0x00~0xFF"
+        },
+        {
+          "name": "BreakState",
+          "type": "uint16_t",
+          "desc": "刹车输入使能, 可取 LL_TIM_BREAK_DISABLE / ENABLE"
+        },
+        {
+          "name": "BreakPolarity",
+          "type": "uint32_t",
+          "desc": "刹车输入极性, 可取 LL_TIM_BREAK_POLARITY_*"
+        },
+        {
+          "name": "AutomaticOutput",
+          "type": "uint32_t",
+          "desc": "自动输出使能, 可取 LL_TIM_AUTOMATICOUTPUT_DISABLE / ENABLE"
+        }
+      ],
+      "file": "py32f002b_ll_tim.h"
+    }
+  ],
+  "consts": [
+    {
+      "name": "LL_TIM_SR_UIF",
+      "value": "TIM_SR_UIF",
+      "desc": "更新中断标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_UIF                          TIM_SR_UIF           /*!< Update interrupt flag */"
+    },
+    {
+      "name": "LL_TIM_SR_CC1IF",
+      "value": "TIM_SR_CC1IF",
+      "desc": "捕获/比较 1 中断标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_CC1IF                        TIM_SR_CC1IF         /*!< Capture/compare 1 interrupt flag */"
+    },
+    {
+      "name": "LL_TIM_SR_CC2IF",
+      "value": "TIM_SR_CC2IF",
+      "desc": "捕获/比较 2 中断标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_CC2IF                        TIM_SR_CC2IF         /*!< Capture/compare 2 interrupt flag */"
+    },
+    {
+      "name": "LL_TIM_SR_CC3IF",
+      "value": "TIM_SR_CC3IF",
+      "desc": "捕获/比较 3 中断标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_CC3IF                        TIM_SR_CC3IF         /*!< Capture/compare 3 interrupt flag */"
+    },
+    {
+      "name": "LL_TIM_SR_CC4IF",
+      "value": "TIM_SR_CC4IF",
+      "desc": "捕获/比较 4 中断标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_CC4IF                        TIM_SR_CC4IF         /*!< Capture/compare 4 interrupt flag */"
+    },
+    {
+      "name": "LL_TIM_SR_COMIF",
+      "value": "TIM_SR_COMIF",
+      "desc": "换相(COM)中断标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_COMIF                        TIM_SR_COMIF         /*!< COM interrupt flag */"
+    },
+    {
+      "name": "LL_TIM_SR_TIF",
+      "value": "TIM_SR_TIF",
+      "desc": "触发中断标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_TIF                          TIM_SR_TIF           /*!< Trigger interrupt flag */"
+    },
+    {
+      "name": "LL_TIM_SR_BIF",
+      "value": "TIM_SR_BIF",
+      "desc": "刹车中断标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_BIF                          TIM_SR_BIF           /*!< Break interrupt flag */"
+    },
+    {
+      "name": "LL_TIM_SR_CC1OF",
+      "value": "TIM_SR_CC1OF",
+      "desc": "捕获/比较 1 重复捕获标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_CC1OF                        TIM_SR_CC1OF         /*!< Capture/Compare 1 overcapture flag */"
+    },
+    {
+      "name": "LL_TIM_SR_CC2OF",
+      "value": "TIM_SR_CC2OF",
+      "desc": "捕获/比较 2 重复捕获标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_CC2OF                        TIM_SR_CC2OF         /*!< Capture/Compare 2 overcapture flag */"
+    },
+    {
+      "name": "LL_TIM_SR_CC3OF",
+      "value": "TIM_SR_CC3OF",
+      "desc": "捕获/比较 3 重复捕获标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_CC3OF                        TIM_SR_CC3OF         /*!< Capture/Compare 3 overcapture flag */"
+    },
+    {
+      "name": "LL_TIM_SR_CC4OF",
+      "value": "TIM_SR_CC4OF",
+      "desc": "捕获/比较 4 重复捕获标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_CC4OF                        TIM_SR_CC4OF         /*!< Capture/Compare 4 overcapture flag */"
+    },
+    {
+      "name": "LL_TIM_SR_IC1IR",
+      "value": "TIM_SR_IC1IR",
+      "desc": "捕获 1 上升沿标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_IC1IR                        TIM_SR_IC1IR         /*!< Capture 1 rising edge flag */"
+    },
+    {
+      "name": "LL_TIM_SR_IC2IR",
+      "value": "TIM_SR_IC2IR",
+      "desc": "捕获 2 上升沿标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_IC2IR                        TIM_SR_IC2IR         /*!< Capture 2 rising edge flag */"
+    },
+    {
+      "name": "LL_TIM_SR_IC3IR",
+      "value": "TIM_SR_IC3IR",
+      "desc": "捕获 3 上升沿标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_IC3IR                        TIM_SR_IC3IR         /*!< Capture 3 rising edge flag */"
+    },
+    {
+      "name": "LL_TIM_SR_IC4IR",
+      "value": "TIM_SR_IC4IR",
+      "desc": "捕获 4 上升沿标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_IC4IR                        TIM_SR_IC4IR         /*!< Capture 4 rising edge flag */"
+    },
+    {
+      "name": "LL_TIM_SR_IC1IF",
+      "value": "TIM_SR_IC1IF",
+      "desc": "捕获 1 下降沿标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_IC1IF                        TIM_SR_IC1IF         /*!< Capture 1 falling flag */"
+    },
+    {
+      "name": "LL_TIM_SR_IC2IF",
+      "value": "TIM_SR_IC2IF",
+      "desc": "捕获 2 下降沿标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_IC2IF                        TIM_SR_IC2IF         /*!< Capture 2 falling flag */"
+    },
+    {
+      "name": "LL_TIM_SR_IC3IF",
+      "value": "TIM_SR_IC3IF",
+      "desc": "捕获 3 下降沿标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_IC3IF                        TIM_SR_IC3IF         /*!< Capture 3 falling flag */"
+    },
+    {
+      "name": "LL_TIM_SR_IC4IF",
+      "value": "TIM_SR_IC4IF",
+      "desc": "捕获 4 下降沿标志",
+      "group": "LL 状态寄存器标志",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SR_IC4IF                        TIM_SR_IC4IF         /*!< Capture 4 falling flag */"
+    },
+    {
+      "name": "LL_TIM_BREAK_DISABLE",
+      "value": "0x00000000U",
+      "desc": "刹车功能禁止",
+      "group": "LL 刹车功能",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_BREAK_DISABLE            0x00000000U             /*!< Break function disabled */"
+    },
+    {
+      "name": "LL_TIM_BREAK_ENABLE",
+      "value": "TIM_BDTR_BKE",
+      "desc": "刹车功能使能",
+      "group": "LL 刹车功能",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_BREAK_ENABLE             TIM_BDTR_BKE            /*!< Break function enabled */"
+    },
+    {
+      "name": "LL_TIM_AUTOMATICOUTPUT_DISABLE",
+      "value": "0x00000000U",
+      "desc": "MOE 只能由软件设置",
+      "group": "LL 自动输出",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_AUTOMATICOUTPUT_DISABLE         0x00000000U             /*!< MOE can be set only by software */"
+    },
+    {
+      "name": "LL_TIM_AUTOMATICOUTPUT_ENABLE",
+      "value": "TIM_BDTR_AOE",
+      "desc": "MOE 可由软件设置或在下一个更新事件自动设置",
+      "group": "LL 自动输出",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_AUTOMATICOUTPUT_ENABLE          TIM_BDTR_AOE            /*!< MOE can be set by software or automatically at the next update event */"
+    },
+    {
+      "name": "LL_TIM_DIER_UIE",
+      "value": "TIM_DIER_UIE",
+      "desc": "更新中断使能",
+      "group": "LL 中断使能",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_DIER_UIE                        TIM_DIER_UIE         /*!< Update interrupt enable */"
+    },
+    {
+      "name": "LL_TIM_DIER_CC1IE",
+      "value": "TIM_DIER_CC1IE",
+      "desc": "捕获/比较 1 中断使能",
+      "group": "LL 中断使能",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_DIER_CC1IE                      TIM_DIER_CC1IE       /*!< Capture/compare 1 interrupt enable */"
+    },
+    {
+      "name": "LL_TIM_DIER_CC2IE",
+      "value": "TIM_DIER_CC2IE",
+      "desc": "捕获/比较 2 中断使能",
+      "group": "LL 中断使能",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_DIER_CC2IE                      TIM_DIER_CC2IE       /*!< Capture/compare 2 interrupt enable */"
+    },
+    {
+      "name": "LL_TIM_DIER_CC3IE",
+      "value": "TIM_DIER_CC3IE",
+      "desc": "捕获/比较 3 中断使能",
+      "group": "LL 中断使能",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_DIER_CC3IE                      TIM_DIER_CC3IE       /*!< Capture/compare 3 interrupt enable */"
+    },
+    {
+      "name": "LL_TIM_DIER_CC4IE",
+      "value": "TIM_DIER_CC4IE",
+      "desc": "捕获/比较 4 中断使能",
+      "group": "LL 中断使能",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_DIER_CC4IE                      TIM_DIER_CC4IE       /*!< Capture/compare 4 interrupt enable */"
+    },
+    {
+      "name": "LL_TIM_DIER_COMIE",
+      "value": "TIM_DIER_COMIE",
+      "desc": "换相中断使能",
+      "group": "LL 中断使能",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_DIER_COMIE                      TIM_DIER_COMIE       /*!< COM interrupt enable */"
+    },
+    {
+      "name": "LL_TIM_DIER_TIE",
+      "value": "TIM_DIER_TIE",
+      "desc": "触发中断使能",
+      "group": "LL 中断使能",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_DIER_TIE                        TIM_DIER_TIE         /*!< Trigger interrupt enable */"
+    },
+    {
+      "name": "LL_TIM_DIER_BIE",
+      "value": "TIM_DIER_BIE",
+      "desc": "刹车中断使能",
+      "group": "LL 中断使能",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_DIER_BIE                        TIM_DIER_BIE         /*!< Break interrupt enable */"
+    },
+    {
+      "name": "LL_TIM_UPDATESOURCE_REGULAR",
+      "value": "0x00000000U",
+      "desc": "更新源: 溢出/下溢、置位 UG 或从模式控制器产生更新",
+      "group": "LL 更新事件源",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_UPDATESOURCE_REGULAR            0x00000000U          /*!< Counter overflow/underflow, Setting the UG bit or Update generation through the slave mode controller generates an update request */"
+    },
+    {
+      "name": "LL_TIM_UPDATESOURCE_COUNTER",
+      "value": "TIM_CR1_URS",
+      "desc": "更新源: 仅计数器溢出/下溢产生更新",
+      "group": "LL 更新事件源",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_UPDATESOURCE_COUNTER            TIM_CR1_URS          /*!< Only counter overflow/underflow generates an update request */"
+    },
+    {
+      "name": "LL_TIM_ONEPULSEMODE_SINGLE",
+      "value": "TIM_CR1_OPM",
+      "desc": "单脉冲模式: 计数器在下一个更新事件停止",
+      "group": "LL 单脉冲模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ONEPULSEMODE_SINGLE             TIM_CR1_OPM          /*!< Counter is not stopped at update event */"
+    },
+    {
+      "name": "LL_TIM_ONEPULSEMODE_REPETITIVE",
+      "value": "0x00000000U",
+      "desc": "重复脉冲模式: 更新事件不停计数器",
+      "group": "LL 单脉冲模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ONEPULSEMODE_REPETITIVE         0x00000000U          /*!< Counter stops counting at the next update event */"
+    },
+    {
+      "name": "LL_TIM_COUNTERMODE_UP",
+      "value": "0x00000000U",
+      "desc": "向上计数模式",
+      "group": "LL 计数模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_COUNTERMODE_UP                  0x00000000U          /*!<Counter used as upcounter */"
+    },
+    {
+      "name": "LL_TIM_COUNTERMODE_DOWN",
+      "value": "TIM_CR1_DIR",
+      "desc": "向下计数模式",
+      "group": "LL 计数模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_COUNTERMODE_DOWN                TIM_CR1_DIR          /*!< Counter used as downcounter */"
+    },
+    {
+      "name": "LL_TIM_COUNTERMODE_CENTER_UP",
+      "value": "TIM_CR1_CMS_0",
+      "desc": "中央对齐计数, 输出比较中断标志仅在向下计数时置位",
+      "group": "LL 计数模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_COUNTERMODE_CENTER_UP           TIM_CR1_CMS_0        /*!< The counter counts up and down alternatively. Output compare interrupt flags of output channels  are set only when the counter is counting down. */"
+    },
+    {
+      "name": "LL_TIM_COUNTERMODE_CENTER_DOWN",
+      "value": "TIM_CR1_CMS_1",
+      "desc": "中央对齐计数, 输出比较中断标志仅在向上计数时置位",
+      "group": "LL 计数模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_COUNTERMODE_CENTER_DOWN         TIM_CR1_CMS_1        /*!<The counter counts up and down alternatively. Output compare interrupt flags of output channels  are set only when the counter is counting up */"
+    },
+    {
+      "name": "LL_TIM_COUNTERMODE_CENTER_UP_DOWN",
+      "value": "TIM_CR1_CMS",
+      "desc": "中央对齐计数, 输出比较中断标志在向上或向下计数时均置位",
+      "group": "LL 计数模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_COUNTERMODE_CENTER_UP_DOWN      TIM_CR1_CMS          /*!< The counter counts up and down alternatively. Output compare interrupt flags of output channels  are set only when the counter is counting up or down. */"
+    },
+    {
+      "name": "LL_TIM_CLOCKDIVISION_DIV1",
+      "value": "0x00000000U",
+      "desc": "tDTS = tCK_INT",
+      "group": "LL 时钟分频",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_CLOCKDIVISION_DIV1              0x00000000U          /*!< tDTS=tCK_INT */"
+    },
+    {
+      "name": "LL_TIM_CLOCKDIVISION_DIV2",
+      "value": "TIM_CR1_CKD_0",
+      "desc": "tDTS = 2 × tCK_INT",
+      "group": "LL 时钟分频",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_CLOCKDIVISION_DIV2              TIM_CR1_CKD_0        /*!< tDTS=2*tCK_INT */"
+    },
+    {
+      "name": "LL_TIM_CLOCKDIVISION_DIV4",
+      "value": "TIM_CR1_CKD_1",
+      "desc": "tDTS = 4 × tCK_INT",
+      "group": "LL 时钟分频",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_CLOCKDIVISION_DIV4              TIM_CR1_CKD_1        /*!< tDTS=4*tCK_INT */"
+    },
+    {
+      "name": "LL_TIM_COUNTERDIRECTION_UP",
+      "value": "0x00000000U",
+      "desc": "计数器向上计数",
+      "group": "LL 计数方向",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_COUNTERDIRECTION_UP             0x00000000U          /*!< Timer counter counts up */"
+    },
+    {
+      "name": "LL_TIM_COUNTERDIRECTION_DOWN",
+      "value": "TIM_CR1_DIR",
+      "desc": "计数器向下计数",
+      "group": "LL 计数方向",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_COUNTERDIRECTION_DOWN           TIM_CR1_DIR          /*!< Timer counter counts down */"
+    },
+    {
+      "name": "LL_TIM_CCUPDATESOURCE_COMG_ONLY",
+      "value": "0x00000000U",
+      "desc": "捕获/比较控制位仅在置位 COMG 时更新",
+      "group": "LL 捕获比较更新源",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_CCUPDATESOURCE_COMG_ONLY        0x00000000U          /*!< Capture/compare control bits are updated by setting the COMG bit only */"
+    },
+    {
+      "name": "LL_TIM_CCUPDATESOURCE_COMG_AND_TRGI",
+      "value": "TIM_CR2_CCUS",
+      "desc": "捕获/比较控制位在置位 COMG 或 TRGI 上升沿时更新",
+      "group": "LL 捕获比较更新源",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_CCUPDATESOURCE_COMG_AND_TRGI    TIM_CR2_CCUS         /*!< Capture/compare control bits are updated by setting the COMG bit or when a rising edge occurs on trigger input (TRGI) */"
+    },
+    {
+      "name": "LL_TIM_LOCKLEVEL_OFF",
+      "value": "0x00000000U",
+      "desc": "锁定关闭, 无位被写保护",
+      "group": "LL 锁定级别",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_LOCKLEVEL_OFF                   0x00000000U          /*!< LOCK OFF - No bit is write protected */"
+    },
+    {
+      "name": "LL_TIM_LOCKLEVEL_1",
+      "value": "TIM_BDTR_LOCK_0",
+      "desc": "锁定级别 1",
+      "group": "LL 锁定级别",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_LOCKLEVEL_1                     TIM_BDTR_LOCK_0      /*!< LOCK Level 1 */"
+    },
+    {
+      "name": "LL_TIM_LOCKLEVEL_2",
+      "value": "TIM_BDTR_LOCK_1",
+      "desc": "锁定级别 2",
+      "group": "LL 锁定级别",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_LOCKLEVEL_2                     TIM_BDTR_LOCK_1      /*!< LOCK Level 2 */"
+    },
+    {
+      "name": "LL_TIM_LOCKLEVEL_3",
+      "value": "TIM_BDTR_LOCK",
+      "desc": "锁定级别 3",
+      "group": "LL 锁定级别",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_LOCKLEVEL_3                     TIM_BDTR_LOCK        /*!< LOCK Level 3 */"
+    },
+    {
+      "name": "LL_TIM_CHANNEL_CH1",
+      "value": "TIM_CCER_CC1E",
+      "desc": "定时器输入/输出通道 1",
+      "group": "LL 通道选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_CHANNEL_CH1                     TIM_CCER_CC1E     /*!< Timer input/output channel 1 */"
+    },
+    {
+      "name": "LL_TIM_CHANNEL_CH1N",
+      "value": "TIM_CCER_CC1NE",
+      "desc": "定时器互补输出通道 1",
+      "group": "LL 通道选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_CHANNEL_CH1N                    TIM_CCER_CC1NE    /*!< Timer complementary output channel 1 */"
+    },
+    {
+      "name": "LL_TIM_CHANNEL_CH2",
+      "value": "TIM_CCER_CC2E",
+      "desc": "定时器输入/输出通道 2",
+      "group": "LL 通道选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_CHANNEL_CH2                     TIM_CCER_CC2E     /*!< Timer input/output channel 2 */"
+    },
+    {
+      "name": "LL_TIM_CHANNEL_CH2N",
+      "value": "TIM_CCER_CC2NE",
+      "desc": "定时器互补输出通道 2",
+      "group": "LL 通道选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_CHANNEL_CH2N                    TIM_CCER_CC2NE    /*!< Timer complementary output channel 2 */"
+    },
+    {
+      "name": "LL_TIM_CHANNEL_CH3",
+      "value": "TIM_CCER_CC3E",
+      "desc": "定时器输入/输出通道 3",
+      "group": "LL 通道选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_CHANNEL_CH3                     TIM_CCER_CC3E     /*!< Timer input/output channel 3 */"
+    },
+    {
+      "name": "LL_TIM_CHANNEL_CH3N",
+      "value": "TIM_CCER_CC3NE",
+      "desc": "定时器互补输出通道 3",
+      "group": "LL 通道选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_CHANNEL_CH3N                    TIM_CCER_CC3NE    /*!< Timer complementary output channel 3 */"
+    },
+    {
+      "name": "LL_TIM_CHANNEL_CH4",
+      "value": "TIM_CCER_CC4E",
+      "desc": "定时器输入/输出通道 4",
+      "group": "LL 通道选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_CHANNEL_CH4                     TIM_CCER_CC4E     /*!< Timer input/output channel 4 */"
+    },
+    {
+      "name": "LL_TIM_OCSTATE_DISABLE",
+      "value": "0x00000000U",
+      "desc": "OCx 不激活",
+      "group": "LL 输出状态",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OCSTATE_DISABLE                 0x00000000U             /*!< OCx is not active */"
+    },
+    {
+      "name": "LL_TIM_OCSTATE_ENABLE",
+      "value": "TIM_CCER_CC1E",
+      "desc": "OCx 信号输出到对应引脚",
+      "group": "LL 输出状态",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OCSTATE_ENABLE                  TIM_CCER_CC1E           /*!< OCx signal is output on the corresponding output pin */"
+    },
+    {
+      "name": "LL_TIM_OCMODE_FROZEN",
+      "value": "0x00000000U",
+      "desc": "冻结: 比较对输出通道电平无影响",
+      "group": "LL 输出比较模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OCMODE_FROZEN                   0x00000000U                                              /*!<The comparison between the output compare register TIMx_CCRy and the counter TIMx_CNT has no effect on the output channel level */"
+    },
+    {
+      "name": "LL_TIM_OCMODE_ACTIVE",
+      "value": "TIM_CCMR1_OC1M_0",
+      "desc": "比较匹配时 OCyREF 强制为高",
+      "group": "LL 输出比较模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OCMODE_ACTIVE                   TIM_CCMR1_OC1M_0                                         /*!<OCyREF is forced high on compare match*/"
+    },
+    {
+      "name": "LL_TIM_OCMODE_INACTIVE",
+      "value": "TIM_CCMR1_OC1M_1",
+      "desc": "比较匹配时 OCyREF 强制为低",
+      "group": "LL 输出比较模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OCMODE_INACTIVE                 TIM_CCMR1_OC1M_1                                         /*!<OCyREF is forced low on compare match*/"
+    },
+    {
+      "name": "LL_TIM_OCMODE_TOGGLE",
+      "value": "(TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_0)",
+      "desc": "比较匹配时 OCyREF 翻转",
+      "group": "LL 输出比较模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OCMODE_TOGGLE                   (TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_0)                    /*!<OCyREF toggles on compare match*/"
+    },
+    {
+      "name": "LL_TIM_OCMODE_FORCED_INACTIVE",
+      "value": "TIM_CCMR1_OC1M_2",
+      "desc": "OCyREF 强制为低",
+      "group": "LL 输出比较模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OCMODE_FORCED_INACTIVE          TIM_CCMR1_OC1M_2                                         /*!<OCyREF is forced low*/"
+    },
+    {
+      "name": "LL_TIM_OCMODE_FORCED_ACTIVE",
+      "value": "(TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_0)",
+      "desc": "OCyREF 强制为高",
+      "group": "LL 输出比较模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OCMODE_FORCED_ACTIVE            (TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_0)                    /*!<OCyREF is forced high*/"
+    },
+    {
+      "name": "LL_TIM_OCMODE_PWM1",
+      "value": "(TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1)",
+      "desc": "PWM1: 向上计数时 CNT<CCRy 通道有效, 向下计数时相反",
+      "group": "LL 输出比较模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OCMODE_PWM1                     (TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1)                    /*!<In upcounting, channel y is active as long as TIMx_CNT<TIMx_CCRy else inactive.  In downcounting, channel y is inactive as long as TIMx_CNT>TIMx_CCRy else active.*/"
+    },
+    {
+      "name": "LL_TIM_OCMODE_PWM2",
+      "value": "(TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_0)",
+      "desc": "PWM2: 向上计数时 CNT<CCRy 通道无效, 向下计数时相反",
+      "group": "LL 输出比较模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OCMODE_PWM2                     (TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_0) /*!<In upcounting, channel y is inactive as long as TIMx_CNT<TIMx_CCRy else active.  In downcounting, channel y is active as long as TIMx_CNT>TIMx_CCRy else inactive*/"
+    },
+    {
+      "name": "LL_TIM_OCPOLARITY_HIGH",
+      "value": "0x00000000U",
+      "desc": "OCx 高电平有效",
+      "group": "LL 输出极性",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OCPOLARITY_HIGH                 0x00000000U                 /*!< OCxactive high*/"
+    },
+    {
+      "name": "LL_TIM_OCPOLARITY_LOW",
+      "value": "TIM_CCER_CC1P",
+      "desc": "OCx 低电平有效",
+      "group": "LL 输出极性",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OCPOLARITY_LOW                  TIM_CCER_CC1P               /*!< OCxactive low*/"
+    },
+    {
+      "name": "LL_TIM_OCIDLESTATE_LOW",
+      "value": "0x00000000U",
+      "desc": "MOE=0 时空闲态 OCx=0(若实现死区则在死区之后)",
+      "group": "LL 输出空闲态",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OCIDLESTATE_LOW                 0x00000000U             /*!<OCx=0 (after a dead-time if OC is implemented) when MOE=0*/"
+    },
+    {
+      "name": "LL_TIM_OCIDLESTATE_HIGH",
+      "value": "TIM_CR2_OIS1",
+      "desc": "MOE=0 时空闲态 OCx=1(若实现死区则在死区之后)",
+      "group": "LL 输出空闲态",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OCIDLESTATE_HIGH                TIM_CR2_OIS1            /*!<OCx=1 (after a dead-time if OC is implemented) when MOE=0*/"
+    },
+    {
+      "name": "LL_TIM_ACTIVEINPUT_DIRECTTI",
+      "value": "(TIM_CCMR1_CC1S_0 << 16U)",
+      "desc": "ICx 映射到 TIx(直接输入)",
+      "group": "LL 捕获输入源",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ACTIVEINPUT_DIRECTTI            (TIM_CCMR1_CC1S_0 << 16U) /*!< ICx is mapped on TIx */"
+    },
+    {
+      "name": "LL_TIM_ACTIVEINPUT_INDIRECTTI",
+      "value": "(TIM_CCMR1_CC1S_1 << 16U)",
+      "desc": "ICx 映射到 TIy(间接输入)",
+      "group": "LL 捕获输入源",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ACTIVEINPUT_INDIRECTTI          (TIM_CCMR1_CC1S_1 << 16U) /*!< ICx is mapped on TIy */"
+    },
+    {
+      "name": "LL_TIM_ACTIVEINPUT_TRC",
+      "value": "(TIM_CCMR1_CC1S << 16U)",
+      "desc": "ICx 映射到 TRC(内部触发)",
+      "group": "LL 捕获输入源",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ACTIVEINPUT_TRC                 (TIM_CCMR1_CC1S << 16U)   /*!< ICx is mapped on TRC */"
+    },
+    {
+      "name": "LL_TIM_ICPSC_DIV1",
+      "value": "0x00000000U",
+      "desc": "无预分频, 每个捕获输入边沿捕获一次",
+      "group": "LL 捕获预分频",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ICPSC_DIV1                      0x00000000U                    /*!< No prescaler, capture is done each time an edge is detected on the capture input */"
+    },
+    {
+      "name": "LL_TIM_ICPSC_DIV2",
+      "value": "(TIM_CCMR1_IC1PSC_0 << 16U)",
+      "desc": "每 2 个事件捕获一次",
+      "group": "LL 捕获预分频",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ICPSC_DIV2                      (TIM_CCMR1_IC1PSC_0 << 16U)    /*!< Capture is done once every 2 events */"
+    },
+    {
+      "name": "LL_TIM_ICPSC_DIV4",
+      "value": "(TIM_CCMR1_IC1PSC_1 << 16U)",
+      "desc": "每 4 个事件捕获一次",
+      "group": "LL 捕获预分频",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ICPSC_DIV4                      (TIM_CCMR1_IC1PSC_1 << 16U)    /*!< Capture is done once every 4 events */"
+    },
+    {
+      "name": "LL_TIM_ICPSC_DIV8",
+      "value": "(TIM_CCMR1_IC1PSC << 16U)",
+      "desc": "每 8 个事件捕获一次",
+      "group": "LL 捕获预分频",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ICPSC_DIV8                      (TIM_CCMR1_IC1PSC << 16U)      /*!< Capture is done once every 8 events */"
+    },
+    {
+      "name": "LL_TIM_IC_FILTER_FDIV1",
+      "value": "0x00000000U",
+      "desc": "无滤波, 采样频率为 fDTS",
+      "group": "LL 输入滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_FILTER_FDIV1                 0x00000000U                                                        /*!< No filter, sampling is done at fDTS */"
+    },
+    {
+      "name": "LL_TIM_IC_FILTER_FDIV1_N2",
+      "value": "(TIM_CCMR1_IC1F_0 << 16U)",
+      "desc": "fSAMPLING=fCK_INT, N=2",
+      "group": "LL 输入滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_FILTER_FDIV1_N2              (TIM_CCMR1_IC1F_0 << 16U)                                          /*!< fSAMPLING=fCK_INT, N=2 */"
+    },
+    {
+      "name": "LL_TIM_IC_FILTER_FDIV1_N4",
+      "value": "(TIM_CCMR1_IC1F_1 << 16U)",
+      "desc": "fSAMPLING=fCK_INT, N=4",
+      "group": "LL 输入滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_FILTER_FDIV1_N4              (TIM_CCMR1_IC1F_1 << 16U)                                          /*!< fSAMPLING=fCK_INT, N=4 */"
+    },
+    {
+      "name": "LL_TIM_IC_FILTER_FDIV1_N8",
+      "value": "((TIM_CCMR1_IC1F_1 | TIM_CCMR1_IC1F_0) << 16U)",
+      "desc": "fSAMPLING=fCK_INT, N=8",
+      "group": "LL 输入滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_FILTER_FDIV1_N8              ((TIM_CCMR1_IC1F_1 | TIM_CCMR1_IC1F_0) << 16U)                     /*!< fSAMPLING=fCK_INT, N=8 */"
+    },
+    {
+      "name": "LL_TIM_IC_FILTER_FDIV2_N6",
+      "value": "(TIM_CCMR1_IC1F_2 << 16U)",
+      "desc": "fSAMPLING=fDTS/2, N=6",
+      "group": "LL 输入滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_FILTER_FDIV2_N6              (TIM_CCMR1_IC1F_2 << 16U)                                          /*!< fSAMPLING=fDTS/2, N=6 */"
+    },
+    {
+      "name": "LL_TIM_IC_FILTER_FDIV2_N8",
+      "value": "((TIM_CCMR1_IC1F_2 | TIM_CCMR1_IC1F_0) << 16U)",
+      "desc": "fSAMPLING=fDTS/2, N=8",
+      "group": "LL 输入滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_FILTER_FDIV2_N8              ((TIM_CCMR1_IC1F_2 | TIM_CCMR1_IC1F_0) << 16U)                     /*!< fSAMPLING=fDTS/2, N=8 */"
+    },
+    {
+      "name": "LL_TIM_IC_FILTER_FDIV4_N6",
+      "value": "((TIM_CCMR1_IC1F_2 | TIM_CCMR1_IC1F_1) << 16U)",
+      "desc": "fSAMPLING=fDTS/4, N=6",
+      "group": "LL 输入滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_FILTER_FDIV4_N6              ((TIM_CCMR1_IC1F_2 | TIM_CCMR1_IC1F_1) << 16U)                     /*!< fSAMPLING=fDTS/4, N=6 */"
+    },
+    {
+      "name": "LL_TIM_IC_FILTER_FDIV4_N8",
+      "value": "((TIM_CCMR1_IC1F_2 | TIM_CCMR1_IC1F_1 | TIM_CCMR1_IC1F_0) << 16U)",
+      "desc": "fSAMPLING=fDTS/4, N=8",
+      "group": "LL 输入滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_FILTER_FDIV4_N8              ((TIM_CCMR1_IC1F_2 | TIM_CCMR1_IC1F_1 | TIM_CCMR1_IC1F_0) << 16U)  /*!< fSAMPLING=fDTS/4, N=8 */"
+    },
+    {
+      "name": "LL_TIM_IC_FILTER_FDIV8_N6",
+      "value": "(TIM_CCMR1_IC1F_3 << 16U)",
+      "desc": "fSAMPLING=fDTS/8, N=6",
+      "group": "LL 输入滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_FILTER_FDIV8_N6              (TIM_CCMR1_IC1F_3 << 16U)                                          /*!< fSAMPLING=fDTS/8, N=6 */"
+    },
+    {
+      "name": "LL_TIM_IC_FILTER_FDIV8_N8",
+      "value": "((TIM_CCMR1_IC1F_3 | TIM_CCMR1_IC1F_0) << 16U)",
+      "desc": "fSAMPLING=fDTS/8, N=8",
+      "group": "LL 输入滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_FILTER_FDIV8_N8              ((TIM_CCMR1_IC1F_3 | TIM_CCMR1_IC1F_0) << 16U)                     /*!< fSAMPLING=fDTS/8, N=8 */"
+    },
+    {
+      "name": "LL_TIM_IC_FILTER_FDIV16_N5",
+      "value": "((TIM_CCMR1_IC1F_3 | TIM_CCMR1_IC1F_1) << 16U)",
+      "desc": "fSAMPLING=fDTS/16, N=5",
+      "group": "LL 输入滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_FILTER_FDIV16_N5             ((TIM_CCMR1_IC1F_3 | TIM_CCMR1_IC1F_1) << 16U)                     /*!< fSAMPLING=fDTS/16, N=5 */"
+    },
+    {
+      "name": "LL_TIM_IC_FILTER_FDIV16_N6",
+      "value": "((TIM_CCMR1_IC1F_3 | TIM_CCMR1_IC1F_1 | TIM_CCMR1_IC1F_0) << 16U)",
+      "desc": "fSAMPLING=fDTS/16, N=6",
+      "group": "LL 输入滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_FILTER_FDIV16_N6             ((TIM_CCMR1_IC1F_3 | TIM_CCMR1_IC1F_1 | TIM_CCMR1_IC1F_0) << 16U)  /*!< fSAMPLING=fDTS/16, N=6 */"
+    },
+    {
+      "name": "LL_TIM_IC_FILTER_FDIV16_N8",
+      "value": "((TIM_CCMR1_IC1F_3 | TIM_CCMR1_IC1F_2) << 16U)",
+      "desc": "fSAMPLING=fDTS/16, N=8",
+      "group": "LL 输入滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_FILTER_FDIV16_N8             ((TIM_CCMR1_IC1F_3 | TIM_CCMR1_IC1F_2) << 16U)                     /*!< fSAMPLING=fDTS/16, N=8 */"
+    },
+    {
+      "name": "LL_TIM_IC_FILTER_FDIV32_N5",
+      "value": "((TIM_CCMR1_IC1F_3 | TIM_CCMR1_IC1F_2 | TIM_CCMR1_IC1F_0) << 16U)",
+      "desc": "fSAMPLING=fDTS/32, N=5",
+      "group": "LL 输入滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_FILTER_FDIV32_N5             ((TIM_CCMR1_IC1F_3 | TIM_CCMR1_IC1F_2 | TIM_CCMR1_IC1F_0) << 16U)  /*!< fSAMPLING=fDTS/32, N=5 */"
+    },
+    {
+      "name": "LL_TIM_IC_FILTER_FDIV32_N6",
+      "value": "((TIM_CCMR1_IC1F_3 | TIM_CCMR1_IC1F_2 | TIM_CCMR1_IC1F_1) << 16U)",
+      "desc": "fSAMPLING=fDTS/32, N=6",
+      "group": "LL 输入滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_FILTER_FDIV32_N6             ((TIM_CCMR1_IC1F_3 | TIM_CCMR1_IC1F_2 | TIM_CCMR1_IC1F_1) << 16U)  /*!< fSAMPLING=fDTS/32, N=6 */"
+    },
+    {
+      "name": "LL_TIM_IC_FILTER_FDIV32_N8",
+      "value": "(TIM_CCMR1_IC1F << 16U)",
+      "desc": "fSAMPLING=fDTS/32, N=8",
+      "group": "LL 输入滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_FILTER_FDIV32_N8             (TIM_CCMR1_IC1F << 16U)                                            /*!< fSAMPLING=fDTS/32, N=8 */"
+    },
+    {
+      "name": "LL_TIM_IC_POLARITY_RISING",
+      "value": "0x00000000U",
+      "desc": "TIxFP1 上升沿有效, 不反相",
+      "group": "LL 捕获极性",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_POLARITY_RISING              0x00000000U                      /*!< The circuit is sensitive to TIxFP1 rising edge, TIxFP1 is not inverted */"
+    },
+    {
+      "name": "LL_TIM_IC_POLARITY_FALLING",
+      "value": "TIM_CCER_CC1P",
+      "desc": "TIxFP1 下降沿有效, 反相",
+      "group": "LL 捕获极性",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_POLARITY_FALLING             TIM_CCER_CC1P                    /*!< The circuit is sensitive to TIxFP1 falling edge, TIxFP1 is inverted */"
+    },
+    {
+      "name": "LL_TIM_IC_POLARITY_BOTHEDGE",
+      "value": "(TIM_CCER_CC1P | TIM_CCER_CC1NP)",
+      "desc": "TIxFP1 上升与下降沿均有效, 不反相",
+      "group": "LL 捕获极性",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_IC_POLARITY_BOTHEDGE            (TIM_CCER_CC1P | TIM_CCER_CC1NP) /*!< The circuit is sensitive to both TIxFP1 rising and falling edges, TIxFP1 is not inverted */"
+    },
+    {
+      "name": "LL_TIM_CLOCKSOURCE_INTERNAL",
+      "value": "0x00000000U",
+      "desc": "定时器由 RCC 提供的内部时钟驱动",
+      "group": "LL 时钟源",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_CLOCKSOURCE_INTERNAL            0x00000000U                                          /*!< The timer is clocked by the internal clock provided from the RCC */"
+    },
+    {
+      "name": "LL_TIM_CLOCKSOURCE_EXT_MODE1",
+      "value": "(TIM_SMCR_SMS_2 | TIM_SMCR_SMS_1 | TIM_SMCR_SMS_0)",
+      "desc": "外部时钟模式 1: 计数器在选定输入的每个上升/下降沿计数",
+      "group": "LL 时钟源",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_CLOCKSOURCE_EXT_MODE1           (TIM_SMCR_SMS_2 | TIM_SMCR_SMS_1 | TIM_SMCR_SMS_0)   /*!< Counter counts at each rising or falling edge on a selected input*/"
+    },
+    {
+      "name": "LL_TIM_CLOCKSOURCE_EXT_MODE2",
+      "value": "TIM_SMCR_ECE",
+      "desc": "外部时钟模式 2: 计数器在外部触发输入 ETR 的每个边沿计数",
+      "group": "LL 时钟源",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_CLOCKSOURCE_EXT_MODE2           TIM_SMCR_ECE                                         /*!< Counter counts at each rising or falling edge on the external trigger input ETR */"
+    },
+    {
+      "name": "LL_TIM_ENCODERMODE_X2_TI1",
+      "value": "TIM_SMCR_SMS_0",
+      "desc": "正交编码器模式 1(x2): 按 TI1FP1 边沿计数, 方向由 TI2FP2 电平决定",
+      "group": "LL 编码器模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ENCODERMODE_X2_TI1                     TIM_SMCR_SMS_0                                                     /*!< Quadrature encoder mode 1, x2 mode - Counter counts up/down on TI1FP1 edge depending on TI2FP2 level */"
+    },
+    {
+      "name": "LL_TIM_ENCODERMODE_X2_TI2",
+      "value": "TIM_SMCR_SMS_1",
+      "desc": "正交编码器模式 2(x2): 按 TI2FP2 边沿计数, 方向由 TI1FP1 电平决定",
+      "group": "LL 编码器模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ENCODERMODE_X2_TI2                     TIM_SMCR_SMS_1                                                     /*!< Quadrature encoder mode 2, x2 mode - Counter counts up/down on TI2FP2 edge depending on TI1FP1 level */"
+    },
+    {
+      "name": "LL_TIM_ENCODERMODE_X4_TI12",
+      "value": "(TIM_SMCR_SMS_1 | TIM_SMCR_SMS_0)",
+      "desc": "正交编码器模式 3(x4): 按 TI1FP1 与 TI2FP2 双沿计数, 方向由另一输入电平决定",
+      "group": "LL 编码器模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ENCODERMODE_X4_TI12                    (TIM_SMCR_SMS_1 | TIM_SMCR_SMS_0)                                  /*!< Quadrature encoder mode 3, x4 mode - Counter counts up/down on both TI1FP1 and TI2FP2 edges depending on the level of the other input */"
+    },
+    {
+      "name": "LL_TIM_TRGO_RESET",
+      "value": "0x00000000U",
+      "desc": "EGR 的 UG 位用作触发输出",
+      "group": "LL 触发输出",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_TRGO_RESET                      0x00000000U                                     /*!< UG bit from the TIMx_EGR register is used as trigger output */"
+    },
+    {
+      "name": "LL_TIM_TRGO_ENABLE",
+      "value": "TIM_CR2_MMS_0",
+      "desc": "计数器使能信号(CNT_EN)用作触发输出",
+      "group": "LL 触发输出",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_TRGO_ENABLE                     TIM_CR2_MMS_0                                   /*!< Counter Enable signal (CNT_EN) is used as trigger output */"
+    },
+    {
+      "name": "LL_TIM_TRGO_UPDATE",
+      "value": "TIM_CR2_MMS_1",
+      "desc": "更新事件用作触发输出",
+      "group": "LL 触发输出",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_TRGO_UPDATE                     TIM_CR2_MMS_1                                   /*!< Update event is used as trigger output */"
+    },
+    {
+      "name": "LL_TIM_TRGO_CC1IF",
+      "value": "(TIM_CR2_MMS_1 | TIM_CR2_MMS_0)",
+      "desc": "CC1 捕获或比较匹配用作触发输出",
+      "group": "LL 触发输出",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_TRGO_CC1IF                      (TIM_CR2_MMS_1 | TIM_CR2_MMS_0)                 /*!< CC1 capture or a compare match is used as trigger output */"
+    },
+    {
+      "name": "LL_TIM_TRGO_OC1REF",
+      "value": "TIM_CR2_MMS_2",
+      "desc": "OC1REF 信号用作触发输出",
+      "group": "LL 触发输出",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_TRGO_OC1REF                     TIM_CR2_MMS_2                                   /*!< OC1REF signal is used as trigger output */"
+    },
+    {
+      "name": "LL_TIM_TRGO_OC2REF",
+      "value": "(TIM_CR2_MMS_2 | TIM_CR2_MMS_0)",
+      "desc": "OC2REF 信号用作触发输出",
+      "group": "LL 触发输出",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_TRGO_OC2REF                     (TIM_CR2_MMS_2 | TIM_CR2_MMS_0)                 /*!< OC2REF signal is used as trigger output */"
+    },
+    {
+      "name": "LL_TIM_TRGO_OC3REF",
+      "value": "(TIM_CR2_MMS_2 | TIM_CR2_MMS_1)",
+      "desc": "OC3REF 信号用作触发输出",
+      "group": "LL 触发输出",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_TRGO_OC3REF                     (TIM_CR2_MMS_2 | TIM_CR2_MMS_1)                 /*!< OC3REF signal is used as trigger output */"
+    },
+    {
+      "name": "LL_TIM_TRGO_OC4REF",
+      "value": "(TIM_CR2_MMS_2 | TIM_CR2_MMS_1 | TIM_CR2_MMS_0)",
+      "desc": "OC4REF 信号用作触发输出",
+      "group": "LL 触发输出",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_TRGO_OC4REF                     (TIM_CR2_MMS_2 | TIM_CR2_MMS_1 | TIM_CR2_MMS_0) /*!< OC4REF signal is used as trigger output */"
+    },
+    {
+      "name": "LL_TIM_SLAVEMODE_DISABLED",
+      "value": "0x00000000U",
+      "desc": "从模式禁止",
+      "group": "LL 从模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SLAVEMODE_DISABLED              0x00000000U                         /*!< Slave mode disabled */"
+    },
+    {
+      "name": "LL_TIM_SLAVEMODE_RESET",
+      "value": "TIM_SMCR_SMS_2",
+      "desc": "复位模式: 选定触发输入(TRGI)上升沿复位计数器",
+      "group": "LL 从模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SLAVEMODE_RESET                 TIM_SMCR_SMS_2                      /*!< Reset Mode - Rising edge of the selected trigger input (TRGI) reinitializes the counter */"
+    },
+    {
+      "name": "LL_TIM_SLAVEMODE_GATED",
+      "value": "(TIM_SMCR_SMS_2 | TIM_SMCR_SMS_0)",
+      "desc": "门控模式: 触发输入(TRGI)为高时使能计数器时钟",
+      "group": "LL 从模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SLAVEMODE_GATED                 (TIM_SMCR_SMS_2 | TIM_SMCR_SMS_0)   /*!< Gated Mode - The counter clock is enabled when the trigger input (TRGI) is high */"
+    },
+    {
+      "name": "LL_TIM_SLAVEMODE_TRIGGER",
+      "value": "(TIM_SMCR_SMS_2 | TIM_SMCR_SMS_1)",
+      "desc": "触发模式: 触发 TRGI 上升沿启动计数器",
+      "group": "LL 从模式",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_SLAVEMODE_TRIGGER               (TIM_SMCR_SMS_2 | TIM_SMCR_SMS_1)   /*!< Trigger Mode - The counter starts at a rising edge of the trigger TRGI */"
+    },
+    {
+      "name": "LL_TIM_TS_ITR0",
+      "value": "0x00000000U",
+      "desc": "内部触发 0(ITR0)用作触发输入",
+      "group": "LL 触发输入选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_TS_ITR0                         0x00000000U                                                     /*!< Internal Trigger 0 (ITR0) is used as trigger input */"
+    },
+    {
+      "name": "LL_TIM_TS_ITR1",
+      "value": "TIM_SMCR_TS_0",
+      "desc": "内部触发 1(ITR1)用作触发输入",
+      "group": "LL 触发输入选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_TS_ITR1                         TIM_SMCR_TS_0                                                   /*!< Internal Trigger 1 (ITR1) is used as trigger input */"
+    },
+    {
+      "name": "LL_TIM_TS_ITR2",
+      "value": "TIM_SMCR_TS_1",
+      "desc": "内部触发 2(ITR2)用作触发输入",
+      "group": "LL 触发输入选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_TS_ITR2                         TIM_SMCR_TS_1                                                   /*!< Internal Trigger 2 (ITR2) is used as trigger input */"
+    },
+    {
+      "name": "LL_TIM_TS_ITR3",
+      "value": "(TIM_SMCR_TS_0 | TIM_SMCR_TS_1)",
+      "desc": "内部触发 3(ITR3)用作触发输入",
+      "group": "LL 触发输入选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_TS_ITR3                         (TIM_SMCR_TS_0 | TIM_SMCR_TS_1)                                 /*!< Internal Trigger 3 (ITR3) is used as trigger input */"
+    },
+    {
+      "name": "LL_TIM_TS_TI1F_ED",
+      "value": "TIM_SMCR_TS_2",
+      "desc": "TI1 边沿检测器(TI1F_ED)用作触发输入",
+      "group": "LL 触发输入选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_TS_TI1F_ED                      TIM_SMCR_TS_2                                                   /*!< TI1 Edge Detector (TI1F_ED) is used as trigger input */"
+    },
+    {
+      "name": "LL_TIM_TS_TI1FP1",
+      "value": "(TIM_SMCR_TS_2 | TIM_SMCR_TS_0)",
+      "desc": "滤波后的定时器输入 1(TI1FP1)用作触发输入",
+      "group": "LL 触发输入选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_TS_TI1FP1                       (TIM_SMCR_TS_2 | TIM_SMCR_TS_0)                                 /*!< Filtered Timer Input 1 (TI1FP1) is used as trigger input */"
+    },
+    {
+      "name": "LL_TIM_TS_TI2FP2",
+      "value": "(TIM_SMCR_TS_2 | TIM_SMCR_TS_1)",
+      "desc": "滤波后的定时器输入 2(TI2FP2)用作触发输入",
+      "group": "LL 触发输入选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_TS_TI2FP2                       (TIM_SMCR_TS_2 | TIM_SMCR_TS_1)                                 /*!< Filtered Timer Input 2 (TI12P2) is used as trigger input */"
+    },
+    {
+      "name": "LL_TIM_TS_ETRF",
+      "value": "(TIM_SMCR_TS_2 | TIM_SMCR_TS_1 | TIM_SMCR_TS_0)",
+      "desc": "滤波后的外部触发(ETRF)用作触发输入",
+      "group": "LL 触发输入选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_TS_ETRF                         (TIM_SMCR_TS_2 | TIM_SMCR_TS_1 | TIM_SMCR_TS_0)                 /*!< Filtered external Trigger (ETRF) is used as trigger input */"
+    },
+    {
+      "name": "LL_TIM_ETR_POLARITY_NONINVERTED",
+      "value": "0x00000000U",
+      "desc": "ETR 不反相, 高电平或上升沿有效",
+      "group": "LL ETR 极性",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_POLARITY_NONINVERTED        0x00000000U             /*!< ETR is non-inverted, active at high level or rising edge */"
+    },
+    {
+      "name": "LL_TIM_ETR_POLARITY_INVERTED",
+      "value": "TIM_SMCR_ETP",
+      "desc": "ETR 反相, 低电平或下降沿有效",
+      "group": "LL ETR 极性",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_POLARITY_INVERTED           TIM_SMCR_ETP            /*!< ETR is inverted, active at low level or falling edge */"
+    },
+    {
+      "name": "LL_TIM_ETR_PRESCALER_DIV1",
+      "value": "0x00000000U",
+      "desc": "ETR 预分频关闭",
+      "group": "LL ETR 预分频",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_PRESCALER_DIV1              0x00000000U             /*!< ETR prescaler OFF */"
+    },
+    {
+      "name": "LL_TIM_ETR_PRESCALER_DIV2",
+      "value": "TIM_SMCR_ETPS_0",
+      "desc": "ETR 频率除以 2",
+      "group": "LL ETR 预分频",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_PRESCALER_DIV2              TIM_SMCR_ETPS_0         /*!< ETR frequency is divided by 2 */"
+    },
+    {
+      "name": "LL_TIM_ETR_PRESCALER_DIV4",
+      "value": "TIM_SMCR_ETPS_1",
+      "desc": "ETR 频率除以 4",
+      "group": "LL ETR 预分频",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_PRESCALER_DIV4              TIM_SMCR_ETPS_1         /*!< ETR frequency is divided by 4 */"
+    },
+    {
+      "name": "LL_TIM_ETR_PRESCALER_DIV8",
+      "value": "TIM_SMCR_ETPS",
+      "desc": "ETR 频率除以 8",
+      "group": "LL ETR 预分频",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_PRESCALER_DIV8              TIM_SMCR_ETPS           /*!< ETR frequency is divided by 8 */"
+    },
+    {
+      "name": "LL_TIM_ETR_FILTER_FDIV1",
+      "value": "0x00000000U",
+      "desc": "无滤波, 采样频率为 fDTS",
+      "group": "LL ETR 滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_FILTER_FDIV1                0x00000000U                                          /*!< No filter, sampling is done at fDTS */"
+    },
+    {
+      "name": "LL_TIM_ETR_FILTER_FDIV1_N2",
+      "value": "TIM_SMCR_ETF_0",
+      "desc": "fSAMPLING=fCK_INT, N=2",
+      "group": "LL ETR 滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_FILTER_FDIV1_N2             TIM_SMCR_ETF_0                                       /*!< fSAMPLING=fCK_INT, N=2 */"
+    },
+    {
+      "name": "LL_TIM_ETR_FILTER_FDIV1_N4",
+      "value": "TIM_SMCR_ETF_1",
+      "desc": "fSAMPLING=fCK_INT, N=4",
+      "group": "LL ETR 滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_FILTER_FDIV1_N4             TIM_SMCR_ETF_1                                       /*!< fSAMPLING=fCK_INT, N=4 */"
+    },
+    {
+      "name": "LL_TIM_ETR_FILTER_FDIV1_N8",
+      "value": "(TIM_SMCR_ETF_1 | TIM_SMCR_ETF_0)",
+      "desc": "fSAMPLING=fCK_INT, N=8",
+      "group": "LL ETR 滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_FILTER_FDIV1_N8             (TIM_SMCR_ETF_1 | TIM_SMCR_ETF_0)                    /*!< fSAMPLING=fCK_INT, N=8 */"
+    },
+    {
+      "name": "LL_TIM_ETR_FILTER_FDIV2_N6",
+      "value": "TIM_SMCR_ETF_2",
+      "desc": "fSAMPLING=fDTS/2, N=6",
+      "group": "LL ETR 滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_FILTER_FDIV2_N6             TIM_SMCR_ETF_2                                       /*!< fSAMPLING=fDTS/2, N=6 */"
+    },
+    {
+      "name": "LL_TIM_ETR_FILTER_FDIV2_N8",
+      "value": "(TIM_SMCR_ETF_2 | TIM_SMCR_ETF_0)",
+      "desc": "fSAMPLING=fDTS/2, N=8",
+      "group": "LL ETR 滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_FILTER_FDIV2_N8             (TIM_SMCR_ETF_2 | TIM_SMCR_ETF_0)                    /*!< fSAMPLING=fDTS/2, N=8 */"
+    },
+    {
+      "name": "LL_TIM_ETR_FILTER_FDIV4_N6",
+      "value": "(TIM_SMCR_ETF_2 | TIM_SMCR_ETF_1)",
+      "desc": "fSAMPLING=fDTS/4, N=6",
+      "group": "LL ETR 滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_FILTER_FDIV4_N6             (TIM_SMCR_ETF_2 | TIM_SMCR_ETF_1)                    /*!< fSAMPLING=fDTS/4, N=6 */"
+    },
+    {
+      "name": "LL_TIM_ETR_FILTER_FDIV4_N8",
+      "value": "(TIM_SMCR_ETF_2 | TIM_SMCR_ETF_1 | TIM_SMCR_ETF_0)",
+      "desc": "fSAMPLING=fDTS/4, N=8",
+      "group": "LL ETR 滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_FILTER_FDIV4_N8             (TIM_SMCR_ETF_2 | TIM_SMCR_ETF_1 | TIM_SMCR_ETF_0)   /*!< fSAMPLING=fDTS/4, N=8 */"
+    },
+    {
+      "name": "LL_TIM_ETR_FILTER_FDIV8_N6",
+      "value": "TIM_SMCR_ETF_3",
+      "desc": "fSAMPLING=fDTS/8, N=6",
+      "group": "LL ETR 滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_FILTER_FDIV8_N6             TIM_SMCR_ETF_3                                       /*!< fSAMPLING=fDTS/8, N=8 */"
+    },
+    {
+      "name": "LL_TIM_ETR_FILTER_FDIV8_N8",
+      "value": "(TIM_SMCR_ETF_3 | TIM_SMCR_ETF_0)",
+      "desc": "fSAMPLING=fDTS/8, N=8",
+      "group": "LL ETR 滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_FILTER_FDIV8_N8             (TIM_SMCR_ETF_3 | TIM_SMCR_ETF_0)                    /*!< fSAMPLING=fDTS/16, N=5 */"
+    },
+    {
+      "name": "LL_TIM_ETR_FILTER_FDIV16_N5",
+      "value": "(TIM_SMCR_ETF_3 | TIM_SMCR_ETF_1)",
+      "desc": "fSAMPLING=fDTS/16, N=5",
+      "group": "LL ETR 滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_FILTER_FDIV16_N5            (TIM_SMCR_ETF_3 | TIM_SMCR_ETF_1)                    /*!< fSAMPLING=fDTS/16, N=6 */"
+    },
+    {
+      "name": "LL_TIM_ETR_FILTER_FDIV16_N6",
+      "value": "(TIM_SMCR_ETF_3 | TIM_SMCR_ETF_1 | TIM_SMCR_ETF_0)",
+      "desc": "fSAMPLING=fDTS/16, N=6",
+      "group": "LL ETR 滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_FILTER_FDIV16_N6            (TIM_SMCR_ETF_3 | TIM_SMCR_ETF_1 | TIM_SMCR_ETF_0)   /*!< fSAMPLING=fDTS/16, N=8 */"
+    },
+    {
+      "name": "LL_TIM_ETR_FILTER_FDIV16_N8",
+      "value": "(TIM_SMCR_ETF_3 | TIM_SMCR_ETF_2)",
+      "desc": "fSAMPLING=fDTS/16, N=8",
+      "group": "LL ETR 滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_FILTER_FDIV16_N8            (TIM_SMCR_ETF_3 | TIM_SMCR_ETF_2)                    /*!< fSAMPLING=fDTS/16, N=5 */"
+    },
+    {
+      "name": "LL_TIM_ETR_FILTER_FDIV32_N5",
+      "value": "(TIM_SMCR_ETF_3 | TIM_SMCR_ETF_2 | TIM_SMCR_ETF_0)",
+      "desc": "fSAMPLING=fDTS/32, N=5",
+      "group": "LL ETR 滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_FILTER_FDIV32_N5            (TIM_SMCR_ETF_3 | TIM_SMCR_ETF_2 | TIM_SMCR_ETF_0)   /*!< fSAMPLING=fDTS/32, N=5 */"
+    },
+    {
+      "name": "LL_TIM_ETR_FILTER_FDIV32_N6",
+      "value": "(TIM_SMCR_ETF_3 | TIM_SMCR_ETF_2 | TIM_SMCR_ETF_1)",
+      "desc": "fSAMPLING=fDTS/32, N=6",
+      "group": "LL ETR 滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_FILTER_FDIV32_N6            (TIM_SMCR_ETF_3 | TIM_SMCR_ETF_2 | TIM_SMCR_ETF_1)   /*!< fSAMPLING=fDTS/32, N=6 */"
+    },
+    {
+      "name": "LL_TIM_ETR_FILTER_FDIV32_N8",
+      "value": "TIM_SMCR_ETF",
+      "desc": "fSAMPLING=fDTS/32, N=8",
+      "group": "LL ETR 滤波",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_ETR_FILTER_FDIV32_N8            TIM_SMCR_ETF                                         /*!< fSAMPLING=fDTS/32, N=8 */"
+    },
+    {
+      "name": "LL_TIM_BREAK_POLARITY_LOW",
+      "value": "0x00000000U",
+      "desc": "刹车输入 BRK 低电平有效",
+      "group": "LL 刹车极性",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_BREAK_POLARITY_LOW              0x00000000U               /*!< Break input BRK is active low */"
+    },
+    {
+      "name": "LL_TIM_BREAK_POLARITY_HIGH",
+      "value": "TIM_BDTR_BKP",
+      "desc": "刹车输入 BRK 高电平有效",
+      "group": "LL 刹车极性",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_BREAK_POLARITY_HIGH             TIM_BDTR_BKP              /*!< Break input BRK is active high */"
+    },
+    {
+      "name": "LL_TIM_OSSI_DISABLE",
+      "value": "0x00000000U",
+      "desc": "空闲时 OCx/OCxN 输出禁止",
+      "group": "LL 空闲态关断选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OSSI_DISABLE                    0x00000000U             /*!< When inactive, OCx/OCxN outputs are disabled */"
+    },
+    {
+      "name": "LL_TIM_OSSI_ENABLE",
+      "value": "TIM_BDTR_OSSI",
+      "desc": "空闲时 OCx/OCxN 先强制为无效电平, 死区后再进入空闲电平",
+      "group": "LL 空闲态关断选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OSSI_ENABLE                     TIM_BDTR_OSSI           /*!< When inactive, OxC/OCxN outputs are first forced with their inactive level then forced to their idle level after the deadtime */"
+    },
+    {
+      "name": "LL_TIM_OSSR_DISABLE",
+      "value": "0x00000000U",
+      "desc": "运行中无效时 OCx/OCxN 输出禁止",
+      "group": "LL 运行态关断选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OSSR_DISABLE                    0x00000000U             /*!< When inactive, OCx/OCxN outputs are disabled */"
+    },
+    {
+      "name": "LL_TIM_OSSR_ENABLE",
+      "value": "TIM_BDTR_OSSR",
+      "desc": "运行中无效时 OCx/OCxN 输出以无效电平使能(CCxE/CCxNE=1 即生效)",
+      "group": "LL 运行态关断选择",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OSSR_ENABLE                     TIM_BDTR_OSSR           /*!< When inactive, OC/OCN outputs are enabled with their inactive level as soon as CCxE=1 or CCxNE=1 */"
+    },
+    {
+      "name": "LL_TIM_OCREF_CLR_INT_OCREF_CLR",
+      "value": "0x00000000U",
+      "desc": "OCREF_CLR_INT 连接到 OCREF_CLR 输入",
+      "group": "LL OCREF 清零源",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OCREF_CLR_INT_OCREF_CLR     0x00000000U         /*!< OCREF_CLR_INT is connected to the OCREF_CLR input */"
+    },
+    {
+      "name": "LL_TIM_OCREF_CLR_INT_ETR",
+      "value": "TIM_SMCR_OCCS",
+      "desc": "OCREF_CLR_INT 连接到 ETRF",
+      "group": "LL OCREF 清零源",
+      "file": "py32f002b_ll_tim.h",
+      "src": "#define LL_TIM_OCREF_CLR_INT_ETR           TIM_SMCR_OCCS       /*!< OCREF_CLR_INT is connected to ETRF */"
+    }
+  ]
+}

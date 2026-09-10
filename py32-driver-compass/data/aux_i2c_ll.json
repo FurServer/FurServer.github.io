@@ -1,0 +1,124 @@
+{
+  "module": "I2C",
+  "moduleId": "i2c",
+  "hal": [],
+  "ll": [
+    {
+      "name": "__LL_I2C_FREQ_HZ_TO_MHZ",
+      "sig": "#define __LL_I2C_FREQ_HZ_TO_MHZ(__PCLK__)                               (uint32_t)((__PCLK__)/1000000U)",
+      "brief": "将外设时钟频率由 Hz 换算为 MHz(除以 1000000)。",
+      "params": [
+        {
+          "name": "__PCLK__",
+          "type": "宏参数",
+          "desc": "外设时钟频率(Hz)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "时钟频率(MHz)"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "macro",
+      "src": "#define __LL_I2C_FREQ_HZ_TO_MHZ(__PCLK__)                               (uint32_t)((__PCLK__)/1000000U)"
+    },
+    {
+      "name": "__LL_I2C_FREQ_MHZ_TO_HZ",
+      "sig": "#define __LL_I2C_FREQ_MHZ_TO_HZ(__PCLK__)                               (uint32_t)((__PCLK__)*1000000U)",
+      "brief": "将外设时钟频率由 MHz 换算为 Hz(乘以 1000000)。",
+      "params": [
+        {
+          "name": "__PCLK__",
+          "type": "宏参数",
+          "desc": "外设时钟频率(MHz)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "时钟频率(Hz)"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "macro",
+      "src": "#define __LL_I2C_FREQ_MHZ_TO_HZ(__PCLK__)                               (uint32_t)((__PCLK__)*1000000U)"
+    },
+    {
+      "name": "__LL_I2C_RISE_TIME",
+      "sig": "#define __LL_I2C_RISE_TIME(__FREQRANGE__, __SPEED__)                    (uint32_t)(((__SPEED__) <= LL_I2C_MAX_SPEED_STANDARD) ? ((__FREQRANGE__) + 1U) : ((((__FREQRANGE__) * 300U) / 1000U) + 1U))",
+      "brief": "计算 I2C 时钟上升时间 TRISE 值: 标准模式(速度≤LL_I2C_MAX_SPEED_STANDARD)为 FREQRANGE+1, 快速模式为 FREQRANGE*300/1000+1。",
+      "params": [
+        {
+          "name": "__FREQRANGE__",
+          "type": "宏参数",
+          "desc": "外设时钟频率(MHz, 对应 FREQRANGE 寄存器值)"
+        },
+        {
+          "name": "__SPEED__",
+          "type": "宏参数",
+          "desc": "I2C 速度(Hz)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "TRISE 值(2~0x3F)"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "macro",
+      "src": "#define __LL_I2C_RISE_TIME(__FREQRANGE__, __SPEED__)                    (uint32_t)(((__SPEED__) <= LL_I2C_MAX_SPEED_STANDARD) ? ((__FREQRANGE__) + 1U) : ((((__FREQRANGE__) * 300U) / 1000U) + 1U))"
+    },
+    {
+      "name": "__LL_I2C_SPEED_FAST_TO_CCR",
+      "sig": "#define __LL_I2C_SPEED_FAST_TO_CCR(__PCLK__, __SPEED__, __DUTYCYCLE__)  (uint32_t)(((__DUTYCYCLE__) == LL_I2C_DUTYCYCLE_2)? \\\n                                                                            (((((__PCLK__) / ((__SPEED__) * 3U)) & I2C_CCR_CCR) == 0U)? 1U:((__PCLK__) / ((__SPEED__) * 3U))) : \\\n                                                                            (((((__PCLK__) / ((__SPEED__) * 25U)) & I2C_CCR_CCR) == 0U)? 1U:((__PCLK__) / ((__SPEED__) * 25U))))",
+      "brief": "计算快速模式 CCR 值: 占空比 2 时按 PCLK/(SPEED*3), 16:9 时按 PCLK/(SPEED*25), 计算结果为 0 时取 1。",
+      "params": [
+        {
+          "name": "__PCLK__",
+          "type": "宏参数",
+          "desc": "外设时钟频率(Hz)"
+        },
+        {
+          "name": "__SPEED__",
+          "type": "宏参数",
+          "desc": "I2C 速度(100k~400kHz, Hz)"
+        },
+        {
+          "name": "__DUTYCYCLE__",
+          "type": "宏参数",
+          "desc": "快速模式占空比, 可取 LL_I2C_DUTYCYCLE_2 / LL_I2C_DUTYCYCLE_16_9"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "CCR 值(1~0xFFF)"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "macro",
+      "src": "#define __LL_I2C_SPEED_FAST_TO_CCR(__PCLK__, __SPEED__, __DUTYCYCLE__)  (uint32_t)(((__DUTYCYCLE__) == LL_I2C_DUTYCYCLE_2)? \\\r\n                                                                            (((((__PCLK__) / ((__SPEED__) * 3U)) & I2C_CCR_CCR) == 0U)? 1U:((__PCLK__) / ((__SPEED__) * 3U))) : \\\r\n                                                                            (((((__PCLK__) / ((__SPEED__) * 25U)) & I2C_CCR_CCR) == 0U)? 1U:((__PCLK__) / ((__SPEED__) * 25U))))"
+    },
+    {
+      "name": "__LL_I2C_SPEED_STANDARD_TO_CCR",
+      "sig": "#define __LL_I2C_SPEED_STANDARD_TO_CCR(__PCLK__, __SPEED__)             (uint32_t)(((((__PCLK__)/((__SPEED__) << 1U)) & I2C_CCR_CCR) < 4U)? 4U:((__PCLK__) / ((__SPEED__) << 1U)))",
+      "brief": "计算标准模式 CCR 值: PCLK/(SPEED*2), 结果小于 4 时取最小值 4。",
+      "params": [
+        {
+          "name": "__PCLK__",
+          "type": "宏参数",
+          "desc": "外设时钟频率(Hz)"
+        },
+        {
+          "name": "__SPEED__",
+          "type": "宏参数",
+          "desc": "I2C 速度(≤100kHz, Hz)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "CCR 值(4~0xFFF)"
+      },
+      "file": "py32f002b_ll_i2c.h",
+      "kind": "macro",
+      "src": "#define __LL_I2C_SPEED_STANDARD_TO_CCR(__PCLK__, __SPEED__)             (uint32_t)(((((__PCLK__)/((__SPEED__) << 1U)) & I2C_CCR_CCR) < 4U)? 4U:((__PCLK__) / ((__SPEED__) << 1U)))"
+    }
+  ],
+  "types": [],
+  "consts": []
+}

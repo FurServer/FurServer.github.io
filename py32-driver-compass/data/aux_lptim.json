@@ -1,0 +1,152 @@
+{
+  "module": "LPTIM",
+  "moduleId": "lptim",
+  "hal": [
+    {
+      "name": "IS_LPTIM_AUTORELOAD",
+      "sig": "#define IS_LPTIM_AUTORELOAD(__AUTORELOAD__)     ((__AUTORELOAD__) <= 0x0000FFFFUL)",
+      "brief": "校验 LPTIM 自动重载值不超过 16 位最大值(0xFFFF)",
+      "params": [
+        {
+          "name": "__AUTORELOAD__",
+          "type": "宏参数",
+          "desc": "待校验的自动重载计数值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_lptim.h",
+      "kind": "macro",
+      "src": "#define IS_LPTIM_AUTORELOAD(__AUTORELOAD__)     ((__AUTORELOAD__) <= 0x0000FFFFUL)"
+    },
+    {
+      "name": "IS_LPTIM_CLOCK_PRESCALER",
+      "sig": "#define IS_LPTIM_CLOCK_PRESCALER(__PRESCALER__) (((__PRESCALER__) ==  LPTIM_PRESCALER_DIV1  ) || \\\n                                                 ((__PRESCALER__) ==  LPTIM_PRESCALER_DIV2  ) || \\\n                                                 ((__PRESCALER__) ==  LPTIM_PRESCALER_DIV4  ) || \\\n                                                 ((__PRESCALER__) ==  LPTIM_PRESCALER_DIV8  ) || \\\n                                                 ((__PRESCALER__) ==  LPTIM_PRESCALER_DIV16 ) || \\\n                                                 ((__PRESCALER__) ==  LPTIM_PRESCALER_DIV32 ) || \\\n                                                 ((__PRESCALER__) ==  LPTIM_PRESCALER_DIV64 ) || \\\n                                                 ((__PRESCALER__) ==  LPTIM_PRESCALER_DIV128))",
+      "brief": "校验 LPTIM 时钟预分频系数是否为 DIV1~DIV128 之一",
+      "params": [
+        {
+          "name": "__PRESCALER__",
+          "type": "宏参数",
+          "desc": "待校验的预分频值(LPTIM_PRESCALER_DIV*)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_lptim.h",
+      "kind": "macro",
+      "src": "#define IS_LPTIM_CLOCK_PRESCALER(__PRESCALER__) (((__PRESCALER__) ==  LPTIM_PRESCALER_DIV1  ) || \\\r\n                                                 ((__PRESCALER__) ==  LPTIM_PRESCALER_DIV2  ) || \\\r\n                                                 ((__PRESCALER__) ==  LPTIM_PRESCALER_DIV4  ) || \\\r\n                                                 ((__PRESCALER__) ==  LPTIM_PRESCALER_DIV8  ) || \\\r\n                                                 ((__PRESCALER__) ==  LPTIM_PRESCALER_DIV16 ) || \\\r\n                                                 ((__PRESCALER__) ==  LPTIM_PRESCALER_DIV32 ) || \\\r\n                                                 ((__PRESCALER__) ==  LPTIM_PRESCALER_DIV64 ) || \\\r\n                                                 ((__PRESCALER__) ==  LPTIM_PRESCALER_DIV128))"
+    },
+    {
+      "name": "IS_LPTIM_CLOCK_PRESCALERDIV1",
+      "sig": "#define IS_LPTIM_CLOCK_PRESCALERDIV1(__PRESCALER__) ((__PRESCALER__) ==  LPTIM_PRESCALER_DIV1)",
+      "brief": "校验 LPTIM 时钟预分频系数是否等于 DIV1(用于要求 1 分频的特定场景)",
+      "params": [
+        {
+          "name": "__PRESCALER__",
+          "type": "宏参数",
+          "desc": "待校验的预分频值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_lptim.h",
+      "kind": "macro",
+      "src": "#define IS_LPTIM_CLOCK_PRESCALERDIV1(__PRESCALER__) ((__PRESCALER__) ==  LPTIM_PRESCALER_DIV1)"
+    },
+    {
+      "name": "IS_LPTIM_PERIOD",
+      "sig": "#define IS_LPTIM_PERIOD(__PERIOD__)             ((__PERIOD__) <= 0x0000FFFFUL)",
+      "brief": "校验 LPTIM 周期值不超过 16 位最大值(0xFFFF)",
+      "params": [
+        {
+          "name": "__PERIOD__",
+          "type": "宏参数",
+          "desc": "待校验的周期计数值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_lptim.h",
+      "kind": "macro",
+      "src": "#define IS_LPTIM_PERIOD(__PERIOD__)             ((__PERIOD__) <= 0x0000FFFFUL)"
+    },
+    {
+      "name": "IS_LPTIM_UPDATE_MODE",
+      "sig": "#define IS_LPTIM_UPDATE_MODE(__MODE__)          (((__MODE__) == LPTIM_UPDATE_IMMEDIATE) || \\\n                                                 ((__MODE__) == LPTIM_UPDATE_ENDOFPERIOD))",
+      "brief": "校验 LPTIM 更新模式是否为立即更新(LPTIM_UPDATE_IMMEDIATE)或周期结束更新(LPTIM_UPDATE_ENDOFPERIOD)",
+      "params": [
+        {
+          "name": "__MODE__",
+          "type": "宏参数",
+          "desc": "待校验的更新模式"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_lptim.h",
+      "kind": "macro",
+      "src": "#define IS_LPTIM_UPDATE_MODE(__MODE__)          (((__MODE__) == LPTIM_UPDATE_IMMEDIATE) || \\\r\n                                                 ((__MODE__) == LPTIM_UPDATE_ENDOFPERIOD))"
+    }
+  ],
+  "ll": [
+    {
+      "name": "IS_LL_LPTIM_CLOCK_PRESCALER",
+      "sig": "#define IS_LL_LPTIM_CLOCK_PRESCALER(__VALUE__) (((__VALUE__) == LL_LPTIM_PRESCALER_DIV1)   \\\n                                                || ((__VALUE__) == LL_LPTIM_PRESCALER_DIV2)   \\\n                                                || ((__VALUE__) == LL_LPTIM_PRESCALER_DIV4)   \\\n                                                || ((__VALUE__) == LL_LPTIM_PRESCALER_DIV8)   \\\n                                                || ((__VALUE__) == LL_LPTIM_PRESCALER_DIV16)  \\\n                                                || ((__VALUE__) == LL_LPTIM_PRESCALER_DIV32)  \\\n                                                || ((__VALUE__) == LL_LPTIM_PRESCALER_DIV64)  \\\n                                                || ((__VALUE__) == LL_LPTIM_PRESCALER_DIV128))",
+      "brief": "校验 LL LPTIM 时钟预分频系数是否为 DIV1~DIV128 之一",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的预分频值(LL_LPTIM_PRESCALER_DIV*)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_lptim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_LPTIM_CLOCK_PRESCALER(__VALUE__) (((__VALUE__) == LL_LPTIM_PRESCALER_DIV1)   \\\r\n                                                || ((__VALUE__) == LL_LPTIM_PRESCALER_DIV2)   \\\r\n                                                || ((__VALUE__) == LL_LPTIM_PRESCALER_DIV4)   \\\r\n                                                || ((__VALUE__) == LL_LPTIM_PRESCALER_DIV8)   \\\r\n                                                || ((__VALUE__) == LL_LPTIM_PRESCALER_DIV16)  \\\r\n                                                || ((__VALUE__) == LL_LPTIM_PRESCALER_DIV32)  \\\r\n                                                || ((__VALUE__) == LL_LPTIM_PRESCALER_DIV64)  \\\r\n                                                || ((__VALUE__) == LL_LPTIM_PRESCALER_DIV128))"
+    },
+    {
+      "name": "IS_LL_LPTIM_UPDATA_MODE",
+      "sig": "#define IS_LL_LPTIM_UPDATA_MODE(__VALUE__) (((__VALUE__) == LL_LPTIM_UPDATE_MODE_IMMEDIATE)   \\\n                                            || ((__VALUE__) == LL_LPTIM_UPDATE_MODE_ENDOFPERIOD))   \\\n  \n\n/**",
+      "brief": "校验 LPTIM 寄存器更新模式是否为立即更新(LL_LPTIM_UPDATE_MODE_IMMEDIATE)或周期结束更新(LL_LPTIM_UPDATE_MODE_ENDOFPERIOD)",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的更新模式(LL_LPTIM_UPDATE_MODE_*)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [
+        "宏名 UPDATA 为官方源码原始拼写(疑似 UPDATE 的笔误), 须保持原名; 对应常量名为 LL_LPTIM_UPDATE_MODE_*"
+      ],
+      "file": "py32f002b_ll_lptim.c",
+      "kind": "macro",
+      "src": "#define IS_LL_LPTIM_UPDATA_MODE(__VALUE__) (((__VALUE__) == LL_LPTIM_UPDATE_MODE_IMMEDIATE)   \\\r\n                                            || ((__VALUE__) == LL_LPTIM_UPDATE_MODE_ENDOFPERIOD))   \\\r\n  \r\n\r\n/**"
+    }
+  ],
+  "types": [],
+  "consts": []
+}

@@ -1,0 +1,325 @@
+{
+  "module": "GPIO",
+  "moduleId": "gpio",
+  "hal": [
+    {
+      "name": "GPIO_GET_INDEX",
+      "sig": "#define GPIO_GET_INDEX(__GPIOx__)    (((__GPIOx__) == (GPIOA))? 0uL :\\\n                                      ((__GPIOx__) == (GPIOB))? 1uL : 2uL)",
+      "brief": "从 GPIO 端口基址计算端口索引(0/1/2)",
+      "params": [
+        {
+          "name": "__GPIOx__",
+          "type": "宏参数",
+          "desc": "GPIO 端口基址(GPIOA/GPIOB/GPIOC 等外设实例指针)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "端口索引: GPIOA 为 0, GPIOB 为 1, 其它端口为 2"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_gpio_ex.h",
+      "kind": "macro",
+      "src": "#define GPIO_GET_INDEX(__GPIOx__)    (((__GPIOx__) == (GPIOA))? 0uL :\\\r\n                                      ((__GPIOx__) == (GPIOB))? 1uL : 2uL)"
+    },
+    {
+      "name": "IS_GPIO_AF",
+      "sig": "#define IS_GPIO_AF(AF)         ((AF) <= (uint8_t)0x07)",
+      "brief": "校验 GPIO 复用功能编号 AF 是否合法(0~7)",
+      "params": [
+        {
+          "name": "AF",
+          "type": "宏参数",
+          "desc": "待校验的复用功能编号"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_gpio_ex.h",
+      "kind": "macro",
+      "src": "#define IS_GPIO_AF(AF)         ((AF) <= (uint8_t)0x07)"
+    },
+    {
+      "name": "IS_GPIO_MODE",
+      "sig": "#define IS_GPIO_MODE(__MODE__)      (((__MODE__) == GPIO_MODE_INPUT)              ||\\\n                                     ((__MODE__) == GPIO_MODE_OUTPUT_PP)          ||\\\n                                     ((__MODE__) == GPIO_MODE_OUTPUT_OD)          ||\\\n                                     ((__MODE__) == GPIO_MODE_AF_PP)              ||\\\n                                     ((__MODE__) == GPIO_MODE_AF_OD)              ||\\\n                                     ((__MODE__) == GPIO_MODE_IT_RISING)          ||\\\n                                     ((__MODE__) == GPIO_MODE_IT_FALLING)         ||\\\n                                     ((__MODE__) == GPIO_MODE_IT_RISING_FALLING)  ||\\\n                                     ((__MODE__) == GPIO_MODE_EVT_RISING)         ||\\\n                                     ((__MODE__) == GPIO_MODE_EVT_FALLING)        ||\\\n                                     ((__MODE__) == GPIO_MODE_EVT_RISING_FALLING) ||\\\n                                     ((__MODE__) == GPIO_MODE_ANALOG))",
+      "brief": "校验 GPIO 工作模式是否为输入/推挽输出/开漏输出/AF 推挽/AF 开漏/中断/事件/模拟等合法值之一",
+      "params": [
+        {
+          "name": "__MODE__",
+          "type": "宏参数",
+          "desc": "待校验的 GPIO 模式(GPIO_MODE_* 系列常量)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_gpio.h",
+      "kind": "macro",
+      "src": "#define IS_GPIO_MODE(__MODE__)      (((__MODE__) == GPIO_MODE_INPUT)              ||\\\r\n                                     ((__MODE__) == GPIO_MODE_OUTPUT_PP)          ||\\\r\n                                     ((__MODE__) == GPIO_MODE_OUTPUT_OD)          ||\\\r\n                                     ((__MODE__) == GPIO_MODE_AF_PP)              ||\\\r\n                                     ((__MODE__) == GPIO_MODE_AF_OD)              ||\\\r\n                                     ((__MODE__) == GPIO_MODE_IT_RISING)          ||\\\r\n                                     ((__MODE__) == GPIO_MODE_IT_FALLING)         ||\\\r\n                                     ((__MODE__) == GPIO_MODE_IT_RISING_FALLING)  ||\\\r\n                                     ((__MODE__) == GPIO_MODE_EVT_RISING)         ||\\\r\n                                     ((__MODE__) == GPIO_MODE_EVT_FALLING)        ||\\\r\n                                     ((__MODE__) == GPIO_MODE_EVT_RISING_FALLING) ||\\\r\n                                     ((__MODE__) == GPIO_MODE_ANALOG))"
+    },
+    {
+      "name": "IS_GPIO_PIN",
+      "sig": "#define IS_GPIO_PIN(__PIN__)        ((((uint32_t)(__PIN__) & GPIO_PIN_MASK) != 0x00u) &&\\\n                                     (((uint32_t)(__PIN__) & ~GPIO_PIN_MASK) == 0x00u))",
+      "brief": "校验引脚掩码非零且不超出 GPIO_PIN_MASK(0xFFFF)允许范围",
+      "params": [
+        {
+          "name": "__PIN__",
+          "type": "宏参数",
+          "desc": "待校验的引脚掩码(GPIO_PIN_* 组合)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_gpio.h",
+      "kind": "macro",
+      "src": "#define IS_GPIO_PIN(__PIN__)        ((((uint32_t)(__PIN__) & GPIO_PIN_MASK) != 0x00u) &&\\\r\n                                     (((uint32_t)(__PIN__) & ~GPIO_PIN_MASK) == 0x00u))"
+    },
+    {
+      "name": "IS_GPIO_PIN_ACTION",
+      "sig": "#define IS_GPIO_PIN_ACTION(ACTION)  (((ACTION) == GPIO_PIN_RESET) || ((ACTION) == GPIO_PIN_SET))",
+      "brief": "校验引脚动作是否为 GPIO_PIN_RESET(0)或 GPIO_PIN_SET(1)",
+      "params": [
+        {
+          "name": "ACTION",
+          "type": "宏参数",
+          "desc": "待校验的引脚电平动作"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_gpio.h",
+      "kind": "macro",
+      "src": "#define IS_GPIO_PIN_ACTION(ACTION)  (((ACTION) == GPIO_PIN_RESET) || ((ACTION) == GPIO_PIN_SET))"
+    },
+    {
+      "name": "IS_GPIO_PULL",
+      "sig": "#define IS_GPIO_PULL(__PULL__)      (((__PULL__) == GPIO_NOPULL)   ||\\\n                                     ((__PULL__) == GPIO_PULLUP)   || \\\n                                     ((__PULL__) == GPIO_PULLDOWN))",
+      "brief": "校验上下拉配置是否为 GPIO_NOPULL/GPIO_PULLUP/GPIO_PULLDOWN 之一",
+      "params": [
+        {
+          "name": "__PULL__",
+          "type": "宏参数",
+          "desc": "待校验的上下拉配置"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_gpio.h",
+      "kind": "macro",
+      "src": "#define IS_GPIO_PULL(__PULL__)      (((__PULL__) == GPIO_NOPULL)   ||\\\r\n                                     ((__PULL__) == GPIO_PULLUP)   || \\\r\n                                     ((__PULL__) == GPIO_PULLDOWN))"
+    },
+    {
+      "name": "IS_GPIO_SPEED",
+      "sig": "#define IS_GPIO_SPEED(__SPEED__)    (((__SPEED__) == GPIO_SPEED_FREQ_LOW)    ||\\\n                                     ((__SPEED__) == GPIO_SPEED_FREQ_MEDIUM) ||\\\n                                     ((__SPEED__) == GPIO_SPEED_FREQ_HIGH)   ||\\\n                                     ((__SPEED__) == GPIO_SPEED_FREQ_VERY_HIGH))",
+      "brief": "校验 GPIO 输出速度等级是否为 LOW/MEDIUM/HIGH/VERY_HIGH 之一",
+      "params": [
+        {
+          "name": "__SPEED__",
+          "type": "宏参数",
+          "desc": "待校验的输出速度等级(GPIO_SPEED_FREQ_*)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_gpio.h",
+      "kind": "macro",
+      "src": "#define IS_GPIO_SPEED(__SPEED__)    (((__SPEED__) == GPIO_SPEED_FREQ_LOW)    ||\\\r\n                                     ((__SPEED__) == GPIO_SPEED_FREQ_MEDIUM) ||\\\r\n                                     ((__SPEED__) == GPIO_SPEED_FREQ_HIGH)   ||\\\r\n                                     ((__SPEED__) == GPIO_SPEED_FREQ_VERY_HIGH))"
+    }
+  ],
+  "ll": [
+    {
+      "name": "IS_LL_GPIO_ALTERNATE",
+      "sig": "#define IS_LL_GPIO_ALTERNATE(__VALUE__)    (((__VALUE__) == LL_GPIO_AF_0  )   ||\\\n                                            ((__VALUE__) == LL_GPIO_AF_1  )   ||\\\n                                            ((__VALUE__) == LL_GPIO_AF_2  )   ||\\\n                                            ((__VALUE__) == LL_GPIO_AF_3  )   ||\\\n                                            ((__VALUE__) == LL_GPIO_AF_4  )   ||\\\n                                            ((__VALUE__) == LL_GPIO_AF_5  )   ||\\\n                                            ((__VALUE__) == LL_GPIO_AF_6  )   ||\\\n                                            ((__VALUE__) == LL_GPIO_AF_7  ))",
+      "brief": "校验 LL 复用功能编号是否为 LL_GPIO_AF_0~LL_GPIO_AF_7 之一",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的复用功能编号"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_gpio.c",
+      "kind": "macro",
+      "src": "#define IS_LL_GPIO_ALTERNATE(__VALUE__)    (((__VALUE__) == LL_GPIO_AF_0  )   ||\\\r\n                                            ((__VALUE__) == LL_GPIO_AF_1  )   ||\\\r\n                                            ((__VALUE__) == LL_GPIO_AF_2  )   ||\\\r\n                                            ((__VALUE__) == LL_GPIO_AF_3  )   ||\\\r\n                                            ((__VALUE__) == LL_GPIO_AF_4  )   ||\\\r\n                                            ((__VALUE__) == LL_GPIO_AF_5  )   ||\\\r\n                                            ((__VALUE__) == LL_GPIO_AF_6  )   ||\\\r\n                                            ((__VALUE__) == LL_GPIO_AF_7  ))"
+    },
+    {
+      "name": "IS_LL_GPIO_MODE",
+      "sig": "#define IS_LL_GPIO_MODE(__VALUE__)         (((__VALUE__) == LL_GPIO_MODE_INPUT)     ||\\\n                                            ((__VALUE__) == LL_GPIO_MODE_OUTPUT)    ||\\\n                                            ((__VALUE__) == LL_GPIO_MODE_ALTERNATE) ||\\\n                                            ((__VALUE__) == LL_GPIO_MODE_ANALOG))",
+      "brief": "校验 LL GPIO 模式是否为输入/输出/复用/模拟之一",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的 LL GPIO 模式(LL_GPIO_MODE_*)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_gpio.c",
+      "kind": "macro",
+      "src": "#define IS_LL_GPIO_MODE(__VALUE__)         (((__VALUE__) == LL_GPIO_MODE_INPUT)     ||\\\r\n                                            ((__VALUE__) == LL_GPIO_MODE_OUTPUT)    ||\\\r\n                                            ((__VALUE__) == LL_GPIO_MODE_ALTERNATE) ||\\\r\n                                            ((__VALUE__) == LL_GPIO_MODE_ANALOG))"
+    },
+    {
+      "name": "IS_LL_GPIO_OUTPUT_TYPE",
+      "sig": "#define IS_LL_GPIO_OUTPUT_TYPE(__VALUE__)  (((__VALUE__) == LL_GPIO_OUTPUT_PUSHPULL)  ||\\\n                                            ((__VALUE__) == LL_GPIO_OUTPUT_OPENDRAIN))",
+      "brief": "校验 LL 输出类型是否为推挽或开漏",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的输出类型(LL_GPIO_OUTPUT_PUSHPULL/LL_GPIO_OUTPUT_OPENDRAIN)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_gpio.c",
+      "kind": "macro",
+      "src": "#define IS_LL_GPIO_OUTPUT_TYPE(__VALUE__)  (((__VALUE__) == LL_GPIO_OUTPUT_PUSHPULL)  ||\\\r\n                                            ((__VALUE__) == LL_GPIO_OUTPUT_OPENDRAIN))"
+    },
+    {
+      "name": "IS_LL_GPIO_PIN",
+      "sig": "#define IS_LL_GPIO_PIN(__VALUE__)          (((0x00u) < (__VALUE__)) && ((__VALUE__) <= (LL_GPIO_PIN_ALL)))",
+      "brief": "校验 LL 引脚掩码大于 0 且不超过 LL_GPIO_PIN_ALL(全部 16 个引脚掩码)",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的引脚掩码(LL_GPIO_PIN_* 组合)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_gpio.c",
+      "kind": "macro",
+      "src": "#define IS_LL_GPIO_PIN(__VALUE__)          (((0x00u) < (__VALUE__)) && ((__VALUE__) <= (LL_GPIO_PIN_ALL)))"
+    },
+    {
+      "name": "IS_LL_GPIO_PULL",
+      "sig": "#define IS_LL_GPIO_PULL(__VALUE__)         (((__VALUE__) == LL_GPIO_PULL_NO)   ||\\\n                                            ((__VALUE__) == LL_GPIO_PULL_UP)   ||\\\n                                            ((__VALUE__) == LL_GPIO_PULL_DOWN))",
+      "brief": "校验 LL 上下拉配置是否为无上拉/上拉/下拉之一",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的上下拉配置(LL_GPIO_PULL_*)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_gpio.c",
+      "kind": "macro",
+      "src": "#define IS_LL_GPIO_PULL(__VALUE__)         (((__VALUE__) == LL_GPIO_PULL_NO)   ||\\\r\n                                            ((__VALUE__) == LL_GPIO_PULL_UP)   ||\\\r\n                                            ((__VALUE__) == LL_GPIO_PULL_DOWN))"
+    },
+    {
+      "name": "IS_LL_GPIO_SPEED",
+      "sig": "#define IS_LL_GPIO_SPEED(__VALUE__)        (((__VALUE__) == LL_GPIO_SPEED_FREQ_LOW)       ||\\\n                                            ((__VALUE__) == LL_GPIO_SPEED_FREQ_MEDIUM)    ||\\\n                                            ((__VALUE__) == LL_GPIO_SPEED_FREQ_HIGH)      ||\\\n                                            ((__VALUE__) == LL_GPIO_SPEED_FREQ_VERY_HIGH))",
+      "brief": "校验 LL 输出速度等级是否为 LOW/MEDIUM/HIGH/VERY_HIGH 之一",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的输出速度等级(LL_GPIO_SPEED_FREQ_*)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_gpio.c",
+      "kind": "macro",
+      "src": "#define IS_LL_GPIO_SPEED(__VALUE__)        (((__VALUE__) == LL_GPIO_SPEED_FREQ_LOW)       ||\\\r\n                                            ((__VALUE__) == LL_GPIO_SPEED_FREQ_MEDIUM)    ||\\\r\n                                            ((__VALUE__) == LL_GPIO_SPEED_FREQ_HIGH)      ||\\\r\n                                            ((__VALUE__) == LL_GPIO_SPEED_FREQ_VERY_HIGH))"
+    },
+    {
+      "name": "LL_GPIO_ReadReg",
+      "sig": "#define LL_GPIO_ReadReg(__INSTANCE__, __REG__) READ_REG(__INSTANCE__->__REG__)",
+      "brief": "读取指定 GPIO 外设实例的指定寄存器值(封装 READ_REG 宏)",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "GPIO 外设实例指针(GPIOA/GPIOB/GPIOC)"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要读取的寄存器名(如 MODER/OTYPER/IDR 等)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "读到的寄存器值"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "macro",
+      "src": "#define LL_GPIO_ReadReg(__INSTANCE__, __REG__) READ_REG(__INSTANCE__->__REG__)"
+    },
+    {
+      "name": "LL_GPIO_WriteReg",
+      "sig": "#define LL_GPIO_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG(__INSTANCE__->__REG__, (__VALUE__))",
+      "brief": "向指定 GPIO 外设实例的指定寄存器写入值(封装 WRITE_REG 宏)",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "GPIO 外设实例指针(GPIOA/GPIOB/GPIOC)"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要写入的寄存器名(如 BSRR/BRR 等)"
+        },
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "要写入寄存器的值"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_gpio.h",
+      "kind": "macro",
+      "src": "#define LL_GPIO_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG(__INSTANCE__->__REG__, (__VALUE__))"
+    }
+  ],
+  "types": [],
+  "consts": []
+}

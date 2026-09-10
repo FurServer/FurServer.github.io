@@ -1,0 +1,1057 @@
+{
+  "module": "SYSTEM / UTILS",
+  "moduleId": "system",
+  "intro": "LL 系统与工具库: 器件电子签名(UID/Flash/SRAM 大小)读取, 时基与延时(LL_Init1msTick/LL_mDelay/LL_InitTick), 系统时钟变量与 Flash 等待周期管理, SYSCFG 系统配置(存储器重映射/I2C 快速模式+/TIM 刹车与 ETR 源/GPIO 滤波), DBGMCU 调试模块与调试冻结控制。对应 py32f002b_ll_system.h / py32f002b_ll_utils.h / py32f002b_ll_utils.c。",
+  "files": [
+    "py32f002b_ll_system.h",
+    "py32f002b_ll_utils.h",
+    "py32f002b_ll_utils.c"
+  ],
+  "hal": [],
+  "ll": [
+    {
+      "name": "LL_GetUID_Word0",
+      "sig": "uint32_t LL_GetUID_Word0(void)",
+      "brief": "获取 96 位唯一器件标识(UID)的第 0 个 32 位字。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "UID[31:0]"
+      },
+      "file": "py32f002b_ll_utils.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_GetUID_Word0(void)\r\n{\r\n  return (uint32_t)(READ_REG(*((uint32_t *)UID_BASE_ADDRESS)));\r\n}"
+    },
+    {
+      "name": "LL_GetUID_Word1",
+      "sig": "uint32_t LL_GetUID_Word1(void)",
+      "brief": "获取 96 位唯一器件标识(UID)的第 1 个 32 位字。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "UID[63:32]"
+      },
+      "file": "py32f002b_ll_utils.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_GetUID_Word1(void)\r\n{\r\n  return (uint32_t)(READ_REG(*((uint32_t *)(UID_BASE_ADDRESS + 4U))));\r\n}"
+    },
+    {
+      "name": "LL_GetUID_Word2",
+      "sig": "uint32_t LL_GetUID_Word2(void)",
+      "brief": "获取 96 位唯一器件标识(UID)的第 2 个 32 位字。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "UID[95:64]"
+      },
+      "file": "py32f002b_ll_utils.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_GetUID_Word2(void)\r\n{\r\n  return (uint32_t)(READ_REG(*((uint32_t *)(UID_BASE_ADDRESS + 8U))));\r\n}"
+    },
+    {
+      "name": "LL_GetFlashSize",
+      "sig": "uint32_t LL_GetFlashSize(void)",
+      "brief": "获取 Flash 存储器容量。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "Flash 容量(字节)"
+      },
+      "file": "py32f002b_ll_utils.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_GetFlashSize(void)\r\n{\r\n  return (uint32_t)(FLASH_SIZE);\r\n}"
+    },
+    {
+      "name": "LL_GetSramSize",
+      "sig": "uint32_t LL_GetSramSize(void)",
+      "brief": "获取 SRAM 存储器容量。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "SRAM 容量(字节)"
+      },
+      "file": "py32f002b_ll_utils.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_GetSramSize(void)\r\n{\r\n  return (uint32_t)(SRAM_END - SRAM_BASE + 1);\r\n}"
+    },
+    {
+      "name": "LL_InitTick",
+      "sig": "void LL_InitTick(uint32_t HCLKFrequency, uint32_t Ticks)",
+      "brief": "配置 Cortex-M SysTick 作为时基源: 装载值 = HCLKFrequency / Ticks - 1, 清零计数器并使能定时器。",
+      "params": [
+        {
+          "name": "HCLKFrequency",
+          "type": "uint32_t",
+          "desc": "HCLK 频率(Hz), 可用 RCC 辅助宏计算"
+        },
+        {
+          "name": "Ticks",
+          "type": "uint32_t",
+          "desc": "节拍数(中断间隔对应的计数值)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "使用 RTOS 时, 建议避免调用本函数改动 SysTick 配置, 延时改用 osDelay 服务。"
+      ],
+      "file": "py32f002b_ll_utils.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_InitTick(uint32_t HCLKFrequency, uint32_t Ticks)\r\n{\r\n  /* Configure the SysTick to have interrupt in 1ms time base */\r\n  SysTick->LOAD  = (uint32_t)((HCLKFrequency / Ticks) - 1UL);  /* set reload register */\r\n  SysTick->VAL   = 0UL;                                       /* Load the SysTick Counter Value */\r\n  SysTick->CTRL  = SysTick_CTRL_CLKSOURCE_Msk |\r\n                   SysTick_CTRL_ENABLE_Msk;                   /* Enable the Systick Timer */\r\n}"
+    },
+    {
+      "name": "LL_Init1msTick",
+      "sig": "void LL_Init1msTick(uint32_t HCLKFrequency)",
+      "brief": "配置 SysTick 为 1ms 时基(内部调用 LL_InitTick(HCLKFrequency, 1000U))。",
+      "params": [
+        {
+          "name": "HCLKFrequency",
+          "type": "uint32_t",
+          "desc": "HCLK 频率(Hz), 可用 RCC 辅助宏或 LL_RCC_GetSystemClocksFreq() 计算"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "使用 RTOS 时, 建议避免改动 SysTick 配置, 延时改用 osDelay 服务。"
+      ],
+      "file": "py32f002b_ll_utils.c",
+      "kind": "function",
+      "src": "void LL_Init1msTick(uint32_t HCLKFrequency)\r\n{\r\n  /* Use frequency provided in argument */\r\n  LL_InitTick(HCLKFrequency, 1000U);\r\n}"
+    },
+    {
+      "name": "LL_mDelay",
+      "sig": "void LL_mDelay(uint32_t Delay)",
+      "brief": "基于 SysTick 计数器标志的毫秒级阻塞延时。",
+      "params": [
+        {
+          "name": "Delay",
+          "type": "uint32_t",
+          "desc": "延时时间长度, 单位毫秒"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "为保证 1ms 时基, 使用前应先调用 LL_Init1msTick() 配置 SysTick。",
+        "RTOS 环境下建议使用 osDelay 而非阻塞延时。",
+        "内部在计数值上加 1 个周期以保证最短等待时间。"
+      ],
+      "file": "py32f002b_ll_utils.c",
+      "kind": "function",
+      "src": "void LL_mDelay(uint32_t Delay)\r\n{\r\n  __IO uint32_t  tmp = SysTick->CTRL;  /* Clear the COUNTFLAG first */\r\n  uint32_t tmpDelay; /* MISRAC2012-Rule-17.8 */\r\n  /* Add this code to indicate that local variable is not used */\r\n  ((void)tmp);\r\n  tmpDelay  = Delay;\r\n  /* Add a period to guaranty minimum wait */\r\n  if (tmpDelay  < LL_MAX_DELAY)\r\n  {\r\n    tmpDelay ++;\r\n  }\r\n\r\n  while (tmpDelay  != 0U)\r\n  {\r\n    if ((SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk) != 0U)\r\n    {\r\n      tmpDelay --;\r\n    }\r\n  }\r\n}"
+    },
+    {
+      "name": "LL_SetSystemCoreClock",
+      "sig": "void LL_SetSystemCoreClock(uint32_t HCLKFrequency)",
+      "brief": "直接设置 CMSIS 全局变量 SystemCoreClock 的值。",
+      "params": [
+        {
+          "name": "HCLKFrequency",
+          "type": "uint32_t",
+          "desc": "HCLK 频率(Hz), 可用 RCC 辅助宏计算"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "该变量也可通过 SystemCoreClockUpdate() 函数计算得到。"
+      ],
+      "file": "py32f002b_ll_utils.c",
+      "kind": "function",
+      "src": "void LL_SetSystemCoreClock(uint32_t HCLKFrequency)\r\n{\r\n  /* HCLK clock frequency */\r\n  SystemCoreClock = HCLKFrequency;\r\n}"
+    },
+    {
+      "name": "LL_SetFlashLatency",
+      "sig": "ErrorStatus LL_SetFlashLatency(uint32_t HCLKFrequency)",
+      "brief": "根据 HCLK 频率更新 Flash 等待周期数(等待周期取值见组 LL_FLASH_LATENCY_*)。",
+      "params": [
+        {
+          "name": "HCLKFrequency",
+          "type": "uint32_t",
+          "desc": "HCLK 频率(Hz)"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 等待周期已更新; ERROR 无法更新(频率为 0 或超过 48MHz)"
+      },
+      "notes": [
+        "24MHz 以上配置 1 个等待周期, 24MHz 及以下配置 0 个等待周期。"
+      ],
+      "file": "py32f002b_ll_utils.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_SetFlashLatency(uint32_t HCLKFrequency)\r\n{\r\n  uint32_t timeout;\r\n  uint32_t getlatency;\r\n  uint32_t latency;\r\n  ErrorStatus status;\r\n\r\n  /* Frequency cannot be equal to 0 or greater than max clock */\r\n  if ((HCLKFrequency == 0U) || (HCLKFrequency > UTILS_SCALE1_LATENCY2_FREQ))\r\n  {\r\n    status = ERROR;\r\n    return status;\r\n  }\r\n  else\r\n  {\r\n    if (HCLKFrequency > UTILS_SCALE1_LATENCY1_FREQ)\r\n    {\r\n      /* 24 < HCLK <= 48 => 1WS (2 CPU cycles) */\r\n      latency = LL_FLASH_LATENCY_1;\r\n    }\r\n    else\r\n    {\r\n      /* else HCLKFrequency < 24MHz default LL_FLASH_LATENCY_0 0WS */\r\n      latency = LL_FLASH_LATENCY_0;\r\n    }\r\n  }\r\n\r\n  LL_FLASH_SetLatency(latency);\r\n\r\n  /* Check that the new number of wait states is taken into account to access the Flash\r\n     memory by reading the FLASH_ACR register */\r\n  timeout = 2u;\r\n  do\r\n  {\r\n    /* Wait for Flash latency to be updated */\r\n    getlatency = LL_FLASH_GetLatency();\r\n    timeout--;\r\n  }\r\n  while ((getlatency != latency) && (timeout > 0u));\r\n\r\n  if (getlatency != latency)\r\n  {\r\n    status = ERROR;\r\n  }\r\n  else\r\n  {\r\n    status = SUCCESS;\r\n  }\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "LL_SYSCFG_SetRemapMemory",
+      "sig": "void LL_SYSCFG_SetRemapMemory(uint32_t Memory)",
+      "brief": "设置 0x00000000 地址处的存储器映射。",
+      "params": [
+        {
+          "name": "Memory",
+          "type": "uint32_t",
+          "desc": "映射目标: LL_SYSCFG_REMAP_FLASH / LL_SYSCFG_REMAP_SYSTEMFLASH / LL_SYSCFG_REMAP_SRAM"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SYSCFG_SetRemapMemory(uint32_t Memory)\r\n{\r\n  MODIFY_REG(SYSCFG->CFGR1, SYSCFG_CFGR1_MEM_MODE, Memory);\r\n}"
+    },
+    {
+      "name": "LL_SYSCFG_GetRemapMemory",
+      "sig": "uint32_t LL_SYSCFG_GetRemapMemory(void)",
+      "brief": "获取 0x00000000 地址处的当前存储器映射。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_SYSCFG_REMAP_FLASH / SYSTEMFLASH / SRAM 之一"
+      },
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SYSCFG_GetRemapMemory(void)\r\n{\r\n  return (uint32_t)(READ_BIT(SYSCFG->CFGR1, SYSCFG_CFGR1_MEM_MODE));\r\n}"
+    },
+    {
+      "name": "LL_SYSCFG_EnableI2CFastModePlus",
+      "sig": "void LL_SYSCFG_EnableI2CFastModePlus(uint32_t I2CFastModePlus)",
+      "brief": "使能指定引脚上的 I2C 快速模式+(FMP)。",
+      "params": [
+        {
+          "name": "I2CFastModePlus",
+          "type": "uint32_t",
+          "desc": "引脚组合: LL_SYSCFG_I2C_FMP_PA2 / PB3 / PB4 / PB6"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "部分器件/封装上某些 IO 可能不可用, 以数据手册为准。"
+      ],
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SYSCFG_EnableI2CFastModePlus(uint32_t I2CFastModePlus)\r\n{\r\n  SET_BIT(SYSCFG->CFGR1, I2CFastModePlus);\r\n}"
+    },
+    {
+      "name": "LL_SYSCFG_DisableI2CFastModePlus",
+      "sig": "void LL_SYSCFG_DisableI2CFastModePlus(uint32_t I2CFastModePlus)",
+      "brief": "禁止指定引脚上的 I2C 快速模式+(FMP)。",
+      "params": [
+        {
+          "name": "I2CFastModePlus",
+          "type": "uint32_t",
+          "desc": "引脚组合: LL_SYSCFG_I2C_FMP_PA2 / PB3 / PB4 / PB6"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "部分器件/封装上某些 IO 可能不可用, 以数据手册为准。"
+      ],
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SYSCFG_DisableI2CFastModePlus(uint32_t I2CFastModePlus)\r\n{\r\n  CLEAR_BIT(SYSCFG->CFGR1, I2CFastModePlus);\r\n}"
+    },
+    {
+      "name": "LL_SYSCFG_IsEnabledI2CFastModePlus",
+      "sig": "uint32_t LL_SYSCFG_IsEnabledI2CFastModePlus(uint32_t I2CFastModePlus)",
+      "brief": "查询指定引脚上的 I2C 快速模式+(FMP)是否已使能。",
+      "params": [
+        {
+          "name": "I2CFastModePlus",
+          "type": "uint32_t",
+          "desc": "引脚: LL_SYSCFG_I2C_FMP_PA2 / PB3 / PB4 / PB6"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 已使能; 0 未使能"
+      },
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SYSCFG_IsEnabledI2CFastModePlus(uint32_t I2CFastModePlus)\r\n{\r\n  return ((READ_BIT(SYSCFG->CFGR1, I2CFastModePlus) == (I2CFastModePlus)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_SYSCFG_EnableTIMBreakInputs",
+      "sig": "void LL_SYSCFG_EnableTIMBreakInputs(uint32_t TIMBreakInputs)",
+      "brief": "使能 COMPx 作为 TIMx 的刹车(Break)输入。",
+      "params": [
+        {
+          "name": "TIMBreakInputs",
+          "type": "uint32_t",
+          "desc": "刹车输入组合: LL_SYSCFG_TIMBREAK_LOCKUP_TO_ALL / COMP1_TO_TIM1 / COMP2_TO_TIM1"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "部分器件/封装上某些外设可能不可用, 以数据手册为准。"
+      ],
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SYSCFG_EnableTIMBreakInputs(uint32_t TIMBreakInputs)\r\n{\r\n  SET_BIT(SYSCFG->CFGR2, TIMBreakInputs);\r\n}"
+    },
+    {
+      "name": "LL_SYSCFG_DisableTIMBreakInputs",
+      "sig": "void LL_SYSCFG_DisableTIMBreakInputs(uint32_t TIMBreakInputs)",
+      "brief": "禁止 COMPx 作为 TIMx 的刹车(Break)输入。",
+      "params": [
+        {
+          "name": "TIMBreakInputs",
+          "type": "uint32_t",
+          "desc": "刹车输入组合: LL_SYSCFG_TIMBREAK_LOCKUP_TO_ALL / COMP1_TO_TIM1 / COMP2_TO_TIM1"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SYSCFG_DisableTIMBreakInputs(uint32_t TIMBreakInputs)\r\n{\r\n  CLEAR_BIT(SYSCFG->CFGR2, TIMBreakInputs);\r\n}"
+    },
+    {
+      "name": "LL_SYSCFG_IsEnabledTIMBreakInputs",
+      "sig": "uint32_t LL_SYSCFG_IsEnabledTIMBreakInputs(uint32_t TIMBreakInputs)",
+      "brief": "查询 COMPx 作为 TIMx 刹车输入的使能状态。",
+      "params": [
+        {
+          "name": "TIMBreakInputs",
+          "type": "uint32_t",
+          "desc": "刹车输入: LL_SYSCFG_TIMBREAK_LOCKUP_TO_ALL / COMP1_TO_TIM1 / COMP2_TO_TIM1"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 已使能; 0 未使能"
+      },
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SYSCFG_IsEnabledTIMBreakInputs(uint32_t TIMBreakInputs)\r\n{\r\n  return ((READ_BIT(SYSCFG->CFGR2, TIMBreakInputs) == (TIMBreakInputs)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_SYSCFG_SetTIM1ETRSource",
+      "sig": "void LL_SYSCFG_SetTIM1ETRSource(uint32_t source)",
+      "brief": "设置 TIM1 的 ETR 输入源。",
+      "params": [
+        {
+          "name": "source",
+          "type": "uint32_t",
+          "desc": "输入源: LL_SYSCFG_ETR_SRC_TIM1_GPIO / COMP1 / COMP2 / ADC"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "部分器件/封装上某些外设可能不可用, 以数据手册为准。"
+      ],
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SYSCFG_SetTIM1ETRSource(uint32_t source)\r\n{\r\n  MODIFY_REG(SYSCFG->CFGR2, SYSCFG_CFGR2_ETR_SRC_TIM1, source);\r\n}"
+    },
+    {
+      "name": "LL_SYSCFG_GetTIM1ETRSource",
+      "sig": "uint32_t LL_SYSCFG_GetTIM1ETRSource(void)",
+      "brief": "获取 TIM1 当前的 ETR 输入源。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_SYSCFG_ETR_SRC_TIM1_GPIO / COMP1 / COMP2 / ADC 之一"
+      },
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SYSCFG_GetTIM1ETRSource(void)\r\n{\r\n  return (uint32_t)(READ_BIT(SYSCFG->CFGR2, SYSCFG_CFGR2_ETR_SRC_TIM1));\r\n}"
+    },
+    {
+      "name": "LL_SYSCFG_EnableGPIOFilter",
+      "sig": "void LL_SYSCFG_EnableGPIOFilter(uint32_t GPIOPort, uint32_t GPIOPin)",
+      "brief": "使能指定端口、指定引脚的 GPIO 滤波功能。",
+      "params": [
+        {
+          "name": "GPIOPort",
+          "type": "uint32_t",
+          "desc": "端口: LL_SYSCFG_GPIO_PORTA / PORTB / PORTC"
+        },
+        {
+          "name": "GPIOPin",
+          "type": "uint32_t",
+          "desc": "引脚, 可取 LL_SYSCFG_GPIO_PIN_0 .. PIN_7 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "部分器件/封装上某些 IO 可能不可用, 以数据手册为准。"
+      ],
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SYSCFG_EnableGPIOFilter(uint32_t GPIOPort, uint32_t GPIOPin)\r\n{\r\n  SET_BIT(SYSCFG->GPIO_ENS, GPIOPin<<GPIOPort);\r\n}"
+    },
+    {
+      "name": "LL_SYSCFG_DisableGPIOFilter",
+      "sig": "void LL_SYSCFG_DisableGPIOFilter(uint32_t GPIOPort, uint32_t GPIOPin)",
+      "brief": "禁止指定端口、指定引脚的 GPIO 滤波功能。",
+      "params": [
+        {
+          "name": "GPIOPort",
+          "type": "uint32_t",
+          "desc": "端口: LL_SYSCFG_GPIO_PORTA / PORTB / PORTC"
+        },
+        {
+          "name": "GPIOPin",
+          "type": "uint32_t",
+          "desc": "引脚, 可取 LL_SYSCFG_GPIO_PIN_0 .. PIN_7 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SYSCFG_DisableGPIOFilter(uint32_t GPIOPort, uint32_t GPIOPin)\r\n{\r\n  CLEAR_BIT(SYSCFG->GPIO_ENS, GPIOPin<<GPIOPort);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_SetLatency",
+      "sig": "void LL_FLASH_SetLatency(uint32_t Latency)",
+      "brief": "设置 Flash 等待周期数。",
+      "params": [
+        {
+          "name": "Latency",
+          "type": "uint32_t",
+          "desc": "等待周期: LL_FLASH_LATENCY_0 / LL_FLASH_LATENCY_1"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_FLASH_SetLatency(uint32_t Latency)\r\n{\r\n  MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, Latency);\r\n}"
+    },
+    {
+      "name": "LL_FLASH_GetLatency",
+      "sig": "uint32_t LL_FLASH_GetLatency(void)",
+      "brief": "获取当前 Flash 等待周期数。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_FLASH_LATENCY_0 或 LL_FLASH_LATENCY_1"
+      },
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_FLASH_GetLatency(void)\r\n{\r\n  return (uint32_t)(READ_BIT(FLASH->ACR, FLASH_ACR_LATENCY));\r\n}"
+    },
+    {
+      "name": "LL_DBGMCU_GetDeviceID",
+      "sig": "uint32_t LL_DBGMCU_GetDeviceID(void)",
+      "brief": "返回器件标识(Device ID)。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "器件标识, 取值范围 0x00~0x03"
+      },
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_DBGMCU_GetDeviceID(void)\r\n{\r\n  return (uint32_t)(READ_BIT(DBGMCU->IDCODE, DBGMCU_IDCODE_DEV_ID));\r\n}"
+    },
+    {
+      "name": "LL_DBGMCU_GetRevisionID",
+      "sig": "uint32_t LL_DBGMCU_GetRevisionID(void)",
+      "brief": "返回器件修订标识(Revision ID)。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "修订标识, 取值范围 0x0000~0xFFFF"
+      },
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_DBGMCU_GetRevisionID(void)\r\n{\r\n  return (uint32_t)(READ_BIT(DBGMCU->IDCODE, DBGMCU_IDCODE_REV_ID) >> DBGMCU_IDCODE_REV_ID_Pos);\r\n}"
+    },
+    {
+      "name": "LL_DBGMCU_EnableDBGStopMode",
+      "sig": "void LL_DBGMCU_EnableDBGStopMode(void)",
+      "brief": "使能 STOP 模式下的调试模块, 使调试器在 STOP 模式下仍可连接。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_DBGMCU_EnableDBGStopMode(void)\r\n{\r\n  SET_BIT(DBGMCU->CR, DBGMCU_CR_DBG_STOP);\r\n}"
+    },
+    {
+      "name": "LL_DBGMCU_DisableDBGStopMode",
+      "sig": "void LL_DBGMCU_DisableDBGStopMode(void)",
+      "brief": "禁止 STOP 模式下的调试模块。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_DBGMCU_DisableDBGStopMode(void)\r\n{\r\n  CLEAR_BIT(DBGMCU->CR, DBGMCU_CR_DBG_STOP);\r\n}"
+    },
+    {
+      "name": "LL_DBGMCU_IsEnabledDBGStopMode",
+      "sig": "uint32_t LL_DBGMCU_IsEnabledDBGStopMode(void)",
+      "brief": "查询 STOP 模式下的调试模块是否已使能。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 已使能; 0 未使能"
+      },
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_DBGMCU_IsEnabledDBGStopMode(void)\r\n{\r\n  return ((READ_BIT(DBGMCU->CR, DBGMCU_CR_DBG_STOP) == (DBGMCU_CR_DBG_STOP)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_DBGMCU_APB1_GRP1_FreezePeriph",
+      "sig": "void LL_DBGMCU_APB1_GRP1_FreezePeriph(uint32_t Periphs)",
+      "brief": "冻结 APB1 组1 外设(内核停止时其计数器停走)。",
+      "params": [
+        {
+          "name": "Periphs",
+          "type": "uint32_t",
+          "desc": "外设组合: LL_DBGMCU_APB1_GRP1_IWDG_STOP / LPTIM1_STOP"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "部分器件/封装上某些外设可能不可用, 以数据手册为准。"
+      ],
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_DBGMCU_APB1_GRP1_FreezePeriph(uint32_t Periphs)\r\n{\r\n  SET_BIT(DBGMCU->APBFZ1, Periphs);\r\n}"
+    },
+    {
+      "name": "LL_DBGMCU_APB1_GRP1_UnFreezePeriph",
+      "sig": "void LL_DBGMCU_APB1_GRP1_UnFreezePeriph(uint32_t Periphs)",
+      "brief": "解冻 APB1 组1 外设(内核停止时其计数器继续运行)。",
+      "params": [
+        {
+          "name": "Periphs",
+          "type": "uint32_t",
+          "desc": "外设组合: LL_DBGMCU_APB1_GRP1_IWDG_STOP / LPTIM1_STOP"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_DBGMCU_APB1_GRP1_UnFreezePeriph(uint32_t Periphs)\r\n{\r\n  CLEAR_BIT(DBGMCU->APBFZ1, Periphs);\r\n}"
+    },
+    {
+      "name": "LL_DBGMCU_APB1_GRP1_IsFreezePeriph",
+      "sig": "uint32_t LL_DBGMCU_APB1_GRP1_IsFreezePeriph(uint32_t Periphs)",
+      "brief": "查询 APB1 组1 外设的冻结状态。",
+      "params": [
+        {
+          "name": "Periphs",
+          "type": "uint32_t",
+          "desc": "外设: LL_DBGMCU_APB1_GRP1_IWDG_STOP / LPTIM1_STOP"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 已冻结; 0 未冻结"
+      },
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_DBGMCU_APB1_GRP1_IsFreezePeriph(uint32_t Periphs)\r\n{\r\n  return ((READ_BIT(DBGMCU->APBFZ1, Periphs) == (Periphs)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_DBGMCU_APB1_GRP2_FreezePeriph",
+      "sig": "void LL_DBGMCU_APB1_GRP2_FreezePeriph(uint32_t Periphs)",
+      "brief": "冻结 APB1 组2 外设(内核停止时其计数器停走)。",
+      "params": [
+        {
+          "name": "Periphs",
+          "type": "uint32_t",
+          "desc": "外设组合: LL_DBGMCU_APB1_GRP2_TIM1_STOP / TIM14_STOP"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "部分器件/封装上某些外设可能不可用, 以数据手册为准。"
+      ],
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_DBGMCU_APB1_GRP2_FreezePeriph(uint32_t Periphs)\r\n{\r\n  SET_BIT(DBGMCU->APBFZ2, Periphs);\r\n}"
+    },
+    {
+      "name": "LL_DBGMCU_APB1_GRP2_UnFreezePeriph",
+      "sig": "void LL_DBGMCU_APB1_GRP2_UnFreezePeriph(uint32_t Periphs)",
+      "brief": "解冻 APB1 组2 外设(内核停止时其计数器继续运行)。",
+      "params": [
+        {
+          "name": "Periphs",
+          "type": "uint32_t",
+          "desc": "外设组合: LL_DBGMCU_APB1_GRP2_TIM1_STOP / TIM14_STOP"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_DBGMCU_APB1_GRP2_UnFreezePeriph(uint32_t Periphs)\r\n{\r\n  CLEAR_BIT(DBGMCU->APBFZ2, Periphs);\r\n}"
+    },
+    {
+      "name": "LL_DBGMCU_APB1_GRP2_IsFreezePeriph",
+      "sig": "uint32_t LL_DBGMCU_APB1_GRP2_IsFreezePeriph(uint32_t Periphs)",
+      "brief": "查询 APB1 组2 外设的冻结状态。",
+      "params": [
+        {
+          "name": "Periphs",
+          "type": "uint32_t",
+          "desc": "外设: LL_DBGMCU_APB1_GRP2_TIM1_STOP / TIM14_STOP"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 已冻结; 0 未冻结"
+      },
+      "file": "py32f002b_ll_system.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_DBGMCU_APB1_GRP2_IsFreezePeriph(uint32_t Periphs)\r\n{\r\n  return ((READ_BIT(DBGMCU->APBFZ2, Periphs) == (Periphs)) ? 1UL : 0UL);\r\n}"
+    }
+  ],
+  "types": [
+    {
+      "name": "LL_UTILS_ClkInitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t AHBCLKDivider; uint32_t APB1CLKDivider; } LL_UTILS_ClkInitTypeDef;",
+      "desc": "UTILS 系统、AHB 与 APB1 总线时钟配置结构体(仅保留 AHB/APB1 分频两项)。",
+      "members": [
+        {
+          "name": "AHBCLKDivider",
+          "type": "uint32_t",
+          "desc": "AHB 时钟(HCLK)分频系数, 由系统时钟(SYSCLK)分频得到, 可取 RCC_LL_EC_SYSCLK_DIV 值"
+        },
+        {
+          "name": "APB1CLKDivider",
+          "type": "uint32_t",
+          "desc": "APB1 时钟(PCLK1)分频系数, 由 AHB 时钟(HCLK)分频得到, 可取 RCC_LL_EC_APB1_DIV 值"
+        }
+      ],
+      "file": "py32f002b_ll_utils.h"
+    },
+    {
+      "name": "SYSCFG_TypeDef",
+      "kind": "periph",
+      "def": "typedef struct { __IO uint32_t CFGR1; __IO uint32_t CFGR2; __IO uint32_t GPIO_ENS; } SYSCFG_TypeDef;",
+      "desc": "系统配置控制器(SYSCFG)寄存器结构体(保留字段已省略)。实例: SYSCFG。",
+      "members": [
+        {
+          "name": "CFGR1",
+          "type": "__IO uint32_t",
+          "desc": "SYSCFG 配置寄存器 1(存储器映射 MEM_MODE / I2C FMP / TIM1 IC1 源等)"
+        },
+        {
+          "name": "CFGR2",
+          "type": "__IO uint32_t",
+          "desc": "SYSCFG 配置寄存器 2(TIM 刹车输入 / ETR 源等)"
+        },
+        {
+          "name": "GPIO_ENS",
+          "type": "__IO uint32_t",
+          "desc": "GPIO 滤波使能寄存器"
+        }
+      ],
+      "file": "py32f002xx5.h"
+    },
+    {
+      "name": "DBGMCU_TypeDef",
+      "kind": "periph",
+      "def": "typedef struct { __IO uint32_t IDCODE; __IO uint32_t CR; __IO uint32_t APBFZ1; __IO uint32_t APBFZ2; } DBGMCU_TypeDef;",
+      "desc": "调试 MCU(DBGMCU)寄存器结构体。实例: DBGMCU。",
+      "members": [
+        {
+          "name": "IDCODE",
+          "type": "__IO uint32_t",
+          "desc": "MCU 器件 ID 码寄存器(DEV_ID 与 REV_ID)"
+        },
+        {
+          "name": "CR",
+          "type": "__IO uint32_t",
+          "desc": "调试配置寄存器(STOP 模式调试使能)"
+        },
+        {
+          "name": "APBFZ1",
+          "type": "__IO uint32_t",
+          "desc": "调试 APB 冻结寄存器 1(组1 外设)"
+        },
+        {
+          "name": "APBFZ2",
+          "type": "__IO uint32_t",
+          "desc": "调试 APB 冻结寄存器 2(组2 外设)"
+        }
+      ],
+      "file": "py32f002xx5.h"
+    }
+  ],
+  "consts": [
+    {
+      "name": "LL_SYSCFG_REMAP_FLASH",
+      "value": "0x00000000U",
+      "desc": "主 Flash 映射到 0x00000000",
+      "group": "SYSCFG 存储器重映射",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_REMAP_FLASH               0x00000000U                                           /*!< Main Flash memory mapped at 0x00000000 */"
+    },
+    {
+      "name": "LL_SYSCFG_REMAP_SYSTEMFLASH",
+      "value": "SYSCFG_CFGR1_MEM_MODE_0",
+      "desc": "系统 Flash(引导区)映射到 0x00000000",
+      "group": "SYSCFG 存储器重映射",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_REMAP_SYSTEMFLASH         SYSCFG_CFGR1_MEM_MODE_0                               /*!< System Flash memory mapped at 0x00000000 */"
+    },
+    {
+      "name": "LL_SYSCFG_REMAP_SRAM",
+      "value": "(SYSCFG_CFGR1_MEM_MODE_1 | SYSCFG_CFGR1_MEM_MODE_0)",
+      "desc": "内嵌 SRAM 映射到 0x00000000",
+      "group": "SYSCFG 存储器重映射",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_REMAP_SRAM                (SYSCFG_CFGR1_MEM_MODE_1 | SYSCFG_CFGR1_MEM_MODE_0)   /*!< Embedded SRAM mapped at 0x00000000 */"
+    },
+    {
+      "name": "LL_SYSCFG_I2C_FMP_PA2",
+      "value": "SYSCFG_CFGR1_I2C_PA2_FMP",
+      "desc": "PA2 使能 I2C 快速模式+",
+      "group": "SYSCFG I2C FMP",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_I2C_FMP_PA2                SYSCFG_CFGR1_I2C_PA2_FMP"
+    },
+    {
+      "name": "LL_SYSCFG_I2C_FMP_PB3",
+      "value": "SYSCFG_CFGR1_I2C_PB3_FMP",
+      "desc": "PB3 使能 I2C 快速模式+",
+      "group": "SYSCFG I2C FMP",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_I2C_FMP_PB3                SYSCFG_CFGR1_I2C_PB3_FMP"
+    },
+    {
+      "name": "LL_SYSCFG_I2C_FMP_PB4",
+      "value": "SYSCFG_CFGR1_I2C_PB4_FMP",
+      "desc": "PB4 使能 I2C 快速模式+",
+      "group": "SYSCFG I2C FMP",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_I2C_FMP_PB4                SYSCFG_CFGR1_I2C_PB4_FMP"
+    },
+    {
+      "name": "LL_SYSCFG_I2C_FMP_PB6",
+      "value": "SYSCFG_CFGR1_I2C_PB6_FMP",
+      "desc": "PB6 使能 I2C 快速模式+",
+      "group": "SYSCFG I2C FMP",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_I2C_FMP_PB6                SYSCFG_CFGR1_I2C_PB6_FMP"
+    },
+    {
+      "name": "LL_SYSCFG_OCREF_CLR_COMP1_TO_TIM1",
+      "value": "SYSCFG_CFGR1_COMP1_OCREF_CLR_TIM1",
+      "desc": "COMP1 输出作为 TIM1 OCREF 清零输入",
+      "group": "SYSCFG OCREF 清零输入",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_OCREF_CLR_COMP1_TO_TIM1      SYSCFG_CFGR1_COMP1_OCREF_CLR_TIM1"
+    },
+    {
+      "name": "LL_SYSCFG_OCREF_CLR_COMP2_TO_TIM1",
+      "value": "SYSCFG_CFGR1_COMP2_OCREF_CLR_TIM1",
+      "desc": "COMP2 输出作为 TIM1 OCREF 清零输入",
+      "group": "SYSCFG OCREF 清零输入",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_OCREF_CLR_COMP2_TO_TIM1      SYSCFG_CFGR1_COMP2_OCREF_CLR_TIM1"
+    },
+    {
+      "name": "LL_SYSCFG_CH1_SRC_TIM1_GPIO",
+      "value": "0x00000000U",
+      "desc": "TIM1 CH1 输入源: GPIO",
+      "group": "SYSCFG TIM1 CH1 输入源",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_CH1_SRC_TIM1_GPIO          0x00000000U"
+    },
+    {
+      "name": "LL_SYSCFG_CH1_SRC_TIM1_COMP1",
+      "value": "SYSCFG_CFGR1_TIM1_IC1_SRC_0",
+      "desc": "TIM1 CH1 输入源: COMP1",
+      "group": "SYSCFG TIM1 CH1 输入源",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_CH1_SRC_TIM1_COMP1         SYSCFG_CFGR1_TIM1_IC1_SRC_0"
+    },
+    {
+      "name": "LL_SYSCFG_CH1_SRC_TIM1_COMP2",
+      "value": "SYSCFG_CFGR1_TIM1_IC1_SRC_1",
+      "desc": "TIM1 CH1 输入源: COMP2",
+      "group": "SYSCFG TIM1 CH1 输入源",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_CH1_SRC_TIM1_COMP2         SYSCFG_CFGR1_TIM1_IC1_SRC_1"
+    },
+    {
+      "name": "LL_SYSCFG_TIMBREAK_LOCKUP_TO_ALL",
+      "value": "SYSCFG_CFGR2_LOCKUP_LOCK",
+      "desc": "内核锁定(Lockup)输出作为全部定时器刹车输入",
+      "group": "SYSCFG TIM 刹车输入",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_TIMBREAK_LOCKUP_TO_ALL      SYSCFG_CFGR2_LOCKUP_LOCK"
+    },
+    {
+      "name": "LL_SYSCFG_TIMBREAK_COMP1_TO_TIM1",
+      "value": "SYSCFG_CFGR2_COMP1_BRK_TIM1",
+      "desc": "COMP1 输出作为 TIM1 刹车输入",
+      "group": "SYSCFG TIM 刹车输入",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_TIMBREAK_COMP1_TO_TIM1      SYSCFG_CFGR2_COMP1_BRK_TIM1"
+    },
+    {
+      "name": "LL_SYSCFG_TIMBREAK_COMP2_TO_TIM1",
+      "value": "SYSCFG_CFGR2_COMP2_BRK_TIM1",
+      "desc": "COMP2 输出作为 TIM1 刹车输入",
+      "group": "SYSCFG TIM 刹车输入",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_TIMBREAK_COMP2_TO_TIM1      SYSCFG_CFGR2_COMP2_BRK_TIM1"
+    },
+    {
+      "name": "LL_SYSCFG_ETR_SRC_TIM1_GPIO",
+      "value": "0x00000000U",
+      "desc": "TIM1 ETR 输入源: GPIO",
+      "group": "SYSCFG TIM1 ETR 输入源",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_ETR_SRC_TIM1_GPIO          0x00000000U"
+    },
+    {
+      "name": "LL_SYSCFG_ETR_SRC_TIM1_COMP1",
+      "value": "SYSCFG_CFGR2_ETR_SRC_TIM1_0",
+      "desc": "TIM1 ETR 输入源: COMP1",
+      "group": "SYSCFG TIM1 ETR 输入源",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_ETR_SRC_TIM1_COMP1         SYSCFG_CFGR2_ETR_SRC_TIM1_0"
+    },
+    {
+      "name": "LL_SYSCFG_ETR_SRC_TIM1_COMP2",
+      "value": "SYSCFG_CFGR2_ETR_SRC_TIM1_1",
+      "desc": "TIM1 ETR 输入源: COMP2",
+      "group": "SYSCFG TIM1 ETR 输入源",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_ETR_SRC_TIM1_COMP2         SYSCFG_CFGR2_ETR_SRC_TIM1_1"
+    },
+    {
+      "name": "LL_SYSCFG_ETR_SRC_TIM1_ADC",
+      "value": "(SYSCFG_CFGR2_ETR_SRC_TIM1_0 | SYSCFG_CFGR2_ETR_SRC_TIM1_1)",
+      "desc": "TIM1 ETR 输入源: ADC 触发",
+      "group": "SYSCFG TIM1 ETR 输入源",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_ETR_SRC_TIM1_ADC           (SYSCFG_CFGR2_ETR_SRC_TIM1_0 | SYSCFG_CFGR2_ETR_SRC_TIM1_1)"
+    },
+    {
+      "name": "LL_SYSCFG_GPIO_PORTA",
+      "value": "0x00000000U",
+      "desc": "GPIO 滤波端口 A",
+      "group": "SYSCFG GPIO 端口",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_GPIO_PORTA              0x00000000U"
+    },
+    {
+      "name": "LL_SYSCFG_GPIO_PORTB",
+      "value": "0x00000008U",
+      "desc": "GPIO 滤波端口 B",
+      "group": "SYSCFG GPIO 端口",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_GPIO_PORTB              0x00000008U"
+    },
+    {
+      "name": "LL_SYSCFG_GPIO_PORTC",
+      "value": "0x00000010U",
+      "desc": "GPIO 滤波端口 C",
+      "group": "SYSCFG GPIO 端口",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_GPIO_PORTC              0x00000010U"
+    },
+    {
+      "name": "LL_SYSCFG_GPIO_PIN_0",
+      "value": "0x00000001U",
+      "desc": "滤波引脚 0",
+      "group": "SYSCFG GPIO 引脚",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_GPIO_PIN_0              0x00000001U"
+    },
+    {
+      "name": "LL_SYSCFG_GPIO_PIN_1",
+      "value": "0x00000002U",
+      "desc": "滤波引脚 1",
+      "group": "SYSCFG GPIO 引脚",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_GPIO_PIN_1              0x00000002U"
+    },
+    {
+      "name": "LL_SYSCFG_GPIO_PIN_2",
+      "value": "0x00000004U",
+      "desc": "滤波引脚 2",
+      "group": "SYSCFG GPIO 引脚",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_GPIO_PIN_2              0x00000004U"
+    },
+    {
+      "name": "LL_SYSCFG_GPIO_PIN_3",
+      "value": "0x00000008U",
+      "desc": "滤波引脚 3",
+      "group": "SYSCFG GPIO 引脚",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_GPIO_PIN_3              0x00000008U"
+    },
+    {
+      "name": "LL_SYSCFG_GPIO_PIN_4",
+      "value": "0x00000010U",
+      "desc": "滤波引脚 4",
+      "group": "SYSCFG GPIO 引脚",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_GPIO_PIN_4              0x00000010U"
+    },
+    {
+      "name": "LL_SYSCFG_GPIO_PIN_5",
+      "value": "0x00000020U",
+      "desc": "滤波引脚 5",
+      "group": "SYSCFG GPIO 引脚",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_GPIO_PIN_5              0x00000020U"
+    },
+    {
+      "name": "LL_SYSCFG_GPIO_PIN_6",
+      "value": "0x00000040U",
+      "desc": "滤波引脚 6",
+      "group": "SYSCFG GPIO 引脚",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_GPIO_PIN_6              0x00000040U"
+    },
+    {
+      "name": "LL_SYSCFG_GPIO_PIN_7",
+      "value": "0x00000080U",
+      "desc": "滤波引脚 7",
+      "group": "SYSCFG GPIO 引脚",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_SYSCFG_GPIO_PIN_7              0x00000080U"
+    },
+    {
+      "name": "LL_FLASH_LATENCY_0",
+      "value": "0x00000000U",
+      "desc": "Flash 0 个等待周期",
+      "group": "LL Flash 等待周期",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_FLASH_LATENCY_0                 0x00000000U             /*!< FLASH Zero Latency cycle */"
+    },
+    {
+      "name": "LL_FLASH_LATENCY_1",
+      "value": "FLASH_ACR_LATENCY",
+      "desc": "Flash 1 个等待周期",
+      "group": "LL Flash 等待周期",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_FLASH_LATENCY_1                 FLASH_ACR_LATENCY       /*!< FLASH One Latency cycle */"
+    },
+    {
+      "name": "LL_DBGMCU_APB1_GRP1_IWDG_STOP",
+      "value": "DBGMCU_APB_FZ1_DBG_IWDG_STOP",
+      "desc": "内核停止时独立看门狗 IWDG 计数器停走",
+      "group": "LL DBGMCU APB1 组1 冻结外设",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_DBGMCU_APB1_GRP1_IWDG_STOP      DBGMCU_APB_FZ1_DBG_IWDG_STOP        /*!< Debug Independent Watchdog stopped when Core is halted */"
+    },
+    {
+      "name": "LL_DBGMCU_APB1_GRP1_LPTIM1_STOP",
+      "value": "DBGMCU_APB_FZ1_DBG_LPTIM_STOP",
+      "desc": "内核停止时 LPTIM1 计数器停走",
+      "group": "LL DBGMCU APB1 组1 冻结外设",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_DBGMCU_APB1_GRP1_LPTIM1_STOP    DBGMCU_APB_FZ1_DBG_LPTIM_STOP      /*!< LPTIM1 counter stopped when Core is halted */"
+    },
+    {
+      "name": "LL_DBGMCU_APB1_GRP2_TIM1_STOP",
+      "value": "DBGMCU_APB_FZ2_DBG_TIM1_STOP",
+      "desc": "内核停止时 TIM1 计数器停走",
+      "group": "LL DBGMCU APB1 组2 冻结外设",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_DBGMCU_APB1_GRP2_TIM1_STOP      DBGMCU_APB_FZ2_DBG_TIM1_STOP        /*!< TIM1 counter stopped when core is halted */"
+    },
+    {
+      "name": "LL_DBGMCU_APB1_GRP2_TIM14_STOP",
+      "value": "DBGMCU_APB_FZ2_DBG_TIM14_STOP",
+      "desc": "内核停止时 TIM14 计数器停走",
+      "group": "LL DBGMCU APB1 组2 冻结外设",
+      "file": "py32f002b_ll_system.h",
+      "src": "#define LL_DBGMCU_APB1_GRP2_TIM14_STOP     DBGMCU_APB_FZ2_DBG_TIM14_STOP       /*!< TIM14 counter stopped when core is halted */"
+    },
+    {
+      "name": "LL_UTILS_HSEBYPASS_OFF",
+      "value": "0x00000000U",
+      "desc": "HSE 旁路(Bypass)不使能",
+      "group": "HSE 旁路",
+      "file": "py32f002b_ll_utils.h",
+      "src": "#define LL_UTILS_HSEBYPASS_OFF        0x00000000U       /*!< HSE Bypass is not enabled                */"
+    },
+    {
+      "name": "LL_UTILS_HSEBYPASS_ON",
+      "value": "0x00000001U",
+      "desc": "HSE 旁路(Bypass)使能",
+      "group": "HSE 旁路",
+      "file": "py32f002b_ll_utils.h",
+      "src": "#define LL_UTILS_HSEBYPASS_ON         0x00000001U       /*!< HSE Bypass is enabled                    */"
+    },
+    {
+      "name": "LL_MAX_DELAY",
+      "value": "0xFFFFFFFFU",
+      "desc": "LL_mDelay 可用的最大延时值",
+      "group": "LL UTILS 私有常量",
+      "file": "py32f002b_ll_utils.h",
+      "src": "#define LL_MAX_DELAY                  0xFFFFFFFFU"
+    },
+    {
+      "name": "UID_BASE_ADDRESS",
+      "value": "UID_BASE",
+      "desc": "唯一器件 ID 寄存器基地址",
+      "group": "LL UTILS 私有常量",
+      "file": "py32f002b_ll_utils.h",
+      "src": "#define UID_BASE_ADDRESS              UID_BASE"
+    },
+    {
+      "name": "FLASHSIZE_BASE_ADDRESS",
+      "value": "FLASHSIZE_BASE",
+      "desc": "Flash 容量数据寄存器基地址",
+      "group": "LL UTILS 私有常量",
+      "file": "py32f002b_ll_utils.h",
+      "src": "#define FLASHSIZE_BASE_ADDRESS        FLASHSIZE_BASE"
+    }
+  ]
+}

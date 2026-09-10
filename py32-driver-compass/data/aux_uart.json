@@ -1,0 +1,529 @@
+{
+  "module": "UART",
+  "moduleId": "uart",
+  "hal": [
+    {
+      "name": "IS_UART_ADDRESS",
+      "sig": "#define IS_UART_ADDRESS(ADDRESS) ((ADDRESS) <= 0x0FU)",
+      "brief": "校验多机通信节点地址是否不超过 0x0F (4 位地址上限)",
+      "params": [
+        {
+          "name": "ADDRESS",
+          "type": "宏参数",
+          "desc": "待校验的节点地址值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define IS_UART_ADDRESS(ADDRESS) ((ADDRESS) <= 0x0FU)"
+    },
+    {
+      "name": "IS_UART_ADVFEATURE_AUTOBAUDRATE",
+      "sig": "#define IS_UART_ADVFEATURE_AUTOBAUDRATE(__PARAM__) (((__PARAM__) == UART_ADVFEATURE_AUTOBAUDRATE_DISABLE) || \\\n                                                    ((__PARAM__) == UART_ADVFEATURE_AUTOBAUDRATE_ENABLE))",
+      "brief": "校验自动波特率检测高级特性是否为 UART_ADVFEATURE_AUTOBAUDRATE_DISABLE 或 UART_ADVFEATURE_AUTOBAUDRATE_ENABLE",
+      "params": [
+        {
+          "name": "__PARAM__",
+          "type": "宏参数",
+          "desc": "待校验的自动波特率检测使能配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define IS_UART_ADVFEATURE_AUTOBAUDRATE(__PARAM__) (((__PARAM__) == UART_ADVFEATURE_AUTOBAUDRATE_DISABLE) || \\\r\n                                                    ((__PARAM__) == UART_ADVFEATURE_AUTOBAUDRATE_ENABLE))"
+    },
+    {
+      "name": "IS_UART_ADVFEATURE_AUTOBAUDRATEMODE",
+      "sig": "#define IS_UART_ADVFEATURE_AUTOBAUDRATEMODE(__PARAM__) (((__PARAM__) == UART_ADVFEATURE_AUTOBAUDRATE_ONSTARTBIT) || \\\n                                                    ((__PARAM__) == UART_ADVFEATURE_AUTOBAUDRATE_ONFALLINGEDGE))",
+      "brief": "校验自动波特率检测模式是否为 UART_ADVFEATURE_AUTOBAUDRATE_ONSTARTBIT (起始位检测) 或 UART_ADVFEATURE_AUTOBAUDRATE_ONFALLINGEDGE (下降沿检测)",
+      "params": [
+        {
+          "name": "__PARAM__",
+          "type": "宏参数",
+          "desc": "待校验的自动波特率检测模式值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define IS_UART_ADVFEATURE_AUTOBAUDRATEMODE(__PARAM__) (((__PARAM__) == UART_ADVFEATURE_AUTOBAUDRATE_ONSTARTBIT) || \\\r\n                                                    ((__PARAM__) == UART_ADVFEATURE_AUTOBAUDRATE_ONFALLINGEDGE))"
+    },
+    {
+      "name": "IS_UART_ADVFEATURE_INIT",
+      "sig": "#define IS_UART_ADVFEATURE_INIT(__PARAM__) (((__PARAM__) == UART_ADVFEATURE_NO_INIT) || \\\n                                            ((__PARAM__) == UART_ADVFEATURE_AUTOBAUDRATE_INIT))",
+      "brief": "校验高级特性初始化选项是否为 UART_ADVFEATURE_NO_INIT (不初始化) 或 UART_ADVFEATURE_AUTOBAUDRATE_INIT (仅初始化自动波特率检测)",
+      "params": [
+        {
+          "name": "__PARAM__",
+          "type": "宏参数",
+          "desc": "待校验的高级特性初始化选项值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define IS_UART_ADVFEATURE_INIT(__PARAM__) (((__PARAM__) == UART_ADVFEATURE_NO_INIT) || \\\r\n                                            ((__PARAM__) == UART_ADVFEATURE_AUTOBAUDRATE_INIT))"
+    },
+    {
+      "name": "IS_UART_BAUDRATE",
+      "sig": "#define IS_UART_BAUDRATE(BAUDRATE) ((BAUDRATE) <= 4500000U)",
+      "brief": "校验波特率是否不超过最大允许值 4500000 (4.5MHz)",
+      "params": [
+        {
+          "name": "BAUDRATE",
+          "type": "宏参数",
+          "desc": "待校验的波特率值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define IS_UART_BAUDRATE(BAUDRATE) ((BAUDRATE) <= 4500000U)"
+    },
+    {
+      "name": "IS_UART_HARDWARE_FLOW_CONTROL",
+      "sig": "#define IS_UART_HARDWARE_FLOW_CONTROL(CONTROL)\\\n                              (((CONTROL) == UART_HWCONTROL_NONE) || \\\n                               ((CONTROL) == UART_HWCONTROL_RTS) || \\\n                               ((CONTROL) == UART_HWCONTROL_CTS) || \\\n                               ((CONTROL) == UART_HWCONTROL_RTS_CTS))",
+      "brief": "校验硬件流控配置是否为 UART_HWCONTROL_NONE/RTS/CTS/RTS_CTS 之一",
+      "params": [
+        {
+          "name": "CONTROL",
+          "type": "宏参数",
+          "desc": "待校验的硬件流控配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define IS_UART_HARDWARE_FLOW_CONTROL(CONTROL)\\\r\n                              (((CONTROL) == UART_HWCONTROL_NONE) || \\\r\n                               ((CONTROL) == UART_HWCONTROL_RTS) || \\\r\n                               ((CONTROL) == UART_HWCONTROL_CTS) || \\\r\n                               ((CONTROL) == UART_HWCONTROL_RTS_CTS))"
+    },
+    {
+      "name": "IS_UART_LIN_BREAK_DETECT_LENGTH",
+      "sig": "#define IS_UART_LIN_BREAK_DETECT_LENGTH(LENGTH) (((LENGTH) == UART_LINBREAKDETECTLENGTH_10B) || \\\n                                                 ((LENGTH) == UART_LINBREAKDETECTLENGTH_11B))",
+      "brief": "校验 LIN 断开 (Break) 检测长度是否为 UART_LINBREAKDETECTLENGTH_10B (10 位) 或 UART_LINBREAKDETECTLENGTH_11B (11 位)",
+      "params": [
+        {
+          "name": "LENGTH",
+          "type": "宏参数",
+          "desc": "待校验的 LIN 断开检测长度配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define IS_UART_LIN_BREAK_DETECT_LENGTH(LENGTH) (((LENGTH) == UART_LINBREAKDETECTLENGTH_10B) || \\\r\n                                                 ((LENGTH) == UART_LINBREAKDETECTLENGTH_11B))"
+    },
+    {
+      "name": "IS_UART_LIN_OVERSAMPLING",
+      "sig": "#define IS_UART_LIN_OVERSAMPLING(SAMPLING) (((SAMPLING) == UART_OVERSAMPLING_16))",
+      "brief": "校验 LIN 模式过采样配置, 仅支持 UART_OVERSAMPLING_16 (16 倍采样)",
+      "params": [
+        {
+          "name": "SAMPLING",
+          "type": "宏参数",
+          "desc": "待校验的 LIN 过采样配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define IS_UART_LIN_OVERSAMPLING(SAMPLING) (((SAMPLING) == UART_OVERSAMPLING_16))"
+    },
+    {
+      "name": "IS_UART_LIN_WORD_LENGTH",
+      "sig": "#define IS_UART_LIN_WORD_LENGTH(LENGTH) (((LENGTH) == UART_WORDLENGTH_8B))",
+      "brief": "校验 LIN 模式数据字长, 仅支持 UART_WORDLENGTH_8B (8 位数据)",
+      "params": [
+        {
+          "name": "LENGTH",
+          "type": "宏参数",
+          "desc": "待校验的 LIN 数据字长配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define IS_UART_LIN_WORD_LENGTH(LENGTH) (((LENGTH) == UART_WORDLENGTH_8B))"
+    },
+    {
+      "name": "IS_UART_MODE",
+      "sig": "#define IS_UART_MODE(MODE) ((((MODE) & (~((uint32_t)UART_MODE_TX_RX))) == 0x00U) && ((MODE) != 0x00U))",
+      "brief": "校验模式参数为 UART_MODE_TX_RX 的合法子集 (无越界位) 且非 0",
+      "params": [
+        {
+          "name": "MODE",
+          "type": "宏参数",
+          "desc": "待校验的收发模式组合值 (如 UART_MODE_TX、UART_MODE_RX、UART_MODE_TX_RX)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define IS_UART_MODE(MODE) ((((MODE) & (~((uint32_t)UART_MODE_TX_RX))) == 0x00U) && ((MODE) != 0x00U))"
+    },
+    {
+      "name": "IS_UART_OVERSAMPLING",
+      "sig": "#define IS_UART_OVERSAMPLING(SAMPLING) (((SAMPLING) == UART_OVERSAMPLING_16) || \\\n                                        ((SAMPLING) == UART_OVERSAMPLING_8))",
+      "brief": "校验过采样倍率是否为 UART_OVERSAMPLING_16 或 UART_OVERSAMPLING_8",
+      "params": [
+        {
+          "name": "SAMPLING",
+          "type": "宏参数",
+          "desc": "待校验的过采样配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define IS_UART_OVERSAMPLING(SAMPLING) (((SAMPLING) == UART_OVERSAMPLING_16) || \\\r\n                                        ((SAMPLING) == UART_OVERSAMPLING_8))"
+    },
+    {
+      "name": "IS_UART_PARITY",
+      "sig": "#define IS_UART_PARITY(PARITY) (((PARITY) == UART_PARITY_NONE) || \\\n                                ((PARITY) == UART_PARITY_EVEN) || \\\n                                ((PARITY) == UART_PARITY_ODD))",
+      "brief": "校验奇偶校验配置是否为 UART_PARITY_NONE/EVEN/ODD 之一",
+      "params": [
+        {
+          "name": "PARITY",
+          "type": "宏参数",
+          "desc": "待校验的奇偶校验配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define IS_UART_PARITY(PARITY) (((PARITY) == UART_PARITY_NONE) || \\\r\n                                ((PARITY) == UART_PARITY_EVEN) || \\\r\n                                ((PARITY) == UART_PARITY_ODD))"
+    },
+    {
+      "name": "IS_UART_STATE",
+      "sig": "#define IS_UART_STATE(STATE) (((STATE) == UART_STATE_DISABLE) || \\\n                              ((STATE) == UART_STATE_ENABLE))",
+      "brief": "校验状态配置是否为 UART_STATE_DISABLE 或 UART_STATE_ENABLE",
+      "params": [
+        {
+          "name": "STATE",
+          "type": "宏参数",
+          "desc": "待校验的状态配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define IS_UART_STATE(STATE) (((STATE) == UART_STATE_DISABLE) || \\\r\n                              ((STATE) == UART_STATE_ENABLE))"
+    },
+    {
+      "name": "IS_UART_STOPBITS",
+      "sig": "#define IS_UART_STOPBITS(STOPBITS) (((STOPBITS) == UART_STOPBITS_1) || \\\n                                    ((STOPBITS) == UART_STOPBITS_2))",
+      "brief": "校验停止位配置是否为 UART_STOPBITS_1 或 UART_STOPBITS_2",
+      "params": [
+        {
+          "name": "STOPBITS",
+          "type": "宏参数",
+          "desc": "待校验的停止位配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define IS_UART_STOPBITS(STOPBITS) (((STOPBITS) == UART_STOPBITS_1) || \\\r\n                                    ((STOPBITS) == UART_STOPBITS_2))"
+    },
+    {
+      "name": "IS_UART_WAKEUPMETHOD",
+      "sig": "#define IS_UART_WAKEUPMETHOD(WAKEUP) (((WAKEUP) == UART_WAKEUPMETHOD_IDLELINE) || \\\n                                      ((WAKEUP) == UART_WAKEUPMETHOD_ADDRESSMARK))",
+      "brief": "校验唤醒方式是否为 UART_WAKEUPMETHOD_IDLELINE (空闲线唤醒) 或 UART_WAKEUPMETHOD_ADDRESSMARK (地址标记唤醒)",
+      "params": [
+        {
+          "name": "WAKEUP",
+          "type": "宏参数",
+          "desc": "待校验的唤醒方式配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define IS_UART_WAKEUPMETHOD(WAKEUP) (((WAKEUP) == UART_WAKEUPMETHOD_IDLELINE) || \\\r\n                                      ((WAKEUP) == UART_WAKEUPMETHOD_ADDRESSMARK))"
+    },
+    {
+      "name": "IS_UART_WORD_LENGTH",
+      "sig": "#define IS_UART_WORD_LENGTH(LENGTH) (((LENGTH) == UART_WORDLENGTH_8B) || \\\n                                     ((LENGTH) == UART_WORDLENGTH_9B))",
+      "brief": "校验数据字长是否为 UART_WORDLENGTH_8B 或 UART_WORDLENGTH_9B",
+      "params": [
+        {
+          "name": "LENGTH",
+          "type": "宏参数",
+          "desc": "待校验的数据字长配置值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define IS_UART_WORD_LENGTH(LENGTH) (((LENGTH) == UART_WORDLENGTH_8B) || \\\r\n                                     ((LENGTH) == UART_WORDLENGTH_9B))"
+    },
+    {
+      "name": "UART_BRR_SAMPLING16",
+      "sig": "#define UART_BRR_SAMPLING16(_PCLK_, _BAUD_)            (((UART_DIVMANT_SAMPLING16((_PCLK_), (_BAUD_)) << 4U) + \\\n                                                        (UART_DIVFRAQ_SAMPLING16((_PCLK_), (_BAUD_)) & 0xF0U)) + \\\n                                                        (UART_DIVFRAQ_SAMPLING16((_PCLK_), (_BAUD_)) & 0x0FU))",
+      "brief": "按采样率 16 计算并组合出写入 UART BRR 寄存器的波特率分频值 (整数部分左移 4 位, 与小数部分按 BRR 位域拼接)",
+      "params": [
+        {
+          "name": "_PCLK_",
+          "type": "宏参数",
+          "desc": "UART 外设时钟频率 (PCLK)"
+        },
+        {
+          "name": "_BAUD_",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "BRR 寄存器写入值 (波特率分频系数)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define UART_BRR_SAMPLING16(_PCLK_, _BAUD_)            (((UART_DIVMANT_SAMPLING16((_PCLK_), (_BAUD_)) << 4U) + \\\r\n                                                        (UART_DIVFRAQ_SAMPLING16((_PCLK_), (_BAUD_)) & 0xF0U)) + \\\r\n                                                        (UART_DIVFRAQ_SAMPLING16((_PCLK_), (_BAUD_)) & 0x0FU))"
+    },
+    {
+      "name": "UART_BRR_SAMPLING8",
+      "sig": "#define UART_BRR_SAMPLING8(_PCLK_, _BAUD_)             (((UART_DIVMANT_SAMPLING8((_PCLK_), (_BAUD_)) << 4U) + \\\n                                                        ((UART_DIVFRAQ_SAMPLING8((_PCLK_), (_BAUD_)) & 0xF8U) << 1U)) + \\\n                                                        (UART_DIVFRAQ_SAMPLING8((_PCLK_), (_BAUD_)) & 0x07U))",
+      "brief": "按采样率 8 计算并组合出写入 UART BRR 寄存器的波特率分频值 (整数部分左移 4 位, 与小数部分按 BRR 位域拼接)",
+      "params": [
+        {
+          "name": "_PCLK_",
+          "type": "宏参数",
+          "desc": "UART 外设时钟频率 (PCLK)"
+        },
+        {
+          "name": "_BAUD_",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "BRR 寄存器写入值 (波特率分频系数)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define UART_BRR_SAMPLING8(_PCLK_, _BAUD_)             (((UART_DIVMANT_SAMPLING8((_PCLK_), (_BAUD_)) << 4U) + \\\r\n                                                        ((UART_DIVFRAQ_SAMPLING8((_PCLK_), (_BAUD_)) & 0xF8U) << 1U)) + \\\r\n                                                        (UART_DIVFRAQ_SAMPLING8((_PCLK_), (_BAUD_)) & 0x07U))"
+    },
+    {
+      "name": "UART_DIV_SAMPLING16",
+      "sig": "#define UART_DIV_SAMPLING16(_PCLK_, _BAUD_)            (((_PCLK_)*25U)/(4U*(_BAUD_)))",
+      "brief": "按采样率 16 计算 UART 波特率分频系数并放大 100 倍, 公式为 (_PCLK_×25)/(4×_BAUD_), 等效于 (_PCLK_/(16×_BAUD_))×100",
+      "params": [
+        {
+          "name": "_PCLK_",
+          "type": "宏参数",
+          "desc": "UART 外设时钟频率 (PCLK)"
+        },
+        {
+          "name": "_BAUD_",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "放大 100 倍的波特率分频系数, 供 DIVMANT/DIVFRAQ 宏拆出整数与小数部分"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define UART_DIV_SAMPLING16(_PCLK_, _BAUD_)            (((_PCLK_)*25U)/(4U*(_BAUD_)))"
+    },
+    {
+      "name": "UART_DIV_SAMPLING8",
+      "sig": "#define UART_DIV_SAMPLING8(_PCLK_, _BAUD_)             (((_PCLK_)*25U)/(2U*(_BAUD_)))",
+      "brief": "按采样率 8 计算 UART 波特率分频系数并放大 100 倍, 公式为 (_PCLK_×25)/(2×_BAUD_), 等效于 (_PCLK_/(8×_BAUD_))×100",
+      "params": [
+        {
+          "name": "_PCLK_",
+          "type": "宏参数",
+          "desc": "UART 外设时钟频率 (PCLK)"
+        },
+        {
+          "name": "_BAUD_",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "放大 100 倍的波特率分频系数, 供 DIVMANT/DIVFRAQ 宏拆出整数与小数部分"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define UART_DIV_SAMPLING8(_PCLK_, _BAUD_)             (((_PCLK_)*25U)/(2U*(_BAUD_)))"
+    },
+    {
+      "name": "UART_DIVFRAQ_SAMPLING16",
+      "sig": "#define UART_DIVFRAQ_SAMPLING16(_PCLK_, _BAUD_)        (((UART_DIV_SAMPLING16((_PCLK_), (_BAUD_)) - (UART_DIVMANT_SAMPLING16((_PCLK_), (_BAUD_)) * 100U)) * 16U + 50U) / 100U)",
+      "brief": "按采样率 16 计算 UART 波特率分频的小数部分 (4 位小数, 含四舍五入)",
+      "params": [
+        {
+          "name": "_PCLK_",
+          "type": "宏参数",
+          "desc": "UART 外设时钟频率 (PCLK)"
+        },
+        {
+          "name": "_BAUD_",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "分频小数部分 (0~16, 对应 BRR 低 4 位小数位)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define UART_DIVFRAQ_SAMPLING16(_PCLK_, _BAUD_)        (((UART_DIV_SAMPLING16((_PCLK_), (_BAUD_)) - (UART_DIVMANT_SAMPLING16((_PCLK_), (_BAUD_)) * 100U)) * 16U + 50U) / 100U)"
+    },
+    {
+      "name": "UART_DIVFRAQ_SAMPLING8",
+      "sig": "#define UART_DIVFRAQ_SAMPLING8(_PCLK_, _BAUD_)         (((UART_DIV_SAMPLING8((_PCLK_), (_BAUD_)) - (UART_DIVMANT_SAMPLING8((_PCLK_), (_BAUD_)) * 100U)) * 8U + 50U) / 100U)",
+      "brief": "按采样率 8 计算 UART 波特率分频的小数部分 (3 位小数, 含四舍五入)",
+      "params": [
+        {
+          "name": "_PCLK_",
+          "type": "宏参数",
+          "desc": "UART 外设时钟频率 (PCLK)"
+        },
+        {
+          "name": "_BAUD_",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "分频小数部分 (0~8, 对应 BRR 低 3 位小数位)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define UART_DIVFRAQ_SAMPLING8(_PCLK_, _BAUD_)         (((UART_DIV_SAMPLING8((_PCLK_), (_BAUD_)) - (UART_DIVMANT_SAMPLING8((_PCLK_), (_BAUD_)) * 100U)) * 8U + 50U) / 100U)"
+    },
+    {
+      "name": "UART_DIVMANT_SAMPLING16",
+      "sig": "#define UART_DIVMANT_SAMPLING16(_PCLK_, _BAUD_)        (UART_DIV_SAMPLING16((_PCLK_), (_BAUD_))/100U)",
+      "brief": "按采样率 16 计算 UART 波特率分频的整数部分",
+      "params": [
+        {
+          "name": "_PCLK_",
+          "type": "宏参数",
+          "desc": "UART 外设时钟频率 (PCLK)"
+        },
+        {
+          "name": "_BAUD_",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "分频整数部分 (对应 BRR 高 12 位)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define UART_DIVMANT_SAMPLING16(_PCLK_, _BAUD_)        (UART_DIV_SAMPLING16((_PCLK_), (_BAUD_))/100U)"
+    },
+    {
+      "name": "UART_DIVMANT_SAMPLING8",
+      "sig": "#define UART_DIVMANT_SAMPLING8(_PCLK_, _BAUD_)         (UART_DIV_SAMPLING8((_PCLK_), (_BAUD_))/100U)",
+      "brief": "按采样率 8 计算 UART 波特率分频的整数部分",
+      "params": [
+        {
+          "name": "_PCLK_",
+          "type": "宏参数",
+          "desc": "UART 外设时钟频率 (PCLK)"
+        },
+        {
+          "name": "_BAUD_",
+          "type": "宏参数",
+          "desc": "目标波特率"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "分频整数部分 (对应 BRR 高 12 位)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_uart.h",
+      "kind": "macro",
+      "src": "#define UART_DIVMANT_SAMPLING8(_PCLK_, _BAUD_)         (UART_DIV_SAMPLING8((_PCLK_), (_BAUD_))/100U)"
+    }
+  ],
+  "ll": [],
+  "types": [],
+  "consts": []
+}

@@ -1,0 +1,756 @@
+{
+  "module": "PWR 电源管理",
+  "moduleId": "pwr",
+  "intro": "电源控制: 低功耗模式管理(睡眠/低功耗睡眠/Stop 0/Stop 1 等模式的进入与退出), Stop 模式唤醒时序(HSI 使能时机、FLASH 使能延时)与 SRAM 保持电压配置, MR 偏置电流加载配置, 以及 Cortex 睡眠相关特性(Sleep-On-Exit、SEVONPEND)。含 HAL 库(py32f002b_hal_pwr.c/.h)与 LL 库(py32f002b_ll_pwr.h/.c)。",
+  "files": [
+    "py32f002b_hal_pwr.c",
+    "py32f002b_hal_pwr.h",
+    "py32f002b_ll_pwr.h",
+    "py32f002b_ll_pwr.c"
+  ],
+  "hal": [
+    {
+      "name": "HAL_PWR_DeInit",
+      "sig": "void HAL_PWR_DeInit(void)",
+      "brief": "将 PWR 外设寄存器恢复为复位默认值(通过强制复位后释放复位 PWR 时钟实现)。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_pwr.c",
+      "kind": "function",
+      "src": "void HAL_PWR_DeInit(void)\r\n{\r\n  __HAL_RCC_PWR_FORCE_RESET();\r\n  __HAL_RCC_PWR_RELEASE_RESET();\r\n}"
+    },
+    {
+      "name": "HAL_PWR_ConfigStopMode",
+      "sig": "HAL_StatusTypeDef HAL_PWR_ConfigStopMode(PWR_StopModeConfigTypeDef *sStopModeConfig)",
+      "brief": "配置 Stop 模式下的 LPR 电压、SRAM 保持电压与唤醒相关时序。",
+      "params": [
+        {
+          "name": "sStopModeConfig",
+          "type": "PWR_StopModeConfigTypeDef *",
+          "desc": "指向 Stop 模式配置结构体的指针, 含唤醒 HSI 使能时机、SRAM 保持电压与 FLASH 唤醒延时"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 配置成功"
+      },
+      "file": "py32f002b_hal_pwr.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_PWR_ConfigStopMode(PWR_StopModeConfigTypeDef *sStopModeConfig)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_PWR_WAKEUP_HSIEN_TIMING(sStopModeConfig->WakeUpHsiEnableTime));\r\n#if defined(PWR_DEEPSTOP_SUPPORT)\r\n  assert_param(IS_PWR_SRAM_RETENTION_VOLT(sStopModeConfig->SramRetentionVoltDlp));\r\n#endif /* PWR_DEEPSTOP_SUPPORT */\r\n  assert_param(IS_PWR_SRAM_RETENTION_VOLT(sStopModeConfig->SramRetentionVolt));\r\n  assert_param(IS_PWR_WAKEUP_FLASH_DELAY(sStopModeConfig->FlashDelay));\r\n\r\n  /* Set the STOP mode and STOP wake-up timing related configurations */\r\n#if defined(PWR_DEEPSTOP_SUPPORT)\r\n  MODIFY_REG(PWR->CR1, PWR_CR1_SRAM_RETV_DLP, (sStopModeConfig->SramRetentionVoltDlp << PWR_CR1_SRAM_RETV_DLP_Pos));\r\n#endif /* PWR_DEEPSTOP_SUPPORT */\r\n\r\n  MODIFY_REG(PWR->CR1, (PWR_CR1_HSION_CTRL | PWR_CR1_SRAM_RETV | PWR_CR1_FLS_SLPTIME), \r\n                       (sStopModeConfig->WakeUpHsiEnableTime) | \\\r\n                       (sStopModeConfig->SramRetentionVolt << PWR_CR1_SRAM_RETV_Pos) | \\\r\n                       (sStopModeConfig->FlashDelay));\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_PWR_ConfigBIAS",
+      "sig": "HAL_StatusTypeDef HAL_PWR_ConfigBIAS(PWR_BIASConfigTypeDef *sBIASConfig)",
+      "brief": "配置 MR 偏置电流的加载来源与偏置电流数值。",
+      "params": [
+        {
+          "name": "sBIASConfig",
+          "type": "PWR_BIASConfigTypeDef *",
+          "desc": "指向偏置电流配置结构体的指针, 含加载来源与数值"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 配置成功"
+      },
+      "file": "py32f002b_hal_pwr.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_PWR_ConfigBIAS(PWR_BIASConfigTypeDef *sBIASConfig)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_BIAS_CURRENTS_SOURCE(sBIASConfig->BiasCurrentSource));\r\n  \r\n  if(((sBIASConfig->BiasCurrentSource) & PWR_BIAS_CURRENTS_FROM_BIAS_CR) == PWR_BIAS_CURRENTS_FROM_BIAS_CR)\r\n  {\r\n    /* Set the bias currents load source and bias currents value*/\r\n    MODIFY_REG(PWR->CR1, (PWR_CR1_BIAS_CR_SEL) | (PWR_CR1_BIAS_CR), (sBIASConfig->BiasCurrentSource) | \\\r\n                                                                    (sBIASConfig->BiasCurrentValue));\r\n  }\r\n  else\r\n  {\r\n    /* Set the bias currents load source */\r\n    MODIFY_REG(PWR->CR1, PWR_CR1_BIAS_CR_SEL, (sBIASConfig->BiasCurrentSource));\r\n  }\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_PWR_EnterSLEEPMode",
+      "sig": "void HAL_PWR_EnterSLEEPMode(uint8_t SLEEPEntry)",
+      "brief": "进入睡眠(Sleep)或低功耗睡眠(Low-power Sleep)模式。",
+      "params": [
+        {
+          "name": "SLEEPEntry",
+          "type": "uint8_t",
+          "desc": "进入方式: PWR_SLEEPENTRY_WFI(用 WFI 指令) / PWR_SLEEPENTRY_WFE(用 WFE 指令)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "睡眠/低功耗睡眠模式下所有 IO 引脚保持与运行模式相同的状态。",
+        "用 WFI 进入时, 若不希望时基中断作为唤醒源, 需先禁止时基中断。"
+      ],
+      "file": "py32f002b_hal_pwr.c",
+      "kind": "function",
+      "src": "void HAL_PWR_EnterSLEEPMode(uint8_t SLEEPEntry)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_PWR_SLEEP_ENTRY(SLEEPEntry));\r\n\r\n  /* Clear SLEEPDEEP bit of Cortex System Control Register */\r\n  CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));\r\n\r\n  /* Select SLEEP mode entry -------------------------------------------------*/\r\n  if(SLEEPEntry == PWR_SLEEPENTRY_WFI)\r\n  {\r\n    /* Request Wait For Interrupt */\r\n    __WFI();\r\n  }\r\n  else\r\n  {\r\n    /* Request Wait For Event */\r\n    __SEV();\r\n    __WFE();\r\n    __WFE();\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_PWR_EnterSTOPMode",
+      "sig": "void HAL_PWR_EnterSTOPMode(uint32_t Regulator, uint8_t STOPEntry)",
+      "brief": "进入 Stop 模式(Stop 0 / Stop 1, 部分器件支持 Stop 2)。",
+      "params": [
+        {
+          "name": "Regulator",
+          "type": "uint32_t",
+          "desc": "Stop 模式下稳压器状态: PWR_MAINREGULATOR_ON(Stop 0) / PWR_LOWPOWERREGULATOR_ON(Stop 1) / PWR_DEEPLOWPOWERREGULATOR_ON(Stop 2)"
+        },
+        {
+          "name": "STOPEntry",
+          "type": "uint8_t",
+          "desc": "进入方式: PWR_STOPENTRY_WFI(用 WFI 指令) / PWR_STOPENTRY_WFE(用 WFE 指令)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "视器件与封装, 某些 Stop 模式可能不可用, 参见数据手册。",
+        "退出 Stop 后根据 LPR 位设置, 处于运行模式或低功耗运行模式。"
+      ],
+      "file": "py32f002b_hal_pwr.c",
+      "kind": "function",
+      "src": "void HAL_PWR_EnterSTOPMode(uint32_t Regulator, uint8_t STOPEntry)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_PWR_REGULATOR(Regulator));\r\n  assert_param(IS_PWR_STOP_ENTRY(STOPEntry));\r\n  \r\n  \r\n  /* Config Regulator */\r\n  MODIFY_REG(PWR->CR1, PWR_CR1_LPR, Regulator);\r\n\r\n  /* Set SLEEPDEEP bit of Cortex System Control Register */\r\n  SET_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));\r\n\r\n  /* Select Stop mode entry --------------------------------------------------*/\r\n  if(STOPEntry == PWR_STOPENTRY_WFI)\r\n  {\r\n    /* Request Wait For Interrupt */\r\n    __WFI();\r\n  }\r\n  else\r\n  {\r\n    /* Request Wait For Event */\r\n    __SEV();\r\n    __WFE();\r\n    __WFE();\r\n  }\r\n\r\n  /* Reset SLEEPDEEP bit of Cortex System Control Register */\r\n  CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));\r\n}"
+    },
+    {
+      "name": "HAL_PWR_EnableSleepOnExit",
+      "sig": "void HAL_PWR_EnableSleepOnExit(void)",
+      "brief": "使能 Cortex 的 Sleep-On-Exit 特性(置位 SCR 寄存器 SLEEPONEXIT 位)。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "置位后, 处理器在中断处理结束返回线程模式时自动进入 SLEEP 或 DEEPSLEEP 模式。"
+      ],
+      "file": "py32f002b_hal_pwr.c",
+      "kind": "function",
+      "src": "void HAL_PWR_EnableSleepOnExit(void)\r\n{\r\n  /* Set SLEEPONEXIT bit of Cortex System Control Register */\r\n  SET_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk));\r\n}"
+    },
+    {
+      "name": "HAL_PWR_DisableSleepOnExit",
+      "sig": "void HAL_PWR_DisableSleepOnExit(void)",
+      "brief": "禁止 Cortex 的 Sleep-On-Exit 特性(清零 SCR 寄存器 SLEEPONEXIT 位)。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_pwr.c",
+      "kind": "function",
+      "src": "void HAL_PWR_DisableSleepOnExit(void)\r\n{\r\n  /* Clear SLEEPONEXIT bit of Cortex System Control Register */\r\n  CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk));\r\n}"
+    },
+    {
+      "name": "HAL_PWR_EnableSEVOnPend",
+      "sig": "void HAL_PWR_EnableSEVOnPend(void)",
+      "brief": "使能 Cortex 的 SEVONPEND 特性(置位 SCR 寄存器 SEVONPEND 位)。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "置位后, 使能的事件以及所有中断(包括被禁止的中断)都能通过 WFE 唤醒处理器。"
+      ],
+      "file": "py32f002b_hal_pwr.c",
+      "kind": "function",
+      "src": "void HAL_PWR_EnableSEVOnPend(void)\r\n{\r\n  /* Set SEVONPEND bit of Cortex System Control Register */\r\n  SET_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SEVONPEND_Msk));\r\n}"
+    },
+    {
+      "name": "HAL_PWR_DisableSEVOnPend",
+      "sig": "void HAL_PWR_DisableSEVOnPend(void)",
+      "brief": "禁止 Cortex 的 SEVONPEND 特性(清零 SCR 寄存器 SEVONPEND 位)。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "清零后, 只有使能的中断或事件才能通过 WFE 唤醒处理器。"
+      ],
+      "file": "py32f002b_hal_pwr.c",
+      "kind": "function",
+      "src": "void HAL_PWR_DisableSEVOnPend(void)\r\n{\r\n  /* Clear SEVONPEND bit of Cortex System Control Register */\r\n  CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SEVONPEND_Msk));\r\n}"
+    }
+  ],
+  "ll": [
+    {
+      "name": "LL_PWR_SetWakeUpHSIOnMode",
+      "sig": "void LL_PWR_SetWakeUpHSIOnMode(uint32_t HsiOnMode)",
+      "brief": "设置从 Stop 模式唤醒后 HSI 的开启时机。",
+      "params": [
+        {
+          "name": "HsiOnMode",
+          "type": "uint32_t",
+          "desc": "唤醒 HSI 时机: LL_PWR_WAKEUP_HSION_AFTER_MR / LL_PWR_WAKEUP_HSION_IMMEDIATE"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_pwr.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_PWR_SetWakeUpHSIOnMode(uint32_t HsiOnMode)\r\n{\r\n  MODIFY_REG(PWR->CR1, PWR_CR1_HSION_CTRL, HsiOnMode);\r\n}"
+    },
+    {
+      "name": "LL_PWR_GetWakeUpHSIOnMode",
+      "sig": "uint32_t LL_PWR_GetWakeUpHSIOnMode(void)",
+      "brief": "读取从 Stop 模式唤醒后 HSI 的开启时机。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "唤醒 HSI 时机, 对应 LL_PWR_WAKEUP_HSION_*"
+      },
+      "file": "py32f002b_ll_pwr.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_PWR_GetWakeUpHSIOnMode(void)\r\n{\r\n  return (uint32_t)(READ_BIT(PWR->CR1, PWR_CR1_HSION_CTRL));\r\n}"
+    },
+    {
+      "name": "LL_PWR_SetDeepStopModeSramVoltCtrl",
+      "sig": "void LL_PWR_SetDeepStopModeSramVoltCtrl(uint32_t VoltCtrl)",
+      "brief": "设置深停(Deep Stop)模式下的 SRAM 保持电压控制。",
+      "params": [
+        {
+          "name": "VoltCtrl",
+          "type": "uint32_t",
+          "desc": "SRAM 保持电压控制: LL_PWR_SRAM_RETENTION_VOLT_CTRL_LDO / LL_PWR_SRAM_RETENTION_VOLT_CTRL_LOW"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "视器件与封装, Deep Low Power Run 模式可能不可用, 参见数据手册。"
+      ],
+      "file": "py32f002b_ll_pwr.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_PWR_SetDeepStopModeSramVoltCtrl(uint32_t VoltCtrl)\r\n{\r\n  MODIFY_REG(PWR->CR1, PWR_CR1_SRAM_RETV_DLP, (VoltCtrl << PWR_CR1_SRAM_RETV_DLP_Pos));\r\n}"
+    },
+    {
+      "name": "LL_PWR_GetDeepStopModeSramVoltCtrl",
+      "sig": "uint32_t LL_PWR_GetDeepStopModeSramVoltCtrl(void)",
+      "brief": "读取深停(Deep Stop)模式下的 SRAM 保持电压控制。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "SRAM 保持电压控制, 对应 LL_PWR_SRAM_RETENTION_VOLT_CTRL_*"
+      },
+      "file": "py32f002b_ll_pwr.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_PWR_GetDeepStopModeSramVoltCtrl(void)\r\n{\r\n  return (uint32_t)(READ_BIT(PWR->CR1, PWR_CR1_SRAM_RETV_DLP) >> PWR_CR1_SRAM_RETV_DLP_Pos);\r\n}"
+    },
+    {
+      "name": "LL_PWR_SetStopModeSramVoltCtrl",
+      "sig": "void LL_PWR_SetStopModeSramVoltCtrl(uint32_t VoltCtrl)",
+      "brief": "设置 Stop 模式下的 SRAM 保持电压控制。",
+      "params": [
+        {
+          "name": "VoltCtrl",
+          "type": "uint32_t",
+          "desc": "SRAM 保持电压控制: LL_PWR_SRAM_RETENTION_VOLT_CTRL_LDO / LL_PWR_SRAM_RETENTION_VOLT_CTRL_LOW"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_pwr.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_PWR_SetStopModeSramVoltCtrl(uint32_t VoltCtrl)\r\n{\r\n  MODIFY_REG(PWR->CR1, PWR_CR1_SRAM_RETV, (VoltCtrl << PWR_CR1_SRAM_RETV_Pos));\r\n}"
+    },
+    {
+      "name": "LL_PWR_GetStopModeSramVoltCtrl",
+      "sig": "uint32_t LL_PWR_GetStopModeSramVoltCtrl(void)",
+      "brief": "读取 Stop 模式下的 SRAM 保持电压控制。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "SRAM 保持电压控制, 对应 LL_PWR_SRAM_RETENTION_VOLT_CTRL_*"
+      },
+      "file": "py32f002b_ll_pwr.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_PWR_GetStopModeSramVoltCtrl(void)\r\n{\r\n  return (uint32_t)(READ_BIT(PWR->CR1, PWR_CR1_SRAM_RETV) >> PWR_CR1_SRAM_RETV_Pos);\r\n}"
+    },
+    {
+      "name": "LL_PWR_SetLprMode",
+      "sig": "void LL_PWR_SetLprMode(uint32_t Mode)",
+      "brief": "设置低功耗稳压器模式(MR / LPR / DLPR)。",
+      "params": [
+        {
+          "name": "Mode",
+          "type": "uint32_t",
+          "desc": "稳压器模式: LL_PWR_LPR_MODE_MR / LL_PWR_LPR_MODE_LPR / LL_PWR_LPR_MODE_DLPR"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "视器件与封装, Deep Low Power Run 模式可能不可用, 参见数据手册。"
+      ],
+      "file": "py32f002b_ll_pwr.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_PWR_SetLprMode(uint32_t Mode)\r\n{\r\n  MODIFY_REG(PWR->CR1, PWR_CR1_LPR, Mode);\r\n}"
+    },
+    {
+      "name": "LL_PWR_GetLprMode",
+      "sig": "uint32_t LL_PWR_GetLprMode(void)",
+      "brief": "读取当前低功耗稳压器模式。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "稳压器模式, 对应 LL_PWR_LPR_MODE_*"
+      },
+      "file": "py32f002b_ll_pwr.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_PWR_GetLprMode(void)\r\n{\r\n  return (READ_BIT(PWR->CR1, PWR_CR1_LPR));\r\n}"
+    },
+    {
+      "name": "LL_PWR_SetWakeUpFlashDelay",
+      "sig": "void LL_PWR_SetWakeUpFlashDelay(uint32_t FlashDelay)",
+      "brief": "设置从 Stop 模式唤醒后 FLASH 的使能延时。",
+      "params": [
+        {
+          "name": "FlashDelay",
+          "type": "uint32_t",
+          "desc": "FLASH 使能延时: LL_PWR_WAKEUP_FLASH_DELAY_0US / _2US / _3US / _5US"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_pwr.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_PWR_SetWakeUpFlashDelay(uint32_t FlashDelay)\r\n{\r\n  MODIFY_REG(PWR->CR1, PWR_CR1_FLS_SLPTIME, FlashDelay);\r\n}"
+    },
+    {
+      "name": "LL_PWR_GetWakeUpFlashDelay",
+      "sig": "uint32_t LL_PWR_GetWakeUpFlashDelay(void)",
+      "brief": "读取从 Stop 模式唤醒后 FLASH 的使能延时。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "FLASH 使能延时, 对应 LL_PWR_WAKEUP_FLASH_DELAY_*"
+      },
+      "file": "py32f002b_ll_pwr.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_PWR_GetWakeUpFlashDelay(void)\r\n{\r\n  return (uint32_t)(READ_BIT(PWR->CR1, PWR_CR1_FLS_SLPTIME));\r\n}"
+    },
+    {
+      "name": "LL_PWR_SetBiasCurrents",
+      "sig": "void LL_PWR_SetBiasCurrents(uint32_t BiasCurSel, uint32_t BiasCur)",
+      "brief": "设置 MR 偏置电流的加载来源与偏置电流配置值。",
+      "params": [
+        {
+          "name": "BiasCurSel",
+          "type": "uint32_t",
+          "desc": "偏置电流加载来源: LL_PWR_BIAS_CURRENTS_FROM_FACTORY_BYTES / LL_PWR_BIAS_CURRENTS_FROM_BIAS_CR"
+        },
+        {
+          "name": "BiasCur",
+          "type": "uint32_t",
+          "desc": "偏置电流配置值, 范围 0x0000 ~ 0xFFFF"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_pwr.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_PWR_SetBiasCurrents(uint32_t BiasCurSel, uint32_t BiasCur)\r\n{\r\n  MODIFY_REG(PWR->CR1, (PWR_CR1_BIAS_CR_SEL | PWR_CR1_BIAS_CR), (BiasCurSel | BiasCur));\r\n}"
+    },
+    {
+      "name": "LL_PWR_GetBiasCurrentsLoadSource",
+      "sig": "uint32_t LL_PWR_GetBiasCurrentsLoadSource(void)",
+      "brief": "读取 MR 偏置电流的加载来源。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "加载来源, 对应 LL_PWR_BIAS_CURRENTS_FROM_*"
+      },
+      "file": "py32f002b_ll_pwr.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_PWR_GetBiasCurrentsLoadSource(void)\r\n{\r\n  return (uint32_t)(READ_BIT(PWR->CR1, PWR_CR1_BIAS_CR_SEL));\r\n}"
+    },
+    {
+      "name": "LL_PWR_GetBiasCRValue",
+      "sig": "uint32_t LL_PWR_GetBiasCRValue(void)",
+      "brief": "读取 MR 偏置电流配置值。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "偏置电流配置值, 范围 0x00 ~ 0x0F"
+      },
+      "file": "py32f002b_ll_pwr.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_PWR_GetBiasCRValue(void)\r\n{\r\n  return (uint32_t)(READ_BIT(PWR->CR1, PWR_CR1_BIAS_CR));\r\n}"
+    },
+    {
+      "name": "LL_PWR_DeInit",
+      "sig": "ErrorStatus LL_PWR_DeInit(void)",
+      "brief": "将 PWR 寄存器恢复为复位默认值(强制复位后释放复位 PWR 时钟)。需定义 USE_FULL_LL_DRIVER。",
+      "params": [],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 反初始化成功(ERROR 不适用)"
+      },
+      "file": "py32f002b_ll_pwr.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_PWR_DeInit(void)\r\n{\r\n  /* Force reset of PWR clock */\r\n  LL_APB1_GRP1_ForceReset(LL_APB1_GRP1_PERIPH_PWR);\r\n\r\n  /* Release reset of PWR clock */\r\n  LL_APB1_GRP1_ReleaseReset(LL_APB1_GRP1_PERIPH_PWR);\r\n\r\n  return SUCCESS;\r\n}"
+    },
+    {
+      "name": "LL_PWR_WriteReg",
+      "sig": "#define LL_PWR_WriteReg(__REG__, __VALUE__) WRITE_REG(PWR->__REG__, (__VALUE__))",
+      "brief": "宏: 向 PWR 的指定寄存器写入值。",
+      "params": [
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要写入的寄存器名"
+        },
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "要写入寄存器的值"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_ll_pwr.h",
+      "kind": "macro",
+      "src": "#define LL_PWR_WriteReg(__REG__, __VALUE__) WRITE_REG(PWR->__REG__, (__VALUE__))"
+    },
+    {
+      "name": "LL_PWR_ReadReg",
+      "sig": "#define LL_PWR_ReadReg(__REG__) READ_REG(PWR->__REG__)",
+      "brief": "宏: 读取 PWR 指定寄存器的值。",
+      "params": [
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要读取的寄存器名"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "寄存器值"
+      },
+      "file": "py32f002b_ll_pwr.h",
+      "kind": "macro",
+      "src": "#define LL_PWR_ReadReg(__REG__) READ_REG(PWR->__REG__)"
+    }
+  ],
+  "types": [
+    {
+      "name": "PWR_StopModeConfigTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t WakeUpHsiEnableTime; uint32_t SramRetentionVoltDlp; uint32_t SramRetentionVolt; uint32_t FlashDelay; } PWR_StopModeConfigTypeDef;",
+      "desc": "PWR Stop 模式配置结构体, 作为 HAL_PWR_ConfigStopMode() 的参数。",
+      "members": [
+        {
+          "name": "WakeUpHsiEnableTime",
+          "type": "uint32_t",
+          "desc": "唤醒后 HSI 使能时机, 可取 PWR_WAKEUP_HSIEN_AFTER_MR / PWR_WAKEUP_HSIEN_IMMEDIATE"
+        },
+        {
+          "name": "SramRetentionVoltDlp",
+          "type": "uint32_t",
+          "desc": "深停模式下 SRAM 保持电压, 可取 PWR_SRAM_RETENTION_VOLT_CTRL_*(仅定义 PWR_DEEPSTOP_SUPPORT 时存在)"
+        },
+        {
+          "name": "SramRetentionVolt",
+          "type": "uint32_t",
+          "desc": "Stop 模式下 SRAM 保持电压, 可取 PWR_SRAM_RETENTION_VOLT_CTRL_*"
+        },
+        {
+          "name": "FlashDelay",
+          "type": "uint32_t",
+          "desc": "唤醒后 FLASH 使能延时, 可取 PWR_WAKEUP_FLASH_DELAY_*"
+        }
+      ],
+      "file": "py32f002b_hal_pwr.h"
+    },
+    {
+      "name": "PWR_BIASConfigTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t BiasCurrentSource; uint32_t BiasCurrentValue; } PWR_BIASConfigTypeDef;",
+      "desc": "PWR MR 偏置电流配置结构体, 作为 HAL_PWR_ConfigBIAS() 的参数。",
+      "members": [
+        {
+          "name": "BiasCurrentSource",
+          "type": "uint32_t",
+          "desc": "偏置电流加载来源, 可取 PWR_BIAS_CURRENTS_FROM_FACTORY_BYTES / PWR_BIAS_CURRENTS_FROM_BIAS_CR"
+        },
+        {
+          "name": "BiasCurrentValue",
+          "type": "uint32_t",
+          "desc": "偏置电流配置值, 范围 0x0 ~ 0xF"
+        }
+      ],
+      "file": "py32f002b_hal_pwr.h"
+    },
+    {
+      "name": "PWR_TypeDef",
+      "kind": "periph",
+      "def": "typedef struct { __IO uint32_t CR1; } PWR_TypeDef;",
+      "desc": "PWR 外设寄存器结构体。实例: PWR。",
+      "members": [
+        {
+          "name": "CR1",
+          "type": "__IO uint32_t",
+          "desc": "电源控制寄存器 1: 含 BIAS_CR[3:0](偏置电流值)、BIAS_CR_SEL(偏置来源)、FLS_SLPTIME[1:0](唤醒 FLASH 延时)、LPR[1:0](低功耗稳压器模式)、SRAM_RETV(Stop 模式 SRAM 保持电压)、HSION_CTRL(唤醒 HSI 时机)等位域"
+        }
+      ],
+      "file": "py32f002xx5.h"
+    }
+  ],
+  "consts": [
+    {
+      "name": "PWR_MAINREGULATOR_ON",
+      "value": "(0x00000000u)",
+      "desc": "主稳压器模式(Stop 0)",
+      "group": "PWR 稳压器模式",
+      "file": "py32f002b_hal_pwr.h",
+      "src": "#define PWR_MAINREGULATOR_ON                (0x00000000u)    /*!< Regulator in main mode      */"
+    },
+    {
+      "name": "PWR_LOWPOWERREGULATOR_ON",
+      "value": "PWR_CR1_LPR_0",
+      "desc": "低功耗稳压器模式(Stop 1)",
+      "group": "PWR 稳压器模式",
+      "file": "py32f002b_hal_pwr.h",
+      "src": "#define PWR_LOWPOWERREGULATOR_ON            PWR_CR1_LPR_0    /*!< Regulator in low-power mode */"
+    },
+    {
+      "name": "PWR_DEEPLOWPOWERREGULATOR_ON",
+      "value": "PWR_CR1_LPR_1",
+      "desc": "深低功耗稳压器模式(Stop 2, 需 PWR_DEEPSTOP_SUPPORT)",
+      "group": "PWR 稳压器模式",
+      "file": "py32f002b_hal_pwr.h",
+      "src": "#define PWR_DEEPLOWPOWERREGULATOR_ON        PWR_CR1_LPR_1    /*!< Regulator in deep-low-power mode */"
+    },
+    {
+      "name": "PWR_SLEEPENTRY_WFI",
+      "value": "((uint8_t)0x01u)",
+      "desc": "用 WFI 指令进入睡眠模式",
+      "group": "PWR 睡眠进入方式",
+      "file": "py32f002b_hal_pwr.h",
+      "src": "#define PWR_SLEEPENTRY_WFI                  ((uint8_t)0x01u)        /*!< Wait For Interruption instruction to enter Sleep mode */"
+    },
+    {
+      "name": "PWR_SLEEPENTRY_WFE",
+      "value": "((uint8_t)0x02u)",
+      "desc": "用 WFE 指令进入睡眠模式",
+      "group": "PWR 睡眠进入方式",
+      "file": "py32f002b_hal_pwr.h",
+      "src": "#define PWR_SLEEPENTRY_WFE                  ((uint8_t)0x02u)        /*!< Wait For Event instruction to enter Sleep mode        */"
+    },
+    {
+      "name": "PWR_STOPENTRY_WFI",
+      "value": "((uint8_t)0x01u)",
+      "desc": "用 WFI 指令进入 Stop 模式",
+      "group": "PWR Stop 进入方式",
+      "file": "py32f002b_hal_pwr.h",
+      "src": "#define PWR_STOPENTRY_WFI                   ((uint8_t)0x01u)        /*!< Wait For Interruption instruction to enter Stop mode */"
+    },
+    {
+      "name": "PWR_STOPENTRY_WFE",
+      "value": "((uint8_t)0x02u)",
+      "desc": "用 WFE 指令进入 Stop 模式",
+      "group": "PWR Stop 进入方式",
+      "file": "py32f002b_hal_pwr.h",
+      "src": "#define PWR_STOPENTRY_WFE                   ((uint8_t)0x02u)        /*!< Wait For Event instruction to enter Stop mode        */"
+    },
+    {
+      "name": "PWR_WAKEUP_HSIEN_AFTER_MR",
+      "value": "0x00000000U",
+      "desc": "从 STOP 模式唤醒, MR 稳定后再使能 HSI",
+      "group": "PWR 唤醒 HSI 使能时机",
+      "file": "py32f002b_hal_pwr.h",
+      "src": "#define PWR_WAKEUP_HSIEN_AFTER_MR       0x00000000U         /* Wake up from the STOP mode, After the MR becomes stable, enable HSI */"
+    },
+    {
+      "name": "PWR_WAKEUP_HSIEN_IMMEDIATE",
+      "value": "PWR_CR1_HSION_CTRL",
+      "desc": "从 STOP 模式唤醒, 立即使能 HSI",
+      "group": "PWR 唤醒 HSI 使能时机",
+      "file": "py32f002b_hal_pwr.h",
+      "src": "#define PWR_WAKEUP_HSIEN_IMMEDIATE      PWR_CR1_HSION_CTRL  /* Wake up from the STOP mode, Enable HSI immediately */"
+    },
+    {
+      "name": "PWR_SRAM_RETENTION_VOLT_CTRL_LDO",
+      "value": "0x00000001U",
+      "desc": "SRAM 电压与 LDO 输出相同",
+      "group": "PWR SRAM 保持电压",
+      "file": "py32f002b_hal_pwr.h",
+      "src": "#define PWR_SRAM_RETENTION_VOLT_CTRL_LDO     0x00000001U  /* SRAM voltage is the same as LDO output. */"
+    },
+    {
+      "name": "PWR_SRAM_RETENTION_VOLT_CTRL_LOW",
+      "value": "0x00000000U",
+      "desc": "SRAM 电压为低",
+      "group": "PWR SRAM 保持电压",
+      "file": "py32f002b_hal_pwr.h",
+      "src": "#define PWR_SRAM_RETENTION_VOLT_CTRL_LOW     0x00000000U  /* SRAM voltage is low. */"
+    },
+    {
+      "name": "PWR_WAKEUP_FLASH_DELAY_0US",
+      "value": "(PWR_CR1_FLS_SLPTIME_1 | PWR_CR1_FLS_SLPTIME_0)",
+      "desc": "从 STOP 模式唤醒, 立即使能 FLASH",
+      "group": "PWR 唤醒 FLASH 延时",
+      "file": "py32f002b_hal_pwr.h",
+      "src": "#define PWR_WAKEUP_FLASH_DELAY_0US      (PWR_CR1_FLS_SLPTIME_1 | PWR_CR1_FLS_SLPTIME_0) /* Wake up from the STOP mode, Enable falsh immediately*/"
+    },
+    {
+      "name": "PWR_WAKEUP_FLASH_DELAY_2US",
+      "value": "(PWR_CR1_FLS_SLPTIME_0)",
+      "desc": "从 STOP 模式唤醒, 延时 2us 使能 FLASH",
+      "group": "PWR 唤醒 FLASH 延时",
+      "file": "py32f002b_hal_pwr.h",
+      "src": "#define PWR_WAKEUP_FLASH_DELAY_2US      (                        PWR_CR1_FLS_SLPTIME_0) /* Wake up from the STOP mode, Delay 2us enable falsh*/"
+    },
+    {
+      "name": "PWR_WAKEUP_FLASH_DELAY_3US",
+      "value": "(PWR_CR1_FLS_SLPTIME_1)",
+      "desc": "从 STOP 模式唤醒, 延时 3us 使能 FLASH",
+      "group": "PWR 唤醒 FLASH 延时",
+      "file": "py32f002b_hal_pwr.h",
+      "src": "#define PWR_WAKEUP_FLASH_DELAY_3US      (PWR_CR1_FLS_SLPTIME_1                        ) /* Wake up from the STOP mode, Delay 3us enable falsh*/"
+    },
+    {
+      "name": "PWR_WAKEUP_FLASH_DELAY_5US",
+      "value": "0x00000000U",
+      "desc": "从 STOP 模式唤醒, 延时 5us 使能 FLASH",
+      "group": "PWR 唤醒 FLASH 延时",
+      "file": "py32f002b_hal_pwr.h",
+      "src": "#define PWR_WAKEUP_FLASH_DELAY_5US      0x00000000U                                     /* Wake up from the STOP mode, Delay 5us enable falsh*/"
+    },
+    {
+      "name": "PWR_BIAS_CURRENTS_FROM_FACTORY_BYTES",
+      "value": "0x00000000U",
+      "desc": "MR 偏置电流来源为出厂配置字节",
+      "group": "PWR 偏置电流来源",
+      "file": "py32f002b_hal_pwr.h",
+      "src": "#define PWR_BIAS_CURRENTS_FROM_FACTORY_BYTES  0x00000000U            /* MR bias currents source load from Factory config bytes */"
+    },
+    {
+      "name": "PWR_BIAS_CURRENTS_FROM_BIAS_CR",
+      "value": "(PWR_CR1_BIAS_CR_SEL)",
+      "desc": "MR 偏置电流来源为 BIAS_CR 寄存器",
+      "group": "PWR 偏置电流来源",
+      "file": "py32f002b_hal_pwr.h",
+      "src": "#define PWR_BIAS_CURRENTS_FROM_BIAS_CR        (PWR_CR1_BIAS_CR_SEL)  /* MR bias currents source load from BIAS_CR */"
+    },
+    {
+      "name": "LL_PWR_WAKEUP_HSION_AFTER_MR",
+      "value": "0x00000000U",
+      "desc": "从 STOP 模式唤醒, MR 稳定后再使能 HSI",
+      "group": "LL_PWR 唤醒 HSI 时机",
+      "file": "py32f002b_ll_pwr.h",
+      "src": "#define LL_PWR_WAKEUP_HSION_AFTER_MR       0x00000000U         /* Wake up from the STOP mode, After the MR becomes stable, enable HSI */"
+    },
+    {
+      "name": "LL_PWR_WAKEUP_HSION_IMMEDIATE",
+      "value": "PWR_CR1_HSION_CTRL",
+      "desc": "从 STOP 模式唤醒, 立即使能 HSI",
+      "group": "LL_PWR 唤醒 HSI 时机",
+      "file": "py32f002b_ll_pwr.h",
+      "src": "#define LL_PWR_WAKEUP_HSION_IMMEDIATE      PWR_CR1_HSION_CTRL  /* Wake up from the STOP mode, Enable HSI immediately */"
+    },
+    {
+      "name": "LL_PWR_SRAM_RETENTION_VOLT_CTRL_LDO",
+      "value": "0x00000001U",
+      "desc": "SRAM 电压与 LDO 输出相同",
+      "group": "LL_PWR SRAM 保持电压",
+      "file": "py32f002b_ll_pwr.h",
+      "src": "#define LL_PWR_SRAM_RETENTION_VOLT_CTRL_LDO     0x00000001U  /* SRAM voltage is the same as LDO output */"
+    },
+    {
+      "name": "LL_PWR_SRAM_RETENTION_VOLT_CTRL_LOW",
+      "value": "0x00000000U",
+      "desc": "SRAM 电压为低",
+      "group": "LL_PWR SRAM 保持电压",
+      "file": "py32f002b_ll_pwr.h",
+      "src": "#define LL_PWR_SRAM_RETENTION_VOLT_CTRL_LOW     0x00000000U  /* SRAM voltage is low */"
+    },
+    {
+      "name": "LL_PWR_LPR_MODE_MR",
+      "value": "0x00000000U",
+      "desc": "MR 模式(主稳压器)",
+      "group": "LL_PWR 低功耗稳压器模式",
+      "file": "py32f002b_ll_pwr.h",
+      "src": "#define LL_PWR_LPR_MODE_MR         0x00000000U                 /* MR mode */"
+    },
+    {
+      "name": "LL_PWR_LPR_MODE_LPR",
+      "value": "PWR_CR1_LPR_0",
+      "desc": "低功耗运行(LPR)模式",
+      "group": "LL_PWR 低功耗稳压器模式",
+      "file": "py32f002b_ll_pwr.h",
+      "src": "#define LL_PWR_LPR_MODE_LPR        PWR_CR1_LPR_0               /* Low Power Run mode */"
+    },
+    {
+      "name": "LL_PWR_LPR_MODE_DLPR",
+      "value": "PWR_CR1_LPR_1",
+      "desc": "深低功耗运行(DLPR)模式(需 PWR_DEEPSTOP_SUPPORT)",
+      "group": "LL_PWR 低功耗稳压器模式",
+      "file": "py32f002b_ll_pwr.h",
+      "src": "#define LL_PWR_LPR_MODE_DLPR       PWR_CR1_LPR_1               /* Deep Low Power Run mode */"
+    },
+    {
+      "name": "LL_PWR_WAKEUP_FLASH_DELAY_0US",
+      "value": "(PWR_CR1_FLS_SLPTIME_1 | PWR_CR1_FLS_SLPTIME_0)",
+      "desc": "从 STOP 模式唤醒, 立即使能 FLASH",
+      "group": "LL_PWR 唤醒 FLASH 延时",
+      "file": "py32f002b_ll_pwr.h",
+      "src": "#define LL_PWR_WAKEUP_FLASH_DELAY_0US      (PWR_CR1_FLS_SLPTIME_1 | PWR_CR1_FLS_SLPTIME_0) /* Wake up from the STOP mode, Enable flash immediately*/"
+    },
+    {
+      "name": "LL_PWR_WAKEUP_FLASH_DELAY_2US",
+      "value": "(PWR_CR1_FLS_SLPTIME_0)",
+      "desc": "从 STOP 模式唤醒, 延时 2us 使能 FLASH",
+      "group": "LL_PWR 唤醒 FLASH 延时",
+      "file": "py32f002b_ll_pwr.h",
+      "src": "#define LL_PWR_WAKEUP_FLASH_DELAY_2US      (                        PWR_CR1_FLS_SLPTIME_0) /* Wake up from the STOP mode, Delay 2us enable flash*/"
+    },
+    {
+      "name": "LL_PWR_WAKEUP_FLASH_DELAY_3US",
+      "value": "(PWR_CR1_FLS_SLPTIME_1)",
+      "desc": "从 STOP 模式唤醒, 延时 3us 使能 FLASH",
+      "group": "LL_PWR 唤醒 FLASH 延时",
+      "file": "py32f002b_ll_pwr.h",
+      "src": "#define LL_PWR_WAKEUP_FLASH_DELAY_3US      (PWR_CR1_FLS_SLPTIME_1                        ) /* Wake up from the STOP mode, Delay 3us enable flash*/"
+    },
+    {
+      "name": "LL_PWR_WAKEUP_FLASH_DELAY_5US",
+      "value": "0x00000000U",
+      "desc": "从 STOP 模式唤醒, 延时 5us 使能 FLASH",
+      "group": "LL_PWR 唤醒 FLASH 延时",
+      "file": "py32f002b_ll_pwr.h",
+      "src": "#define LL_PWR_WAKEUP_FLASH_DELAY_5US      0x00000000U                                     /* Wake up from the STOP mode, Delay 5us enable flash*/"
+    },
+    {
+      "name": "LL_PWR_BIAS_CURRENTS_FROM_FACTORY_BYTES",
+      "value": "0x00000000U",
+      "desc": "MR 偏置电流来源为出厂配置字节",
+      "group": "LL_PWR 偏置电流来源",
+      "file": "py32f002b_ll_pwr.h",
+      "src": "#define LL_PWR_BIAS_CURRENTS_FROM_FACTORY_BYTES  0x00000000U            /* MR bias currents source load from Factory config bytes */"
+    },
+    {
+      "name": "LL_PWR_BIAS_CURRENTS_FROM_BIAS_CR",
+      "value": "(PWR_CR1_BIAS_CR_SEL)",
+      "desc": "MR 偏置电流来源为 BIAS_CR 寄存器",
+      "group": "LL_PWR 偏置电流来源",
+      "file": "py32f002b_ll_pwr.h",
+      "src": "#define LL_PWR_BIAS_CURRENTS_FROM_BIAS_CR        (PWR_CR1_BIAS_CR_SEL)  /* MR bias currents source load from BIAS_CR */"
+    }
+  ]
+}

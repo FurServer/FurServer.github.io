@@ -1,0 +1,960 @@
+{
+  "module": "ADC",
+  "moduleId": "adc",
+  "hal": [
+    {
+      "name": "ADC_AWD1THRESHOLD_SHIFT_RESOLUTION",
+      "sig": "#define ADC_AWD1THRESHOLD_SHIFT_RESOLUTION(__HANDLE__, _Threshold_)            \\\n  ((_Threshold_) << ((((__HANDLE__)->Instance->CFGR1 & ADC_CFGR1_RESSEL) >> 3U)*2))",
+      "brief": "按 ADC 当前分辨率(CFGR1 寄存器 RES[1:0] 位)将模拟看门狗 1 阈值左移对齐, 12/10/8/6 位分辨率分别左移 0/2/4/6 位。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "ADC 句柄, 用于读取 CFGR1 寄存器"
+        },
+        {
+          "name": "_Threshold_",
+          "type": "宏参数",
+          "desc": "要移位的看门狗阈值数值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "移位后的阈值位域值"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_AWD1THRESHOLD_SHIFT_RESOLUTION(__HANDLE__, _Threshold_)            \\\r\n  ((_Threshold_) << ((((__HANDLE__)->Instance->CFGR1 & ADC_CFGR1_RESSEL) >> 3U)*2))"
+    },
+    {
+      "name": "ADC_CFGR1_AUTOWAIT",
+      "sig": "#define ADC_CFGR1_AUTOWAIT(_AUTOWAIT_)                                         \\\n  ((_AUTOWAIT_) << 14U)",
+      "brief": "将自动延时使能值左移 14 位, 生成 CFGR1 寄存器 AUTOWAIT 位(bit14)的位域值。",
+      "params": [
+        {
+          "name": "_AUTOWAIT_",
+          "type": "宏参数",
+          "desc": "自动延时模式使能或禁止值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "CFGR1 AUTOWAIT 位域值"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_CFGR1_AUTOWAIT(_AUTOWAIT_)                                         \\\r\n  ((_AUTOWAIT_) << 14U)"
+    },
+    {
+      "name": "ADC_CFGR1_CONTINUOUS",
+      "sig": "#define ADC_CFGR1_CONTINUOUS(_CONTINUOUS_MODE_)                                \\\n  ((_CONTINUOUS_MODE_) << 13U)",
+      "brief": "将连续转换模式值左移 13 位, 生成 CFGR1 寄存器 CONT 位(bit13)的位域值。",
+      "params": [
+        {
+          "name": "_CONTINUOUS_MODE_",
+          "type": "宏参数",
+          "desc": "连续转换模式选择值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "CFGR1 CONT 位域值"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_CFGR1_CONTINUOUS(_CONTINUOUS_MODE_)                                \\\r\n  ((_CONTINUOUS_MODE_) << 13U)"
+    },
+    {
+      "name": "ADC_CFGR1_OVERRUN",
+      "sig": "#define ADC_CFGR1_OVERRUN(_OVERRUN_MODE_)                                      \\\n  ( ( (_OVERRUN_MODE_) != (ADC_OVR_DATA_PRESERVED)                             \\\n    )? (ADC_CFGR1_OVRMOD) : (0x00000000)                                       \\\n  )",
+      "brief": "根据溢出模式生成 CFGR1 寄存器 OVRMOD 位(bit12)设置值: 模式非数据保留(ADC_OVR_DATA_PRESERVED)时返回置位值, 否则为 0。",
+      "params": [
+        {
+          "name": "_OVERRUN_MODE_",
+          "type": "宏参数",
+          "desc": "溢出模式, 可取 ADC_OVR_DATA_OVERWRITTEN / ADC_OVR_DATA_PRESERVED"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "CFGR1 OVRMOD 位设置值"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_CFGR1_OVERRUN(_OVERRUN_MODE_)                                      \\\r\n  ( ( (_OVERRUN_MODE_) != (ADC_OVR_DATA_PRESERVED)                             \\\r\n    )? (ADC_CFGR1_OVRMOD) : (0x00000000)                                       \\\r\n  )"
+    },
+    {
+      "name": "ADC_CFGR_AWDCH",
+      "sig": "#define ADC_CFGR_AWDCH(_CHANNEL_)                                              \\\n  ((_CHANNEL_-1) << 26U)",
+      "brief": "将模拟看门狗通道号减 1 后左移 26 位, 生成 CFGR 寄存器 AWDCH[4:0] 位(bit26~30)的位域值。",
+      "params": [
+        {
+          "name": "_CHANNEL_",
+          "type": "宏参数",
+          "desc": "要监视的模拟看门狗通道号"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "CFGR AWDCH 位域值"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_CFGR_AWDCH(_CHANNEL_)                                              \\\r\n  ((_CHANNEL_-1) << 26U)"
+    },
+    {
+      "name": "ADC_CHANNEL_INTERNAL_PATH",
+      "sig": "#define ADC_CHANNEL_INTERNAL_PATH(__CHANNEL__)                                 \\\n (( (__CHANNEL__) == ADC_CHANNEL_TEMPSENSOR                                    \\\n  )?                                                                           \\\n   (ADC_CCR_TSEN)                                                              \\\n   :                                                                           \\\n   (ADC_CCR_VREFEN)                                                            \\\n )",
+      "brief": "根据内部通道返回 ADC_CCR 寄存器对应使能位: 温度传感器通道返回 TSEN, 其他内部通道返回 VREFEN。",
+      "params": [
+        {
+          "name": "__CHANNEL__",
+          "type": "宏参数",
+          "desc": "ADC 内部通道, 可取 ADC_CHANNEL_TEMPSENSOR / ADC_CHANNEL_VREFINT"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "ADC_CCR 使能位(TSEN 或 VREFEN)"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_CHANNEL_INTERNAL_PATH(__CHANNEL__)                                 \\\r\n (( (__CHANNEL__) == ADC_CHANNEL_TEMPSENSOR                                    \\\r\n  )?                                                                           \\\r\n   (ADC_CCR_TSEN)                                                              \\\r\n   :                                                                           \\\r\n   (ADC_CCR_VREFEN)                                                            \\\r\n )"
+    },
+    {
+      "name": "ADC_CHSELR_CHANNEL",
+      "sig": "#define ADC_CHSELR_CHANNEL(_CHANNEL_)                                          \\\n  ( 1U << (_CHANNEL_))",
+      "brief": "将通道号转换为 CHSELR 寄存器的通道选择位掩码(1 左移通道号)。",
+      "params": [
+        {
+          "name": "_CHANNEL_",
+          "type": "宏参数",
+          "desc": "ADC 通道号"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "CHSELR 通道选择位掩码"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_CHSELR_CHANNEL(_CHANNEL_)                                          \\\r\n  ( 1U << (_CHANNEL_))"
+    },
+    {
+      "name": "ADC_CLEAR_ERRORCODE",
+      "sig": "#define ADC_CLEAR_ERRORCODE(__HANDLE__)                                        \\\n  ((__HANDLE__)->ErrorCode = HAL_ADC_ERROR_NONE)",
+      "brief": "清除 ADC 错误码: 将句柄 ErrorCode 置为 HAL_ADC_ERROR_NONE(无错误)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "ADC 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_CLEAR_ERRORCODE(__HANDLE__)                                        \\\r\n  ((__HANDLE__)->ErrorCode = HAL_ADC_ERROR_NONE)"
+    },
+    {
+      "name": "ADC_DISABLING_CONDITIONS",
+      "sig": "#define ADC_DISABLING_CONDITIONS(__HANDLE__)                                   \\\n  (( ( ((__HANDLE__)->Instance->CR) &                                          \\\n       (ADC_CR_ADSTART | ADC_CR_ADEN)) == ADC_CR_ADEN                          \\\n   ) ? SET : RESET)",
+      "brief": "检查 ADC 禁用硬件条件: CR 寄存器 ADSTART 位为 0 且 ADEN 位为 1 时返回 SET(可禁用), 否则返回 RESET。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "ADC 句柄"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "SET(可禁用)或 RESET(不可禁用)"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_DISABLING_CONDITIONS(__HANDLE__)                                   \\\r\n  (( ( ((__HANDLE__)->Instance->CR) &                                          \\\r\n       (ADC_CR_ADSTART | ADC_CR_ADEN)) == ADC_CR_ADEN                          \\\r\n   ) ? SET : RESET)"
+    },
+    {
+      "name": "ADC_ENABLING_CONDITIONS",
+      "sig": "#define ADC_ENABLING_CONDITIONS(__HANDLE__)                                        \\\n  (( ( ((__HANDLE__)->Instance->CR) &                                              \\\n       (ADC_CR_ADCAL | ADC_CR_ADSTP | ADC_CR_ADSTART | ADC_CR_ADDIS| ADC_CR_ADEN)  \\\n      ) == RESET                                                                   \\\n   ) ? SET : RESET)",
+      "brief": "检查 ADC 使能硬件条件: CR 寄存器 ADCAL/ADSTP/ADSTART/ADDIS/ADEN 位全部为 0 时返回 SET(可使能), 否则返回 RESET。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "ADC 句柄"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "SET(可使能)或 RESET(不可使能)"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_ENABLING_CONDITIONS(__HANDLE__)                                        \\\r\n  (( ( ((__HANDLE__)->Instance->CR) &                                              \\\r\n       (ADC_CR_ADCAL | ADC_CR_ADSTP | ADC_CR_ADSTART | ADC_CR_ADDIS| ADC_CR_ADEN)  \\\r\n      ) == RESET                                                                   \\\r\n   ) ? SET : RESET)"
+    },
+    {
+      "name": "ADC_SCANDIR",
+      "sig": "#define ADC_SCANDIR(_SCAN_MODE_)                                               \\\n  ( ( (_SCAN_MODE_) == (ADC_SCAN_DIRECTION_BACKWARD)                           \\\n    )? (ADC_CFGR1_SCANDIR) : (0x00000000)                                      \\\n  )",
+      "brief": "扫描方向为反向(ADC_SCAN_DIRECTION_BACKWARD)时返回 CFGR1 寄存器 SCANDIR 位(bit11)置位值, 否则返回 0。",
+      "params": [
+        {
+          "name": "_SCAN_MODE_",
+          "type": "宏参数",
+          "desc": "扫描方向, 可取 ADC_SCAN_DIRECTION_FORWARD / ADC_SCAN_DIRECTION_BACKWARD"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "CFGR1 SCANDIR 位设置值"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_SCANDIR(_SCAN_MODE_)                                               \\\r\n  ( ( (_SCAN_MODE_) == (ADC_SCAN_DIRECTION_BACKWARD)                           \\\r\n    )? (ADC_CFGR1_SCANDIR) : (0x00000000)                                      \\\r\n  )"
+    },
+    {
+      "name": "ADC_SMPR_SET",
+      "sig": "#define ADC_SMPR_SET(_SAMPLETIME_)                                             \\\n  ((_SAMPLETIME_) & (ADC_SMPR_SMP))",
+      "brief": "将采样时间参数与 SMPR 寄存器 SMP[2:0] 位掩码相与, 生成采样时间位域值。",
+      "params": [
+        {
+          "name": "_SAMPLETIME_",
+          "type": "宏参数",
+          "desc": "采样时间参数"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "SMPR 采样时间位域值"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_SMPR_SET(_SAMPLETIME_)                                             \\\r\n  ((_SAMPLETIME_) & (ADC_SMPR_SMP))"
+    },
+    {
+      "name": "ADC_STATE_CLR_SET",
+      "sig": "#define ADC_STATE_CLR_SET MODIFY_REG",
+      "brief": "句柄 State 位修改宏: 直接别名为通用宏 MODIFY_REG, 可同时清除并置位句柄状态位。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值(语句式宏)"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_STATE_CLR_SET MODIFY_REG"
+    },
+    {
+      "name": "ADC_TRX_HIGHTHRESHOLD",
+      "sig": "#define ADC_TRX_HIGHTHRESHOLD(_Threshold_)                                     \\\n  ((_Threshold_) << 16U)",
+      "brief": "将模拟看门狗高阈值左移 16 位, 生成 TR 寄存器高阈值位域值(bit16~31)。",
+      "params": [
+        {
+          "name": "_Threshold_",
+          "type": "宏参数",
+          "desc": "模拟看门狗高阈值数值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "TR 寄存器高阈值位域值"
+      },
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_TRX_HIGHTHRESHOLD(_Threshold_)                                     \\\r\n  ((_Threshold_) << 16U)"
+    },
+    {
+      "name": "ADC_CFGR1_DMACONTREQ",
+      "sig": "#define ADC_CFGR1_DMACONTREQ(_DMACONTREQ_MODE_)                                \\\n  ((_DMACONTREQ_MODE_) << 1U)",
+      "brief": "将 DMA 连续请求模式值左移 1 位, 组装成 CFGR1 寄存器 DMACONTREQ 位域(bit1)的值。",
+      "params": [
+        {
+          "name": "_DMACONTREQ_MODE_",
+          "type": "宏参数",
+          "desc": "DMA 连续请求模式(ADC_DMACONTREQ_DISABLE/ENABLE 等常量)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "组装后的 DMACONTREQ 位域值(模式值左移 1 位)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_CFGR1_DMACONTREQ(_DMACONTREQ_MODE_)                                \\\r\n  ((_DMACONTREQ_MODE_) << 1U)"
+    },
+    {
+      "name": "ADC_CFGR1_REG_DISCCONTINUOUS",
+      "sig": "#define ADC_CFGR1_REG_DISCCONTINUOUS(_REG_DISCONTINUOUS_MODE_)                 \\\n  ((_REG_DISCONTINUOUS_MODE_) << 16U)",
+      "brief": "将规则组间断模式值左移 16 位, 组装成 CFGR1 寄存器 DISCEN 位域(bit16)的值。",
+      "params": [
+        {
+          "name": "_REG_DISCONTINUOUS_MODE_",
+          "type": "宏参数",
+          "desc": "规则组间断模式(ADC_REG_DISCCONTINUOUS_DISABLE/ENABLE 等常量)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "组装后的 DISCEN 位域值(模式值左移 16 位)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_CFGR1_REG_DISCCONTINUOUS(_REG_DISCONTINUOUS_MODE_)                 \\\r\n  ((_REG_DISCONTINUOUS_MODE_) << 16U)"
+    },
+    {
+      "name": "ADC_GET_RESOLUTION",
+      "sig": "#define ADC_GET_RESOLUTION(__HANDLE__)                                         \\\n  (((__HANDLE__)->Instance->CFGR1) & ADC_CFGR1_RESSEL)",
+      "brief": "读取 ADC 句柄实例 CFGR1 寄存器的 RESSEL 位域, 返回当前分辨率配置值。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "ADC 句柄指针(ADC_HandleTypeDef*), 通过其 Instance 访问 CFGR1 寄存器"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "CFGR1 RESSEL 位域值(当前分辨率配置)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_GET_RESOLUTION(__HANDLE__)                                         \\\r\n  (((__HANDLE__)->Instance->CFGR1) & ADC_CFGR1_RESSEL)"
+    },
+    {
+      "name": "ADC_GET_SAMPLINGTIME",
+      "sig": "#define ADC_GET_SAMPLINGTIME(__HANDLE__)                                       \\\n  (((__HANDLE__)->Instance->SMPR) & ADC_SMPR_SMP)",
+      "brief": "读取 ADC 句柄实例 SMPR 寄存器的 SMP 位域, 返回当前采样时间配置值。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "ADC 句柄指针(ADC_HandleTypeDef*), 通过其 Instance 访问 SMPR 寄存器"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "SMPR SMP 位域值(当前采样时间配置)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_GET_SAMPLINGTIME(__HANDLE__)                                       \\\r\n  (((__HANDLE__)->Instance->SMPR) & ADC_SMPR_SMP)"
+    },
+    {
+      "name": "ADC_IS_CHANNEL_INTERNAL",
+      "sig": "#define ADC_IS_CHANNEL_INTERNAL(__CHANNEL__)                                   \\\n (((__CHANNEL__) == ADC_CHANNEL_TEMPSENSOR) ||                                 \\\n  ((__CHANNEL__) == ADC_CHANNEL_VREFINT)                                       \\\n )",
+      "brief": "判断给定通道是否为 ADC 内部通道(温度传感器或 VREFINT)。",
+      "params": [
+        {
+          "name": "__CHANNEL__",
+          "type": "宏参数",
+          "desc": "ADC 通道常量(如 ADC_CHANNEL_TEMPSENSOR、ADC_CHANNEL_VREFINT)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "是内部通道返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_IS_CHANNEL_INTERNAL(__CHANNEL__)                                   \\\r\n (((__CHANNEL__) == ADC_CHANNEL_TEMPSENSOR) ||                                 \\\r\n  ((__CHANNEL__) == ADC_CHANNEL_VREFINT)                                       \\\r\n )"
+    },
+    {
+      "name": "ADC_IS_CONVERSION_ONGOING_REGULAR",
+      "sig": "#define ADC_IS_CONVERSION_ONGOING_REGULAR(__HANDLE__)                          \\\n  (( (((__HANDLE__)->Instance->CR) & ADC_CR_ADSTART) == RESET                  \\\n  ) ? RESET : SET)",
+      "brief": "通过 CR 寄存器 ADSTART 位判断规则组转换是否正在进行。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "ADC 句柄指针(ADC_HandleTypeDef*), 通过其 Instance 访问 CR 寄存器"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "规则组转换进行中返回 SET(1), 否则返回 RESET(0)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_IS_CONVERSION_ONGOING_REGULAR(__HANDLE__)                          \\\r\n  (( (((__HANDLE__)->Instance->CR) & ADC_CR_ADSTART) == RESET                  \\\r\n  ) ? RESET : SET)"
+    },
+    {
+      "name": "ADC_IS_ENABLE",
+      "sig": "#define ADC_IS_ENABLE(__HANDLE__) ((( ((((__HANDLE__)->Instance->CR) & (ADC_CR_ADEN)) == ADC_CR_ADEN) )  )  ? SET : RESET)",
+      "brief": "通过 CR 寄存器 ADEN 位判断 ADC 是否已使能。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "ADC 句柄指针(ADC_HandleTypeDef*), 通过其 Instance 访问 CR 寄存器"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "ADC 已使能返回 SET(1), 否则返回 RESET(0)"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_IS_ENABLE(__HANDLE__) ((( ((((__HANDLE__)->Instance->CR) & (ADC_CR_ADEN)) == ADC_CR_ADEN) )  )  ? SET : RESET)"
+    },
+    {
+      "name": "ADC_IS_SOFTWARE_START_REGULAR",
+      "sig": "#define ADC_IS_SOFTWARE_START_REGULAR(__HANDLE__)                              \\\n  (((__HANDLE__)->Instance->CFGR1 & ADC_CFGR1_EXTEN) == RESET)",
+      "brief": "通过 CFGR1 寄存器 EXTEN 位判断规则组是否由软件触发启动(EXTEN 为 0 表示软件触发)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "ADC 句柄指针(ADC_HandleTypeDef*), 通过其 Instance 访问 CFGR1 寄存器"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "规则组为软件触发(EXTEN 位为 0)返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define ADC_IS_SOFTWARE_START_REGULAR(__HANDLE__)                              \\\r\n  (((__HANDLE__)->Instance->CFGR1 & ADC_CFGR1_EXTEN) == RESET)"
+    },
+    {
+      "name": "IS_ADC_ANALOG_WATCHDOG_MODE",
+      "sig": "#define IS_ADC_ANALOG_WATCHDOG_MODE(WATCHDOG) (((WATCHDOG) == ADC_ANALOGWATCHDOG_NONE)             || \\\n                                               ((WATCHDOG) == ADC_ANALOGWATCHDOG_SINGLE_REG)       || \\\n                                               ((WATCHDOG) == ADC_ANALOGWATCHDOG_ALL_REG)            )",
+      "brief": "校验模拟看门狗模式参数是否合法(无看门狗、单通道规则、全部规则通道)。",
+      "params": [
+        {
+          "name": "WATCHDOG",
+          "type": "宏参数",
+          "desc": "模拟看门狗模式(ADC_ANALOGWATCHDOG_NONE/SINGLE_REG/ALL_REG)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_ANALOG_WATCHDOG_MODE(WATCHDOG) (((WATCHDOG) == ADC_ANALOGWATCHDOG_NONE)             || \\\r\n                                               ((WATCHDOG) == ADC_ANALOGWATCHDOG_SINGLE_REG)       || \\\r\n                                               ((WATCHDOG) == ADC_ANALOGWATCHDOG_ALL_REG)            )"
+    },
+    {
+      "name": "IS_ADC_CALIBRATION_SAMPLETIME",
+      "sig": "#define IS_ADC_CALIBRATION_SAMPLETIME(TIME) (((TIME) == ADC_CALIBSAMPLETIME_1CYCLE)   || \\\n                                             ((TIME) == ADC_CALIBSAMPLETIME_2CYCLES)   || \\\n                                             ((TIME) == ADC_CALIBSAMPLETIME_4CYCLES)   || \\\n                                             ((TIME) == ADC_CALIBSAMPLETIME_8CYCLES)   )",
+      "brief": "校验 ADC 校准采样时间参数是否合法(1/2/4/8 个周期)。",
+      "params": [
+        {
+          "name": "TIME",
+          "type": "宏参数",
+          "desc": "校准采样时间(ADC_CALIBSAMPLETIME_1CYCLE/2CYCLES/4CYCLES/8CYCLES)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_CALIBRATION_SAMPLETIME(TIME) (((TIME) == ADC_CALIBSAMPLETIME_1CYCLE)   || \\\r\n                                             ((TIME) == ADC_CALIBSAMPLETIME_2CYCLES)   || \\\r\n                                             ((TIME) == ADC_CALIBSAMPLETIME_4CYCLES)   || \\\r\n                                             ((TIME) == ADC_CALIBSAMPLETIME_8CYCLES)   )"
+    },
+    {
+      "name": "IS_ADC_CALIBRATION_SELECTION",
+      "sig": "#define IS_ADC_CALIBRATION_SELECTION(SELECTION) (((SELECTION) == ADC_CALIBSELECTION_ONLYOFFSET)    || \\\n                                                 ((SELECTION) == ADC_CALIBSELECTION_OFFSET_CAPACITANCE)   )",
+      "brief": "校验校准选择参数是否合法(仅偏移校准、偏移与电容校准)。",
+      "params": [
+        {
+          "name": "SELECTION",
+          "type": "宏参数",
+          "desc": "校准选择(ADC_CALIBSELECTION_ONLYOFFSET/OFFSET_CAPACITANCE)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_CALIBRATION_SELECTION(SELECTION) (((SELECTION) == ADC_CALIBSELECTION_ONLYOFFSET)    || \\\r\n                                                 ((SELECTION) == ADC_CALIBSELECTION_OFFSET_CAPACITANCE)   )"
+    },
+    {
+      "name": "IS_ADC_CHANNEL",
+      "sig": "#define IS_ADC_CHANNEL(CHANNEL) (((CHANNEL) == ADC_CHANNEL_0)           || \\\n                                 ((CHANNEL) == ADC_CHANNEL_1)           || \\\n                                 ((CHANNEL) == ADC_CHANNEL_2)           || \\\n                                 ((CHANNEL) == ADC_CHANNEL_3)           || \\\n                                 ((CHANNEL) == ADC_CHANNEL_4)           || \\\n                                 ((CHANNEL) == ADC_CHANNEL_5)           || \\\n                                 ((CHANNEL) == ADC_CHANNEL_6)           || \\\n                                 ((CHANNEL) == ADC_CHANNEL_7)           || \\\n                                 ((CHANNEL) == ADC_CHANNEL_8)           || \\\n                                 ((CHANNEL) == ADC_CHANNEL_9)           || \\\n                                 ((CHANNEL) == ADC_CHANNEL_10)          || \\\n                                 ((CHANNEL) == ADC_CHANNEL_TEMPSENSOR)  || \\\n                                 ((CHANNEL) == ADC_CHANNEL_VREFINT)  || \\\n                                 ((CHANNEL) == ADC_CHANNEL_VCCA)     )",
+      "brief": "校验 ADC 通道参数是否合法(通道 0~10 及内部通道: 温度传感器、VREFINT、VCCA)。",
+      "params": [
+        {
+          "name": "CHANNEL",
+          "type": "宏参数",
+          "desc": "ADC 通道常量(ADC_CHANNEL_0~10、ADC_CHANNEL_TEMPSENSOR、ADC_CHANNEL_VREFINT、ADC_CHANNEL_VCCA)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_CHANNEL(CHANNEL) (((CHANNEL) == ADC_CHANNEL_0)           || \\\r\n                                 ((CHANNEL) == ADC_CHANNEL_1)           || \\\r\n                                 ((CHANNEL) == ADC_CHANNEL_2)           || \\\r\n                                 ((CHANNEL) == ADC_CHANNEL_3)           || \\\r\n                                 ((CHANNEL) == ADC_CHANNEL_4)           || \\\r\n                                 ((CHANNEL) == ADC_CHANNEL_5)           || \\\r\n                                 ((CHANNEL) == ADC_CHANNEL_6)           || \\\r\n                                 ((CHANNEL) == ADC_CHANNEL_7)           || \\\r\n                                 ((CHANNEL) == ADC_CHANNEL_8)           || \\\r\n                                 ((CHANNEL) == ADC_CHANNEL_9)           || \\\r\n                                 ((CHANNEL) == ADC_CHANNEL_10)          || \\\r\n                                 ((CHANNEL) == ADC_CHANNEL_TEMPSENSOR)  || \\\r\n                                 ((CHANNEL) == ADC_CHANNEL_VREFINT)  || \\\r\n                                 ((CHANNEL) == ADC_CHANNEL_VCCA)     )"
+    },
+    {
+      "name": "IS_ADC_CLOCKPRESCALER",
+      "sig": "#define IS_ADC_CLOCKPRESCALER(ADC_CLOCK) (((ADC_CLOCK) == ADC_CLOCK_SYNC_PCLK_DIV1)  || \\\n                                          ((ADC_CLOCK) == ADC_CLOCK_SYNC_PCLK_DIV2)  || \\\n                                          ((ADC_CLOCK) == ADC_CLOCK_SYNC_PCLK_DIV4)  || \\\n                                          ((ADC_CLOCK) == ADC_CLOCK_SYNC_PCLK_DIV8)  || \\\n                                          ((ADC_CLOCK) == ADC_CLOCK_SYNC_PCLK_DIV16) || \\\n                                          ((ADC_CLOCK) == ADC_CLOCK_SYNC_PCLK_DIV32) || \\\n                                          ((ADC_CLOCK) == ADC_CLOCK_SYNC_PCLK_DIV64) || \\\n                                          ((ADC_CLOCK) == ADC_CLOCK_ASYNC_HSI_DIV1)  || \\\n                                          ((ADC_CLOCK) == ADC_CLOCK_ASYNC_HSI_DIV2)  || \\\n                                          ((ADC_CLOCK) == ADC_CLOCK_ASYNC_HSI_DIV4)  || \\\n                                          ((ADC_CLOCK) == ADC_CLOCK_ASYNC_HSI_DIV8)  || \\\n                                          ((ADC_CLOCK) == ADC_CLOCK_ASYNC_HSI_DIV16) || \\\n                                          ((ADC_CLOCK) == ADC_CLOCK_ASYNC_HSI_DIV32) || \\\n                                          ((ADC_CLOCK) == ADC_CLOCK_ASYNC_HSI_DIV64)   )",
+      "brief": "校验 ADC 时钟分频参数是否合法(同步 PCLK 1~64 分频或异步 HSI 1~64 分频)。",
+      "params": [
+        {
+          "name": "ADC_CLOCK",
+          "type": "宏参数",
+          "desc": "ADC 时钟分频(ADC_CLOCK_SYNC_PCLK_DIV1~DIV64 或 ADC_CLOCK_ASYNC_HSI_DIV1~DIV64)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_CLOCKPRESCALER(ADC_CLOCK) (((ADC_CLOCK) == ADC_CLOCK_SYNC_PCLK_DIV1)  || \\\r\n                                          ((ADC_CLOCK) == ADC_CLOCK_SYNC_PCLK_DIV2)  || \\\r\n                                          ((ADC_CLOCK) == ADC_CLOCK_SYNC_PCLK_DIV4)  || \\\r\n                                          ((ADC_CLOCK) == ADC_CLOCK_SYNC_PCLK_DIV8)  || \\\r\n                                          ((ADC_CLOCK) == ADC_CLOCK_SYNC_PCLK_DIV16) || \\\r\n                                          ((ADC_CLOCK) == ADC_CLOCK_SYNC_PCLK_DIV32) || \\\r\n                                          ((ADC_CLOCK) == ADC_CLOCK_SYNC_PCLK_DIV64) || \\\r\n                                          ((ADC_CLOCK) == ADC_CLOCK_ASYNC_HSI_DIV1)  || \\\r\n                                          ((ADC_CLOCK) == ADC_CLOCK_ASYNC_HSI_DIV2)  || \\\r\n                                          ((ADC_CLOCK) == ADC_CLOCK_ASYNC_HSI_DIV4)  || \\\r\n                                          ((ADC_CLOCK) == ADC_CLOCK_ASYNC_HSI_DIV8)  || \\\r\n                                          ((ADC_CLOCK) == ADC_CLOCK_ASYNC_HSI_DIV16) || \\\r\n                                          ((ADC_CLOCK) == ADC_CLOCK_ASYNC_HSI_DIV32) || \\\r\n                                          ((ADC_CLOCK) == ADC_CLOCK_ASYNC_HSI_DIV64)   )"
+    },
+    {
+      "name": "IS_ADC_DATA_ALIGN",
+      "sig": "#define IS_ADC_DATA_ALIGN(ALIGN) (((ALIGN) == ADC_DATAALIGN_RIGHT) || \\\n                                  ((ALIGN) == ADC_DATAALIGN_LEFT)    )",
+      "brief": "校验数据对齐方式参数是否合法(右对齐或左对齐)。",
+      "params": [
+        {
+          "name": "ALIGN",
+          "type": "宏参数",
+          "desc": "数据对齐方式(ADC_DATAALIGN_RIGHT/LEFT)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_DATA_ALIGN(ALIGN) (((ALIGN) == ADC_DATAALIGN_RIGHT) || \\\r\n                                  ((ALIGN) == ADC_DATAALIGN_LEFT)    )"
+    },
+    {
+      "name": "IS_ADC_EOC_SELECTION",
+      "sig": "#define IS_ADC_EOC_SELECTION(EOC_SELECTION) (((EOC_SELECTION) == ADC_EOC_SINGLE_CONV)    || \\\n                                             ((EOC_SELECTION) == ADC_EOC_SEQ_CONV)  )",
+      "brief": "校验 EOC(转换结束)选择参数是否合法(单次转换结束或序列转换结束)。",
+      "params": [
+        {
+          "name": "EOC_SELECTION",
+          "type": "宏参数",
+          "desc": "EOC 选择(ADC_EOC_SINGLE_CONV/SEQ_CONV)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_EOC_SELECTION(EOC_SELECTION) (((EOC_SELECTION) == ADC_EOC_SINGLE_CONV)    || \\\r\n                                             ((EOC_SELECTION) == ADC_EOC_SEQ_CONV)  )"
+    },
+    {
+      "name": "IS_ADC_EVENT_TYPE",
+      "sig": "#define IS_ADC_EVENT_TYPE(EVENT) (((EVENT) == ADC_AWD_EVENT) || \\\n                                  ((EVENT) == ADC_OVR_EVENT)   )",
+      "brief": "校验 ADC 事件类型参数是否合法(模拟看门狗事件或溢出事件)。",
+      "params": [
+        {
+          "name": "EVENT",
+          "type": "宏参数",
+          "desc": "ADC 事件类型(ADC_AWD_EVENT/OVR_EVENT)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_EVENT_TYPE(EVENT) (((EVENT) == ADC_AWD_EVENT) || \\\r\n                                  ((EVENT) == ADC_OVR_EVENT)   )"
+    },
+    {
+      "name": "IS_ADC_EXTTRIG",
+      "sig": "#define IS_ADC_EXTTRIG(REGTRIG) (((REGTRIG) == ADC_EXTERNALTRIGCONV_T1_TRGO)  || \\\n                                 ((REGTRIG) == ADC_EXTERNALTRIGCONV_T1_CC4)   || \\\n                                 ((REGTRIG) == ADC_SOFTWARE_START))",
+      "brief": "校验规则组外部触发源参数是否合法(TIM1_TRGO、TIM1_CC4 或软件启动)。",
+      "params": [
+        {
+          "name": "REGTRIG",
+          "type": "宏参数",
+          "desc": "规则组触发源(ADC_EXTERNALTRIGCONV_T1_TRGO/T1_CC4 或 ADC_SOFTWARE_START)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_EXTTRIG(REGTRIG) (((REGTRIG) == ADC_EXTERNALTRIGCONV_T1_TRGO)  || \\\r\n                                 ((REGTRIG) == ADC_EXTERNALTRIGCONV_T1_CC4)   || \\\r\n                                 ((REGTRIG) == ADC_SOFTWARE_START))"
+    },
+    {
+      "name": "IS_ADC_EXTTRIG_EDGE",
+      "sig": "#define IS_ADC_EXTTRIG_EDGE(EDGE) (((EDGE) == ADC_EXTERNALTRIGCONVEDGE_NONE)         || \\\n                                   ((EDGE) == ADC_EXTERNALTRIGCONVEDGE_RISING)       || \\\n                                   ((EDGE) == ADC_EXTERNALTRIGCONVEDGE_FALLING)      || \\\n                                   ((EDGE) == ADC_EXTERNALTRIGCONVEDGE_RISINGFALLING)  )",
+      "brief": "校验外部触发边沿参数是否合法(无触发、上升沿、下降沿、双边沿)。",
+      "params": [
+        {
+          "name": "EDGE",
+          "type": "宏参数",
+          "desc": "外部触发边沿(ADC_EXTERNALTRIGCONVEDGE_NONE/RISING/FALLING/RISINGFALLING)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_EXTTRIG_EDGE(EDGE) (((EDGE) == ADC_EXTERNALTRIGCONVEDGE_NONE)         || \\\r\n                                   ((EDGE) == ADC_EXTERNALTRIGCONVEDGE_RISING)       || \\\r\n                                   ((EDGE) == ADC_EXTERNALTRIGCONVEDGE_FALLING)      || \\\r\n                                   ((EDGE) == ADC_EXTERNALTRIGCONVEDGE_RISINGFALLING)  )"
+    },
+    {
+      "name": "IS_ADC_OVERRUN",
+      "sig": "#define IS_ADC_OVERRUN(OVR) (((OVR) == ADC_OVR_DATA_PRESERVED)  || \\\n                             ((OVR) == ADC_OVR_DATA_OVERWRITTEN)  )",
+      "brief": "校验数据溢出行为参数是否合法(保留旧数据或覆盖新数据)。",
+      "params": [
+        {
+          "name": "OVR",
+          "type": "宏参数",
+          "desc": "溢出行为(ADC_OVR_DATA_PRESERVED/OVERWRITTEN)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_OVERRUN(OVR) (((OVR) == ADC_OVR_DATA_PRESERVED)  || \\\r\n                             ((OVR) == ADC_OVR_DATA_OVERWRITTEN)  )"
+    },
+    {
+      "name": "IS_ADC_RANGE",
+      "sig": "#define IS_ADC_RANGE(RESOLUTION, ADC_VALUE)                                         \\\n   ((((RESOLUTION) == ADC_RESOLUTION_12B) && ((ADC_VALUE) <= (0x0FFFU))) || \\\n    (((RESOLUTION) == ADC_RESOLUTION_10B) && ((ADC_VALUE) <= (0x03FFU))) || \\\n    (((RESOLUTION) == ADC_RESOLUTION_8B)  && ((ADC_VALUE) <= (0x00FFU))) || \\\n    (((RESOLUTION) == ADC_RESOLUTION_6B)  && ((ADC_VALUE) <= (0x003FU)))   )",
+      "brief": "校验转换值是否在指定分辨率(12/10/8/6 位)下的最大数值范围内。",
+      "params": [
+        {
+          "name": "RESOLUTION",
+          "type": "宏参数",
+          "desc": "分辨率(ADC_RESOLUTION_12B/10B/8B/6B)"
+        },
+        {
+          "name": "ADC_VALUE",
+          "type": "宏参数",
+          "desc": "待校验的 ADC 转换值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_RANGE(RESOLUTION, ADC_VALUE)                                         \\\r\n   ((((RESOLUTION) == ADC_RESOLUTION_12B) && ((ADC_VALUE) <= (0x0FFFU))) || \\\r\n    (((RESOLUTION) == ADC_RESOLUTION_10B) && ((ADC_VALUE) <= (0x03FFU))) || \\\r\n    (((RESOLUTION) == ADC_RESOLUTION_8B)  && ((ADC_VALUE) <= (0x00FFU))) || \\\r\n    (((RESOLUTION) == ADC_RESOLUTION_6B)  && ((ADC_VALUE) <= (0x003FU)))   )"
+    },
+    {
+      "name": "IS_ADC_RANK",
+      "sig": "#define IS_ADC_RANK(WATCHDOG) (((WATCHDOG) == ADC_RANK_CHANNEL_NUMBER) || \\\n                               ((WATCHDOG) == ADC_RANK_NONE)             )",
+      "brief": "校验看门狗通道排名选择参数是否合法(通道号或禁用)。",
+      "params": [
+        {
+          "name": "WATCHDOG",
+          "type": "宏参数",
+          "desc": "看门狗排名选择(ADC_RANK_CHANNEL_NUMBER/ADC_RANK_NONE)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_RANK(WATCHDOG) (((WATCHDOG) == ADC_RANK_CHANNEL_NUMBER) || \\\r\n                               ((WATCHDOG) == ADC_RANK_NONE)             )"
+    },
+    {
+      "name": "IS_ADC_REGULAR_RANK",
+      "sig": "#define IS_ADC_REGULAR_RANK(RANK) (((RANK) >= (1U)) && ((RANK) <= (16U)))",
+      "brief": "校验规则组排名参数是否在 1~16 范围内。",
+      "params": [
+        {
+          "name": "RANK",
+          "type": "宏参数",
+          "desc": "规则组转换排名(1~16)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_REGULAR_RANK(RANK) (((RANK) >= (1U)) && ((RANK) <= (16U)))"
+    },
+    {
+      "name": "IS_ADC_RESOLUTION",
+      "sig": "#define IS_ADC_RESOLUTION(RESOLUTION) (((RESOLUTION) == ADC_RESOLUTION_12B) || \\\n                                       ((RESOLUTION) == ADC_RESOLUTION_10B) || \\\n                                       ((RESOLUTION) == ADC_RESOLUTION_8B)  || \\\n                                       ((RESOLUTION) == ADC_RESOLUTION_6B)    )",
+      "brief": "校验分辨率参数是否合法(12/10/8/6 位)。",
+      "params": [
+        {
+          "name": "RESOLUTION",
+          "type": "宏参数",
+          "desc": "分辨率(ADC_RESOLUTION_12B/10B/8B/6B)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_RESOLUTION(RESOLUTION) (((RESOLUTION) == ADC_RESOLUTION_12B) || \\\r\n                                       ((RESOLUTION) == ADC_RESOLUTION_10B) || \\\r\n                                       ((RESOLUTION) == ADC_RESOLUTION_8B)  || \\\r\n                                       ((RESOLUTION) == ADC_RESOLUTION_6B)    )"
+    },
+    {
+      "name": "IS_ADC_SAMPLE_TIME",
+      "sig": "#define IS_ADC_SAMPLE_TIME(TIME) (((TIME) == ADC_SAMPLETIME_3CYCLES_5)   || \\\n                                  ((TIME) == ADC_SAMPLETIME_5CYCLES_5)   || \\\n                                  ((TIME) == ADC_SAMPLETIME_7CYCLES_5)   || \\\n                                  ((TIME) == ADC_SAMPLETIME_13CYCLES_5)  || \\\n                                  ((TIME) == ADC_SAMPLETIME_28CYCLES_5)  || \\\n                                  ((TIME) == ADC_SAMPLETIME_41CYCLES_5)  || \\\n                                  ((TIME) == ADC_SAMPLETIME_134CYCLES_5) || \\\n                                  ((TIME) == ADC_SAMPLETIME_239CYCLES_5)   )",
+      "brief": "校验采样时间参数是否合法(3.5~239.5 个 ADC 时钟周期)。",
+      "params": [
+        {
+          "name": "TIME",
+          "type": "宏参数",
+          "desc": "采样时间(ADC_SAMPLETIME_3CYCLES_5~239CYCLES_5)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_SAMPLE_TIME(TIME) (((TIME) == ADC_SAMPLETIME_3CYCLES_5)   || \\\r\n                                  ((TIME) == ADC_SAMPLETIME_5CYCLES_5)   || \\\r\n                                  ((TIME) == ADC_SAMPLETIME_7CYCLES_5)   || \\\r\n                                  ((TIME) == ADC_SAMPLETIME_13CYCLES_5)  || \\\r\n                                  ((TIME) == ADC_SAMPLETIME_28CYCLES_5)  || \\\r\n                                  ((TIME) == ADC_SAMPLETIME_41CYCLES_5)  || \\\r\n                                  ((TIME) == ADC_SAMPLETIME_134CYCLES_5) || \\\r\n                                  ((TIME) == ADC_SAMPLETIME_239CYCLES_5)   )"
+    },
+    {
+      "name": "IS_ADC_SCAN_MODE",
+      "sig": "#define IS_ADC_SCAN_MODE(SCAN_MODE) (((SCAN_MODE) == ADC_SCAN_DIRECTION_FORWARD) || \\\n                                     ((SCAN_MODE) == ADC_SCAN_DIRECTION_BACKWARD)|| \\\n                                     ((SCAN_MODE) == 0))",
+      "brief": "校验扫描模式参数是否合法(正向扫描、反向扫描或禁用(0))。",
+      "params": [
+        {
+          "name": "SCAN_MODE",
+          "type": "宏参数",
+          "desc": "扫描模式(ADC_SCAN_DIRECTION_FORWARD/BACKWARD 或 0 表示禁用)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_SCAN_MODE(SCAN_MODE) (((SCAN_MODE) == ADC_SCAN_DIRECTION_FORWARD) || \\\r\n                                     ((SCAN_MODE) == ADC_SCAN_DIRECTION_BACKWARD)|| \\\r\n                                     ((SCAN_MODE) == 0))"
+    },
+    {
+      "name": "IS_ADC_VREFBUF",
+      "sig": "#define IS_ADC_VREFBUF(VREFBUF) (((VREFBUF) == ADC_VREFBUF_VCCA)   || \\\n                                 ((VREFBUF) == ADC_VREFBUF_1P5V)   || \\\n                                 ((VREFBUF) == ADC_VREFBUF_2P048V) || \\\n                                 ((VREFBUF) == ADC_VREFBUF_2P5V))",
+      "brief": "校验基准电压缓冲输出电压参数是否合法(VCCA、1.5V、2.048V、2.5V)。",
+      "params": [
+        {
+          "name": "VREFBUF",
+          "type": "宏参数",
+          "desc": "基准电压缓冲输出(ADC_VREFBUF_VCCA/1P5V/2P048V/2P5V)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_hal_adc.h",
+      "kind": "macro",
+      "src": "#define IS_ADC_VREFBUF(VREFBUF) (((VREFBUF) == ADC_VREFBUF_VCCA)   || \\\r\n                                 ((VREFBUF) == ADC_VREFBUF_1P5V)   || \\\r\n                                 ((VREFBUF) == ADC_VREFBUF_2P048V) || \\\r\n                                 ((VREFBUF) == ADC_VREFBUF_2P5V))"
+    }
+  ],
+  "ll": [
+    {
+      "name": "IS_LL_ADC_CLOCK",
+      "sig": "#define IS_LL_ADC_CLOCK(__CLOCK__)                                             \\\n  (   ((__CLOCK__) == LL_ADC_CLOCK_SYNC_PCLK_DIV64)                            \\\n   || ((__CLOCK__) == LL_ADC_CLOCK_SYNC_PCLK_DIV32)                            \\\n   || ((__CLOCK__) == LL_ADC_CLOCK_SYNC_PCLK_DIV16)                            \\\n   || ((__CLOCK__) == LL_ADC_CLOCK_SYNC_PCLK_DIV8)                             \\\n   || ((__CLOCK__) == LL_ADC_CLOCK_SYNC_PCLK_DIV4)                             \\\n   || ((__CLOCK__) == LL_ADC_CLOCK_SYNC_PCLK_DIV2)                             \\\n   || ((__CLOCK__) == LL_ADC_CLOCK_SYNC_PCLK_DIV1)                             \\\n   || ((__CLOCK__) == LL_ADC_CLOCK_ASYNC_HSI_DIV64)                            \\\n   || ((__CLOCK__) == LL_ADC_CLOCK_ASYNC_HSI_DIV32)                            \\\n   || ((__CLOCK__) == LL_ADC_CLOCK_ASYNC_HSI_DIV16)                            \\\n   || ((__CLOCK__) == LL_ADC_CLOCK_ASYNC_HSI_DIV8)                             \\\n   || ((__CLOCK__) == LL_ADC_CLOCK_ASYNC_HSI_DIV4)                             \\\n   || ((__CLOCK__) == LL_ADC_CLOCK_ASYNC_HSI_DIV2)                             \\\n   || ((__CLOCK__) == LL_ADC_CLOCK_ASYNC_HSI_DIV1)                             \\\n  )",
+      "brief": "LL 层校验 ADC 时钟分频参数是否合法(同步 PCLK 或异步 HSI 的 1~64 分频)。",
+      "params": [
+        {
+          "name": "__CLOCK__",
+          "type": "宏参数",
+          "desc": "ADC 时钟分频(LL_ADC_CLOCK_SYNC_PCLK_DIV1~DIV64 或 LL_ADC_CLOCK_ASYNC_HSI_DIV1~DIV64)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_adc.c",
+      "kind": "macro",
+      "src": "#define IS_LL_ADC_CLOCK(__CLOCK__)                                             \\\r\n  (   ((__CLOCK__) == LL_ADC_CLOCK_SYNC_PCLK_DIV64)                            \\\r\n   || ((__CLOCK__) == LL_ADC_CLOCK_SYNC_PCLK_DIV32)                            \\\r\n   || ((__CLOCK__) == LL_ADC_CLOCK_SYNC_PCLK_DIV16)                            \\\r\n   || ((__CLOCK__) == LL_ADC_CLOCK_SYNC_PCLK_DIV8)                             \\\r\n   || ((__CLOCK__) == LL_ADC_CLOCK_SYNC_PCLK_DIV4)                             \\\r\n   || ((__CLOCK__) == LL_ADC_CLOCK_SYNC_PCLK_DIV2)                             \\\r\n   || ((__CLOCK__) == LL_ADC_CLOCK_SYNC_PCLK_DIV1)                             \\\r\n   || ((__CLOCK__) == LL_ADC_CLOCK_ASYNC_HSI_DIV64)                            \\\r\n   || ((__CLOCK__) == LL_ADC_CLOCK_ASYNC_HSI_DIV32)                            \\\r\n   || ((__CLOCK__) == LL_ADC_CLOCK_ASYNC_HSI_DIV16)                            \\\r\n   || ((__CLOCK__) == LL_ADC_CLOCK_ASYNC_HSI_DIV8)                             \\\r\n   || ((__CLOCK__) == LL_ADC_CLOCK_ASYNC_HSI_DIV4)                             \\\r\n   || ((__CLOCK__) == LL_ADC_CLOCK_ASYNC_HSI_DIV2)                             \\\r\n   || ((__CLOCK__) == LL_ADC_CLOCK_ASYNC_HSI_DIV1)                             \\\r\n  )"
+    },
+    {
+      "name": "IS_LL_ADC_DATA_ALIGN",
+      "sig": "#define IS_LL_ADC_DATA_ALIGN(__DATA_ALIGN__)                                   \\\n  (   ((__DATA_ALIGN__) == LL_ADC_DATA_ALIGN_RIGHT)                            \\\n   || ((__DATA_ALIGN__) == LL_ADC_DATA_ALIGN_LEFT)                             \\\n  )",
+      "brief": "LL 层校验数据对齐方式参数是否合法(右对齐或左对齐)。",
+      "params": [
+        {
+          "name": "__DATA_ALIGN__",
+          "type": "宏参数",
+          "desc": "数据对齐方式(LL_ADC_DATA_ALIGN_RIGHT/LEFT)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_adc.c",
+      "kind": "macro",
+      "src": "#define IS_LL_ADC_DATA_ALIGN(__DATA_ALIGN__)                                   \\\r\n  (   ((__DATA_ALIGN__) == LL_ADC_DATA_ALIGN_RIGHT)                            \\\r\n   || ((__DATA_ALIGN__) == LL_ADC_DATA_ALIGN_LEFT)                             \\\r\n  )"
+    },
+    {
+      "name": "IS_LL_ADC_LOW_POWER",
+      "sig": "#define IS_LL_ADC_LOW_POWER(__LOW_POWER__)                                     \\\n  (   ((__LOW_POWER__) == LL_ADC_LP_MODE_NONE)                                 \\\n   || ((__LOW_POWER__) == LL_ADC_LP_AUTOWAIT)                                  \\\n  )",
+      "brief": "LL 层校验低功耗模式参数是否合法(无低功耗模式或自动等待)。",
+      "params": [
+        {
+          "name": "__LOW_POWER__",
+          "type": "宏参数",
+          "desc": "低功耗模式(LL_ADC_LP_MODE_NONE/AUTOWAIT)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_adc.c",
+      "kind": "macro",
+      "src": "#define IS_LL_ADC_LOW_POWER(__LOW_POWER__)                                     \\\r\n  (   ((__LOW_POWER__) == LL_ADC_LP_MODE_NONE)                                 \\\r\n   || ((__LOW_POWER__) == LL_ADC_LP_AUTOWAIT)                                  \\\r\n  )"
+    },
+    {
+      "name": "IS_LL_ADC_REG_CONTINUOUS_MODE",
+      "sig": "#define IS_LL_ADC_REG_CONTINUOUS_MODE(__REG_CONTINUOUS_MODE__)                 \\\n  (   ((__REG_CONTINUOUS_MODE__) == LL_ADC_REG_CONV_SINGLE)                    \\\n   || ((__REG_CONTINUOUS_MODE__) == LL_ADC_REG_CONV_CONTINUOUS)                \\\n  )",
+      "brief": "LL 层校验规则组转换模式参数是否合法(单次转换或连续转换)。",
+      "params": [
+        {
+          "name": "__REG_CONTINUOUS_MODE__",
+          "type": "宏参数",
+          "desc": "规则组转换模式(LL_ADC_REG_CONV_SINGLE/CONTINUOUS)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_adc.c",
+      "kind": "macro",
+      "src": "#define IS_LL_ADC_REG_CONTINUOUS_MODE(__REG_CONTINUOUS_MODE__)                 \\\r\n  (   ((__REG_CONTINUOUS_MODE__) == LL_ADC_REG_CONV_SINGLE)                    \\\r\n   || ((__REG_CONTINUOUS_MODE__) == LL_ADC_REG_CONV_CONTINUOUS)                \\\r\n  )"
+    },
+    {
+      "name": "IS_LL_ADC_REG_OVR_DATA_BEHAVIOR",
+      "sig": "#define IS_LL_ADC_REG_OVR_DATA_BEHAVIOR(__REG_OVR_DATA_BEHAVIOR__)             \\\n  (   ((__REG_OVR_DATA_BEHAVIOR__) == LL_ADC_REG_OVR_DATA_PRESERVED)           \\\n   || ((__REG_OVR_DATA_BEHAVIOR__) == LL_ADC_REG_OVR_DATA_OVERWRITTEN)         \\\n  )",
+      "brief": "LL 层校验规则组溢出数据行为参数是否合法(保留旧数据或覆盖新数据)。",
+      "params": [
+        {
+          "name": "__REG_OVR_DATA_BEHAVIOR__",
+          "type": "宏参数",
+          "desc": "溢出数据行为(LL_ADC_REG_OVR_DATA_PRESERVED/OVERWRITTEN)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_adc.c",
+      "kind": "macro",
+      "src": "#define IS_LL_ADC_REG_OVR_DATA_BEHAVIOR(__REG_OVR_DATA_BEHAVIOR__)             \\\r\n  (   ((__REG_OVR_DATA_BEHAVIOR__) == LL_ADC_REG_OVR_DATA_PRESERVED)           \\\r\n   || ((__REG_OVR_DATA_BEHAVIOR__) == LL_ADC_REG_OVR_DATA_OVERWRITTEN)         \\\r\n  )"
+    },
+    {
+      "name": "IS_LL_ADC_REG_SEQ_SCAN_DISCONT_MODE",
+      "sig": "#define IS_LL_ADC_REG_SEQ_SCAN_DISCONT_MODE(__REG_SEQ_DISCONT_MODE__)          \\\n  (   ((__REG_SEQ_DISCONT_MODE__) == LL_ADC_REG_SEQ_DISCONT_DISABLE)           \\\n   || ((__REG_SEQ_DISCONT_MODE__) == LL_ADC_REG_SEQ_DISCONT_1RANK)             \\\n  )",
+      "brief": "LL 层校验规则组序列间断模式参数是否合法(禁用或每 1 个排名间断一次)。",
+      "params": [
+        {
+          "name": "__REG_SEQ_DISCONT_MODE__",
+          "type": "宏参数",
+          "desc": "规则组间断模式(LL_ADC_REG_SEQ_DISCONT_DISABLE/1RANK)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_adc.c",
+      "kind": "macro",
+      "src": "#define IS_LL_ADC_REG_SEQ_SCAN_DISCONT_MODE(__REG_SEQ_DISCONT_MODE__)          \\\r\n  (   ((__REG_SEQ_DISCONT_MODE__) == LL_ADC_REG_SEQ_DISCONT_DISABLE)           \\\r\n   || ((__REG_SEQ_DISCONT_MODE__) == LL_ADC_REG_SEQ_DISCONT_1RANK)             \\\r\n  )"
+    },
+    {
+      "name": "IS_LL_ADC_REG_TRIG_SOURCE",
+      "sig": "#define IS_LL_ADC_REG_TRIG_SOURCE(__REG_TRIG_SOURCE__)                         \\\n  (   ((__REG_TRIG_SOURCE__) == LL_ADC_REG_TRIG_SOFTWARE)                      \\\n   || ((__REG_TRIG_SOURCE__) == LL_ADC_REG_TRIG_EXT_TIM1_TRGO)                 \\\n   || ((__REG_TRIG_SOURCE__) == LL_ADC_REG_TRIG_EXT_TIM1_CH4)                  \\\n  )",
+      "brief": "LL 层校验规则组触发源参数是否合法(软件触发、TIM1_TRGO 或 TIM1_CH4)。",
+      "params": [
+        {
+          "name": "__REG_TRIG_SOURCE__",
+          "type": "宏参数",
+          "desc": "规则组触发源(LL_ADC_REG_TRIG_SOFTWARE/EXT_TIM1_TRGO/EXT_TIM1_CH4)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_adc.c",
+      "kind": "macro",
+      "src": "#define IS_LL_ADC_REG_TRIG_SOURCE(__REG_TRIG_SOURCE__)                         \\\r\n  (   ((__REG_TRIG_SOURCE__) == LL_ADC_REG_TRIG_SOFTWARE)                      \\\r\n   || ((__REG_TRIG_SOURCE__) == LL_ADC_REG_TRIG_EXT_TIM1_TRGO)                 \\\r\n   || ((__REG_TRIG_SOURCE__) == LL_ADC_REG_TRIG_EXT_TIM1_CH4)                  \\\r\n  )"
+    },
+    {
+      "name": "IS_LL_ADC_RESOLUTION",
+      "sig": "#define IS_LL_ADC_RESOLUTION(__RESOLUTION__)                                   \\\n  (   ((__RESOLUTION__) == LL_ADC_RESOLUTION_12B)                              \\\n   || ((__RESOLUTION__) == LL_ADC_RESOLUTION_10B)                              \\\n   || ((__RESOLUTION__) == LL_ADC_RESOLUTION_8B)                               \\\n   || ((__RESOLUTION__) == LL_ADC_RESOLUTION_6B)                               \\\n  )",
+      "brief": "LL 层校验分辨率参数是否合法(12/10/8/6 位)。",
+      "params": [
+        {
+          "name": "__RESOLUTION__",
+          "type": "宏参数",
+          "desc": "分辨率(LL_ADC_RESOLUTION_12B/10B/8B/6B)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_adc.c",
+      "kind": "macro",
+      "src": "#define IS_LL_ADC_RESOLUTION(__RESOLUTION__)                                   \\\r\n  (   ((__RESOLUTION__) == LL_ADC_RESOLUTION_12B)                              \\\r\n   || ((__RESOLUTION__) == LL_ADC_RESOLUTION_10B)                              \\\r\n   || ((__RESOLUTION__) == LL_ADC_RESOLUTION_8B)                               \\\r\n   || ((__RESOLUTION__) == LL_ADC_RESOLUTION_6B)                               \\\r\n  )"
+    }
+  ],
+  "types": [],
+  "consts": []
+}

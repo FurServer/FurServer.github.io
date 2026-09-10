@@ -1,0 +1,112 @@
+{
+  "module": "核心/基础",
+  "moduleId": "core",
+  "hal": [
+    {
+      "name": "assert_param",
+      "sig": "#define assert_param(expr) ((expr) ? (void)0U : assert_failed((uint8_t *)__FILE__, __LINE__))",
+      "brief": "断言参数宏: USE_FULL_ASSERT 使能时, 表达式为假则调用 assert_failed 报告文件名与行号; 否则为空操作",
+      "params": [
+        {
+          "name": "expr",
+          "type": "宏参数",
+          "desc": "待检查的断言表达式, 为假时触发断言失败"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值(断言失败时调用 assert_failed, 需用户实现该函数)"
+      },
+      "notes": [
+        "USE_FULL_ASSERT 未定义时展开为 (void)0U, 不进行任何参数检查(见 py32f002b_hal_conf.h)"
+      ],
+      "file": "py32f002b_hal_conf.h",
+      "kind": "macro",
+      "src": "#define assert_param(expr) ((expr) ? (void)0U : assert_failed((uint8_t *)__FILE__, __LINE__))"
+    },
+    {
+      "name": "IS_TICKFREQ",
+      "sig": "#define IS_TICKFREQ(FREQ) (((FREQ) == HAL_TICK_FREQ_10HZ)  || \\\n                           ((FREQ) == HAL_TICK_FREQ_100HZ) || \\\n                           ((FREQ) == HAL_TICK_FREQ_1KHZ))",
+      "brief": "校验 HAL tick 频率是否为 HAL_TICK_FREQ_10HZ/100HZ/1KHZ 之一",
+      "params": [
+        {
+          "name": "FREQ",
+          "type": "宏参数",
+          "desc": "待校验的 tick 频率值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f0xx_hal.h",
+      "kind": "macro",
+      "src": "#define IS_TICKFREQ(FREQ) (((FREQ) == HAL_TICK_FREQ_10HZ)  || \\\r\n                           ((FREQ) == HAL_TICK_FREQ_100HZ) || \\\r\n                           ((FREQ) == HAL_TICK_FREQ_1KHZ))"
+    }
+  ],
+  "ll": [
+    {
+      "name": "IS_LL_UTILS_APB1_DIV",
+      "sig": "#define IS_LL_UTILS_APB1_DIV(__VALUE__) (((__VALUE__) == LL_RCC_APB1_DIV_1) \\\n                                      || ((__VALUE__) == LL_RCC_APB1_DIV_2) \\\n                                      || ((__VALUE__) == LL_RCC_APB1_DIV_4) \\\n                                      || ((__VALUE__) == LL_RCC_APB1_DIV_8) \\\n                                      || ((__VALUE__) == LL_RCC_APB1_DIV_16))",
+      "brief": "校验 LL 时钟配置中 APB1 预分频系数是否为 DIV_1/2/4/8/16 之一",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的 APB1 预分频值(LL_RCC_APB1_DIV_*)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_utils.c",
+      "kind": "macro",
+      "src": "#define IS_LL_UTILS_APB1_DIV(__VALUE__) (((__VALUE__) == LL_RCC_APB1_DIV_1) \\\r\n                                      || ((__VALUE__) == LL_RCC_APB1_DIV_2) \\\r\n                                      || ((__VALUE__) == LL_RCC_APB1_DIV_4) \\\r\n                                      || ((__VALUE__) == LL_RCC_APB1_DIV_8) \\\r\n                                      || ((__VALUE__) == LL_RCC_APB1_DIV_16))"
+    },
+    {
+      "name": "IS_LL_UTILS_HSE_BYPASS",
+      "sig": "#define IS_LL_UTILS_HSE_BYPASS(__STATE__) (((__STATE__) == LL_UTILS_HSEBYPASS_ON) \\\n                                        || ((__STATE__) == LL_UTILS_HSEBYPASS_OFF))",
+      "brief": "校验 HSE 旁路(bypass)状态是否为开启或关闭(开启表示 HSE 使用外部时钟直通而非晶振)",
+      "params": [
+        {
+          "name": "__STATE__",
+          "type": "宏参数",
+          "desc": "待校验的 HSE 旁路状态(LL_UTILS_HSEBYPASS_ON/LL_UTILS_HSEBYPASS_OFF)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_utils.c",
+      "kind": "macro",
+      "src": "#define IS_LL_UTILS_HSE_BYPASS(__STATE__) (((__STATE__) == LL_UTILS_HSEBYPASS_ON) \\\r\n                                        || ((__STATE__) == LL_UTILS_HSEBYPASS_OFF))"
+    },
+    {
+      "name": "IS_LL_UTILS_SYSCLK_DIV",
+      "sig": "#define IS_LL_UTILS_SYSCLK_DIV(__VALUE__) (((__VALUE__) == LL_RCC_SYSCLK_DIV_1)   \\\n                                        || ((__VALUE__) == LL_RCC_SYSCLK_DIV_2)   \\\n                                        || ((__VALUE__) == LL_RCC_SYSCLK_DIV_4)   \\\n                                        || ((__VALUE__) == LL_RCC_SYSCLK_DIV_8)   \\\n                                        || ((__VALUE__) == LL_RCC_SYSCLK_DIV_16)  \\\n                                        || ((__VALUE__) == LL_RCC_SYSCLK_DIV_64)  \\\n                                        || ((__VALUE__) == LL_RCC_SYSCLK_DIV_128) \\\n                                        || ((__VALUE__) == LL_RCC_SYSCLK_DIV_256) \\\n                                        || ((__VALUE__) == LL_RCC_SYSCLK_DIV_512))",
+      "brief": "校验 SYSCLK 分频系数是否为 DIV_1/2/4/8/16/64/128/256/512 之一",
+      "params": [
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "待校验的 SYSCLK 分频值(LL_RCC_SYSCLK_DIV_*)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "校验通过返回 1, 否则返回 0"
+      },
+      "notes": [],
+      "file": "py32f002b_ll_utils.c",
+      "kind": "macro",
+      "src": "#define IS_LL_UTILS_SYSCLK_DIV(__VALUE__) (((__VALUE__) == LL_RCC_SYSCLK_DIV_1)   \\\r\n                                        || ((__VALUE__) == LL_RCC_SYSCLK_DIV_2)   \\\r\n                                        || ((__VALUE__) == LL_RCC_SYSCLK_DIV_4)   \\\r\n                                        || ((__VALUE__) == LL_RCC_SYSCLK_DIV_8)   \\\r\n                                        || ((__VALUE__) == LL_RCC_SYSCLK_DIV_16)  \\\r\n                                        || ((__VALUE__) == LL_RCC_SYSCLK_DIV_64)  \\\r\n                                        || ((__VALUE__) == LL_RCC_SYSCLK_DIV_128) \\\r\n                                        || ((__VALUE__) == LL_RCC_SYSCLK_DIV_256) \\\r\n                                        || ((__VALUE__) == LL_RCC_SYSCLK_DIV_512))"
+    }
+  ],
+  "types": [],
+  "consts": []
+}

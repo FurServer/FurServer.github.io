@@ -1,0 +1,1220 @@
+{
+  "module": "EXTI 外部中断",
+  "moduleId": "exti",
+  "intro": "外部中断/事件控制器(EXTI): 每条线路可配置为中断模式、事件模式或两者兼有, 支持上升沿、下降沿或双沿触发; 线路 0~15 与 GPIO 引脚一一对应, 可通过 EXTICR 多路复用器选择输入端口。含 HAL 库(配置与 IO 操作函数)与 LL 库(寄存器级操作与初始化)。",
+  "files": [
+    "py32f002b_hal_exti.c",
+    "py32f002b_hal_exti.h",
+    "py32f002b_ll_exti.c",
+    "py32f002b_ll_exti.h",
+    "py32f002xx5.h"
+  ],
+  "hal": [
+    {
+      "name": "HAL_EXTI_SetConfigLine",
+      "sig": "HAL_StatusTypeDef HAL_EXTI_SetConfigLine(EXTI_HandleTypeDef *hexti, EXTI_ConfigTypeDef *pExtiConfig)",
+      "brief": "配置指定 EXTI 线路: 设置中断/事件模式、上升/下降沿触发, 以及 GPIO 线路的输入端口选择。",
+      "params": [
+        {
+          "name": "hexti",
+          "type": "EXTI_HandleTypeDef *",
+          "desc": "EXTI 句柄指针, 线路号将写入其 Line 成员"
+        },
+        {
+          "name": "pExtiConfig",
+          "type": "EXTI_ConfigTypeDef *",
+          "desc": "指向 EXTI 配置结构体的指针, 含 Line/Mode/Trigger/GPIOSel 各成员"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 配置成功; HAL_ERROR 参数错误(NULL 指针或非法线路/模式)"
+      },
+      "notes": [
+        "仅配置型线路(GPIO 与 COMP 线路)支持触发沿配置; 线路为 GPIO 时还需校验 GPIOSel 与引脚号。"
+      ],
+      "file": "py32f002b_hal_exti.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_EXTI_SetConfigLine(EXTI_HandleTypeDef *hexti, EXTI_ConfigTypeDef *pExtiConfig)\r\n{\r\n  uint32_t regval;\r\n  uint32_t linepos;\r\n  uint32_t maskline;\r\n\r\n  /* Check null pointer */\r\n  if ((hexti == NULL) || (pExtiConfig == NULL))\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Check parameters */\r\n  assert_param(IS_EXTI_LINE(pExtiConfig->Line));\r\n  assert_param(IS_EXTI_MODE(pExtiConfig->Mode));\r\n\r\n  /* Assign line number to handle */\r\n  hexti->Line = pExtiConfig->Line;\r\n\r\n  /* Compute line mask */\r\n  linepos = (pExtiConfig->Line & EXTI_PIN_MASK);\r\n  maskline = (1uL << linepos);\r\n\r\n  /* Configure triggers for configurable lines */\r\n  if ((pExtiConfig->Line & EXTI_CONFIG) != 0x00u)\r\n  {\r\n    assert_param(IS_EXTI_TRIGGER(pExtiConfig->Trigger));\r\n\r\n    /* Configure rising trigger */\r\n    /* Mask or set line */\r\n    if ((pExtiConfig->Trigger & EXTI_TRIGGER_RISING) != 0x00u)\r\n    {\r\n      EXTI->RTSR |= maskline;\r\n    }\r\n    else\r\n    {\r\n      EXTI->RTSR &= ~maskline;\r\n    }\r\n\r\n    /* Configure falling trigger */\r\n    /* Mask or set line */\r\n    if ((pExtiConfig->Trigger & EXTI_TRIGGER_FALLING) != 0x00u)\r\n    {\r\n      EXTI->FTSR |= maskline;\r\n    }\r\n    else\r\n    {\r\n      EXTI->FTSR &= ~maskline;\r\n    }\r\n\r\n\r\n    /* Configure gpio port selection in case of gpio exti line */\r\n    if ((pExtiConfig->Line & EXTI_GPIO) == EXTI_GPIO)\r\n    {\r\n      assert_param(IS_EXTI_GPIO_PORT(pExtiConfig->GPIOSel));\r\n      assert_param(IS_EXTI_GPIO_PIN(linepos));\r\n\r\n      regval = EXTI->EXTICR[linepos >> 2u];\r\n      regval &= ~(EXTI_EXTICR1_EXTI0 << (EXTI_EXTICR1_EXTI1_Pos * (linepos & 0x03u)));\r\n      regval |= (pExtiConfig->GPIOSel << (EXTI_EXTICR1_EXTI1_Pos * (linepos & 0x03u)));\r\n      EXTI->EXTICR[linepos >> 2u] = regval;\r\n    }\r\n  }\r\n\r\n  /* Configure interrupt mode : read current mode */\r\n  /* Mask or set line */\r\n  if ((pExtiConfig->Mode & EXTI_MODE_INTERRUPT) != 0x00u)\r\n  {\r\n    EXTI->IMR |= maskline;\r\n  }\r\n  else\r\n  {\r\n    EXTI->IMR &= ~maskline;\r\n  }\r\n\r\n  /* Configure event mode : read current mode */\r\n  /* Mask or set line */\r\n  if ((pExtiConfig->Mode & EXTI_MODE_EVENT) != 0x00u)\r\n  {\r\n    EXTI->EMR |= maskline;\r\n  }\r\n  else\r\n  {\r\n    EXTI->EMR &= ~maskline;\r\n  }\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_EXTI_GetConfigLine",
+      "sig": "HAL_StatusTypeDef HAL_EXTI_GetConfigLine(EXTI_HandleTypeDef *hexti, EXTI_ConfigTypeDef *pExtiConfig)",
+      "brief": "读取指定 EXTI 线路的当前配置(模式、触发沿、GPIO 端口选择)并存入 pExtiConfig。",
+      "params": [
+        {
+          "name": "hexti",
+          "type": "EXTI_HandleTypeDef *",
+          "desc": "EXTI 句柄指针, 其 Line 成员指定要读取的线路"
+        },
+        {
+          "name": "pExtiConfig",
+          "type": "EXTI_ConfigTypeDef *",
+          "desc": "指向用于存放配置结果的结构体指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 读取成功; HAL_ERROR 参数错误(NULL 指针)"
+      },
+      "file": "py32f002b_hal_exti.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_EXTI_GetConfigLine(EXTI_HandleTypeDef *hexti, EXTI_ConfigTypeDef *pExtiConfig)\r\n{\r\n  uint32_t regval;\r\n  uint32_t linepos;\r\n  uint32_t maskline;\r\n\r\n  /* Check null pointer */\r\n  if ((hexti == NULL) || (pExtiConfig == NULL))\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Check the parameter */\r\n  assert_param(IS_EXTI_LINE(hexti->Line));\r\n\r\n  /* Store handle line number to configuration structure */\r\n  pExtiConfig->Line = hexti->Line;\r\n\r\n  /* Compute line mask */\r\n  linepos = (pExtiConfig->Line & EXTI_PIN_MASK);\r\n  maskline = (1uL << linepos);\r\n\r\n  /* 1] Get core mode : interrupt */\r\n\r\n  /* Check if selected line is enable */\r\n  if ((EXTI->IMR & maskline) != 0x00u)\r\n  {\r\n    pExtiConfig->Mode = EXTI_MODE_INTERRUPT;\r\n  }\r\n  else\r\n  {\r\n    pExtiConfig->Mode = EXTI_MODE_NONE;\r\n  }\r\n\r\n  /* Get event mode */\r\n  /* Check if selected line is enable */\r\n  if ((EXTI->EMR & maskline) != 0x00u)\r\n  {\r\n    pExtiConfig->Mode |= EXTI_MODE_EVENT;\r\n  }\r\n\r\n  /* 2] Get trigger for configurable lines : rising */\r\n  if ((pExtiConfig->Line & EXTI_CONFIG) != 0x00u)\r\n  {\r\n    /* Check if configuration of selected line is enable */\r\n    if ((EXTI->RTSR & maskline) != 0x00u)\r\n    {\r\n      pExtiConfig->Trigger = EXTI_TRIGGER_RISING;\r\n    }\r\n    else\r\n    {\r\n      pExtiConfig->Trigger = EXTI_TRIGGER_NONE;\r\n    }\r\n\r\n    /* Get falling configuration */\r\n    /* Check if configuration of selected line is enable */\r\n    if ((EXTI->FTSR & maskline) != 0x00u)\r\n    {\r\n      pExtiConfig->Trigger |= EXTI_TRIGGER_FALLING;\r\n    }\r\n\r\n    /* Get Gpio port selection for gpio lines */\r\n    if ((pExtiConfig->Line & EXTI_GPIO) == EXTI_GPIO)\r\n    {\r\n      assert_param(IS_EXTI_GPIO_PIN(linepos));\r\n\r\n      regval = EXTI->EXTICR[linepos >> 2u];\r\n      pExtiConfig->GPIOSel = ((regval << (EXTI_EXTICR1_EXTI1_Pos * (3uL - (linepos & 0x03u)))) >> 24);\r\n    }\r\n    else\r\n    {\r\n      pExtiConfig->GPIOSel = 0x00u;\r\n    }\r\n  }\r\n  else\r\n  {\r\n    /* No Trigger selected */\r\n    pExtiConfig->Trigger = EXTI_TRIGGER_NONE;\r\n    pExtiConfig->GPIOSel = 0x00u;\r\n  }\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_EXTI_ClearConfigLine",
+      "sig": "HAL_StatusTypeDef HAL_EXTI_ClearConfigLine(EXTI_HandleTypeDef *hexti)",
+      "brief": "清除指定 EXTI 线路的全部配置: 中断/事件模式、触发沿以及 GPIO 端口选择全部复位。",
+      "params": [
+        {
+          "name": "hexti",
+          "type": "EXTI_HandleTypeDef *",
+          "desc": "EXTI 句柄指针, 其 Line 成员指定要清除的线路"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 清除成功; HAL_ERROR 参数错误(NULL 指针)"
+      },
+      "file": "py32f002b_hal_exti.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_EXTI_ClearConfigLine(EXTI_HandleTypeDef *hexti)\r\n{\r\n  uint32_t regval;\r\n  uint32_t linepos;\r\n  uint32_t maskline;\r\n\r\n  /* Check null pointer */\r\n  if (hexti == NULL)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  /* Check the parameter */\r\n  assert_param(IS_EXTI_LINE(hexti->Line));\r\n\r\n  /* compute line mask */\r\n  linepos = (hexti->Line & EXTI_PIN_MASK);\r\n  maskline = (1uL << linepos);\r\n\r\n  /* 1] Clear interrupt mode */\r\n  EXTI->IMR = (EXTI->IMR & ~maskline);\r\n\r\n  /* 2] Clear event mode */\r\n  EXTI->EMR = (EXTI->EMR & ~maskline);\r\n\r\n  /* 3] Clear triggers in case of configurable lines */\r\n  if ((hexti->Line & EXTI_CONFIG) != 0x00u)\r\n  {\r\n    EXTI->RTSR = (EXTI->RTSR & ~maskline);\r\n    EXTI->FTSR = (EXTI->FTSR & ~maskline);\r\n\r\n    /* Get Gpio port selection for gpio lines */\r\n    if ((hexti->Line & EXTI_GPIO) == EXTI_GPIO)\r\n    {\r\n      assert_param(IS_EXTI_GPIO_PIN(linepos));\r\n\r\n      regval = EXTI->EXTICR[linepos >> 2u];\r\n      regval &= ~(EXTI_EXTICR1_EXTI0 << (EXTI_EXTICR1_EXTI1_Pos * (linepos & 0x03u)));\r\n      EXTI->EXTICR[linepos >> 2u] = regval;\r\n    }\r\n  }\r\n\r\n  return HAL_OK;\r\n}"
+    },
+    {
+      "name": "HAL_EXTI_RegisterCallback",
+      "sig": "HAL_StatusTypeDef HAL_EXTI_RegisterCallback(EXTI_HandleTypeDef *hexti, EXTI_CallbackIDTypeDef CallbackID, void (*pPendingCbfn)(void))",
+      "brief": "为 EXTI 线路注册挂起回调函数, 中断触发并清除挂起标志后由 HAL_EXTI_IRQHandler() 调用。",
+      "params": [
+        {
+          "name": "hexti",
+          "type": "EXTI_HandleTypeDef *",
+          "desc": "EXTI 句柄指针"
+        },
+        {
+          "name": "CallbackID",
+          "type": "EXTI_CallbackIDTypeDef",
+          "desc": "回调标识, 目前仅支持 HAL_EXTI_COMMON_CB_ID"
+        },
+        {
+          "name": "pPendingCbfn",
+          "type": "void (*)(void)",
+          "desc": "要存储的回调函数指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 注册成功; HAL_ERROR 回调标识不支持"
+      },
+      "file": "py32f002b_hal_exti.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_EXTI_RegisterCallback(EXTI_HandleTypeDef *hexti, EXTI_CallbackIDTypeDef CallbackID, void (*pPendingCbfn)(void))\r\n{\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  switch (CallbackID)\r\n  {\r\n  case  HAL_EXTI_COMMON_CB_ID:\r\n    hexti->PendingCallback = pPendingCbfn;\r\n    break;\r\n\r\n  default:\r\n    status = HAL_ERROR;\r\n    break;\r\n  }\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_EXTI_GetHandle",
+      "sig": "HAL_StatusTypeDef HAL_EXTI_GetHandle(EXTI_HandleTypeDef *hexti, uint32_t ExtiLine)",
+      "brief": "将线路号存入句柄的私有 Line 字段, 供后续 HAL_EXTI_* 函数使用。",
+      "params": [
+        {
+          "name": "hexti",
+          "type": "EXTI_HandleTypeDef *",
+          "desc": "EXTI 句柄指针"
+        },
+        {
+          "name": "ExtiLine",
+          "type": "uint32_t",
+          "desc": "EXTI 线路号, 可取 EXTI_LINE_x(x = 0..7, 17, 18, 29)"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 句柄为空"
+      },
+      "file": "py32f002b_hal_exti.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_EXTI_GetHandle(EXTI_HandleTypeDef *hexti, uint32_t ExtiLine)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_EXTI_LINE(ExtiLine));\r\n\r\n  /* Check null pointer */\r\n  if (hexti == NULL)\r\n  {\r\n    return HAL_ERROR;\r\n  }\r\n  else\r\n  {\r\n    /* Store line number as handle private field */\r\n    hexti->Line = ExtiLine;\r\n\r\n    return HAL_OK;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_EXTI_IRQHandler",
+      "sig": "void HAL_EXTI_IRQHandler(EXTI_HandleTypeDef *hexti)",
+      "brief": "EXTI 中断处理函数: 检查句柄线路的挂起标志, 置位则清除标志并调用已注册的回调函数。应在 EXTI 中断服务函数中调用。",
+      "params": [
+        {
+          "name": "hexti",
+          "type": "EXTI_HandleTypeDef *",
+          "desc": "EXTI 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_exti.c",
+      "kind": "function",
+      "src": "void HAL_EXTI_IRQHandler(EXTI_HandleTypeDef *hexti)\r\n{\r\n  uint32_t regval;\r\n  uint32_t maskline;\r\n\r\n  /* Compute line mask */\r\n  maskline = (1uL << (hexti->Line & EXTI_PIN_MASK));\r\n\r\n  /* Get pending bit  */\r\n  regval = (EXTI->PR & maskline);\r\n  if (regval != 0x00u)\r\n  {\r\n    /* Clear pending bit */\r\n    EXTI->PR = maskline;\r\n\r\n    /* Call callback */\r\n    if (hexti->PendingCallback != NULL)\r\n    {\r\n      hexti->PendingCallback();\r\n    }\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_EXTI_GetPending",
+      "sig": "uint32_t HAL_EXTI_GetPending(EXTI_HandleTypeDef *hexti, uint32_t Edge)",
+      "brief": "查询指定 EXTI 线路的中断挂起标志(PR 寄存器)。",
+      "params": [
+        {
+          "name": "hexti",
+          "type": "EXTI_HandleTypeDef *",
+          "desc": "EXTI 句柄指针, 其 Line 成员指定要查询的线路"
+        },
+        {
+          "name": "Edge",
+          "type": "uint32_t",
+          "desc": "要检查的边沿, 文档标注可取 EXTI_TRIGGER_RISING_FALLING(为兼容其他系列保留)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 表示有挂起中断, 0 表示无"
+      },
+      "notes": [
+        "源码断言 IS_EXTI_PENDING_EDGE 要求 Edge 等于 EXTI_TRIGGER_RISING 或 EXTI_TRIGGER_FALLING, 与注释所述值存在不一致。"
+      ],
+      "file": "py32f002b_hal_exti.c",
+      "kind": "function",
+      "src": "uint32_t HAL_EXTI_GetPending(EXTI_HandleTypeDef *hexti, uint32_t Edge)\r\n{\r\n  uint32_t regval;\r\n  uint32_t linepos;\r\n  uint32_t maskline;\r\n\r\n  /* Check parameters */\r\n  assert_param(IS_EXTI_LINE(hexti->Line));\r\n  assert_param(IS_EXTI_CONFIG_LINE(hexti->Line));\r\n  assert_param(IS_EXTI_PENDING_EDGE(Edge));\r\n\r\n  /* Compute line mask */\r\n  linepos = (hexti->Line & EXTI_PIN_MASK);\r\n  maskline = (1uL << linepos);\r\n\r\n  /* return 1 if bit is set else 0 */\r\n  regval = ((EXTI->PR & maskline) >> linepos);\r\n  return regval;\r\n}"
+    },
+    {
+      "name": "HAL_EXTI_ClearPending",
+      "sig": "void HAL_EXTI_ClearPending(EXTI_HandleTypeDef *hexti)",
+      "brief": "清除指定 EXTI 线路的中断挂起标志(向 PR 写入线路掩码)。",
+      "params": [
+        {
+          "name": "hexti",
+          "type": "EXTI_HandleTypeDef *",
+          "desc": "EXTI 句柄指针, 其 Line 成员指定要清除的线路"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_exti.c",
+      "kind": "function",
+      "src": "void HAL_EXTI_ClearPending(EXTI_HandleTypeDef *hexti)\r\n{\r\n  uint32_t maskline;\r\n\r\n  /* Check parameters */\r\n  assert_param(IS_EXTI_LINE(hexti->Line));\r\n  assert_param(IS_EXTI_CONFIG_LINE(hexti->Line));\r\n\r\n  /* Compute line mask */\r\n  maskline = (1uL << (hexti->Line & EXTI_PIN_MASK));\r\n\r\n  /* Clear Pending bit */\r\n  EXTI->PR =  maskline;\r\n}"
+    },
+    {
+      "name": "HAL_EXTI_GenerateSWI",
+      "sig": "void HAL_EXTI_GenerateSWI(EXTI_HandleTypeDef *hexti)",
+      "brief": "为指定 EXTI 线路产生一次软件中断(向 SWIER 写入线路掩码)。",
+      "params": [
+        {
+          "name": "hexti",
+          "type": "EXTI_HandleTypeDef *",
+          "desc": "EXTI 句柄指针, 其 Line 成员指定要触发的线路"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_exti.c",
+      "kind": "function",
+      "src": "void HAL_EXTI_GenerateSWI(EXTI_HandleTypeDef *hexti)\r\n{\r\n  uint32_t maskline;\r\n\r\n  /* Check parameters */\r\n  assert_param(IS_EXTI_LINE(hexti->Line));\r\n  assert_param(IS_EXTI_CONFIG_LINE(hexti->Line));\r\n\r\n  /* Compute line mask */\r\n  maskline = (1uL << (hexti->Line & EXTI_PIN_MASK));\r\n\r\n  /* Generate Software interrupt */\r\n  EXTI->SWIER = maskline;\r\n}"
+    }
+  ],
+  "ll": [
+    {
+      "name": "LL_EXTI_EnableIT",
+      "sig": "void LL_EXTI_EnableIT(uint32_t ExtiLine)",
+      "brief": "使能指定 EXTI 线路的中断请求(IMR 对应位置位)。",
+      "params": [
+        {
+          "name": "ExtiLine",
+          "type": "uint32_t",
+          "desc": "EXTI 线路, 可取 LL_EXTI_LINE_0..7 / 17 / 18 / 29 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_exti.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_EXTI_EnableIT(uint32_t ExtiLine)\r\n{\r\n  SET_BIT(EXTI->IMR, ExtiLine);\r\n}"
+    },
+    {
+      "name": "LL_EXTI_DisableIT",
+      "sig": "void LL_EXTI_DisableIT(uint32_t ExtiLine)",
+      "brief": "禁止指定 EXTI 线路的中断请求(IMR 对应位清零)。",
+      "params": [
+        {
+          "name": "ExtiLine",
+          "type": "uint32_t",
+          "desc": "EXTI 线路, 可取 LL_EXTI_LINE_0..7 / 17 / 18 / 29 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_exti.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_EXTI_DisableIT(uint32_t ExtiLine)\r\n{\r\n  CLEAR_BIT(EXTI->IMR, ExtiLine);\r\n}"
+    },
+    {
+      "name": "LL_EXTI_IsEnabledIT",
+      "sig": "uint32_t LL_EXTI_IsEnabledIT(uint32_t ExtiLine)",
+      "brief": "查询指定 EXTI 线路的中断请求是否已使能(上电后默认置位)。",
+      "params": [
+        {
+          "name": "ExtiLine",
+          "type": "uint32_t",
+          "desc": "EXTI 线路, 可取 LL_EXTI_LINE_0..7 / 17 / 18 / 29 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "该位状态: 1 或 0"
+      },
+      "file": "py32f002b_ll_exti.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_EXTI_IsEnabledIT(uint32_t ExtiLine)\r\n{\r\n  return (READ_BIT(EXTI->IMR, ExtiLine) == (ExtiLine));\r\n}"
+    },
+    {
+      "name": "LL_EXTI_EnableEvent",
+      "sig": "void LL_EXTI_EnableEvent(uint32_t ExtiLine)",
+      "brief": "使能指定 EXTI 线路的事件请求(EMR 对应位置位)。",
+      "params": [
+        {
+          "name": "ExtiLine",
+          "type": "uint32_t",
+          "desc": "EXTI 线路, 可取 LL_EXTI_LINE_0..7 / 17 / 18 / 29 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_exti.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_EXTI_EnableEvent(uint32_t ExtiLine)\r\n{\r\n  SET_BIT(EXTI->EMR, ExtiLine);\r\n\r\n}"
+    },
+    {
+      "name": "LL_EXTI_DisableEvent",
+      "sig": "void LL_EXTI_DisableEvent(uint32_t ExtiLine)",
+      "brief": "禁止指定 EXTI 线路的事件请求(EMR 对应位清零)。",
+      "params": [
+        {
+          "name": "ExtiLine",
+          "type": "uint32_t",
+          "desc": "EXTI 线路, 可取 LL_EXTI_LINE_0..7 / 17 / 18 / 29 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_exti.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_EXTI_DisableEvent(uint32_t ExtiLine)\r\n{\r\n  CLEAR_BIT(EXTI->EMR, ExtiLine);\r\n}"
+    },
+    {
+      "name": "LL_EXTI_IsEnabledEvent",
+      "sig": "uint32_t LL_EXTI_IsEnabledEvent(uint32_t ExtiLine)",
+      "brief": "查询指定 EXTI 线路的事件请求是否已使能。",
+      "params": [
+        {
+          "name": "ExtiLine",
+          "type": "uint32_t",
+          "desc": "EXTI 线路, 可取 LL_EXTI_LINE_0..7 / 17 / 18 / 29 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "该位状态: 1 或 0"
+      },
+      "file": "py32f002b_ll_exti.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_EXTI_IsEnabledEvent(uint32_t ExtiLine)\r\n{\r\n  return (READ_BIT(EXTI->EMR, ExtiLine) == (ExtiLine));\r\n}"
+    },
+    {
+      "name": "LL_EXTI_EnableRisingTrig",
+      "sig": "void LL_EXTI_EnableRisingTrig(uint32_t ExtiLine)",
+      "brief": "使能指定 EXTI 线路的上升沿触发(RTSR 对应位置位)。",
+      "params": [
+        {
+          "name": "ExtiLine",
+          "type": "uint32_t",
+          "desc": "EXTI 线路, 可取 LL_EXTI_LINE_0..7 / 17 / 18 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "可配置唤醒线路为边沿触发, 写 RTSR 期间出现的上升沿不会置位挂起位; 上升与下降沿触发可同时使能。"
+      ],
+      "file": "py32f002b_ll_exti.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_EXTI_EnableRisingTrig(uint32_t ExtiLine)\r\n{\r\n  SET_BIT(EXTI->RTSR, ExtiLine);\r\n\r\n}"
+    },
+    {
+      "name": "LL_EXTI_DisableRisingTrig",
+      "sig": "void LL_EXTI_DisableRisingTrig(uint32_t ExtiLine)",
+      "brief": "禁止指定 EXTI 线路的上升沿触发(RTSR 对应位清零)。",
+      "params": [
+        {
+          "name": "ExtiLine",
+          "type": "uint32_t",
+          "desc": "EXTI 线路, 可取 LL_EXTI_LINE_0..7 / 17 / 18 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_exti.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_EXTI_DisableRisingTrig(uint32_t ExtiLine)\r\n{\r\n  CLEAR_BIT(EXTI->RTSR, ExtiLine);\r\n\r\n}"
+    },
+    {
+      "name": "LL_EXTI_IsEnabledRisingTrig",
+      "sig": "uint32_t LL_EXTI_IsEnabledRisingTrig(uint32_t ExtiLine)",
+      "brief": "查询指定 EXTI 线路的上升沿触发是否已使能。",
+      "params": [
+        {
+          "name": "ExtiLine",
+          "type": "uint32_t",
+          "desc": "EXTI 线路, 可取 LL_EXTI_LINE_0..7 / 17 / 18 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "该位状态: 1 或 0"
+      },
+      "file": "py32f002b_ll_exti.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_EXTI_IsEnabledRisingTrig(uint32_t ExtiLine)\r\n{\r\n  return (READ_BIT(EXTI->RTSR, ExtiLine) == (ExtiLine));\r\n}"
+    },
+    {
+      "name": "LL_EXTI_EnableFallingTrig",
+      "sig": "void LL_EXTI_EnableFallingTrig(uint32_t ExtiLine)",
+      "brief": "使能指定 EXTI 线路的下降沿触发(FTSR 对应位置位)。",
+      "params": [
+        {
+          "name": "ExtiLine",
+          "type": "uint32_t",
+          "desc": "EXTI 线路, 可取 LL_EXTI_LINE_0..7 / 17 / 18 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "可配置唤醒线路为边沿触发, 写 FTSR 期间出现的下降沿不会置位挂起位。"
+      ],
+      "file": "py32f002b_ll_exti.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_EXTI_EnableFallingTrig(uint32_t ExtiLine)\r\n{\r\n  SET_BIT(EXTI->FTSR, ExtiLine);\r\n}"
+    },
+    {
+      "name": "LL_EXTI_DisableFallingTrig",
+      "sig": "void LL_EXTI_DisableFallingTrig(uint32_t ExtiLine)",
+      "brief": "禁止指定 EXTI 线路的下降沿触发(FTSR 对应位清零)。",
+      "params": [
+        {
+          "name": "ExtiLine",
+          "type": "uint32_t",
+          "desc": "EXTI 线路, 可取 LL_EXTI_LINE_0..7 / 17 / 18 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_exti.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_EXTI_DisableFallingTrig(uint32_t ExtiLine)\r\n{\r\n  CLEAR_BIT(EXTI->FTSR, ExtiLine);\r\n}"
+    },
+    {
+      "name": "LL_EXTI_IsEnabledFallingTrig",
+      "sig": "uint32_t LL_EXTI_IsEnabledFallingTrig(uint32_t ExtiLine)",
+      "brief": "查询指定 EXTI 线路的下降沿触发是否已使能。",
+      "params": [
+        {
+          "name": "ExtiLine",
+          "type": "uint32_t",
+          "desc": "EXTI 线路, 可取 LL_EXTI_LINE_0..7 / 17 / 18 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "该位状态: 1 或 0"
+      },
+      "file": "py32f002b_ll_exti.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_EXTI_IsEnabledFallingTrig(uint32_t ExtiLine)\r\n{\r\n  return (READ_BIT(EXTI->FTSR, ExtiLine) == (ExtiLine));\r\n}"
+    },
+    {
+      "name": "LL_EXTI_GenerateSWI",
+      "sig": "void LL_EXTI_GenerateSWI(uint32_t ExtiLine)",
+      "brief": "为指定 EXTI 线路产生软件中断事件(SWIER 对应位置位)。",
+      "params": [
+        {
+          "name": "ExtiLine",
+          "type": "uint32_t",
+          "desc": "EXTI 线路, 可取 LL_EXTI_LINE_0..7 / 17 / 18 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "若该线路在 IMR 中已使能中断, 写 1 将置位 PR 对应挂起位从而产生中断请求; 通过写 PR 对应位清除。"
+      ],
+      "file": "py32f002b_ll_exti.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_EXTI_GenerateSWI(uint32_t ExtiLine)\r\n{\r\n  SET_BIT(EXTI->SWIER, ExtiLine);\r\n}"
+    },
+    {
+      "name": "LL_EXTI_IsActiveFlag",
+      "sig": "uint32_t LL_EXTI_IsActiveFlag(uint32_t ExtiLine)",
+      "brief": "查询指定 EXTI 线路的挂起标志(PR)是否置位。",
+      "params": [
+        {
+          "name": "ExtiLine",
+          "type": "uint32_t",
+          "desc": "EXTI 线路, 可取 LL_EXTI_LINE_0..7 / 17 / 18 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "标志状态: 1 或 0"
+      },
+      "file": "py32f002b_ll_exti.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_EXTI_IsActiveFlag(uint32_t ExtiLine)\r\n{\r\n  return (READ_BIT(EXTI->PR, ExtiLine) == (ExtiLine));\r\n}"
+    },
+    {
+      "name": "LL_EXTI_ReadFlag",
+      "sig": "uint32_t LL_EXTI_ReadFlag(uint32_t ExtiLine)",
+      "brief": "读取指定 EXTI 线路组合的挂起标志(PR)值。",
+      "params": [
+        {
+          "name": "ExtiLine",
+          "type": "uint32_t",
+          "desc": "EXTI 线路, 可取 LL_EXTI_LINE_0..7 / 17 / 18 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "PR 中对应位的组合值(选中边沿事件到达时置位)"
+      },
+      "file": "py32f002b_ll_exti.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_EXTI_ReadFlag(uint32_t ExtiLine)\r\n{\r\n  return (READ_BIT(EXTI->PR, ExtiLine));\r\n}"
+    },
+    {
+      "name": "LL_EXTI_ClearFlag",
+      "sig": "void LL_EXTI_ClearFlag(uint32_t ExtiLine)",
+      "brief": "清除指定 EXTI 线路的挂起标志(向 PR 写入线路值)。",
+      "params": [
+        {
+          "name": "ExtiLine",
+          "type": "uint32_t",
+          "desc": "EXTI 线路, 可取 LL_EXTI_LINE_0..7 / 17 / 18 任意组合"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_exti.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_EXTI_ClearFlag(uint32_t ExtiLine)\r\n{\r\n  WRITE_REG(EXTI->PR, ExtiLine);\r\n}"
+    },
+    {
+      "name": "LL_EXTI_SetEXTISource",
+      "sig": "void LL_EXTI_SetEXTISource(uint32_t Port, uint32_t Line)",
+      "brief": "配置 EXTI 外部中断的输入源端口(EXTICR 寄存器)。",
+      "params": [
+        {
+          "name": "Port",
+          "type": "uint32_t",
+          "desc": "输入源端口: LL_EXTI_CONFIG_PORTA / PORTB / PORTC"
+        },
+        {
+          "name": "Line",
+          "type": "uint32_t",
+          "desc": "要配置的线路, 可取 LL_EXTI_CONFIG_LINE0 .. LL_EXTI_CONFIG_LINE7"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_exti.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_EXTI_SetEXTISource(uint32_t Port, uint32_t Line)\r\n{\r\n  uint32_t mask = (Line >> LL_EXTI_REGISTER_PINMASK_SHFT) & 0xFF;\r\n  uint32_t pos = (Line >> LL_EXTI_REGISTER_PINPOS_SHFT) & 0xFF;\r\n  MODIFY_REG(EXTI->EXTICR[Line & 0x03u], (mask << pos), (Port << pos));\r\n}"
+    },
+    {
+      "name": "LL_EXTI_GetEXTISource",
+      "sig": "uint32_t LL_EXTI_GetEXTISource(uint32_t Line)",
+      "brief": "读取指定 EXTI 线路当前配置的输入源端口(EXTICR 寄存器)。",
+      "params": [
+        {
+          "name": "Line",
+          "type": "uint32_t",
+          "desc": "要读取的线路, 可取 LL_EXTI_CONFIG_LINE0 .. LL_EXTI_CONFIG_LINE7"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "端口值: LL_EXTI_CONFIG_PORTA / PORTB / PORTC"
+      },
+      "file": "py32f002b_ll_exti.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_EXTI_GetEXTISource(uint32_t Line)\r\n{\r\n  uint32_t mask = (Line >> LL_EXTI_REGISTER_PINMASK_SHFT) & 0xFF;\r\n  uint32_t pos = (Line >> LL_EXTI_REGISTER_PINPOS_SHFT) & 0xFF;\r\n  return (READ_BIT(EXTI->EXTICR[Line & 0x03u], (mask << pos)) >> pos);\r\n}"
+    },
+    {
+      "name": "LL_EXTI_WriteReg",
+      "sig": "#define LL_EXTI_WriteReg(__REG__, __VALUE__) WRITE_REG(EXTI->__REG__, (__VALUE__))",
+      "brief": "宏: 向 EXTI 指定寄存器写入值。",
+      "params": [
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要写入的寄存器名(如 IMR / EMR / RTSR)"
+        },
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "要写入寄存器的值"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_ll_exti.h",
+      "kind": "macro",
+      "src": "#define LL_EXTI_WriteReg(__REG__, __VALUE__) WRITE_REG(EXTI->__REG__, (__VALUE__))"
+    },
+    {
+      "name": "LL_EXTI_ReadReg",
+      "sig": "#define LL_EXTI_ReadReg(__REG__) READ_REG(EXTI->__REG__)",
+      "brief": "宏: 读取 EXTI 指定寄存器的值。",
+      "params": [
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "要读取的寄存器名(如 PR / RTSR)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "寄存器值"
+      },
+      "file": "py32f002b_ll_exti.h",
+      "kind": "macro",
+      "src": "#define LL_EXTI_ReadReg(__REG__) READ_REG(EXTI->__REG__)"
+    },
+    {
+      "name": "LL_EXTI_DeInit",
+      "sig": "uint32_t LL_EXTI_DeInit(void)",
+      "brief": "将 EXTI 各寄存器恢复为复位默认值(IMR/EMR/RTSR/FTSR/SWIER/PR)。需定义 USE_FULL_LL_DRIVER。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "0x00 表示反初始化成功"
+      },
+      "file": "py32f002b_ll_exti.c",
+      "kind": "function",
+      "src": "uint32_t LL_EXTI_DeInit(void)\r\n{\r\n  /* Interrupt mask register set to default reset values */\r\n  LL_EXTI_WriteReg(IMR,   0x20000000U);\r\n  /* Event mask register set to default reset values */\r\n  LL_EXTI_WriteReg(EMR,   0x00000000U);\r\n  /* Rising Trigger selection register set to default reset values */\r\n  LL_EXTI_WriteReg(RTSR,  0x00000000U);\r\n  /* Falling Trigger selection register set to default reset values */\r\n  LL_EXTI_WriteReg(FTSR,  0x00000000U);\r\n  /* Software interrupt event register set to default reset values */\r\n  LL_EXTI_WriteReg(SWIER, 0x00000000U);\r\n  /* Pending register set to default reset values */\r\n  LL_EXTI_WriteReg(PR,    0x0000600FFU);\r\n\r\n  return 0x00u;\r\n}"
+    },
+    {
+      "name": "LL_EXTI_Init",
+      "sig": "uint32_t LL_EXTI_Init(LL_EXTI_InitTypeDef *EXTI_InitStruct)",
+      "brief": "按 LL_EXTI_InitTypeDef 结构体初始化 EXTI 线路: 设置中断/事件模式、触发沿并执行使能或禁止。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "EXTI_InitStruct",
+          "type": "LL_EXTI_InitTypeDef *",
+          "desc": "指向配置结构体的指针, 含 Line/LineCommand/Mode/Trigger 各成员"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "0x00 初始化成功; 非 0 表示配置错误(位 0 模式非法 / 位 1 触发非法)"
+      },
+      "file": "py32f002b_ll_exti.c",
+      "kind": "function",
+      "src": "uint32_t LL_EXTI_Init(LL_EXTI_InitTypeDef *EXTI_InitStruct)\r\n{\r\n  uint32_t status = 0x00u;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_LL_EXTI_LINE(EXTI_InitStruct->Line));\r\n  assert_param(IS_FUNCTIONAL_STATE(EXTI_InitStruct->LineCommand));\r\n  assert_param(IS_LL_EXTI_MODE(EXTI_InitStruct->Mode));\r\n\r\n  /* ENABLE LineCommand */\r\n  if (EXTI_InitStruct->LineCommand != DISABLE)\r\n  {\r\n    assert_param(IS_LL_EXTI_TRIGGER(EXTI_InitStruct->Trigger));\r\n\r\n    /* Configure EXTI Lines*/\r\n    if (EXTI_InitStruct->Line != LL_EXTI_LINE_NONE)\r\n    {\r\n      switch (EXTI_InitStruct->Mode)\r\n      {\r\n      case LL_EXTI_MODE_IT:\r\n        /* First Disable Event on provided Lines */\r\n        LL_EXTI_DisableEvent(EXTI_InitStruct->Line);\r\n        /* Then Enable IT on provided Lines */\r\n        LL_EXTI_EnableIT(EXTI_InitStruct->Line);\r\n        break;\r\n      case LL_EXTI_MODE_EVENT:\r\n        /* First Disable IT on provided Lines */\r\n        LL_EXTI_DisableIT(EXTI_InitStruct->Line);\r\n        /* Then Enable Event on provided Lines */\r\n        LL_EXTI_EnableEvent(EXTI_InitStruct->Line);\r\n        break;\r\n      case LL_EXTI_MODE_IT_EVENT:\r\n        /* Directly Enable IT & Event on provided Lines */\r\n        LL_EXTI_EnableIT(EXTI_InitStruct->Line);\r\n        LL_EXTI_EnableEvent(EXTI_InitStruct->Line);\r\n        break;\r\n      default:\r\n        status = 0x01u;\r\n        break;\r\n      }\r\n      if (EXTI_InitStruct->Trigger != LL_EXTI_TRIGGER_NONE)\r\n      {\r\n        switch (EXTI_InitStruct->Trigger)\r\n        {\r\n        case LL_EXTI_TRIGGER_RISING:\r\n          /* First Disable Falling Trigger on provided Lines */\r\n          LL_EXTI_DisableFallingTrig(EXTI_InitStruct->Line);\r\n          /* Then Enable Rising Trigger on provided Lines */\r\n          LL_EXTI_EnableRisingTrig(EXTI_InitStruct->Line);\r\n          break;\r\n        case LL_EXTI_TRIGGER_FALLING:\r\n          /* First Disable Rising Trigger on provided Lines */\r\n          LL_EXTI_DisableRisingTrig(EXTI_InitStruct->Line);\r\n          /* Then Enable Falling Trigger on provided Lines */\r\n          LL_EXTI_EnableFallingTrig(EXTI_InitStruct->Line);\r\n          break;\r\n        case LL_EXTI_TRIGGER_RISING_FALLING:\r\n          LL_EXTI_EnableRisingTrig(EXTI_InitStruct->Line);\r\n          LL_EXTI_EnableFallingTrig(EXTI_InitStruct->Line);\r\n          break;\r\n        default:\r\n          status |= 0x02u;\r\n          break;\r\n        }\r\n      }\r\n    }\r\n  }\r\n  /* DISABLE LineCommand */\r\n  else\r\n  {\r\n    /* De-configure EXTI Lines*/\r\n    LL_EXTI_DisableIT(EXTI_InitStruct->Line);\r\n    LL_EXTI_DisableEvent(EXTI_InitStruct->Line);\r\n  }\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "LL_EXTI_StructInit",
+      "sig": "void LL_EXTI_StructInit(LL_EXTI_InitTypeDef *EXTI_InitStruct)",
+      "brief": "将 LL_EXTI_InitTypeDef 结构体各成员填充为默认值, 供 LL_EXTI_Init() 使用。需定义 USE_FULL_LL_DRIVER。",
+      "params": [
+        {
+          "name": "EXTI_InitStruct",
+          "type": "LL_EXTI_InitTypeDef *",
+          "desc": "指向要填充的结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_exti.c",
+      "kind": "function",
+      "src": "void LL_EXTI_StructInit(LL_EXTI_InitTypeDef *EXTI_InitStruct)\r\n{\r\n  EXTI_InitStruct->Line      = LL_EXTI_LINE_NONE;\r\n  EXTI_InitStruct->LineCommand    = DISABLE;\r\n  EXTI_InitStruct->Mode           = LL_EXTI_MODE_IT;\r\n  EXTI_InitStruct->Trigger        = LL_EXTI_TRIGGER_FALLING;\r\n}"
+    }
+  ],
+  "types": [
+    {
+      "name": "EXTI_CallbackIDTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_EXTI_COMMON_CB_ID = 0x00U } EXTI_CallbackIDTypeDef;",
+      "desc": "EXTI 回调标识枚举, 用于 HAL_EXTI_RegisterCallback() 指定注册的回调类别。",
+      "members": [
+        {
+          "name": "HAL_EXTI_COMMON_CB_ID",
+          "value": "0x00U",
+          "desc": "公共回调标识(目前唯一支持的标识)"
+        }
+      ],
+      "file": "py32f002b_hal_exti.h"
+    },
+    {
+      "name": "EXTI_HandleTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t Line; void (* PendingCallback)(void); } EXTI_HandleTypeDef;",
+      "desc": "EXTI 句柄结构体, 保存线路号与挂起回调函数指针。",
+      "members": [
+        {
+          "name": "Line",
+          "type": "uint32_t",
+          "desc": "EXTI 线路号"
+        },
+        {
+          "name": "PendingCallback",
+          "type": "void (*)(void)",
+          "desc": "EXTI 挂起回调函数指针"
+        }
+      ],
+      "file": "py32f002b_hal_exti.h"
+    },
+    {
+      "name": "EXTI_ConfigTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t Line; uint32_t Mode; uint32_t Trigger; uint32_t GPIOSel; } EXTI_ConfigTypeDef;",
+      "desc": "EXTI 线路配置结构体, 作为 HAL_EXTI_SetConfigLine()/GetConfigLine() 的参数。",
+      "members": [
+        {
+          "name": "Line",
+          "type": "uint32_t",
+          "desc": "要配置的 EXTI 线路, 可取 EXTI_LINE_x(x = 0..7, 17, 18, 29)"
+        },
+        {
+          "name": "Mode",
+          "type": "uint32_t",
+          "desc": "模式, 可取 EXTI_MODE_NONE / INTERRUPT / EVENT 的组合"
+        },
+        {
+          "name": "Trigger",
+          "type": "uint32_t",
+          "desc": "触发沿, 可取 EXTI_TRIGGER_NONE / RISING / FALLING / RISING_FALLING(仅配置型线路)"
+        },
+        {
+          "name": "GPIOSel",
+          "type": "uint32_t",
+          "desc": "GPIO 端口选择, 可取 EXTI_GPIOA / EXTI_GPIOB / EXTI_GPIOC(仅线路 0~7)"
+        }
+      ],
+      "file": "py32f002b_hal_exti.h"
+    },
+    {
+      "name": "LL_EXTI_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t Line; FunctionalState LineCommand; uint8_t Mode; uint8_t Trigger; } LL_EXTI_InitTypeDef;",
+      "desc": "LL 库 EXTI 初始化配置结构体, 作为 LL_EXTI_Init() 的参数(需定义 USE_FULL_LL_DRIVER)。",
+      "members": [
+        {
+          "name": "Line",
+          "type": "uint32_t",
+          "desc": "要使能或禁止的 EXTI 线路, 可取 LL_EXTI_LINE_x 任意组合"
+        },
+        {
+          "name": "LineCommand",
+          "type": "FunctionalState",
+          "desc": "线路新状态: ENABLE 使能 / DISABLE 禁止"
+        },
+        {
+          "name": "Mode",
+          "type": "uint8_t",
+          "desc": "模式, 可取 LL_EXTI_MODE_IT / EVENT / IT_EVENT"
+        },
+        {
+          "name": "Trigger",
+          "type": "uint8_t",
+          "desc": "触发沿, 可取 LL_EXTI_TRIGGER_NONE / RISING / FALLING / RISING_FALLING"
+        }
+      ],
+      "file": "py32f002b_ll_exti.h"
+    },
+    {
+      "name": "EXTI_TypeDef",
+      "kind": "periph",
+      "def": "typedef struct { __IO uint32_t RTSR; __IO uint32_t FTSR; __IO uint32_t SWIER; __IO uint32_t PR; __IO uint32_t RESERVED1[4]; __IO uint32_t RESERVED2[5]; __IO uint32_t RESERVED3[11]; __IO uint32_t EXTICR[2]; __IO uint32_t RESERVED4[6]; __IO uint32_t IMR; __IO uint32_t EMR; } EXTI_TypeDef;",
+      "desc": "EXTI 外设寄存器结构体。实例: EXTI。",
+      "members": [
+        {
+          "name": "RTSR",
+          "type": "__IO uint32_t",
+          "desc": "上升沿触发选择寄存器(偏移 0x00)"
+        },
+        {
+          "name": "FTSR",
+          "type": "__IO uint32_t",
+          "desc": "下降沿触发选择寄存器(偏移 0x04)"
+        },
+        {
+          "name": "SWIER",
+          "type": "__IO uint32_t",
+          "desc": "软件中断事件寄存器(偏移 0x08)"
+        },
+        {
+          "name": "PR",
+          "type": "__IO uint32_t",
+          "desc": "挂起寄存器(偏移 0x0C, 写 1 清除)"
+        },
+        {
+          "name": "EXTICR[2]",
+          "type": "__IO uint32_t",
+          "desc": "外部中断配置寄存器, 选择线路 0~7 的 GPIO 输入端口(偏移 0x60)"
+        },
+        {
+          "name": "IMR",
+          "type": "__IO uint32_t",
+          "desc": "中断屏蔽寄存器(偏移 0x80)"
+        },
+        {
+          "name": "EMR",
+          "type": "__IO uint32_t",
+          "desc": "事件屏蔽寄存器(偏移 0x84)"
+        }
+      ],
+      "file": "py32f002xx5.h"
+    }
+  ],
+  "consts": [
+    {
+      "name": "EXTI_LINE_0",
+      "value": "(EXTI_GPIO | EXTI_REG1 | 0x00u)",
+      "desc": "选中第 0 条 EXTI 线路(GPIO 线路 0)",
+      "group": "EXTI 线路",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_LINE_0                         (EXTI_GPIO     | EXTI_REG1 | 0x00u)"
+    },
+    {
+      "name": "EXTI_LINE_1",
+      "value": "(EXTI_GPIO | EXTI_REG1 | 0x01u)",
+      "desc": "选中第 1 条 EXTI 线路(GPIO 线路 1)",
+      "group": "EXTI 线路",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_LINE_1                         (EXTI_GPIO     | EXTI_REG1 | 0x01u)"
+    },
+    {
+      "name": "EXTI_LINE_2",
+      "value": "(EXTI_GPIO | EXTI_REG1 | 0x02u)",
+      "desc": "选中第 2 条 EXTI 线路(GPIO 线路 2)",
+      "group": "EXTI 线路",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_LINE_2                         (EXTI_GPIO     | EXTI_REG1 | 0x02u)"
+    },
+    {
+      "name": "EXTI_LINE_3",
+      "value": "(EXTI_GPIO | EXTI_REG1 | 0x03u)",
+      "desc": "选中第 3 条 EXTI 线路(GPIO 线路 3)",
+      "group": "EXTI 线路",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_LINE_3                         (EXTI_GPIO     | EXTI_REG1 | 0x03u)"
+    },
+    {
+      "name": "EXTI_LINE_4",
+      "value": "(EXTI_GPIO | EXTI_REG1 | 0x04u)",
+      "desc": "选中第 4 条 EXTI 线路(GPIO 线路 4)",
+      "group": "EXTI 线路",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_LINE_4                         (EXTI_GPIO     | EXTI_REG1 | 0x04u)"
+    },
+    {
+      "name": "EXTI_LINE_5",
+      "value": "(EXTI_GPIO | EXTI_REG1 | 0x05u)",
+      "desc": "选中第 5 条 EXTI 线路(GPIO 线路 5)",
+      "group": "EXTI 线路",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_LINE_5                         (EXTI_GPIO     | EXTI_REG1 | 0x05u)"
+    },
+    {
+      "name": "EXTI_LINE_6",
+      "value": "(EXTI_GPIO | EXTI_REG1 | 0x06u)",
+      "desc": "选中第 6 条 EXTI 线路(GPIO 线路 6)",
+      "group": "EXTI 线路",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_LINE_6                         (EXTI_GPIO     | EXTI_REG1 | 0x06u)"
+    },
+    {
+      "name": "EXTI_LINE_7",
+      "value": "(EXTI_GPIO | EXTI_REG1 | 0x07u)",
+      "desc": "选中第 7 条 EXTI 线路(GPIO 线路 7)",
+      "group": "EXTI 线路",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_LINE_7                         (EXTI_GPIO     | EXTI_REG1 | 0x07u)"
+    },
+    {
+      "name": "EXTI_LINE_17",
+      "value": "(EXTI_CONFIG | EXTI_REG1 | 0x11u)",
+      "desc": "选中第 17 条 EXTI 线路(定义 COMP1 时为比较器输出, 否则为保留线路)",
+      "group": "EXTI 线路",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_LINE_17                        (EXTI_CONFIG   | EXTI_REG1 | 0x11u)"
+    },
+    {
+      "name": "EXTI_LINE_18",
+      "value": "(EXTI_CONFIG | EXTI_REG1 | 0x12u)",
+      "desc": "选中第 18 条 EXTI 线路(定义 COMP2 时为比较器输出, 否则为保留线路)",
+      "group": "EXTI 线路",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_LINE_18                        (EXTI_CONFIG   | EXTI_REG1 | 0x12u)"
+    },
+    {
+      "name": "EXTI_LINE_29",
+      "value": "(EXTI_DIRECT | EXTI_REG1 | 0x1Du)",
+      "desc": "选中第 29 条 EXTI 线路(定义 LPTIM 时为 LPTIM 输出, 否则为保留线路)",
+      "group": "EXTI 线路",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_LINE_29                        (EXTI_DIRECT   | EXTI_REG1 | 0x1Du)"
+    },
+    {
+      "name": "EXTI_MODE_NONE",
+      "value": "0x00000000u",
+      "desc": "无模式(中断与事件均未使能)",
+      "group": "EXTI 模式",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_MODE_NONE                      0x00000000u"
+    },
+    {
+      "name": "EXTI_MODE_INTERRUPT",
+      "value": "0x00000001u",
+      "desc": "中断模式",
+      "group": "EXTI 模式",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_MODE_INTERRUPT                 0x00000001u"
+    },
+    {
+      "name": "EXTI_MODE_EVENT",
+      "value": "0x00000002u",
+      "desc": "事件模式",
+      "group": "EXTI 模式",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_MODE_EVENT                     0x00000002u"
+    },
+    {
+      "name": "EXTI_TRIGGER_NONE",
+      "value": "0x00000000u",
+      "desc": "无触发",
+      "group": "EXTI 触发沿",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_TRIGGER_NONE                   0x00000000u"
+    },
+    {
+      "name": "EXTI_TRIGGER_RISING",
+      "value": "0x00000001u",
+      "desc": "上升沿触发",
+      "group": "EXTI 触发沿",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_TRIGGER_RISING                 0x00000001u"
+    },
+    {
+      "name": "EXTI_TRIGGER_FALLING",
+      "value": "0x00000002u",
+      "desc": "下降沿触发",
+      "group": "EXTI 触发沿",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_TRIGGER_FALLING                0x00000002u"
+    },
+    {
+      "name": "EXTI_TRIGGER_RISING_FALLING",
+      "value": "(EXTI_TRIGGER_RISING | EXTI_TRIGGER_FALLING)",
+      "desc": "上升沿与下降沿均触发",
+      "group": "EXTI 触发沿",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_TRIGGER_RISING_FALLING         (EXTI_TRIGGER_RISING | EXTI_TRIGGER_FALLING)"
+    },
+    {
+      "name": "EXTI_GPIOA",
+      "value": "0x00000000u",
+      "desc": "EXTI 输入源选择 GPIOA",
+      "group": "EXTI GPIO 端口选择",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_GPIOA                          0x00000000u"
+    },
+    {
+      "name": "EXTI_GPIOB",
+      "value": "0x00000001u",
+      "desc": "EXTI 输入源选择 GPIOB",
+      "group": "EXTI GPIO 端口选择",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_GPIOB                          0x00000001u"
+    },
+    {
+      "name": "EXTI_GPIOC",
+      "value": "0x00000002u",
+      "desc": "EXTI 输入源选择 GPIOC",
+      "group": "EXTI GPIO 端口选择",
+      "file": "py32f002b_hal_exti.h",
+      "src": "#define EXTI_GPIOC                          0x00000002u"
+    },
+    {
+      "name": "LL_EXTI_LINE_0",
+      "value": "EXTI_IMR_IM0",
+      "desc": "选中第 0 条 EXTI 线路",
+      "group": "LL EXTI 线路",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_LINE_0                 EXTI_IMR_IM0           /*!< Extended line 0 */"
+    },
+    {
+      "name": "LL_EXTI_LINE_1",
+      "value": "EXTI_IMR_IM1",
+      "desc": "选中第 1 条 EXTI 线路",
+      "group": "LL EXTI 线路",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_LINE_1                 EXTI_IMR_IM1           /*!< Extended line 1 */"
+    },
+    {
+      "name": "LL_EXTI_LINE_2",
+      "value": "EXTI_IMR_IM2",
+      "desc": "选中第 2 条 EXTI 线路",
+      "group": "LL EXTI 线路",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_LINE_2                 EXTI_IMR_IM2           /*!< Extended line 2 */"
+    },
+    {
+      "name": "LL_EXTI_LINE_3",
+      "value": "EXTI_IMR_IM3",
+      "desc": "选中第 3 条 EXTI 线路",
+      "group": "LL EXTI 线路",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_LINE_3                 EXTI_IMR_IM3           /*!< Extended line 3 */"
+    },
+    {
+      "name": "LL_EXTI_LINE_4",
+      "value": "EXTI_IMR_IM4",
+      "desc": "选中第 4 条 EXTI 线路",
+      "group": "LL EXTI 线路",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_LINE_4                 EXTI_IMR_IM4           /*!< Extended line 4 */"
+    },
+    {
+      "name": "LL_EXTI_LINE_5",
+      "value": "EXTI_IMR_IM5",
+      "desc": "选中第 5 条 EXTI 线路",
+      "group": "LL EXTI 线路",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_LINE_5                 EXTI_IMR_IM5           /*!< Extended line 5 */"
+    },
+    {
+      "name": "LL_EXTI_LINE_6",
+      "value": "EXTI_IMR_IM6",
+      "desc": "选中第 6 条 EXTI 线路",
+      "group": "LL EXTI 线路",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_LINE_6                 EXTI_IMR_IM6           /*!< Extended line 6 */"
+    },
+    {
+      "name": "LL_EXTI_LINE_7",
+      "value": "EXTI_IMR_IM7",
+      "desc": "选中第 7 条 EXTI 线路",
+      "group": "LL EXTI 线路",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_LINE_7                 EXTI_IMR_IM7           /*!< Extended line 7 */"
+    },
+    {
+      "name": "LL_EXTI_LINE_17",
+      "value": "EXTI_IMR_IM17",
+      "desc": "选中第 17 条 EXTI 线路(COMP1 输出)",
+      "group": "LL EXTI 线路",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_LINE_17                EXTI_IMR_IM17          /*!< Extended line 17 */"
+    },
+    {
+      "name": "LL_EXTI_LINE_18",
+      "value": "EXTI_IMR_IM18",
+      "desc": "选中第 18 条 EXTI 线路(COMP2 输出)",
+      "group": "LL EXTI 线路",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_LINE_18                EXTI_IMR_IM18          /*!< Extended line 18 */"
+    },
+    {
+      "name": "LL_EXTI_LINE_29",
+      "value": "EXTI_IMR_IM29",
+      "desc": "选中第 29 条 EXTI 线路(LPTIM 输出)",
+      "group": "LL EXTI 线路",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_LINE_29                EXTI_IMR_IM29          /*!< Extended line 29 */"
+    },
+    {
+      "name": "LL_EXTI_LINE_NONE",
+      "value": "0x00000000U",
+      "desc": "不选中任何线路(需定义 USE_FULL_LL_DRIVER)",
+      "group": "LL EXTI 线路",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_LINE_NONE              0x00000000U             /*!< None Extended line */"
+    },
+    {
+      "name": "LL_EXTI_MODE_IT",
+      "value": "((uint8_t)0x00U)",
+      "desc": "中断模式",
+      "group": "LL EXTI 模式",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_MODE_IT                 ((uint8_t)0x00U) /*!< Interrupt Mode */"
+    },
+    {
+      "name": "LL_EXTI_MODE_EVENT",
+      "value": "((uint8_t)0x01U)",
+      "desc": "事件模式",
+      "group": "LL EXTI 模式",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_MODE_EVENT              ((uint8_t)0x01U) /*!< Event Mode */"
+    },
+    {
+      "name": "LL_EXTI_MODE_IT_EVENT",
+      "value": "((uint8_t)0x02U)",
+      "desc": "中断与事件模式",
+      "group": "LL EXTI 模式",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_MODE_IT_EVENT           ((uint8_t)0x02U) /*!< Interrupt & Event Mode */"
+    },
+    {
+      "name": "LL_EXTI_TRIGGER_NONE",
+      "value": "((uint8_t)0x00U)",
+      "desc": "无触发",
+      "group": "LL EXTI 触发沿",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_TRIGGER_NONE            ((uint8_t)0x00U) /*!< No Trigger Mode */"
+    },
+    {
+      "name": "LL_EXTI_TRIGGER_RISING",
+      "value": "((uint8_t)0x01U)",
+      "desc": "上升沿触发",
+      "group": "LL EXTI 触发沿",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_TRIGGER_RISING          ((uint8_t)0x01U) /*!< Trigger Rising Mode */"
+    },
+    {
+      "name": "LL_EXTI_TRIGGER_FALLING",
+      "value": "((uint8_t)0x02U)",
+      "desc": "下降沿触发",
+      "group": "LL EXTI 触发沿",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_TRIGGER_FALLING         ((uint8_t)0x02U) /*!< Trigger Falling Mode */"
+    },
+    {
+      "name": "LL_EXTI_TRIGGER_RISING_FALLING",
+      "value": "((uint8_t)0x03U)",
+      "desc": "上升沿与下降沿均触发",
+      "group": "LL EXTI 触发沿",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_TRIGGER_RISING_FALLING  ((uint8_t)0x03U) /*!< Trigger Rising & Falling Mode */"
+    },
+    {
+      "name": "LL_EXTI_CONFIG_PORTA",
+      "value": "0x0U",
+      "desc": "EXTI 输入源选择端口 A",
+      "group": "LL EXTI 端口选择",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_CONFIG_PORTA               0x0U                        /*!< EXTI PORT A */"
+    },
+    {
+      "name": "LL_EXTI_CONFIG_PORTB",
+      "value": "0x1U",
+      "desc": "EXTI 输入源选择端口 B",
+      "group": "LL EXTI 端口选择",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_CONFIG_PORTB               0x1U                        /*!< EXTI PORT B */"
+    },
+    {
+      "name": "LL_EXTI_CONFIG_PORTC",
+      "value": "0x2U",
+      "desc": "EXTI 输入源选择端口 C",
+      "group": "LL EXTI 端口选择",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_CONFIG_PORTC               0x2U                        /*!< EXTI PORT C */"
+    },
+    {
+      "name": "LL_EXTI_CONFIG_LINE0",
+      "value": "((0x3U << 16) | (0U << 8) | 0U)",
+      "desc": "线路 0 的端口选择字段(位于 EXTICR[0], 掩码 3 位)",
+      "group": "LL EXTI 线路配置",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_CONFIG_LINE0               ((0x3U << LL_EXTI_REGISTER_PINMASK_SHFT) | ( 0U << LL_EXTI_REGISTER_PINPOS_SHFT) | 0U)  /*!< EXTI_MASK_3 | EXTI_POSITION_0  | EXTICR[0] */"
+    },
+    {
+      "name": "LL_EXTI_CONFIG_LINE1",
+      "value": "((0x3U << 16) | (8U << 8) | 0U)",
+      "desc": "线路 1 的端口选择字段(位于 EXTICR[0], 掩码 3 位)",
+      "group": "LL EXTI 线路配置",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_CONFIG_LINE1               ((0x3U << LL_EXTI_REGISTER_PINMASK_SHFT) | ( 8U << LL_EXTI_REGISTER_PINPOS_SHFT) | 0U)  /*!< EXTI_MASK_3 | EXTI_POSITION_8  | EXTICR[0] */"
+    },
+    {
+      "name": "LL_EXTI_CONFIG_LINE2",
+      "value": "((0x3U << 16) | (16U << 8) | 0U)",
+      "desc": "线路 2 的端口选择字段(位于 EXTICR[0], 掩码 3 位)",
+      "group": "LL EXTI 线路配置",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_CONFIG_LINE2               ((0x3U << LL_EXTI_REGISTER_PINMASK_SHFT) | (16U << LL_EXTI_REGISTER_PINPOS_SHFT) | 0U)  /*!< EXTI_MASK_3 | EXTI_POSITION_16 | EXTICR[0] */"
+    },
+    {
+      "name": "LL_EXTI_CONFIG_LINE3",
+      "value": "((0x3U << 16) | (24U << 8) | 0U)",
+      "desc": "线路 3 的端口选择字段(位于 EXTICR[0], 掩码 3 位)",
+      "group": "LL EXTI 线路配置",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_CONFIG_LINE3               ((0x3U << LL_EXTI_REGISTER_PINMASK_SHFT) | (24U << LL_EXTI_REGISTER_PINPOS_SHFT) | 0U)  /*!< EXTI_MASK_3 | EXTI_POSITION_24 | EXTICR[0] */"
+    },
+    {
+      "name": "LL_EXTI_CONFIG_LINE4",
+      "value": "((0x3U << 16) | (0U << 8) | 1U)",
+      "desc": "线路 4 的端口选择字段(位于 EXTICR[1], 掩码 3 位)",
+      "group": "LL EXTI 线路配置",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_CONFIG_LINE4               ((0x3U << LL_EXTI_REGISTER_PINMASK_SHFT) | ( 0U << LL_EXTI_REGISTER_PINPOS_SHFT) | 1U)  /*!< EXTI_MASK_3 | EXTI_POSITION_0  | EXTICR[1] */"
+    },
+    {
+      "name": "LL_EXTI_CONFIG_LINE5",
+      "value": "((0x1U << 16) | (8U << 8) | 1U)",
+      "desc": "线路 5 的端口选择字段(位于 EXTICR[1], 掩码 1 位)",
+      "group": "LL EXTI 线路配置",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_CONFIG_LINE5               ((0x1U << LL_EXTI_REGISTER_PINMASK_SHFT) | ( 8U << LL_EXTI_REGISTER_PINPOS_SHFT) | 1U)  /*!< EXTI_MASK_1 | EXTI_POSITION_8  | EXTICR[1] */"
+    },
+    {
+      "name": "LL_EXTI_CONFIG_LINE6",
+      "value": "((0x1U << 16) | (16U << 8) | 1U)",
+      "desc": "线路 6 的端口选择字段(位于 EXTICR[1], 掩码 1 位)",
+      "group": "LL EXTI 线路配置",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_CONFIG_LINE6               ((0x1U << LL_EXTI_REGISTER_PINMASK_SHFT) | (16U << LL_EXTI_REGISTER_PINPOS_SHFT) | 1U)  /*!< EXTI_MASK_1 | EXTI_POSITION_16 | EXTICR[1] */"
+    },
+    {
+      "name": "LL_EXTI_CONFIG_LINE7",
+      "value": "((0x1U << 16) | (24U << 8) | 1U)",
+      "desc": "线路 7 的端口选择字段(位于 EXTICR[1], 掩码 1 位)",
+      "group": "LL EXTI 线路配置",
+      "file": "py32f002b_ll_exti.h",
+      "src": "#define LL_EXTI_CONFIG_LINE7               ((0x1U << LL_EXTI_REGISTER_PINMASK_SHFT) | (24U << LL_EXTI_REGISTER_PINPOS_SHFT) | 1U)  /*!< EXTI_MASK_1 | EXTI_POSITION_19 | EXTICR[1] */"
+    }
+  ]
+}

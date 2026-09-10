@@ -1,0 +1,728 @@
+{
+  "module": "CORTEX 内核控制",
+  "moduleId": "cortex",
+  "intro": "内核控制: NVIC 中断优先级/使能/挂起管理, SysTick 系统定时器配置与中断处理, 低功耗模式(SLEEP/DEEP SLEEP)控制, CPUID 器件信息读取。含 HAL 库(py32f002b_hal_cortex.c/.h)与 LL 库(py32f002b_ll_cortex.h)。",
+  "files": [
+    "py32f002b_hal_cortex.c",
+    "py32f002b_hal_cortex.h",
+    "py32f002b_ll_cortex.h"
+  ],
+  "hal": [
+    {
+      "name": "HAL_NVIC_SetPriority",
+      "sig": "void HAL_NVIC_SetPriority(IRQn_Type IRQn, uint32_t PreemptPriority, uint32_t SubPriority)",
+      "brief": "设置指定中断的优先级。",
+      "params": [
+        {
+          "name": "IRQn",
+          "type": "IRQn_Type",
+          "desc": "外部中断号, 可取 IRQn_Type 枚举中的任一值"
+        },
+        {
+          "name": "PreemptPriority",
+          "type": "uint32_t",
+          "desc": "抢占优先级, 取值 0~3, 数值越小优先级越高"
+        },
+        {
+          "name": "SubPriority",
+          "type": "uint32_t",
+          "desc": "子优先级(仅作参数, Cortex-M0+ 无子优先级实现, 内部未使用)"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "内部调用 CMSIS 的 NVIC_SetPriority(), 内核异常(负值 IRQn)也可设置优先级。",
+        "M0+ 抢占优先级只有 4 级(2 位), 取值 0~3, 数值越小优先级越高; SubPriority 在 M0+ 上无实际作用。"
+      ],
+      "file": "py32f002b_hal_cortex.c",
+      "kind": "function",
+      "src": "void HAL_NVIC_SetPriority(IRQn_Type IRQn, uint32_t PreemptPriority, uint32_t SubPriority)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_NVIC_PREEMPTION_PRIORITY(PreemptPriority));\r\n  NVIC_SetPriority(IRQn,PreemptPriority);\r\n}"
+    },
+    {
+      "name": "HAL_NVIC_EnableIRQ",
+      "sig": "void HAL_NVIC_EnableIRQ(IRQn_Type IRQn)",
+      "brief": "使能 NVIC 中断控制器中指定的设备特定中断。",
+      "params": [
+        {
+          "name": "IRQn",
+          "type": "IRQn_Type",
+          "desc": "外部中断号, 可取 IRQn_Type 枚举中的任一设备中断"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "IRQn 必须是设备中断(IRQn_Type 中的非负值), 有 IS_NVIC_DEVICE_IRQ 断言。"
+      ],
+      "file": "py32f002b_hal_cortex.c",
+      "kind": "function",
+      "src": "void HAL_NVIC_EnableIRQ(IRQn_Type IRQn)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_NVIC_DEVICE_IRQ(IRQn));\r\n\r\n  /* Enable interrupt */\r\n  NVIC_EnableIRQ(IRQn);\r\n}"
+    },
+    {
+      "name": "HAL_NVIC_DisableIRQ",
+      "sig": "void HAL_NVIC_DisableIRQ(IRQn_Type IRQn)",
+      "brief": "禁止 NVIC 中断控制器中指定的设备特定中断。",
+      "params": [
+        {
+          "name": "IRQn",
+          "type": "IRQn_Type",
+          "desc": "外部中断号, 可取 IRQn_Type 枚举中的任一设备中断"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_cortex.c",
+      "kind": "function",
+      "src": "void HAL_NVIC_DisableIRQ(IRQn_Type IRQn)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_NVIC_DEVICE_IRQ(IRQn));\r\n\r\n  /* Disable interrupt */\r\n  NVIC_DisableIRQ(IRQn);\r\n}"
+    },
+    {
+      "name": "HAL_NVIC_SystemReset",
+      "sig": "void HAL_NVIC_SystemReset(void)",
+      "brief": "发起系统复位请求以复位 MCU。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "内部调用 CMSIS 的 NVIC_SystemReset()。"
+      ],
+      "file": "py32f002b_hal_cortex.c",
+      "kind": "function",
+      "src": "void HAL_NVIC_SystemReset(void)\r\n{\r\n  /* System Reset */\r\n  NVIC_SystemReset();\r\n}"
+    },
+    {
+      "name": "HAL_SYSTICK_Config",
+      "sig": "uint32_t HAL_SYSTICK_Config(uint32_t TicksNumb)",
+      "brief": "初始化系统定时器(SysTick): 使能中断并启动计数器, 计数器自由运行以产生周期性中断。",
+      "params": [
+        {
+          "name": "TicksNumb",
+          "type": "uint32_t",
+          "desc": "两次中断之间的计数节拍数"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "0 成功; 1 失败"
+      },
+      "notes": [
+        "内部调用 CMSIS 的 SysTick_Config(), 该函数把中断优先级设为最低值 0x03, 时钟源设为 HCLK。",
+        "节拍数(TicksNumb)不应超过 0xFFFFFF, 可通过 __HAL_CORTEX_SYSTICKCLK_CONFIG 宏或 HAL_NVIC_SetPriority() 在调用后调整。"
+      ],
+      "file": "py32f002b_hal_cortex.c",
+      "kind": "function",
+      "src": "uint32_t HAL_SYSTICK_Config(uint32_t TicksNumb)\r\n{\r\n  return SysTick_Config(TicksNumb);\r\n}"
+    },
+    {
+      "name": "HAL_NVIC_GetPriority",
+      "sig": "uint32_t HAL_NVIC_GetPriority(IRQn_Type IRQn)",
+      "brief": "获取指定中断的优先级。",
+      "params": [
+        {
+          "name": "IRQn",
+          "type": "IRQn_Type",
+          "desc": "外部中断号, 可取 IRQn_Type 枚举中的任一值"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "中断优先级值"
+      },
+      "file": "py32f002b_hal_cortex.c",
+      "kind": "function",
+      "src": "uint32_t HAL_NVIC_GetPriority(IRQn_Type IRQn)\r\n{\r\n  /* Get priority for Cortex-M system or device specific interrupts */\r\n  return NVIC_GetPriority(IRQn);\r\n}"
+    },
+    {
+      "name": "HAL_NVIC_SetPendingIRQ",
+      "sig": "void HAL_NVIC_SetPendingIRQ(IRQn_Type IRQn)",
+      "brief": "置位指定外部中断的挂起位。",
+      "params": [
+        {
+          "name": "IRQn",
+          "type": "IRQn_Type",
+          "desc": "外部中断号, 可取 IRQn_Type 枚举中的任一设备中断"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "IRQn 必须是设备中断(IRQn_Type 中的非负值), 有 IS_NVIC_DEVICE_IRQ 断言。"
+      ],
+      "file": "py32f002b_hal_cortex.c",
+      "kind": "function",
+      "src": "void HAL_NVIC_SetPendingIRQ(IRQn_Type IRQn)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_NVIC_DEVICE_IRQ(IRQn));\r\n\r\n  /* Set interrupt pending */\r\n  NVIC_SetPendingIRQ(IRQn);\r\n}"
+    },
+    {
+      "name": "HAL_NVIC_GetPendingIRQ",
+      "sig": "uint32_t HAL_NVIC_GetPendingIRQ(IRQn_Type IRQn)",
+      "brief": "读取 NVIC 挂起寄存器, 返回指定中断的挂起状态。",
+      "params": [
+        {
+          "name": "IRQn",
+          "type": "IRQn_Type",
+          "desc": "外部中断号, 可取 IRQn_Type 枚举中的任一设备中断"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 中断挂起; 0 未挂起"
+      },
+      "file": "py32f002b_hal_cortex.c",
+      "kind": "function",
+      "src": "uint32_t HAL_NVIC_GetPendingIRQ(IRQn_Type IRQn)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_NVIC_DEVICE_IRQ(IRQn));\r\n\r\n  /* Return 1 if pending else 0 */\r\n  return NVIC_GetPendingIRQ(IRQn);\r\n}"
+    },
+    {
+      "name": "HAL_NVIC_ClearPendingIRQ",
+      "sig": "void HAL_NVIC_ClearPendingIRQ(IRQn_Type IRQn)",
+      "brief": "清除指定外部中断的挂起位。",
+      "params": [
+        {
+          "name": "IRQn",
+          "type": "IRQn_Type",
+          "desc": "外部中断号, 可取 IRQn_Type 枚举中的任一设备中断"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_cortex.c",
+      "kind": "function",
+      "src": "void HAL_NVIC_ClearPendingIRQ(IRQn_Type IRQn)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_NVIC_DEVICE_IRQ(IRQn));\r\n\r\n  /* Clear pending interrupt */\r\n  NVIC_ClearPendingIRQ(IRQn);\r\n}"
+    },
+    {
+      "name": "HAL_SYSTICK_CLKSourceConfig",
+      "sig": "void HAL_SYSTICK_CLKSourceConfig(uint32_t CLKSource)",
+      "brief": "配置 SysTick 的时钟源。",
+      "params": [
+        {
+          "name": "CLKSource",
+          "type": "uint32_t",
+          "desc": "时钟源: SYSTICK_CLKSOURCE_HCLK_DIV8 为 AHB 时钟 8 分频; SYSTICK_CLKSOURCE_HCLK 为 AHB 时钟直连"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_cortex.c",
+      "kind": "function",
+      "src": "void HAL_SYSTICK_CLKSourceConfig(uint32_t CLKSource)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_SYSTICK_CLK_SOURCE(CLKSource));\r\n  if (CLKSource == SYSTICK_CLKSOURCE_HCLK)\r\n  {\r\n    SysTick->CTRL |= SYSTICK_CLKSOURCE_HCLK;\r\n  }\r\n  else\r\n  {\r\n    SysTick->CTRL &= ~SYSTICK_CLKSOURCE_HCLK;\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_SYSTICK_IRQHandler",
+      "sig": "void HAL_SYSTICK_IRQHandler(void)",
+      "brief": "SysTick 中断处理函数: 调用 HAL_SYSTICK_Callback()。应在 SysTick 中断服务函数中调用。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_hal_cortex.c",
+      "kind": "function",
+      "src": "void HAL_SYSTICK_IRQHandler(void)\r\n{\r\n  HAL_SYSTICK_Callback();\r\n}"
+    },
+    {
+      "name": "HAL_SYSTICK_Callback",
+      "sig": "void HAL_SYSTICK_Callback(void)",
+      "brief": "SysTick 中断回调(弱定义空函数), 由 HAL_SYSTICK_IRQHandler() 自动调用, 用户在应用里重写以实现自己的处理。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "不要修改库里的弱定义, 应在用户文件中重新实现同名函数。"
+      ],
+      "file": "py32f002b_hal_cortex.c",
+      "kind": "function",
+      "src": "__weak void HAL_SYSTICK_Callback(void)\r\n{\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_SYSTICK_Callback could be implemented in the user file\r\n   */\r\n}"
+    }
+  ],
+  "ll": [
+    {
+      "name": "LL_SYSTICK_IsActiveCounterFlag",
+      "sig": "uint32_t LL_SYSTICK_IsActiveCounterFlag(void)",
+      "brief": "检查 SysTick 计数器标志(COUNTFLAG)是否置位, 可用于应用侧超时判断。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 标志置位; 0 未置位"
+      },
+      "file": "py32f002b_ll_cortex.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SYSTICK_IsActiveCounterFlag(void)\r\n{\r\n  return (((SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk) == (SysTick_CTRL_COUNTFLAG_Msk)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_SYSTICK_SetClkSource",
+      "sig": "void LL_SYSTICK_SetClkSource(uint32_t Source)",
+      "brief": "配置 SysTick 的时钟源。",
+      "params": [
+        {
+          "name": "Source",
+          "type": "uint32_t",
+          "desc": "时钟源: LL_SYSTICK_CLKSOURCE_HCLK_DIV8 / LL_SYSTICK_CLKSOURCE_HCLK"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_cortex.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SYSTICK_SetClkSource(uint32_t Source)\r\n{\r\n  if (Source == LL_SYSTICK_CLKSOURCE_HCLK)\r\n  {\r\n    SET_BIT(SysTick->CTRL, LL_SYSTICK_CLKSOURCE_HCLK);\r\n  }\r\n  else\r\n  {\r\n    CLEAR_BIT(SysTick->CTRL, LL_SYSTICK_CLKSOURCE_HCLK);\r\n  }\r\n}"
+    },
+    {
+      "name": "LL_SYSTICK_GetClkSource",
+      "sig": "uint32_t LL_SYSTICK_GetClkSource(void)",
+      "brief": "获取 SysTick 的时钟源。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "LL_SYSTICK_CLKSOURCE_HCLK_DIV8 或 LL_SYSTICK_CLKSOURCE_HCLK"
+      },
+      "file": "py32f002b_ll_cortex.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SYSTICK_GetClkSource(void)\r\n{\r\n  return READ_BIT(SysTick->CTRL, LL_SYSTICK_CLKSOURCE_HCLK);\r\n}"
+    },
+    {
+      "name": "LL_SYSTICK_EnableIT",
+      "sig": "void LL_SYSTICK_EnableIT(void)",
+      "brief": "使能 SysTick 异常请求(置位 CTRL.TICKINT)。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_cortex.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SYSTICK_EnableIT(void)\r\n{\r\n  SET_BIT(SysTick->CTRL, SysTick_CTRL_TICKINT_Msk);\r\n}"
+    },
+    {
+      "name": "LL_SYSTICK_DisableIT",
+      "sig": "void LL_SYSTICK_DisableIT(void)",
+      "brief": "禁止 SysTick 异常请求(清除 CTRL.TICKINT)。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_cortex.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_SYSTICK_DisableIT(void)\r\n{\r\n  CLEAR_BIT(SysTick->CTRL, SysTick_CTRL_TICKINT_Msk);\r\n}"
+    },
+    {
+      "name": "LL_SYSTICK_IsEnabledIT",
+      "sig": "uint32_t LL_SYSTICK_IsEnabledIT(void)",
+      "brief": "查询 SysTick 中断是否已使能。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "1 已使能; 0 未使能"
+      },
+      "file": "py32f002b_ll_cortex.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_SYSTICK_IsEnabledIT(void)\r\n{\r\n  return ((READ_BIT(SysTick->CTRL, SysTick_CTRL_TICKINT_Msk) == (SysTick_CTRL_TICKINT_Msk)) ? 1UL : 0UL);\r\n}"
+    },
+    {
+      "name": "LL_LPM_EnableSleep",
+      "sig": "void LL_LPM_EnableSleep(void)",
+      "brief": "配置处理器使用 sleep 作为低功耗模式(清除 SCB.SCR 的 SLEEPDEEP 位)。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_cortex.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPM_EnableSleep(void)\r\n{\r\n  /* Clear SLEEPDEEP bit of Cortex System Control Register */\r\n  CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));\r\n}"
+    },
+    {
+      "name": "LL_LPM_EnableDeepSleep",
+      "sig": "void LL_LPM_EnableDeepSleep(void)",
+      "brief": "配置处理器使用深度睡眠(deep sleep)作为低功耗模式(置位 SCB.SCR 的 SLEEPDEEP 位)。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_cortex.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPM_EnableDeepSleep(void)\r\n{\r\n  /* Set SLEEPDEEP bit of Cortex System Control Register */\r\n  SET_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));\r\n}"
+    },
+    {
+      "name": "LL_LPM_EnableSleepOnExit",
+      "sig": "void LL_LPM_EnableSleepOnExit(void)",
+      "brief": "配置从 Handler 模式返回 Thread 模式时进入睡眠(sleep-on-exit), 使中断驱动的应用不必返回空的主程序。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_cortex.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPM_EnableSleepOnExit(void)\r\n{\r\n  /* Set SLEEPONEXIT bit of Cortex System Control Register */\r\n  SET_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk));\r\n}"
+    },
+    {
+      "name": "LL_LPM_DisableSleepOnExit",
+      "sig": "void LL_LPM_DisableSleepOnExit(void)",
+      "brief": "返回 Thread 模式时不再睡眠(清除 SLEEPONEXIT 位)。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_cortex.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPM_DisableSleepOnExit(void)\r\n{\r\n  /* Clear SLEEPONEXIT bit of Cortex System Control Register */\r\n  CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk));\r\n}"
+    },
+    {
+      "name": "LL_LPM_EnableEventOnPend",
+      "sig": "void LL_LPM_EnableEventOnPend(void)",
+      "brief": "使能事件与所有中断(包括被禁止的中断)均可唤醒处理器。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_cortex.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPM_EnableEventOnPend(void)\r\n{\r\n  /* Set SEVEONPEND bit of Cortex System Control Register */\r\n  SET_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SEVONPEND_Msk));\r\n}"
+    },
+    {
+      "name": "LL_LPM_DisableEventOnPend",
+      "sig": "void LL_LPM_DisableEventOnPend(void)",
+      "brief": "仅使能的中断或事件可以唤醒处理器, 被禁止的中断被排除。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_cortex.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_LPM_DisableEventOnPend(void)\r\n{\r\n  /* Clear SEVEONPEND bit of Cortex System Control Register */\r\n  CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SEVONPEND_Msk));\r\n}"
+    },
+    {
+      "name": "LL_CPUID_GetImplementer",
+      "sig": "uint32_t LL_CPUID_GetImplementer(void)",
+      "brief": "获取 CPUID 中的实现商(Implementer)代码。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "实现商代码, ARM 应为 0x41"
+      },
+      "file": "py32f002b_ll_cortex.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_CPUID_GetImplementer(void)\r\n{\r\n  return (uint32_t)(READ_BIT(SCB->CPUID, SCB_CPUID_IMPLEMENTER_Msk) >> SCB_CPUID_IMPLEMENTER_Pos);\r\n}"
+    },
+    {
+      "name": "LL_CPUID_GetVariant",
+      "sig": "uint32_t LL_CPUID_GetVariant(void)",
+      "brief": "获取 CPUID 中的变体号(rnpn 产品修订标识中的 r)。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "变体号, 0~255(0x0 表示修订 0)"
+      },
+      "file": "py32f002b_ll_cortex.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_CPUID_GetVariant(void)\r\n{\r\n  return (uint32_t)(READ_BIT(SCB->CPUID, SCB_CPUID_VARIANT_Msk) >> SCB_CPUID_VARIANT_Pos);\r\n}"
+    },
+    {
+      "name": "LL_CPUID_GetArchitecture",
+      "sig": "uint32_t LL_CPUID_GetArchitecture(void)",
+      "brief": "获取 CPUID 中的架构号。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "架构号, Cortex-M0+ 器件应为 0xC"
+      },
+      "file": "py32f002b_ll_cortex.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_CPUID_GetArchitecture(void)\r\n{\r\n  return (uint32_t)(READ_BIT(SCB->CPUID, SCB_CPUID_ARCHITECTURE_Msk) >> SCB_CPUID_ARCHITECTURE_Pos);\r\n}"
+    },
+    {
+      "name": "LL_CPUID_GetParNo",
+      "sig": "uint32_t LL_CPUID_GetParNo(void)",
+      "brief": "获取 CPUID 中的部件号(Part number)。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "部件号, Cortex-M0+ 应为 0xC60"
+      },
+      "file": "py32f002b_ll_cortex.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_CPUID_GetParNo(void)\r\n{\r\n  return (uint32_t)(READ_BIT(SCB->CPUID, SCB_CPUID_PARTNO_Msk) >> SCB_CPUID_PARTNO_Pos);\r\n}"
+    },
+    {
+      "name": "LL_CPUID_GetRevision",
+      "sig": "uint32_t LL_CPUID_GetRevision(void)",
+      "brief": "获取 CPUID 中的修订号(rnpn 中的 p, 表示补丁发布)。",
+      "params": [],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "修订号, 0~255(0x1 表示补丁 1)"
+      },
+      "file": "py32f002b_ll_cortex.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_CPUID_GetRevision(void)\r\n{\r\n  return (uint32_t)(READ_BIT(SCB->CPUID, SCB_CPUID_REVISION_Msk) >> SCB_CPUID_REVISION_Pos);\r\n}"
+    }
+  ],
+  "types": [
+    {
+      "name": "NVIC_Type",
+      "kind": "periph",
+      "def": "typedef struct { __IOM uint32_t ISER[1U]; __IOM uint32_t ICER[1U]; __IOM uint32_t ISPR[1U]; __IOM uint32_t ICPR[1U]; __IOM uint32_t IP[8U]; } NVIC_Type;",
+      "desc": "嵌套向量中断控制器(NVIC)寄存器结构体(Cortex-M0+ 精简版, 保留字段已省略)。实例: NVIC。",
+      "members": [
+        {
+          "name": "ISER[1]",
+          "type": "__IOM uint32_t",
+          "desc": "中断置位使能寄存器"
+        },
+        {
+          "name": "ICER[1]",
+          "type": "__IOM uint32_t",
+          "desc": "中断清除使能寄存器"
+        },
+        {
+          "name": "ISPR[1]",
+          "type": "__IOM uint32_t",
+          "desc": "中断置位挂起寄存器"
+        },
+        {
+          "name": "ICPR[1]",
+          "type": "__IOM uint32_t",
+          "desc": "中断清除挂起寄存器"
+        },
+        {
+          "name": "IP[8]",
+          "type": "__IOM uint32_t",
+          "desc": "中断优先级寄存器(每字节一个中断)"
+        }
+      ],
+      "file": "core_cm0plus.h"
+    },
+    {
+      "name": "SysTick_Type",
+      "kind": "periph",
+      "def": "typedef struct { __IOM uint32_t CTRL; __IOM uint32_t LOAD; __IOM uint32_t VAL; __IM uint32_t CALIB; } SysTick_Type;",
+      "desc": "系统定时器(SysTick)寄存器结构体。实例: SysTick。",
+      "members": [
+        {
+          "name": "CTRL",
+          "type": "__IOM uint32_t",
+          "desc": "SysTick 控制与状态寄存器(ENABLE/TICKINT/CLKSOURCE/COUNTFLAG)"
+        },
+        {
+          "name": "LOAD",
+          "type": "__IOM uint32_t",
+          "desc": "SysTick 重装载值寄存器"
+        },
+        {
+          "name": "VAL",
+          "type": "__IOM uint32_t",
+          "desc": "SysTick 当前计数值寄存器"
+        },
+        {
+          "name": "CALIB",
+          "type": "__IM uint32_t",
+          "desc": "SysTick 校准寄存器(只读)"
+        }
+      ],
+      "file": "core_cm0plus.h"
+    },
+    {
+      "name": "SCB_Type",
+      "kind": "periph",
+      "def": "typedef struct { __IM uint32_t CPUID; __IOM uint32_t ICSR; __IOM uint32_t VTOR; __IOM uint32_t AIRCR; __IOM uint32_t SCR; __IOM uint32_t CCR; __IOM uint32_t SHP[2U]; __IOM uint32_t SHCSR; } SCB_Type;",
+      "desc": "系统控制块(SCB)寄存器结构体。实例: SCB。",
+      "members": [
+        {
+          "name": "CPUID",
+          "type": "__IM uint32_t",
+          "desc": "CPUID 基址寄存器(只读)"
+        },
+        {
+          "name": "ICSR",
+          "type": "__IOM uint32_t",
+          "desc": "中断控制与状态寄存器"
+        },
+        {
+          "name": "VTOR",
+          "type": "__IOM uint32_t",
+          "desc": "向量表偏移寄存器(仅当 __VTOR_PRESENT 定义为 1 时存在)"
+        },
+        {
+          "name": "AIRCR",
+          "type": "__IOM uint32_t",
+          "desc": "应用中断与复位控制寄存器(SYSRESETREQ 等)"
+        },
+        {
+          "name": "SCR",
+          "type": "__IOM uint32_t",
+          "desc": "系统控制寄存器(SLEEPDEEP/SLEEPONEXIT/SEVONPEND)"
+        },
+        {
+          "name": "CCR",
+          "type": "__IOM uint32_t",
+          "desc": "配置控制寄存器"
+        },
+        {
+          "name": "SHP[2]",
+          "type": "__IOM uint32_t",
+          "desc": "系统处理优先级寄存器"
+        },
+        {
+          "name": "SHCSR",
+          "type": "__IOM uint32_t",
+          "desc": "系统处理控制与状态寄存器"
+        }
+      ],
+      "file": "core_cm0plus.h"
+    },
+    {
+      "name": "IRQn_Type",
+      "kind": "enum",
+      "def": "typedef enum { NonMaskableInt_IRQn = -14, HardFault_IRQn = -13, SVC_IRQn = -5, PendSV_IRQn = -2, SysTick_IRQn = -1, FLASH_IRQn = 3, RCC_IRQn = 4, EXTI0_1_IRQn = 5, EXTI2_3_IRQn = 6, EXTI4_15_IRQn = 7, ADC_IRQn = 12, TIM1_BRK_UP_TRG_COM_IRQn = 13, TIM1_CC_IRQn = 14, LPTIM1_IRQn = 17, TIM14_IRQn = 19, I2C1_IRQn = 23, SPI1_IRQn = 25, USART1_IRQn = 27 } IRQn_Type;",
+      "desc": "中断号枚举(CMSIS), 用于 HAL_NVIC_* 系列函数。负值为内核异常, 非负值为外设中断。",
+      "members": [
+        {
+          "name": "NonMaskableInt_IRQn",
+          "value": "-14",
+          "desc": "不可屏蔽中断"
+        },
+        {
+          "name": "HardFault_IRQn",
+          "value": "-13",
+          "desc": "硬件故障"
+        },
+        {
+          "name": "SVC_IRQn",
+          "value": "-5",
+          "desc": "SVC 调用"
+        },
+        {
+          "name": "PendSV_IRQn",
+          "value": "-2",
+          "desc": "PendSV"
+        },
+        {
+          "name": "SysTick_IRQn",
+          "value": "-1",
+          "desc": "系统节拍定时器"
+        },
+        {
+          "name": "FLASH_IRQn",
+          "value": "3",
+          "desc": "FLASH 全局中断"
+        },
+        {
+          "name": "RCC_IRQn",
+          "value": "4",
+          "desc": "RCC 全局中断"
+        },
+        {
+          "name": "EXTI0_1_IRQn",
+          "value": "5",
+          "desc": "EXTI 0/1 中断"
+        },
+        {
+          "name": "EXTI2_3_IRQn",
+          "value": "6",
+          "desc": "EXTI 2/3 中断"
+        },
+        {
+          "name": "EXTI4_15_IRQn",
+          "value": "7",
+          "desc": "EXTI 4~15 中断"
+        },
+        {
+          "name": "ADC_IRQn",
+          "value": "12",
+          "desc": "ADC 中断"
+        },
+        {
+          "name": "TIM1_BRK_UP_TRG_COM_IRQn",
+          "value": "13",
+          "desc": "TIM1 刹车/更新/触发/换相中断"
+        },
+        {
+          "name": "TIM1_CC_IRQn",
+          "value": "14",
+          "desc": "TIM1 捕获比较中断"
+        },
+        {
+          "name": "LPTIM1_IRQn",
+          "value": "17",
+          "desc": "LPTIM1 全局中断"
+        },
+        {
+          "name": "TIM14_IRQn",
+          "value": "19",
+          "desc": "TIM14 全局中断"
+        },
+        {
+          "name": "I2C1_IRQn",
+          "value": "23",
+          "desc": "I2C1 中断"
+        },
+        {
+          "name": "SPI1_IRQn",
+          "value": "25",
+          "desc": "SPI1 中断"
+        },
+        {
+          "name": "USART1_IRQn",
+          "value": "27",
+          "desc": "USART1 中断"
+        }
+      ],
+      "file": "py32f002xx5.h"
+    }
+  ],
+  "consts": [
+    {
+      "name": "SYSTICK_CLKSOURCE_HCLK_DIV8",
+      "value": "0x00000000U",
+      "desc": "SysTick 时钟源: AHB 时钟 8 分频",
+      "group": "SysTick 时钟源",
+      "file": "py32f002b_hal_cortex.h",
+      "src": "#define SYSTICK_CLKSOURCE_HCLK_DIV8       0x00000000U"
+    },
+    {
+      "name": "SYSTICK_CLKSOURCE_HCLK",
+      "value": "0x00000004U",
+      "desc": "SysTick 时钟源: AHB 时钟直连",
+      "group": "SysTick 时钟源",
+      "file": "py32f002b_hal_cortex.h",
+      "src": "#define SYSTICK_CLKSOURCE_HCLK            0x00000004U"
+    },
+    {
+      "name": "LL_SYSTICK_CLKSOURCE_HCLK_DIV8",
+      "value": "0x00000000U",
+      "desc": "SysTick 时钟源: AHB 时钟 8 分频",
+      "group": "LL SysTick 时钟源",
+      "file": "py32f002b_ll_cortex.h",
+      "src": "#define LL_SYSTICK_CLKSOURCE_HCLK_DIV8     0x00000000U                 /*!< AHB clock divided by 8 selected as SysTick clock source.*/"
+    },
+    {
+      "name": "LL_SYSTICK_CLKSOURCE_HCLK",
+      "value": "SysTick_CTRL_CLKSOURCE_Msk",
+      "desc": "SysTick 时钟源: AHB 时钟直连",
+      "group": "LL SysTick 时钟源",
+      "file": "py32f002b_ll_cortex.h",
+      "src": "#define LL_SYSTICK_CLKSOURCE_HCLK          SysTick_CTRL_CLKSOURCE_Msk  /*!< AHB clock selected as SysTick clock source. */"
+    }
+  ]
+}

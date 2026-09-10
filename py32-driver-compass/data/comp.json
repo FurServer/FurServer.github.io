@@ -1,0 +1,2240 @@
+{
+  "module": "COMP 比较器",
+  "moduleId": "comp",
+  "intro": "模拟比较器: 片上集成 COMP1/COMP2 两个实例, 输入正/负端可选内部基准或 GPIO 引脚, 输出电平可读取并重定向到 GPIO(复用功能)与定时器; 支持通过 EXTI 中断/事件(可从睡眠与停机模式唤醒)以及窗口模式(一对比较器共用正输入)。含 HAL 库(py32f002b_hal_comp.c/.h)与 LL 库(py32f002b_ll_comp.c/.h)。",
+  "files": [
+    "py32f002b_hal_comp.c",
+    "py32f002b_hal_comp.h",
+    "py32f002b_ll_comp.c",
+    "py32f002b_ll_comp.h",
+    "py32f002bx5.h"
+  ],
+  "hal": [
+    {
+      "name": "HAL_COMP_Init",
+      "sig": "HAL_StatusTypeDef HAL_COMP_Init(COMP_HandleTypeDef *hcomp)",
+      "brief": "根据 COMP_InitTypeDef 中的参数初始化 COMP 外设并初始化句柄: 配置输入正/负端选择、输出极性、数字滤波、窗口模式、EXTI 触发模式与 VREFCMP 基准源/分压。",
+      "params": [
+        {
+          "name": "hcomp",
+          "type": "COMP_HandleTypeDef *",
+          "desc": "COMP 句柄指针, 含 Instance 与 Init 配置"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败(句柄为空等)"
+      },
+      "notes": [
+        "内部调用 __HAL_RCC_SYSCFG_CLK_ENABLE() 使能比较器内部控制时钟, 建议同时在 HAL_COMP_MspInit() 中实现该时钟使能。",
+        "可再次调用本函数并传入新参数实现在线重配置。"
+      ],
+      "file": "py32f002b_hal_comp.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_COMP_Init(COMP_HandleTypeDef *hcomp)\r\n{\r\n  uint32_t tmp_csr;\r\n  uint32_t exti_line;\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  /* Check the COMP handle allocation and lock status */\r\n  if(hcomp == NULL)\r\n  {\r\n    status = HAL_ERROR;\r\n  }\r\n  else\r\n  {\r\n    /* Check the parameters */\r\n    assert_param(IS_COMP_ALL_INSTANCE(hcomp->Instance));\r\n    assert_param(IS_COMP_INPUT_PLUS(hcomp->Instance, hcomp->Init.InputPlus));\r\n    assert_param(IS_COMP_INPUT_MINUS(hcomp->Instance, hcomp->Init.InputMinus));\r\n    assert_param(IS_COMP_OUTPUTPOL(hcomp->Init.OutputPol));\r\n    assert_param(IS_COMP_TRIGGERMODE(hcomp->Init.TriggerMode));\r\n    assert_param(IS_COMP_WINDOWMODE(hcomp->Init.WindowMode));\r\n    assert_param(IS_COMP_VREFSRC(hcomp->Init.VrefSrc));\r\n    assert_param(IS_COMP_VREFDIV(hcomp->Init.VrefDiv));\r\n\r\n    if(hcomp->State == HAL_COMP_STATE_RESET)\r\n    {\r\n      /* Allocate lock resource and initialize it */\r\n      hcomp->Lock = HAL_UNLOCKED;\r\n\r\n      /* Set COMP error code to none */\r\n      COMP_CLEAR_ERRORCODE(hcomp);\r\n\r\n\r\n#if (USE_HAL_COMP_REGISTER_CALLBACKS == 1)\r\n      /* Init the COMP Callback settings */\r\n      hcomp->TriggerCallback = HAL_COMP_TriggerCallback; /* Legacy weak callback */\r\n\r\n      if (hcomp->MspInitCallback == NULL)\r\n      {\r\n        hcomp->MspInitCallback = HAL_COMP_MspInit; /* Legacy weak MspInit  */\r\n      }\r\n\r\n      /* Init the low level hardware */\r\n      /* Note: Internal control clock of the comparators must                 */\r\n      /*       be enabled in \"HAL_COMP_MspInit()\"                             */\r\n      /*       using \"__HAL_RCC_SYSCFG_CLK_ENABLE()\".                         */\r\n      hcomp->MspInitCallback(hcomp);\r\n#else\r\n      /* Init the low level hardware */\r\n      /* Note: Internal control clock of the comparators must                 */\r\n      /*       be enabled in \"HAL_COMP_MspInit()\"                             */\r\n      /*       using \"__HAL_RCC_SYSCFG_CLK_ENABLE()\".                         */\r\n      HAL_COMP_MspInit(hcomp);\r\n#endif /* USE_HAL_COMP_REGISTER_CALLBACKS */\r\n    }\r\n\r\n  /* Set COMP parameters */\r\n    tmp_csr = (  hcomp->Init.InputMinus\r\n                 | hcomp->Init.InputPlus\r\n                 | hcomp->Init.OutputPol\r\n              );\r\n    /* Set parameters in COMP register */\r\n    /* Note: Update all bits except read-only, lock and enable bits */\r\n    MODIFY_REG(hcomp->Instance->CSR,\r\n               COMP_CSR_COMP_OUT  | \r\n               COMP_CSR_POLARITY | COMP_CSR_WINMODE | COMP_CSR_INPSEL |\r\n               COMP_CSR_INNSEL | COMP_CSR_EN,\r\n               tmp_csr\r\n              );\r\n\r\n    /* Set digital filter */\r\n    if (hcomp->Init.DigitalFilter == 0)\r\n    {\r\n      /* Disable digital filter */\r\n      CLEAR_BIT(hcomp->Instance->FR, COMP_FR_FLTEN);\r\n    }\r\n    else\r\n    {\r\n      WRITE_REG(hcomp->Instance->FR, (COMP_FR_FLTEN | ((hcomp->Init.DigitalFilter) << COMP_FR_FLTCNT_Pos)));\r\n    }\r\n    \r\n    if((hcomp->Instance == COMP2) && (hcomp->Init.InputPlus == COMP_INPUT_PLUS_IO2))\r\n    {\r\n      /* Set Vrefcmp */\r\n      COMP_VrefConfig(hcomp);\r\n    }\r\n    \r\n    /* Set window mode */\r\n    /* Note: Window mode bit is located into 1 out of the 2 pairs of COMP     */\r\n    /*       instances. Therefore, this function can update another COMP      */\r\n    /*       instance that the one currently selected.                        */\r\n    if(hcomp->Init.WindowMode == COMP_WINDOWMODE_COMP2_INPUT_PLUS_COMMON)\r\n    {\r\n      SET_BIT(COMP12_COMMON->CSR_ODD, COMP_CSR_WINMODE);\r\n    }\r\n    else\r\n    {\r\n      CLEAR_BIT(COMP12_COMMON->CSR_ODD, COMP_CSR_WINMODE);\r\n    }    \r\n    \r\n    /* Get the EXTI line corresponding to the selected COMP instance */\r\n    exti_line = COMP_GET_EXTI_LINE(hcomp->Instance);\r\n\r\n    /* Manage EXTI settings */\r\n    if((hcomp->Init.TriggerMode & (COMP_EXTI_IT | COMP_EXTI_EVENT)) != 0UL)\r\n    {\r\n      /* Configure EXTI rising edge */\r\n      if((hcomp->Init.TriggerMode & COMP_EXTI_RISING) != 0UL)\r\n      {\r\n        LL_EXTI_EnableRisingTrig(exti_line);\r\n      }\r\n      else\r\n      {\r\n        LL_EXTI_DisableRisingTrig(exti_line);\r\n      }\r\n\r\n      /* Configure EXTI falling edge */\r\n      if((hcomp->Init.TriggerMode & COMP_EXTI_FALLING) != 0UL)\r\n      {\r\n        LL_EXTI_EnableFallingTrig(exti_line);\r\n      }\r\n      else\r\n      {\r\n        LL_EXTI_DisableFallingTrig(exti_line);\r\n      }\r\n\r\n      /* Clear COMP EXTI pending bit (if any) */\r\n      LL_EXTI_ClearFlag(exti_line);\r\n\r\n      /* Configure EXTI event mode */\r\n      if((hcomp->Init.TriggerMode & COMP_EXTI_EVENT) != 0UL)\r\n      {\r\n        LL_EXTI_EnableEvent(exti_line);\r\n      }\r\n      else\r\n      {\r\n        LL_EXTI_DisableEvent(exti_line);\r\n      }\r\n\r\n      /* Configure EXTI interrupt mode */\r\n      if((hcomp->Init.TriggerMode & COMP_EXTI_IT) != 0UL)\r\n      {\r\n        LL_EXTI_EnableIT(exti_line);\r\n      }\r\n      else\r\n      {\r\n        LL_EXTI_DisableIT(exti_line);\r\n      }\r\n    }\r\n    else\r\n    {\r\n      /* Disable EXTI event mode */\r\n      LL_EXTI_DisableEvent(exti_line);\r\n\r\n      /* Disable EXTI interrupt mode */\r\n      LL_EXTI_DisableIT(exti_line);\r\n    }\r\n\r\n    /* Set HAL COMP handle state */\r\n    /* Note: Transition from state reset to state ready,                      */\r\n    /*       otherwise (coming from state ready or busy) no state update.     */\r\n    if (hcomp->State == HAL_COMP_STATE_RESET)\r\n    {\r\n      hcomp->State = HAL_COMP_STATE_READY;\r\n    }\r\n  }\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_COMP_DeInit",
+      "sig": "HAL_StatusTypeDef HAL_COMP_DeInit(COMP_HandleTypeDef *hcomp)",
+      "brief": "将 COMP 外设反初始化: CSR/FR 寄存器写回复位值, 并调用 HAL_COMP_MspDeInit() 释放底层资源(GPIO/时钟/NVIC)。",
+      "params": [
+        {
+          "name": "hcomp",
+          "type": "COMP_HandleTypeDef *",
+          "desc": "COMP 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败(句柄为空等)"
+      },
+      "file": "py32f002b_hal_comp.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_COMP_DeInit(COMP_HandleTypeDef *hcomp)\r\n{\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  /* Check the COMP handle allocation and lock status */\r\n  if(hcomp == NULL)\r\n  {\r\n    status = HAL_ERROR;\r\n  }\r\n  else\r\n  {\r\n    /* Check the parameter */\r\n    assert_param(IS_COMP_ALL_INSTANCE(hcomp->Instance));\r\n\r\n    /* Set COMP_CSR register to reset value */\r\n    WRITE_REG(hcomp->Instance->CSR, 0x00000000UL);\r\n    \r\n    /* Set COMP_FR register to reset value */\r\n    WRITE_REG(hcomp->Instance->FR, 0x00000000UL);\r\n\r\n#if (USE_HAL_COMP_REGISTER_CALLBACKS == 1)\r\n    if (hcomp->MspDeInitCallback == NULL)\r\n    {\r\n      hcomp->MspDeInitCallback = HAL_COMP_MspDeInit; /* Legacy weak MspDeInit  */\r\n    }\r\n\r\n    /* DeInit the low level hardware: GPIO, RCC clock, NVIC */\r\n    hcomp->MspDeInitCallback(hcomp);\r\n#else\r\n    /* DeInit the low level hardware: GPIO, RCC clock, NVIC */\r\n    HAL_COMP_MspDeInit(hcomp);\r\n#endif /* USE_HAL_COMP_REGISTER_CALLBACKS */\r\n\r\n    /* Set HAL COMP handle state */\r\n    hcomp->State = HAL_COMP_STATE_RESET;\r\n\r\n    /* Release Lock */\r\n    __HAL_UNLOCK(hcomp);\r\n  }\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_COMP_MspInit",
+      "sig": "void HAL_COMP_MspInit(COMP_HandleTypeDef *hcomp)",
+      "brief": "初始化 COMP 底层资源(弱定义空函数): 配置比较器输入引脚为模拟模式、输出引脚为复用功能、使能 COMP 时钟与中断等。",
+      "params": [
+        {
+          "name": "hcomp",
+          "type": "COMP_HandleTypeDef *",
+          "desc": "COMP 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 需在用户文件中重写。"
+      ],
+      "file": "py32f002b_hal_comp.c",
+      "kind": "function",
+      "src": "__weak void HAL_COMP_MspInit(COMP_HandleTypeDef *hcomp)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hcomp);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_COMP_MspInit could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_COMP_MspDeInit",
+      "sig": "void HAL_COMP_MspDeInit(COMP_HandleTypeDef *hcomp)",
+      "brief": "反初始化 COMP 底层资源(弱定义空函数): 复位 GPIO、时钟与中断配置。",
+      "params": [
+        {
+          "name": "hcomp",
+          "type": "COMP_HandleTypeDef *",
+          "desc": "COMP 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 需在用户文件中重写。"
+      ],
+      "file": "py32f002b_hal_comp.c",
+      "kind": "function",
+      "src": "__weak void HAL_COMP_MspDeInit(COMP_HandleTypeDef *hcomp)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hcomp);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_COMP_MspDeInit could be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_COMP_RegisterCallback",
+      "sig": "HAL_StatusTypeDef HAL_COMP_RegisterCallback(COMP_HandleTypeDef *hcomp, HAL_COMP_CallbackIDTypeDef CallbackID, pCOMP_CallbackTypeDef pCallback)",
+      "brief": "注册 COMP 用户回调(触发/底层初始化/底层反初始化回调), 替换默认弱回调函数。需定义 USE_HAL_COMP_REGISTER_CALLBACKS = 1。",
+      "params": [
+        {
+          "name": "hcomp",
+          "type": "COMP_HandleTypeDef *",
+          "desc": "COMP 句柄指针"
+        },
+        {
+          "name": "CallbackID",
+          "type": "HAL_COMP_CallbackIDTypeDef",
+          "desc": "回调 ID: HAL_COMP_TRIGGER_CB_ID / HAL_COMP_MSPINIT_CB_ID / HAL_COMP_MSPDEINIT_CB_ID"
+        },
+        {
+          "name": "pCallback",
+          "type": "pCOMP_CallbackTypeDef",
+          "desc": "用户回调函数指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败(回调为空或状态不允许注册)"
+      },
+      "notes": [
+        "回调只能在句柄状态为 READY(或 Msp 回调在 RESET 状态)时注册。"
+      ],
+      "file": "py32f002b_hal_comp.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_COMP_RegisterCallback(COMP_HandleTypeDef *hcomp, HAL_COMP_CallbackIDTypeDef CallbackID, pCOMP_CallbackTypeDef pCallback)\r\n{\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  if (pCallback == NULL)\r\n  {\r\n    /* Update the error code */\r\n    hcomp->ErrorCode |= HAL_COMP_ERROR_INVALID_CALLBACK;\r\n\r\n    return HAL_ERROR;\r\n  }\r\n\r\n  if (HAL_COMP_STATE_READY == hcomp->State)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_COMP_TRIGGER_CB_ID :\r\n      hcomp->TriggerCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_COMP_MSPINIT_CB_ID :\r\n      hcomp->MspInitCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_COMP_MSPDEINIT_CB_ID :\r\n      hcomp->MspDeInitCallback = pCallback;\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      hcomp->ErrorCode |= HAL_COMP_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status = HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else if (HAL_COMP_STATE_RESET == hcomp->State)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_COMP_MSPINIT_CB_ID :\r\n      hcomp->MspInitCallback = pCallback;\r\n      break;\r\n\r\n    case HAL_COMP_MSPDEINIT_CB_ID :\r\n      hcomp->MspDeInitCallback = pCallback;\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      hcomp->ErrorCode |= HAL_COMP_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status = HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else\r\n  {\r\n    /* Update the error code */\r\n    hcomp->ErrorCode |= HAL_COMP_ERROR_INVALID_CALLBACK;\r\n\r\n    /* Return error status */\r\n    status =  HAL_ERROR;\r\n  }\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_COMP_UnRegisterCallback",
+      "sig": "HAL_StatusTypeDef HAL_COMP_UnRegisterCallback(COMP_HandleTypeDef *hcomp, HAL_COMP_CallbackIDTypeDef CallbackID)",
+      "brief": "注销 COMP 用户回调, 恢复为默认弱回调函数。需定义 USE_HAL_COMP_REGISTER_CALLBACKS = 1。",
+      "params": [
+        {
+          "name": "hcomp",
+          "type": "COMP_HandleTypeDef *",
+          "desc": "COMP 句柄指针"
+        },
+        {
+          "name": "CallbackID",
+          "type": "HAL_COMP_CallbackIDTypeDef",
+          "desc": "回调 ID: HAL_COMP_TRIGGER_CB_ID / HAL_COMP_MSPINIT_CB_ID / HAL_COMP_MSPDEINIT_CB_ID"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败(状态不允许注销)"
+      },
+      "file": "py32f002b_hal_comp.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_COMP_UnRegisterCallback(COMP_HandleTypeDef *hcomp, HAL_COMP_CallbackIDTypeDef CallbackID)\r\n{\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  if (HAL_COMP_STATE_READY == hcomp->State)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_COMP_TRIGGER_CB_ID :\r\n      hcomp->TriggerCallback = HAL_COMP_TriggerCallback;         /* Legacy weak callback */\r\n      break;\r\n\r\n    case HAL_COMP_MSPINIT_CB_ID :\r\n      hcomp->MspInitCallback = HAL_COMP_MspInit;                 /* Legacy weak MspInit */\r\n      break;\r\n\r\n    case HAL_COMP_MSPDEINIT_CB_ID :\r\n      hcomp->MspDeInitCallback = HAL_COMP_MspDeInit;             /* Legacy weak MspDeInit */\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      hcomp->ErrorCode |= HAL_COMP_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else if (HAL_COMP_STATE_RESET == hcomp->State)\r\n  {\r\n    switch (CallbackID)\r\n    {\r\n    case HAL_COMP_MSPINIT_CB_ID :\r\n      hcomp->MspInitCallback = HAL_COMP_MspInit;                 /* Legacy weak MspInit */\r\n      break;\r\n\r\n    case HAL_COMP_MSPDEINIT_CB_ID :\r\n      hcomp->MspDeInitCallback = HAL_COMP_MspDeInit;             /* Legacy weak MspDeInit */\r\n      break;\r\n\r\n    default :\r\n      /* Update the error code */\r\n      hcomp->ErrorCode |= HAL_COMP_ERROR_INVALID_CALLBACK;\r\n\r\n      /* Return error status */\r\n      status =  HAL_ERROR;\r\n      break;\r\n    }\r\n  }\r\n  else\r\n  {\r\n    /* Update the error code */\r\n    hcomp->ErrorCode |= HAL_COMP_ERROR_INVALID_CALLBACK;\r\n\r\n    /* Return error status */\r\n    status =  HAL_ERROR;\r\n  }\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_COMP_Start",
+      "sig": "HAL_StatusTypeDef HAL_COMP_Start(COMP_HandleTypeDef *hcomp)",
+      "brief": "启动(使能)选定的比较器, 并执行启动延时以满足传输延迟规格。",
+      "params": [
+        {
+          "name": "hcomp",
+          "type": "COMP_HandleTypeDef *",
+          "desc": "COMP 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败(句柄为空或状态不是 READY)"
+      },
+      "notes": [
+        "内部按 COMP_DELAY_STARTUP_US(约 80µs)做延时等待, 延时随 SystemCoreClock 计算。",
+        "仅在句柄状态为 READY 时可启动, 启动后状态变为 BUSY。"
+      ],
+      "file": "py32f002b_hal_comp.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_COMP_Start(COMP_HandleTypeDef *hcomp)\r\n{\r\n  __IO uint32_t wait_loop_index = 0UL;\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  /* Check the COMP handle allocation and lock status */\r\n  if(hcomp == NULL)\r\n  {\r\n    status = HAL_ERROR;\r\n  }\r\n  else\r\n  {\r\n    /* Check the parameter */\r\n    assert_param(IS_COMP_ALL_INSTANCE(hcomp->Instance));\r\n\r\n    if(hcomp->State == HAL_COMP_STATE_READY)\r\n    {\r\n      /* Enable the selected comparator */\r\n      SET_BIT(hcomp->Instance->CSR, COMP_CSR_EN);\r\n\r\n      /* Set HAL COMP handle state */\r\n      hcomp->State = HAL_COMP_STATE_BUSY;\r\n\r\n      /* Delay for COMP startup time */\r\n      /* Wait loop initialization and execution */\r\n      /* Note: Variable divided by 2 to compensate partially              */\r\n      /*       CPU processing cycles, scaling in us split to not          */\r\n      /*       exceed 32 bits register capacity and handle low frequency. */\r\n      wait_loop_index = ((COMP_DELAY_STARTUP_US / 10UL) * (SystemCoreClock / (100000UL * 2UL)));\r\n      while(wait_loop_index != 0UL)\r\n      {\r\n        wait_loop_index--;\r\n      }\r\n    }\r\n    else\r\n    {\r\n      status = HAL_ERROR;\r\n    }\r\n  }\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_COMP_Stop",
+      "sig": "HAL_StatusTypeDef HAL_COMP_Stop(COMP_HandleTypeDef *hcomp)",
+      "brief": "停止(禁止)选定的比较器。",
+      "params": [
+        {
+          "name": "hcomp",
+          "type": "COMP_HandleTypeDef *",
+          "desc": "COMP 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_StatusTypeDef",
+        "desc": "HAL_OK 成功; HAL_ERROR 失败(状态为 RESET)"
+      },
+      "file": "py32f002b_hal_comp.c",
+      "kind": "function",
+      "src": "HAL_StatusTypeDef HAL_COMP_Stop(COMP_HandleTypeDef *hcomp)\r\n{\r\n  HAL_StatusTypeDef status = HAL_OK;\r\n\r\n  /* Check the COMP handle allocation and lock status */\r\n  if(hcomp == NULL)\r\n  {\r\n    status = HAL_ERROR;\r\n  }\r\n  else\r\n  {\r\n    /* Check the parameter */\r\n    assert_param(IS_COMP_ALL_INSTANCE(hcomp->Instance));\r\n\r\n    /* Check compliant states: HAL_COMP_STATE_READY or HAL_COMP_STATE_BUSY    */\r\n    /* (all states except HAL_COMP_STATE_RESET and except locked status.      */\r\n    if(hcomp->State != HAL_COMP_STATE_RESET)\r\n    {\r\n      /* Disable the selected comparator */\r\n      CLEAR_BIT(hcomp->Instance->CSR, COMP_CSR_EN);\r\n\r\n      /* Set HAL COMP handle state */\r\n      hcomp->State = HAL_COMP_STATE_READY;\r\n    }\r\n    else\r\n    {\r\n      status = HAL_ERROR;\r\n    }\r\n  }\r\n\r\n  return status;\r\n}"
+    },
+    {
+      "name": "HAL_COMP_IRQHandler",
+      "sig": "void HAL_COMP_IRQHandler(COMP_HandleTypeDef *hcomp)",
+      "brief": "COMP 中断服务处理函数: 检测对应 COMP 的 EXTI 标志, 清除挂起位并调用触发回调 HAL_COMP_TriggerCallback()。应在 COMP 对应的 EXTI 中断服务函数中调用。",
+      "params": [
+        {
+          "name": "hcomp",
+          "type": "COMP_HandleTypeDef *",
+          "desc": "COMP 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "窗口模式下会同时清除 COMP1/COMP2 两条 EXTI 线路的挂起位, 保证触发回调只调用一次。"
+      ],
+      "file": "py32f002b_hal_comp.c",
+      "kind": "function",
+      "src": "void HAL_COMP_IRQHandler(COMP_HandleTypeDef *hcomp)\r\n{\r\n  /* Get the EXTI line corresponding to the selected COMP instance */\r\n  uint32_t exti_line = COMP_GET_EXTI_LINE(hcomp->Instance);\r\n  uint32_t comparator_window_mode_odd = READ_BIT(COMP12_COMMON->CSR_ODD, COMP_CSR_WINMODE);\r\n\r\n\r\n  /* Check COMP EXTI flag */\r\n  if(LL_EXTI_IsActiveFlag(exti_line) != 0UL)\r\n  {\r\n    /* Check whether comparator is in independent or window mode */\r\n    if(comparator_window_mode_odd != 0UL)\r\n    {\r\n      /* Clear COMP EXTI line pending bit of the pair of comparators          */\r\n      /* in window mode.                                                      */\r\n      /* Note: Pair of comparators in window mode can both trig IRQ when      */\r\n      /*       input voltage is changing from \"out of window\" area            */\r\n      /*       (low or high ) to the other \"out of window\" area (high or low).*/\r\n      /*       Both flags must be cleared to call comparator trigger          */\r\n      /*       callback is called once.                                       */\r\n      LL_EXTI_ClearFlag((COMP_EXTI_LINE_COMP1 | COMP_EXTI_LINE_COMP2));\r\n    }\r\n    else\r\n    {\r\n      /* Clear COMP EXTI line pending bit */\r\n      LL_EXTI_ClearFlag(exti_line);\r\n    }\r\n\r\n    /* COMP trigger user callback */\r\n#if (USE_HAL_COMP_REGISTER_CALLBACKS == 1)\r\n    hcomp->TriggerCallback(hcomp);\r\n#else\r\n    HAL_COMP_TriggerCallback(hcomp);\r\n#endif /* USE_HAL_COMP_REGISTER_CALLBACKS */\r\n  }\r\n  else\r\n  {\r\n    /* nothing to do */\r\n  }\r\n}"
+    },
+    {
+      "name": "HAL_COMP_GetOutputLevel",
+      "sig": "uint32_t HAL_COMP_GetOutputLevel(COMP_HandleTypeDef *hcomp)",
+      "brief": "读取选定比较器的输出电平(高或低), 电平含义取决于所选输出极性。",
+      "params": [
+        {
+          "name": "hcomp",
+          "type": "COMP_HandleTypeDef *",
+          "desc": "COMP 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "输出电平: COMP_OUTPUT_LEVEL_LOW / COMP_OUTPUT_LEVEL_HIGH"
+      },
+      "notes": [
+        "极性不反相时: 正输入高于负输入则输出高; 反相时相反。"
+      ],
+      "file": "py32f002b_hal_comp.c",
+      "kind": "function",
+      "src": "uint32_t HAL_COMP_GetOutputLevel(COMP_HandleTypeDef *hcomp)\r\n{\r\n  /* Check the parameter */\r\n  assert_param(IS_COMP_ALL_INSTANCE(hcomp->Instance));\r\n\r\n  return (uint32_t)(READ_BIT(hcomp->Instance->CSR, COMP_CSR_COMP_OUT)\r\n                    >> COMP_OUTPUT_LEVEL_BITOFFSET_POS);\r\n}"
+    },
+    {
+      "name": "HAL_COMP_TriggerCallback",
+      "sig": "void HAL_COMP_TriggerCallback(COMP_HandleTypeDef *hcomp)",
+      "brief": "COMP 触发回调(弱定义空函数): 由 HAL_COMP_IRQHandler() 调用, 用户在应用里重写以实现自己的处理。",
+      "params": [
+        {
+          "name": "hcomp",
+          "type": "COMP_HandleTypeDef *",
+          "desc": "COMP 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "弱定义, 需在用户文件中重写。"
+      ],
+      "file": "py32f002b_hal_comp.c",
+      "kind": "function",
+      "src": "__weak void HAL_COMP_TriggerCallback(COMP_HandleTypeDef *hcomp)\r\n{\r\n  /* Prevent unused argument(s) compilation warning */\r\n  UNUSED(hcomp);\r\n\r\n  /* NOTE : This function should not be modified, when the callback is needed,\r\n            the HAL_COMP_TriggerCallback should be implemented in the user file\r\n   */\r\n}"
+    },
+    {
+      "name": "HAL_COMP_GetState",
+      "sig": "HAL_COMP_StateTypeDef HAL_COMP_GetState(COMP_HandleTypeDef *hcomp)",
+      "brief": "返回 COMP 句柄的当前状态。",
+      "params": [
+        {
+          "name": "hcomp",
+          "type": "COMP_HandleTypeDef *",
+          "desc": "COMP 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "HAL_COMP_StateTypeDef",
+        "desc": "状态值(HAL_COMP_STATE_*); 句柄为空返回 HAL_COMP_STATE_RESET"
+      },
+      "file": "py32f002b_hal_comp.c",
+      "kind": "function",
+      "src": "HAL_COMP_StateTypeDef HAL_COMP_GetState(COMP_HandleTypeDef *hcomp)\r\n{\r\n  /* Check the COMP handle allocation */\r\n  if(hcomp == NULL)\r\n  {\r\n    return HAL_COMP_STATE_RESET;\r\n  }\r\n\r\n  /* Check the parameter */\r\n  assert_param(IS_COMP_ALL_INSTANCE(hcomp->Instance));\r\n\r\n  /* Return HAL COMP handle state */\r\n  return hcomp->State;\r\n}"
+    },
+    {
+      "name": "HAL_COMP_GetError",
+      "sig": "uint32_t HAL_COMP_GetError(COMP_HandleTypeDef *hcomp)",
+      "brief": "返回 COMP 句柄的错误码。",
+      "params": [
+        {
+          "name": "hcomp",
+          "type": "COMP_HandleTypeDef *",
+          "desc": "COMP 句柄指针"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "错误码(HAL_COMP_ERROR_*)"
+      },
+      "file": "py32f002b_hal_comp.c",
+      "kind": "function",
+      "src": "uint32_t HAL_COMP_GetError(COMP_HandleTypeDef *hcomp)\r\n{\r\n  /* Check the parameters */\r\n  assert_param(IS_COMP_ALL_INSTANCE(hcomp->Instance));\r\n\r\n  return hcomp->ErrorCode;\r\n}"
+    },
+    {
+      "name": "__HAL_COMP_RESET_HANDLE_STATE",
+      "sig": "#define __HAL_COMP_RESET_HANDLE_STATE(__HANDLE__) do{                                                  \\\r\n                                                      (__HANDLE__)->State = HAL_COMP_STATE_RESET;      \\\r\n                                                      (__HANDLE__)->MspInitCallback = NULL;            \\\r\n                                                      (__HANDLE__)->MspDeInitCallback = NULL;          \\\r\n                                                    } while(0)",
+      "brief": "宏: 将 COMP 句柄状态复位为 HAL_COMP_STATE_RESET。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "COMP 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "notes": [
+        "定义 USE_HAL_COMP_REGISTER_CALLBACKS 时, 同时将 MspInitCallback/MspDeInitCallback 置为 NULL。"
+      ],
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_RESET_HANDLE_STATE(__HANDLE__) do{                                                  \\\r\n                                                      (__HANDLE__)->State = HAL_COMP_STATE_RESET;      \\\r\n                                                      (__HANDLE__)->MspInitCallback = NULL;            \\\r\n                                                      (__HANDLE__)->MspDeInitCallback = NULL;          \\\r\n                                                    } while(0)"
+    },
+    {
+      "name": "COMP_CLEAR_ERRORCODE",
+      "sig": "#define COMP_CLEAR_ERRORCODE(__HANDLE__) ((__HANDLE__)->ErrorCode = HAL_COMP_ERROR_NONE)",
+      "brief": "宏: 清除 COMP 句柄错误码(置为 HAL_COMP_ERROR_NONE)。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "COMP 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define COMP_CLEAR_ERRORCODE(__HANDLE__) ((__HANDLE__)->ErrorCode = HAL_COMP_ERROR_NONE)"
+    },
+    {
+      "name": "__HAL_COMP_ENABLE",
+      "sig": "#define __HAL_COMP_ENABLE(__HANDLE__)              SET_BIT((__HANDLE__)->Instance->CSR, COMP_CSR_EN)",
+      "brief": "宏: 使能指定的比较器。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "COMP 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_ENABLE(__HANDLE__)              SET_BIT((__HANDLE__)->Instance->CSR, COMP_CSR_EN)"
+    },
+    {
+      "name": "__HAL_COMP_DISABLE",
+      "sig": "#define __HAL_COMP_DISABLE(__HANDLE__)             CLEAR_BIT((__HANDLE__)->Instance->CSR, COMP_CSR_EN)",
+      "brief": "宏: 禁止指定的比较器。",
+      "params": [
+        {
+          "name": "__HANDLE__",
+          "type": "宏参数",
+          "desc": "COMP 句柄"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_DISABLE(__HANDLE__)             CLEAR_BIT((__HANDLE__)->Instance->CSR, COMP_CSR_EN)"
+    },
+    {
+      "name": "__HAL_COMP_COMP1_EXTI_ENABLE_RISING_EDGE",
+      "sig": "#define __HAL_COMP_COMP1_EXTI_ENABLE_RISING_EDGE()    LL_EXTI_EnableRisingTrig(COMP_EXTI_LINE_COMP1)",
+      "brief": "宏: 使能 COMP1 EXTI 线路上升沿触发。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP1_EXTI_ENABLE_RISING_EDGE()    LL_EXTI_EnableRisingTrig(COMP_EXTI_LINE_COMP1)"
+    },
+    {
+      "name": "__HAL_COMP_COMP1_EXTI_DISABLE_RISING_EDGE",
+      "sig": "#define __HAL_COMP_COMP1_EXTI_DISABLE_RISING_EDGE()   LL_EXTI_DisableRisingTrig(COMP_EXTI_LINE_COMP1)",
+      "brief": "宏: 禁止 COMP1 EXTI 线路上升沿触发。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP1_EXTI_DISABLE_RISING_EDGE()   LL_EXTI_DisableRisingTrig(COMP_EXTI_LINE_COMP1)"
+    },
+    {
+      "name": "__HAL_COMP_COMP1_EXTI_ENABLE_FALLING_EDGE",
+      "sig": "#define __HAL_COMP_COMP1_EXTI_ENABLE_FALLING_EDGE()   LL_EXTI_EnableFallingTrig(COMP_EXTI_LINE_COMP1)",
+      "brief": "宏: 使能 COMP1 EXTI 线路下降沿触发。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP1_EXTI_ENABLE_FALLING_EDGE()   LL_EXTI_EnableFallingTrig(COMP_EXTI_LINE_COMP1)"
+    },
+    {
+      "name": "__HAL_COMP_COMP1_EXTI_DISABLE_FALLING_EDGE",
+      "sig": "#define __HAL_COMP_COMP1_EXTI_DISABLE_FALLING_EDGE()  LL_EXTI_DisableFallingTrig(COMP_EXTI_LINE_COMP1)",
+      "brief": "宏: 禁止 COMP1 EXTI 线路下降沿触发。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP1_EXTI_DISABLE_FALLING_EDGE()  LL_EXTI_DisableFallingTrig(COMP_EXTI_LINE_COMP1)"
+    },
+    {
+      "name": "__HAL_COMP_COMP1_EXTI_ENABLE_RISING_FALLING_EDGE",
+      "sig": "#define __HAL_COMP_COMP1_EXTI_ENABLE_RISING_FALLING_EDGE()   do { \\\r\n                                                               LL_EXTI_EnableRisingTrig(COMP_EXTI_LINE_COMP1); \\\r\n                                                               LL_EXTI_EnableFallingTrig(COMP_EXTI_LINE_COMP1); \\\r\n                                                             } while(0)",
+      "brief": "宏: 使能 COMP1 EXTI 线路上升与下降沿触发。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP1_EXTI_ENABLE_RISING_FALLING_EDGE()   do { \\\r\n                                                               LL_EXTI_EnableRisingTrig(COMP_EXTI_LINE_COMP1); \\\r\n                                                               LL_EXTI_EnableFallingTrig(COMP_EXTI_LINE_COMP1); \\\r\n                                                             } while(0)"
+    },
+    {
+      "name": "__HAL_COMP_COMP1_EXTI_DISABLE_RISING_FALLING_EDGE",
+      "sig": "#define __HAL_COMP_COMP1_EXTI_DISABLE_RISING_FALLING_EDGE()  do { \\\r\n                                                               LL_EXTI_DisableRisingTrig(COMP_EXTI_LINE_COMP1); \\\r\n                                                               LL_EXTI_DisableFallingTrig(COMP_EXTI_LINE_COMP1); \\\r\n                                                             } while(0)",
+      "brief": "宏: 禁止 COMP1 EXTI 线路上升与下降沿触发。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP1_EXTI_DISABLE_RISING_FALLING_EDGE()  do { \\\r\n                                                               LL_EXTI_DisableRisingTrig(COMP_EXTI_LINE_COMP1); \\\r\n                                                               LL_EXTI_DisableFallingTrig(COMP_EXTI_LINE_COMP1); \\\r\n                                                             } while(0)"
+    },
+    {
+      "name": "__HAL_COMP_COMP1_EXTI_ENABLE_IT",
+      "sig": "#define __HAL_COMP_COMP1_EXTI_ENABLE_IT()             LL_EXTI_EnableIT(COMP_EXTI_LINE_COMP1)",
+      "brief": "宏: 使能 COMP1 EXTI 线路中断模式。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP1_EXTI_ENABLE_IT()             LL_EXTI_EnableIT(COMP_EXTI_LINE_COMP1)"
+    },
+    {
+      "name": "__HAL_COMP_COMP1_EXTI_DISABLE_IT",
+      "sig": "#define __HAL_COMP_COMP1_EXTI_DISABLE_IT()            LL_EXTI_DisableIT(COMP_EXTI_LINE_COMP1)",
+      "brief": "宏: 禁止 COMP1 EXTI 线路中断模式。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP1_EXTI_DISABLE_IT()            LL_EXTI_DisableIT(COMP_EXTI_LINE_COMP1)"
+    },
+    {
+      "name": "__HAL_COMP_COMP1_EXTI_GENERATE_SWIT",
+      "sig": "#define __HAL_COMP_COMP1_EXTI_GENERATE_SWIT()         LL_EXTI_GenerateSWI(COMP_EXTI_LINE_COMP1)",
+      "brief": "宏: 在 COMP1 EXTI 线路上产生一次软件中断。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP1_EXTI_GENERATE_SWIT()         LL_EXTI_GenerateSWI(COMP_EXTI_LINE_COMP1)"
+    },
+    {
+      "name": "__HAL_COMP_COMP1_EXTI_ENABLE_EVENT",
+      "sig": "#define __HAL_COMP_COMP1_EXTI_ENABLE_EVENT()          LL_EXTI_EnableEvent(COMP_EXTI_LINE_COMP1)",
+      "brief": "宏: 使能 COMP1 EXTI 线路事件模式。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP1_EXTI_ENABLE_EVENT()          LL_EXTI_EnableEvent(COMP_EXTI_LINE_COMP1)"
+    },
+    {
+      "name": "__HAL_COMP_COMP1_EXTI_DISABLE_EVENT",
+      "sig": "#define __HAL_COMP_COMP1_EXTI_DISABLE_EVENT()         LL_EXTI_DisableEvent(COMP_EXTI_LINE_COMP1)",
+      "brief": "宏: 禁止 COMP1 EXTI 线路事件模式。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP1_EXTI_DISABLE_EVENT()         LL_EXTI_DisableEvent(COMP_EXTI_LINE_COMP1)"
+    },
+    {
+      "name": "__HAL_COMP_COMP2_EXTI_ENABLE_RISING_EDGE",
+      "sig": "#define __HAL_COMP_COMP2_EXTI_ENABLE_RISING_EDGE()    LL_EXTI_EnableRisingTrig(COMP_EXTI_LINE_COMP2)",
+      "brief": "宏: 使能 COMP2 EXTI 线路上升沿触发。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP2_EXTI_ENABLE_RISING_EDGE()    LL_EXTI_EnableRisingTrig(COMP_EXTI_LINE_COMP2)"
+    },
+    {
+      "name": "__HAL_COMP_COMP2_EXTI_DISABLE_RISING_EDGE",
+      "sig": "#define __HAL_COMP_COMP2_EXTI_DISABLE_RISING_EDGE()   LL_EXTI_DisableRisingTrig(COMP_EXTI_LINE_COMP2)",
+      "brief": "宏: 禁止 COMP2 EXTI 线路上升沿触发。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP2_EXTI_DISABLE_RISING_EDGE()   LL_EXTI_DisableRisingTrig(COMP_EXTI_LINE_COMP2)"
+    },
+    {
+      "name": "__HAL_COMP_COMP2_EXTI_ENABLE_FALLING_EDGE",
+      "sig": "#define __HAL_COMP_COMP2_EXTI_ENABLE_FALLING_EDGE()   LL_EXTI_EnableFallingTrig(COMP_EXTI_LINE_COMP2)",
+      "brief": "宏: 使能 COMP2 EXTI 线路下降沿触发。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP2_EXTI_ENABLE_FALLING_EDGE()   LL_EXTI_EnableFallingTrig(COMP_EXTI_LINE_COMP2)"
+    },
+    {
+      "name": "__HAL_COMP_COMP2_EXTI_DISABLE_FALLING_EDGE",
+      "sig": "#define __HAL_COMP_COMP2_EXTI_DISABLE_FALLING_EDGE()  LL_EXTI_DisableFallingTrig(COMP_EXTI_LINE_COMP2)",
+      "brief": "宏: 禁止 COMP2 EXTI 线路下降沿触发。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP2_EXTI_DISABLE_FALLING_EDGE()  LL_EXTI_DisableFallingTrig(COMP_EXTI_LINE_COMP2)"
+    },
+    {
+      "name": "__HAL_COMP_COMP2_EXTI_ENABLE_RISING_FALLING_EDGE",
+      "sig": "#define __HAL_COMP_COMP2_EXTI_ENABLE_RISING_FALLING_EDGE()   do { \\\r\n                                                               LL_EXTI_EnableRisingTrig(COMP_EXTI_LINE_COMP2); \\\r\n                                                               LL_EXTI_EnableFallingTrig(COMP_EXTI_LINE_COMP2); \\\r\n                                                             } while(0)",
+      "brief": "宏: 使能 COMP2 EXTI 线路上升与下降沿触发。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP2_EXTI_ENABLE_RISING_FALLING_EDGE()   do { \\\r\n                                                               LL_EXTI_EnableRisingTrig(COMP_EXTI_LINE_COMP2); \\\r\n                                                               LL_EXTI_EnableFallingTrig(COMP_EXTI_LINE_COMP2); \\\r\n                                                             } while(0)"
+    },
+    {
+      "name": "__HAL_COMP_COMP2_EXTI_DISABLE_RISING_FALLING_EDGE",
+      "sig": "#define __HAL_COMP_COMP2_EXTI_DISABLE_RISING_FALLING_EDGE()  do { \\\r\n                                                               LL_EXTI_DisableRisingTrig(COMP_EXTI_LINE_COMP2); \\\r\n                                                               LL_EXTI_DisableFallingTrig(COMP_EXTI_LINE_COMP2); \\\r\n                                                             } while(0)",
+      "brief": "宏: 禁止 COMP2 EXTI 线路上升与下降沿触发。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP2_EXTI_DISABLE_RISING_FALLING_EDGE()  do { \\\r\n                                                               LL_EXTI_DisableRisingTrig(COMP_EXTI_LINE_COMP2); \\\r\n                                                               LL_EXTI_DisableFallingTrig(COMP_EXTI_LINE_COMP2); \\\r\n                                                             } while(0)"
+    },
+    {
+      "name": "__HAL_COMP_COMP2_EXTI_ENABLE_IT",
+      "sig": "#define __HAL_COMP_COMP2_EXTI_ENABLE_IT()             LL_EXTI_EnableIT(COMP_EXTI_LINE_COMP2)",
+      "brief": "宏: 使能 COMP2 EXTI 线路中断模式。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP2_EXTI_ENABLE_IT()             LL_EXTI_EnableIT(COMP_EXTI_LINE_COMP2)"
+    },
+    {
+      "name": "__HAL_COMP_COMP2_EXTI_DISABLE_IT",
+      "sig": "#define __HAL_COMP_COMP2_EXTI_DISABLE_IT()            LL_EXTI_DisableIT(COMP_EXTI_LINE_COMP2)",
+      "brief": "宏: 禁止 COMP2 EXTI 线路中断模式。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP2_EXTI_DISABLE_IT()            LL_EXTI_DisableIT(COMP_EXTI_LINE_COMP2)"
+    },
+    {
+      "name": "__HAL_COMP_COMP2_EXTI_GENERATE_SWIT",
+      "sig": "#define __HAL_COMP_COMP2_EXTI_GENERATE_SWIT()         LL_EXTI_GenerateSWI(COMP_EXTI_LINE_COMP2)",
+      "brief": "宏: 在 COMP2 EXTI 线路上产生一次软件中断。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP2_EXTI_GENERATE_SWIT()         LL_EXTI_GenerateSWI(COMP_EXTI_LINE_COMP2)"
+    },
+    {
+      "name": "__HAL_COMP_COMP2_EXTI_ENABLE_EVENT",
+      "sig": "#define __HAL_COMP_COMP2_EXTI_ENABLE_EVENT()          LL_EXTI_EnableEvent(COMP_EXTI_LINE_COMP2)",
+      "brief": "宏: 使能 COMP2 EXTI 线路事件模式。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP2_EXTI_ENABLE_EVENT()          LL_EXTI_EnableEvent(COMP_EXTI_LINE_COMP2)"
+    },
+    {
+      "name": "__HAL_COMP_COMP2_EXTI_DISABLE_EVENT",
+      "sig": "#define __HAL_COMP_COMP2_EXTI_DISABLE_EVENT()         LL_EXTI_DisableEvent(COMP_EXTI_LINE_COMP2)",
+      "brief": "宏: 禁止 COMP2 EXTI 线路事件模式。",
+      "params": [],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_hal_comp.h",
+      "kind": "macro",
+      "src": "#define __HAL_COMP_COMP2_EXTI_DISABLE_EVENT()         LL_EXTI_DisableEvent(COMP_EXTI_LINE_COMP2)"
+    }
+  ],
+  "ll": [
+    {
+      "name": "LL_COMP_SetCommonWindowMode",
+      "sig": "void LL_COMP_SetCommonWindowMode(COMP_Common_TypeDef *COMPxy_COMMON, uint32_t WindowMode)",
+      "brief": "设置一对比较器实例的窗口模式(公共配置)。",
+      "params": [
+        {
+          "name": "COMPxy_COMMON",
+          "type": "COMP_Common_TypeDef *",
+          "desc": "比较器公共实例(COMP12_COMMON), 可用 __LL_COMP_COMMON_INSTANCE() 获取"
+        },
+        {
+          "name": "WindowMode",
+          "type": "uint32_t",
+          "desc": "窗口模式: LL_COMP_WINDOWMODE_DISABLE / LL_COMP_WINDOWMODE_COMP2_INPUT_PLUS_COMMON"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_COMP_SetCommonWindowMode(COMP_Common_TypeDef *COMPxy_COMMON, uint32_t WindowMode)\r\n{\r\n  uint32_t window_mode_tmp = WindowMode;\r\n\r\n  __IO uint32_t *preg = __COMP_PTR_REG_OFFSET(COMPxy_COMMON->CSR_ODD, (window_mode_tmp & LL_COMP_WINDOWMODE_COMPX_REGOFFSET_MASK));\r\n\r\n  /* Clear the potential previous setting of window mode */\r\n  __IO uint32_t *preg_clear = __COMP_PTR_REG_OFFSET(COMPxy_COMMON->CSR_ODD, (~(window_mode_tmp & LL_COMP_WINDOWMODE_COMPX_REGOFFSET_MASK) & LL_COMP_WINDOWMODE_COMP_EVEN_REGOFFSET_MASK));\r\n  CLEAR_BIT(*preg_clear,COMP_CSR_WINMODE);\r\n\r\n  /* Set window mode */\r\n  MODIFY_REG(*preg, COMP_CSR_WINMODE,(window_mode_tmp & LL_COMP_WINDOWMODE_COMPX_SETTING_MASK));\r\n}"
+    },
+    {
+      "name": "LL_COMP_GetCommonWindowMode",
+      "sig": "uint32_t LL_COMP_GetCommonWindowMode(COMP_Common_TypeDef *COMPxy_COMMON)",
+      "brief": "读取一对比较器实例的窗口模式。",
+      "params": [
+        {
+          "name": "COMPxy_COMMON",
+          "type": "COMP_Common_TypeDef *",
+          "desc": "比较器公共实例(COMP12_COMMON)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "窗口模式值, 对应 LL_COMP_WINDOWMODE_*"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_COMP_GetCommonWindowMode(COMP_Common_TypeDef *COMPxy_COMMON)\r\n{\r\n   const uint32_t window_mode_comp_odd = (uint32_t)READ_BIT(COMPxy_COMMON->CSR_ODD, COMP_CSR_WINMODE);\r\n   const uint32_t window_mode_comp_even = (uint32_t)READ_BIT(COMPxy_COMMON->CSR_EVEN, COMP_CSR_WINMODE);\r\n\r\n   return (uint32_t)(window_mode_comp_odd | window_mode_comp_even\r\n                    | ((window_mode_comp_even >> LL_COMP_WINDOWMODE_BITOFFSET_POS) * LL_COMP_WINDOWMODE_COMP_EVEN_REGOFFSET_MASK));\r\n}"
+    },
+    {
+      "name": "LL_COMP_ConfigInputs",
+      "sig": "void LL_COMP_ConfigInputs(COMP_TypeDef *COMPx, uint32_t InputMinus, uint32_t InputPlus)",
+      "brief": "同时配置比较器的负输入(反相)与正输入(非反相)选择。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        },
+        {
+          "name": "InputMinus",
+          "type": "uint32_t",
+          "desc": "负输入: LL_COMP_INPUT_MINUS_IO1 / LL_COMP_INPUT_MINUS_IO2"
+        },
+        {
+          "name": "InputPlus",
+          "type": "uint32_t",
+          "desc": "正输入: LL_COMP_INPUT_PLUS_IO1 / LL_COMP_INPUT_PLUS_IO2"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_COMP_ConfigInputs(COMP_TypeDef *COMPx, uint32_t InputMinus, uint32_t InputPlus)\r\n{\r\n  MODIFY_REG(COMPx->CSR,COMP_CSR_INNSEL | COMP_CSR_INPSEL,InputMinus | InputPlus);\r\n}"
+    },
+    {
+      "name": "LL_COMP_SetInputPlus",
+      "sig": "void LL_COMP_SetInputPlus(COMP_TypeDef *COMPx, uint32_t InputPlus)",
+      "brief": "设置比较器正输入(非反相)选择。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        },
+        {
+          "name": "InputPlus",
+          "type": "uint32_t",
+          "desc": "正输入: LL_COMP_INPUT_PLUS_IO1 / LL_COMP_INPUT_PLUS_IO2"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_COMP_SetInputPlus(COMP_TypeDef *COMPx, uint32_t InputPlus)\r\n{\r\n  MODIFY_REG(COMPx->CSR, COMP_CSR_INPSEL, InputPlus);\r\n}"
+    },
+    {
+      "name": "LL_COMP_GetInputPlus",
+      "sig": "uint32_t LL_COMP_GetInputPlus(COMP_TypeDef *COMPx)",
+      "brief": "读取比较器正输入(非反相)选择。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "正输入选择, 对应 LL_COMP_INPUT_PLUS_*"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_COMP_GetInputPlus(COMP_TypeDef *COMPx)\r\n{\r\n  return (uint32_t)(READ_BIT(COMPx->CSR, COMP_CSR_INPSEL));\r\n}"
+    },
+    {
+      "name": "LL_COMP_SetInputMinus",
+      "sig": "void LL_COMP_SetInputMinus(COMP_TypeDef *COMPx, uint32_t InputMinus)",
+      "brief": "设置比较器负输入(反相)选择。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        },
+        {
+          "name": "InputMinus",
+          "type": "uint32_t",
+          "desc": "负输入: LL_COMP_INPUT_MINUS_IO1 / LL_COMP_INPUT_MINUS_IO2"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_COMP_SetInputMinus(COMP_TypeDef *COMPx, uint32_t InputMinus)\r\n{\r\n  MODIFY_REG(COMPx->CSR, COMP_CSR_INNSEL, InputMinus);\r\n}"
+    },
+    {
+      "name": "LL_COMP_GetInputMinus",
+      "sig": "uint32_t LL_COMP_GetInputMinus(COMP_TypeDef *COMPx)",
+      "brief": "读取比较器负输入(反相)选择。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "负输入选择, 对应 LL_COMP_INPUT_MINUS_*"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_COMP_GetInputMinus(COMP_TypeDef *COMPx)\r\n{\r\n  return (uint32_t)(READ_BIT(COMPx->CSR, COMP_CSR_INNSEL));\r\n}"
+    },
+    {
+      "name": "LL_COMP_EnableVrefCmpDivider",
+      "sig": "void LL_COMP_EnableVrefCmpDivider(COMP_TypeDef *COMPx)",
+      "brief": "使能比较器 VREFCMP 分压器。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "实现固定操作 COMP1 的 CSR 寄存器, 与传入实例无关。"
+      ],
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_COMP_EnableVrefCmpDivider(COMP_TypeDef *COMPx)\r\n{\r\n  SET_BIT(COMP1->CSR, COMP_CSR_COMP_VCDIV_EN);\r\n}"
+    },
+    {
+      "name": "LL_COMP_DisableVrefCmpDivider",
+      "sig": "void LL_COMP_DisableVrefCmpDivider(COMP_TypeDef *COMPx)",
+      "brief": "禁止比较器 VREFCMP 分压器。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "实现固定操作 COMP1 的 CSR 寄存器, 与传入实例无关。"
+      ],
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_COMP_DisableVrefCmpDivider(COMP_TypeDef *COMPx)\r\n{\r\n  CLEAR_BIT(COMP1->CSR, COMP_CSR_COMP_VCDIV_EN);\r\n}"
+    },
+    {
+      "name": "LL_COMP_IsEnabledVrefCmpDivider",
+      "sig": "uint32_t LL_COMP_IsEnabledVrefCmpDivider(COMP_TypeDef *COMPx)",
+      "brief": "查询比较器 VREFCMP 分压器是否使能(0: 禁止, 1: 使能)。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_COMP_IsEnabledVrefCmpDivider(COMP_TypeDef *COMPx)\r\n{\r\n  return ((READ_BIT(COMP1->CSR, COMP_CSR_COMP_VCDIV_EN) == (COMP_CSR_COMP_VCDIV_EN)) ? 1U : 0U);\r\n}"
+    },
+    {
+      "name": "LL_COMP_SetVrefCmpDivider",
+      "sig": "void LL_COMP_SetVrefCmpDivider(COMP_TypeDef *COMPx, uint32_t VrefCmpDiv)",
+      "brief": "设置比较器 VREFCMP 电压分压配置。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        },
+        {
+          "name": "VrefCmpDiv",
+          "type": "uint32_t",
+          "desc": "分压值: LL_COMP_VREFCMP_DIV_1_16VREFCMP .. LL_COMP_VREFCMP_DIV_VREFCMP"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "实现固定操作 COMP1 的 CSR 寄存器, 与传入实例无关。"
+      ],
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_COMP_SetVrefCmpDivider(COMP_TypeDef *COMPx, uint32_t VrefCmpDiv)\r\n{\r\n  MODIFY_REG(COMP1->CSR, COMP_CSR_COMP_VCDIV, VrefCmpDiv);\r\n}"
+    },
+    {
+      "name": "LL_COMP_GetVrefCmpDivider",
+      "sig": "uint32_t LL_COMP_GetVrefCmpDivider(COMP_TypeDef *COMPx)",
+      "brief": "读取比较器 VREFCMP 电压分压配置。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "分压值, 对应 LL_COMP_VREFCMP_DIV_*"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_COMP_GetVrefCmpDivider(COMP_TypeDef *COMPx)\r\n{\r\n   return (uint32_t)(READ_BIT(COMP1->CSR, COMP_CSR_COMP_VCDIV));\r\n}"
+    },
+    {
+      "name": "LL_COMP_SetVrefCmpSource",
+      "sig": "void LL_COMP_SetVrefCmpSource(COMP_TypeDef *COMPx, uint32_t VrefCmpSource)",
+      "brief": "设置比较器 VREFCMP 基准源选择。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        },
+        {
+          "name": "VrefCmpSource",
+          "type": "uint32_t",
+          "desc": "基准源: LL_COMP_VREFCMP_SOURCE_VREFBUF / LL_COMP_VREFCMP_SOURCE_VCC"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "实现固定操作 COMP1 的 CSR 寄存器, 与传入实例无关。"
+      ],
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_COMP_SetVrefCmpSource(COMP_TypeDef *COMPx, uint32_t VrefCmpSource)\r\n{\r\n  MODIFY_REG(COMP1->CSR, COMP_CSR_COMP_VCSEL, VrefCmpSource);\r\n}"
+    },
+    {
+      "name": "LL_COMP_GetVrefCmpSource",
+      "sig": "uint32_t LL_COMP_GetVrefCmpSource(COMP_TypeDef *COMPx)",
+      "brief": "读取比较器 VREFCMP 基准源选择。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "基准源, 对应 LL_COMP_VREFCMP_SOURCE_*"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_COMP_GetVrefCmpSource(COMP_TypeDef *COMPx)\r\n{\r\n  return (uint32_t)(READ_BIT(COMP1->CSR, COMP_CSR_COMP_VCSEL));\r\n}"
+    },
+    {
+      "name": "LL_COMP_SetOutputPolarity",
+      "sig": "void LL_COMP_SetOutputPolarity(COMP_TypeDef *COMPx, uint32_t OutputPolarity)",
+      "brief": "设置比较器输出极性。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        },
+        {
+          "name": "OutputPolarity",
+          "type": "uint32_t",
+          "desc": "输出极性: LL_COMP_OUTPUTPOL_NONINVERTED / LL_COMP_OUTPUTPOL_INVERTED"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_COMP_SetOutputPolarity(COMP_TypeDef *COMPx, uint32_t OutputPolarity)\r\n{\r\n  MODIFY_REG(COMPx->CSR, COMP_CSR_POLARITY, OutputPolarity);\r\n}"
+    },
+    {
+      "name": "LL_COMP_GetOutputPolarity",
+      "sig": "uint32_t LL_COMP_GetOutputPolarity(COMP_TypeDef *COMPx)",
+      "brief": "读取比较器输出极性。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "输出极性, 对应 LL_COMP_OUTPUTPOL_*"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_COMP_GetOutputPolarity(COMP_TypeDef *COMPx)\r\n{\r\n  return (uint32_t)(READ_BIT(COMPx->CSR, COMP_CSR_POLARITY));\r\n}"
+    },
+    {
+      "name": "LL_COMP_Enable",
+      "sig": "void LL_COMP_Enable(COMP_TypeDef *COMPx)",
+      "brief": "使能比较器实例。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "从关闭状态使能后需延时(数据手册参数 tSTART)才能满足传输延迟规格。"
+      ],
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_COMP_Enable(COMP_TypeDef *COMPx)\r\n{\r\n  SET_BIT(COMPx->CSR, COMP_CSR_EN);\r\n}"
+    },
+    {
+      "name": "LL_COMP_Disable",
+      "sig": "void LL_COMP_Disable(COMP_TypeDef *COMPx)",
+      "brief": "禁止比较器实例。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_COMP_Disable(COMP_TypeDef *COMPx)\r\n{\r\n  CLEAR_BIT(COMPx->CSR, COMP_CSR_EN);\r\n}"
+    },
+    {
+      "name": "LL_COMP_IsEnabled",
+      "sig": "uint32_t LL_COMP_IsEnabled(COMP_TypeDef *COMPx)",
+      "brief": "查询比较器使能状态(0: 禁止, 1: 使能)。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_COMP_IsEnabled(COMP_TypeDef *COMPx)\r\n{\r\n  return ((READ_BIT(COMPx->CSR, COMP_CSR_EN) == (COMP_CSR_EN)) ? 1U : 0U);\r\n}"
+    },
+    {
+      "name": "LL_COMP_ReadOutputLevel",
+      "sig": "uint32_t LL_COMP_ReadOutputLevel(COMP_TypeDef *COMPx)",
+      "brief": "读取比较器输出电平, 电平含义取决于所选输出极性。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "输出电平: LL_COMP_OUTPUT_LEVEL_LOW / LL_COMP_OUTPUT_LEVEL_HIGH"
+      },
+      "notes": [
+        "极性不反相时: 正输入高于负输入则输出高; 反相时相反。"
+      ],
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_COMP_ReadOutputLevel(COMP_TypeDef *COMPx)\r\n{\r\n  return (uint32_t)(READ_BIT(COMPx->CSR, COMP_CSR_COMP_OUT)>> LL_COMP_OUTPUT_LEVEL_BITOFFSET_POS);\r\n}"
+    },
+    {
+      "name": "LL_COMP_EnableDigitalFilter",
+      "sig": "void LL_COMP_EnableDigitalFilter(COMP_TypeDef *COMPx)",
+      "brief": "使能比较器数字滤波。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_COMP_EnableDigitalFilter(COMP_TypeDef *COMPx)\r\n{\r\n  SET_BIT(COMPx->FR, COMP_FR_FLTEN);\r\n}"
+    },
+    {
+      "name": "LL_COMP_DisableDigitalFilter",
+      "sig": "void LL_COMP_DisableDigitalFilter(COMP_TypeDef *COMPx)",
+      "brief": "禁止比较器数字滤波。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_COMP_DisableDigitalFilter(COMP_TypeDef *COMPx)\r\n{\r\n  CLEAR_BIT(COMPx->FR, COMP_FR_FLTEN);\r\n}"
+    },
+    {
+      "name": "LL_COMP_IsEnabledDigitalFilter",
+      "sig": "uint32_t LL_COMP_IsEnabledDigitalFilter(COMP_TypeDef *COMPx)",
+      "brief": "查询比较器数字滤波状态(0: 禁止, 1: 使能)。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "使能返回 1, 否则 0"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_COMP_IsEnabledDigitalFilter(COMP_TypeDef *COMPx)\r\n{\r\n  return ((READ_BIT(COMPx->FR, COMP_FR_FLTEN) == (COMP_FR_FLTEN)) ? 1U : 0U);\r\n}"
+    },
+    {
+      "name": "LL_COMP_SetDigitalFilter",
+      "sig": "void LL_COMP_SetDigitalFilter(COMP_TypeDef *COMPx, uint32_t FLTCNTValue)",
+      "brief": "设置比较器数字滤波计数(滤波窗口长度)。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        },
+        {
+          "name": "FLTCNTValue",
+          "type": "uint32_t",
+          "desc": "滤波计数, 取值 0x0000~0xFFFF"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE void LL_COMP_SetDigitalFilter(COMP_TypeDef *COMPx,uint32_t FLTCNTValue)\r\n{\r\n  MODIFY_REG(COMPx->FR,COMP_FR_FLTCNT,FLTCNTValue << COMP_FR_FLTCNT_Pos);\r\n}"
+    },
+    {
+      "name": "LL_COMP_GetDigitalFilter",
+      "sig": "uint32_t LL_COMP_GetDigitalFilter(COMP_TypeDef *COMPx)",
+      "brief": "读取比较器数字滤波计数。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "滤波计数, 取值 0x0000~0xFFFF"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "inline",
+      "src": "__STATIC_INLINE uint32_t LL_COMP_GetDigitalFilter(COMP_TypeDef *COMPx)\r\n{\r\n    return (uint32_t)(READ_REG(COMPx->FR)>>COMP_FR_FLTCNT_Pos);\r\n}"
+    },
+    {
+      "name": "LL_COMP_DeInit",
+      "sig": "ErrorStatus LL_COMP_DeInit(COMP_TypeDef *COMPx)",
+      "brief": "将选定 COMP 实例的寄存器(CSR/FR)恢复为复位默认值。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 成功; ERROR 失败"
+      },
+      "notes": [
+        "比较器被锁定时软件无法反初始化, 只能通过硬件复位解锁。",
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_comp.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_COMP_DeInit(COMP_TypeDef *COMPx)\r\n{\r\n  ErrorStatus status = SUCCESS;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_COMP_ALL_INSTANCE(COMPx));\r\n  \r\n  LL_COMP_WriteReg(COMPx, CSR, 0x00000000U);\r\n  LL_COMP_WriteReg(COMPx, FR, 0x00000000U);\r\n \r\n  return status;\r\n}"
+    },
+    {
+      "name": "LL_COMP_Init",
+      "sig": "ErrorStatus LL_COMP_Init(COMP_TypeDef *COMPx, LL_COMP_InitTypeDef *COMP_InitStruct)",
+      "brief": "根据 LL_COMP_InitTypeDef 结构体初始化 COMP 实例的输入正/负端、输出极性与数字滤波。",
+      "params": [
+        {
+          "name": "COMPx",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例: COMP1 / COMP2"
+        },
+        {
+          "name": "COMP_InitStruct",
+          "type": "LL_COMP_InitTypeDef *",
+          "desc": "指向配置结构体的指针, 含 InputPlus/InputMinus/OutputPolarity/DigitalFilter"
+        }
+      ],
+      "retval": {
+        "type": "ErrorStatus",
+        "desc": "SUCCESS 成功; ERROR 失败"
+      },
+      "notes": [
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_comp.c",
+      "kind": "function",
+      "src": "ErrorStatus LL_COMP_Init(COMP_TypeDef *COMPx, LL_COMP_InitTypeDef *COMP_InitStruct)\r\n{\r\n  ErrorStatus status = SUCCESS;\r\n\r\n  /* Check the parameters */\r\n  assert_param(IS_COMP_ALL_INSTANCE(COMPx));\r\n  assert_param(IS_LL_COMP_INPUT_PLUS(COMPx, COMP_InitStruct->InputPlus));\r\n  assert_param(IS_LL_COMP_INPUT_MINUS(COMPx, COMP_InitStruct->InputMinus));\r\n  assert_param(IS_LL_COMP_OUTPUT_POLARITY(COMP_InitStruct->OutputPolarity));\r\n\r\n  /* Configuration of comparator instance :                                 */\r\n  /*  - InputPlus                                                           */\r\n  /*  - InputMinus                                                          */\r\n  /*  - OutputPolarity                                                      */\r\n  MODIFY_REG(COMPx->CSR,\r\n               COMP_CSR_INPSEL\r\n             | COMP_CSR_INNSEL\r\n             | COMP_CSR_POLARITY\r\n             ,\r\n              COMP_InitStruct->InputPlus\r\n             | COMP_InitStruct->InputMinus\r\n             | COMP_InitStruct->OutputPolarity\r\n            );\r\n\r\n  if (COMP_InitStruct->DigitalFilter == 0)\r\n  {\r\n    /* Disable digital filter */\r\n    CLEAR_BIT(COMPx->FR, COMP_FR_FLTEN);\r\n  }\r\n  else\r\n  {\r\n    WRITE_REG(COMPx->FR, (COMP_FR_FLTEN | (COMP_InitStruct->DigitalFilter << COMP_FR_FLTCNT_Pos)));\r\n  }\r\n  return status;\r\n}"
+    },
+    {
+      "name": "LL_COMP_StructInit",
+      "sig": "void LL_COMP_StructInit(LL_COMP_InitTypeDef *COMP_InitStruct)",
+      "brief": "将 LL_COMP_InitTypeDef 结构体各成员填充为默认值, 供 LL_COMP_Init() 使用。",
+      "params": [
+        {
+          "name": "COMP_InitStruct",
+          "type": "LL_COMP_InitTypeDef *",
+          "desc": "指向要填充的结构体"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无返回值"
+      },
+      "notes": [
+        "需定义 USE_FULL_LL_DRIVER。"
+      ],
+      "file": "py32f002b_ll_comp.c",
+      "kind": "function",
+      "src": "void LL_COMP_StructInit(LL_COMP_InitTypeDef *COMP_InitStruct)\r\n{\r\n  /* Set COMP_InitStruct fields to default values  */\r\n  COMP_InitStruct->InputPlus            = LL_COMP_INPUT_PLUS_IO1;\r\n  COMP_InitStruct->InputMinus           = LL_COMP_INPUT_MINUS_IO1;\r\n  COMP_InitStruct->OutputPolarity       = LL_COMP_OUTPUTPOL_NONINVERTED;\r\n  COMP_InitStruct->DigitalFilter        = 0;\r\n}"
+    },
+    {
+      "name": "LL_COMP_WriteReg",
+      "sig": "#define LL_COMP_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG((__INSTANCE__)->__REG__, (__VALUE__))",
+      "brief": "宏: 向 COMP 寄存器写入值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "比较器实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "寄存器名(CSR/FR)"
+        },
+        {
+          "name": "__VALUE__",
+          "type": "宏参数",
+          "desc": "要写入的值"
+        }
+      ],
+      "retval": {
+        "type": "void",
+        "desc": "无"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "macro",
+      "src": "#define LL_COMP_WriteReg(__INSTANCE__, __REG__, __VALUE__) WRITE_REG((__INSTANCE__)->__REG__, (__VALUE__))"
+    },
+    {
+      "name": "LL_COMP_ReadReg",
+      "sig": "#define LL_COMP_ReadReg(__INSTANCE__, __REG__) READ_REG((__INSTANCE__)->__REG__)",
+      "brief": "宏: 读取 COMP 寄存器值。",
+      "params": [
+        {
+          "name": "__INSTANCE__",
+          "type": "宏参数",
+          "desc": "比较器实例"
+        },
+        {
+          "name": "__REG__",
+          "type": "宏参数",
+          "desc": "寄存器名(CSR/FR)"
+        }
+      ],
+      "retval": {
+        "type": "uint32_t",
+        "desc": "寄存器值"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "macro",
+      "src": "#define LL_COMP_ReadReg(__INSTANCE__, __REG__) READ_REG((__INSTANCE__)->__REG__)"
+    },
+    {
+      "name": "__LL_COMP_COMMON_INSTANCE",
+      "sig": "#define __LL_COMP_COMMON_INSTANCE(__COMPx__)     (COMP12_COMMON)",
+      "brief": "宏: 返回选定 COMP 实例所属的公共实例(COMP12_COMMON), 供 COMPxy_COMMON 形参使用。",
+      "params": [
+        {
+          "name": "__COMPx__",
+          "type": "宏参数",
+          "desc": "比较器实例"
+        }
+      ],
+      "retval": {
+        "type": "COMP_Common_TypeDef *",
+        "desc": "公共实例 COMP12_COMMON"
+      },
+      "file": "py32f002b_ll_comp.h",
+      "kind": "macro",
+      "src": "#define __LL_COMP_COMMON_INSTANCE(__COMPx__)     (COMP12_COMMON)"
+    }
+  ],
+  "types": [
+    {
+      "name": "COMP_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t WindowMode; uint32_t InputPlus; uint32_t InputMinus; uint32_t OutputPol; uint32_t DigitalFilter; uint32_t TriggerMode; uint32_t VrefSrc; uint32_t VrefDiv; } COMP_InitTypeDef;",
+      "desc": "COMP 初始化配置结构体, 作为 HAL_COMP_Init() 的参数。",
+      "members": [
+        {
+          "name": "WindowMode",
+          "type": "uint32_t",
+          "desc": "窗口模式, 可取 COMP_WINDOWMODE_*(一对比较器的公共配置)"
+        },
+        {
+          "name": "InputPlus",
+          "type": "uint32_t",
+          "desc": "输入正端(非反相输入), 可取 COMP_INPUT_PLUS_*"
+        },
+        {
+          "name": "InputMinus",
+          "type": "uint32_t",
+          "desc": "输入负端(反相输入), 可取 COMP_INPUT_MINUS_*"
+        },
+        {
+          "name": "OutputPol",
+          "type": "uint32_t",
+          "desc": "输出极性, 可取 COMP_OUTPUTPOL_*"
+        },
+        {
+          "name": "DigitalFilter",
+          "type": "uint32_t",
+          "desc": "数字滤波计数, 0~0xFFFF; 为 0 时禁止滤波"
+        },
+        {
+          "name": "TriggerMode",
+          "type": "uint32_t",
+          "desc": "输出触发 EXTI 的模式, 可取 COMP_TRIGGERMODE_*"
+        },
+        {
+          "name": "VrefSrc",
+          "type": "uint32_t",
+          "desc": "VREFCMP 基准源, 可取 COMP_VREFCMP_SOURCE_*"
+        },
+        {
+          "name": "VrefDiv",
+          "type": "uint32_t",
+          "desc": "VREFCMP 分压, 可取 COMP_VREFCMP_DIV_*"
+        }
+      ],
+      "file": "py32f002b_hal_comp.h"
+    },
+    {
+      "name": "HAL_COMP_StateTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_COMP_STATE_RESET = 0x00U, HAL_COMP_STATE_RESET_LOCKED = 0x10U, HAL_COMP_STATE_READY = 0x01U, HAL_COMP_STATE_READY_LOCKED = 0x11U, HAL_COMP_STATE_BUSY = 0x02U, HAL_COMP_STATE_BUSY_LOCKED = 0x12U } HAL_COMP_StateTypeDef;",
+      "desc": "HAL COMP 状态机枚举: 未初始化/就绪/运行中, 以及各自的配置锁定变体。",
+      "members": [
+        {
+          "name": "HAL_COMP_STATE_RESET",
+          "value": "0x00U",
+          "desc": "未初始化"
+        },
+        {
+          "name": "HAL_COMP_STATE_RESET_LOCKED",
+          "value": "0x10U",
+          "desc": "未初始化且配置已锁定"
+        },
+        {
+          "name": "HAL_COMP_STATE_READY",
+          "value": "0x01U",
+          "desc": "已初始化, 就绪"
+        },
+        {
+          "name": "HAL_COMP_STATE_READY_LOCKED",
+          "value": "0x11U",
+          "desc": "已初始化但配置已锁定"
+        },
+        {
+          "name": "HAL_COMP_STATE_BUSY",
+          "value": "0x02U",
+          "desc": "运行中"
+        },
+        {
+          "name": "HAL_COMP_STATE_BUSY_LOCKED",
+          "value": "0x12U",
+          "desc": "运行中且配置已锁定"
+        }
+      ],
+      "file": "py32f002b_hal_comp.h"
+    },
+    {
+      "name": "HAL_COMP_CallbackIDTypeDef",
+      "kind": "enum",
+      "def": "typedef enum { HAL_COMP_TRIGGER_CB_ID = 0x00U, HAL_COMP_MSPINIT_CB_ID = 0x01U, HAL_COMP_MSPDEINIT_CB_ID = 0x02U } HAL_COMP_CallbackIDTypeDef;",
+      "desc": "COMP 回调 ID 枚举, 用于 HAL_COMP_RegisterCallback()/HAL_COMP_UnRegisterCallback()(定义 USE_HAL_COMP_REGISTER_CALLBACKS 时可用)。",
+      "members": [
+        {
+          "name": "HAL_COMP_TRIGGER_CB_ID",
+          "value": "0x00U",
+          "desc": "触发回调 ID"
+        },
+        {
+          "name": "HAL_COMP_MSPINIT_CB_ID",
+          "value": "0x01U",
+          "desc": "Msp 初始化回调 ID"
+        },
+        {
+          "name": "HAL_COMP_MSPDEINIT_CB_ID",
+          "value": "0x02U",
+          "desc": "Msp 反初始化回调 ID"
+        }
+      ],
+      "file": "py32f002b_hal_comp.h"
+    },
+    {
+      "name": "COMP_HandleTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { COMP_TypeDef *Instance; COMP_InitTypeDef Init; HAL_LockTypeDef Lock; __IO HAL_COMP_StateTypeDef State; __IO uint32_t ErrorCode; } COMP_HandleTypeDef;",
+      "desc": "COMP 句柄结构体, HAL 驱动各 API 的操作对象。定义 USE_HAL_COMP_REGISTER_CALLBACKS 时还含 TriggerCallback/MspInitCallback/MspDeInitCallback 三个回调成员。",
+      "members": [
+        {
+          "name": "Instance",
+          "type": "COMP_TypeDef *",
+          "desc": "比较器实例基地址(COMP1 / COMP2)"
+        },
+        {
+          "name": "Init",
+          "type": "COMP_InitTypeDef",
+          "desc": "COMP 配置参数"
+        },
+        {
+          "name": "Lock",
+          "type": "HAL_LockTypeDef",
+          "desc": "锁定对象"
+        },
+        {
+          "name": "State",
+          "type": "__IO HAL_COMP_StateTypeDef",
+          "desc": "COMP 通信状态"
+        },
+        {
+          "name": "ErrorCode",
+          "type": "__IO uint32_t",
+          "desc": "COMP 错误码"
+        }
+      ],
+      "file": "py32f002b_hal_comp.h"
+    },
+    {
+      "name": "LL_COMP_InitTypeDef",
+      "kind": "struct",
+      "def": "typedef struct { uint32_t InputPlus; uint32_t InputMinus; uint32_t OutputPolarity; uint32_t DigitalFilter; } LL_COMP_InitTypeDef;",
+      "desc": "LL 库 COMP 初始化配置结构体(需定义 USE_FULL_LL_DRIVER), 作为 LL_COMP_Init() 的参数。",
+      "members": [
+        {
+          "name": "InputPlus",
+          "type": "uint32_t",
+          "desc": "输入正端(非反相输入), 可取 LL_COMP_INPUT_PLUS_*"
+        },
+        {
+          "name": "InputMinus",
+          "type": "uint32_t",
+          "desc": "输入负端(反相输入), 可取 LL_COMP_INPUT_MINUS_*"
+        },
+        {
+          "name": "OutputPolarity",
+          "type": "uint32_t",
+          "desc": "输出极性, 可取 LL_COMP_OUTPUTPOL_*"
+        },
+        {
+          "name": "DigitalFilter",
+          "type": "uint32_t",
+          "desc": "数字滤波计数, 0~0xFFFF; 为 0 时禁止滤波"
+        }
+      ],
+      "file": "py32f002b_ll_comp.h"
+    },
+    {
+      "name": "COMP_TypeDef",
+      "kind": "periph",
+      "def": "typedef struct { __IO uint32_t CSR; __IO uint32_t FR; } COMP_TypeDef;",
+      "desc": "COMP 外设寄存器结构体。实例: COMP1 / COMP2。",
+      "members": [
+        {
+          "name": "CSR",
+          "type": "__IO uint32_t",
+          "desc": "控制与状态寄存器: EN 使能、INNSEL/INPSEL 输入选择、WINMODE 窗口模式、POLARITY 输出极性、COMP_VCDIV 分压、COMP_VCSEL 基准源、COMP_OUT 输出电平"
+        },
+        {
+          "name": "FR",
+          "type": "__IO uint32_t",
+          "desc": "滤波寄存器: FLTEN 滤波使能、FLTCNT 滤波计数"
+        }
+      ],
+      "file": "py32f002bx5.h"
+    },
+    {
+      "name": "COMP_Common_TypeDef",
+      "kind": "periph",
+      "def": "typedef struct { __IO uint32_t CSR_ODD; __IO uint32_t FR_ODD; uint32_t RESERVED[2]; __IO uint32_t CSR_EVEN; __IO uint32_t FR_EVEN; } COMP_Common_TypeDef;",
+      "desc": "COMP 公共寄存器结构体, 用于设置多个 COMP 实例的公共参数(窗口模式、VREFCMP 等)。实例: COMP12_COMMON(基址为 COMP1 基址)。",
+      "members": [
+        {
+          "name": "CSR_ODD",
+          "type": "__IO uint32_t",
+          "desc": "奇数实例(COMP1)的控制与状态寄存器, 存放多个 COMP 公共的位"
+        },
+        {
+          "name": "FR_ODD",
+          "type": "__IO uint32_t",
+          "desc": "奇数实例(COMP1)的滤波寄存器"
+        },
+        {
+          "name": "CSR_EVEN",
+          "type": "__IO uint32_t",
+          "desc": "偶数实例(COMP2)的控制与状态寄存器, 存放多个 COMP 公共的位"
+        },
+        {
+          "name": "FR_EVEN",
+          "type": "__IO uint32_t",
+          "desc": "偶数实例(COMP2)的滤波寄存器"
+        }
+      ],
+      "file": "py32f002bx5.h"
+    },
+    {
+      "name": "pCOMP_CallbackTypeDef",
+      "kind": "typedef",
+      "def": "typedef void (*pCOMP_CallbackTypeDef)(COMP_HandleTypeDef *hcomp);",
+      "desc": "COMP 回调函数指针类型(用于 HAL_COMP_RegisterCallback)。",
+      "members": [
+        {
+          "name": "hcomp",
+          "type": "COMP_HandleTypeDef *",
+          "desc": "COMP 句柄"
+        }
+      ],
+      "file": "py32f002b_hal_comp.h"
+    }
+  ],
+  "consts": [
+    {
+      "name": "HAL_COMP_ERROR_NONE",
+      "value": "(0x00UL)",
+      "desc": "无错误",
+      "group": "COMP 错误码",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define HAL_COMP_ERROR_NONE             (0x00UL)  /*!< No error */"
+    },
+    {
+      "name": "HAL_COMP_ERROR_INVALID_CALLBACK",
+      "value": "(0x01UL)",
+      "desc": "无效回调错误",
+      "group": "COMP 错误码",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define HAL_COMP_ERROR_INVALID_CALLBACK (0x01UL)  /*!< Invalid Callback error */"
+    },
+    {
+      "name": "COMP_WINDOWMODE_DISABLE",
+      "value": "(0x00000000UL)",
+      "desc": "禁止窗口模式: COMP1/COMP2 相互独立",
+      "group": "窗口模式",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_WINDOWMODE_DISABLE                 (0x00000000UL)         /*!< Window mode disable: Comparators instances pair COMP1 and COMP2 are independent */"
+    },
+    {
+      "name": "COMP_WINDOWMODE_COMP2_INPUT_PLUS_COMMON",
+      "value": "(COMP_CSR_WINMODE | COMP_WINDOWMODE_COMP2)",
+      "desc": "使能窗口模式: COMP1/COMP2 正输入连在一起, 公共输入为 COMP2 正输入(COMP1 正输入不再可用)",
+      "group": "窗口模式",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_WINDOWMODE_COMP2_INPUT_PLUS_COMMON (COMP_CSR_WINMODE | COMP_WINDOWMODE_COMP2) /*!< Window mode enable: Comparators instances pair COMP1 and COMP2 have their input plus connected together. The common input is COMP2 input plus (COMP1 input plus is no more accessible). */"
+    },
+    {
+      "name": "COMP_INPUT_PLUS_IO1",
+      "value": "(0x00000000UL)",
+      "desc": "正输入接 IO1(COMP1 保留; COMP2 为 PA3)",
+      "group": "输入正端选择",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_INPUT_PLUS_IO1       (0x00000000UL)    /*!< Comparator input plus connected to IO1 (Reserved for COMP1, pin PA3 for COMP2) */"
+    },
+    {
+      "name": "COMP_INPUT_PLUS_IO2",
+      "value": "(COMP_CSR_INPSEL)",
+      "desc": "正输入接 IO2(COMP1 保留; COMP2 为 VREFCMP)",
+      "group": "输入正端选择",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_INPUT_PLUS_IO2       (COMP_CSR_INPSEL) /*!< Comparator input plus connected to IO2 (Reserved for COMP1, VREFCMP for COMP2) */"
+    },
+    {
+      "name": "COMP_INPUT_MINUS_IO1",
+      "value": "(0x00000000UL)",
+      "desc": "负输入接 IO1(COMP1 为 PB0; COMP2 为 PA4)",
+      "group": "输入负端选择",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_INPUT_MINUS_IO1      (0x00000000UL)    /*!< Comparator input minus connected to IO1 (pin PB0 for COMP1, pin PA4 for COMP2) */"
+    },
+    {
+      "name": "COMP_INPUT_MINUS_IO2",
+      "value": "(COMP_CSR_INNSEL)",
+      "desc": "负输入接 IO2(COMP1 为 PB1; COMP2 为 PA3)",
+      "group": "输入负端选择",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_INPUT_MINUS_IO2      (COMP_CSR_INNSEL) /*!< Comparator input minus connected to IO2 (pin PB1 for COMP1, pin PA3 for COMP2) */"
+    },
+    {
+      "name": "COMP_OUTPUTPOL_NONINVERTED",
+      "value": "(0x00000000UL)",
+      "desc": "输出不反相(正输入高于负输入时输出高)",
+      "group": "输出极性",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_OUTPUTPOL_NONINVERTED     (0x00000000UL)         /*!< COMP output level is not inverted (comparator output is high when the input plus is at a higher voltage than the input minus) */"
+    },
+    {
+      "name": "COMP_OUTPUTPOL_INVERTED",
+      "value": "(COMP_CSR_POLARITY)",
+      "desc": "输出反相(相对非反相配置输出取反)",
+      "group": "输出极性",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_OUTPUTPOL_INVERTED        (COMP_CSR_POLARITY)    /*!< COMP output level is inverted     (comparator output is low  when the input plus is at a higher voltage than the input minus) */"
+    },
+    {
+      "name": "COMP_VREFCMP_DISABLE",
+      "value": "(0x00000000UL)",
+      "desc": "禁止 VREFCMP 分压",
+      "group": "VREFCMP 分压",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_DISABLE           (0x00000000UL)"
+    },
+    {
+      "name": "COMP_VREFCMP_DIV_1_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_EN)",
+      "desc": "分压输出 VREFCMP 的 1/16",
+      "group": "VREFCMP 分压",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_DIV_1_16VREFCMP   (                                                                                                COMP_CSR_COMP_VCDIV_EN)"
+    },
+    {
+      "name": "COMP_VREFCMP_DIV_2_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_0 | COMP_CSR_COMP_VCDIV_EN)",
+      "desc": "分压输出 VREFCMP 的 2/16",
+      "group": "VREFCMP 分压",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_DIV_2_16VREFCMP   (                                                                        COMP_CSR_COMP_VCDIV_0 | COMP_CSR_COMP_VCDIV_EN)"
+    },
+    {
+      "name": "COMP_VREFCMP_DIV_3_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_EN)",
+      "desc": "分压输出 VREFCMP 的 3/16",
+      "group": "VREFCMP 分压",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_DIV_3_16VREFCMP   (                                                COMP_CSR_COMP_VCDIV_1                         | COMP_CSR_COMP_VCDIV_EN)"
+    },
+    {
+      "name": "COMP_VREFCMP_DIV_4_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_0 | COMP_CSR_COMP_VCDIV_EN)",
+      "desc": "分压输出 VREFCMP 的 4/16",
+      "group": "VREFCMP 分压",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_DIV_4_16VREFCMP   (                                                COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_0 | COMP_CSR_COMP_VCDIV_EN)"
+    },
+    {
+      "name": "COMP_VREFCMP_DIV_5_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_EN)",
+      "desc": "分压输出 VREFCMP 的 5/16",
+      "group": "VREFCMP 分压",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_DIV_5_16VREFCMP   (                        COMP_CSR_COMP_VCDIV_2                                                 | COMP_CSR_COMP_VCDIV_EN)"
+    },
+    {
+      "name": "COMP_VREFCMP_DIV_6_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_0 | COMP_CSR_COMP_VCDIV_EN)",
+      "desc": "分压输出 VREFCMP 的 6/16",
+      "group": "VREFCMP 分压",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_DIV_6_16VREFCMP   (                        COMP_CSR_COMP_VCDIV_2                         | COMP_CSR_COMP_VCDIV_0 | COMP_CSR_COMP_VCDIV_EN)"
+    },
+    {
+      "name": "COMP_VREFCMP_DIV_7_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_EN)",
+      "desc": "分压输出 VREFCMP 的 7/16",
+      "group": "VREFCMP 分压",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_DIV_7_16VREFCMP   (                        COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_1                         | COMP_CSR_COMP_VCDIV_EN)"
+    },
+    {
+      "name": "COMP_VREFCMP_DIV_8_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_0 | COMP_CSR_COMP_VCDIV_EN)",
+      "desc": "分压输出 VREFCMP 的 8/16",
+      "group": "VREFCMP 分压",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_DIV_8_16VREFCMP   (                        COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_0 | COMP_CSR_COMP_VCDIV_EN)"
+    },
+    {
+      "name": "COMP_VREFCMP_DIV_9_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_EN)",
+      "desc": "分压输出 VREFCMP 的 9/16",
+      "group": "VREFCMP 分压",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_DIV_9_16VREFCMP   (COMP_CSR_COMP_VCDIV_3                                                                         | COMP_CSR_COMP_VCDIV_EN)"
+    },
+    {
+      "name": "COMP_VREFCMP_DIV_10_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_0 | COMP_CSR_COMP_VCDIV_EN)",
+      "desc": "分压输出 VREFCMP 的 10/16",
+      "group": "VREFCMP 分压",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_DIV_10_16VREFCMP  (COMP_CSR_COMP_VCDIV_3                                                 | COMP_CSR_COMP_VCDIV_0 | COMP_CSR_COMP_VCDIV_EN)"
+    },
+    {
+      "name": "COMP_VREFCMP_DIV_11_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_EN)",
+      "desc": "分压输出 VREFCMP 的 11/16",
+      "group": "VREFCMP 分压",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_DIV_11_16VREFCMP  (COMP_CSR_COMP_VCDIV_3                         | COMP_CSR_COMP_VCDIV_1                         | COMP_CSR_COMP_VCDIV_EN)"
+    },
+    {
+      "name": "COMP_VREFCMP_DIV_12_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_0 | COMP_CSR_COMP_VCDIV_EN)",
+      "desc": "分压输出 VREFCMP 的 12/16",
+      "group": "VREFCMP 分压",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_DIV_12_16VREFCMP  (COMP_CSR_COMP_VCDIV_3                         | COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_0 | COMP_CSR_COMP_VCDIV_EN)"
+    },
+    {
+      "name": "COMP_VREFCMP_DIV_13_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_EN)",
+      "desc": "分压输出 VREFCMP 的 13/16",
+      "group": "VREFCMP 分压",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_DIV_13_16VREFCMP  (COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_2                                                 | COMP_CSR_COMP_VCDIV_EN)"
+    },
+    {
+      "name": "COMP_VREFCMP_DIV_14_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_0 | COMP_CSR_COMP_VCDIV_EN)",
+      "desc": "分压输出 VREFCMP 的 14/16",
+      "group": "VREFCMP 分压",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_DIV_14_16VREFCMP  (COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_2                         | COMP_CSR_COMP_VCDIV_0 | COMP_CSR_COMP_VCDIV_EN)"
+    },
+    {
+      "name": "COMP_VREFCMP_DIV_15_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_EN)",
+      "desc": "分压输出 VREFCMP 的 15/16",
+      "group": "VREFCMP 分压",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_DIV_15_16VREFCMP  (COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_1                         | COMP_CSR_COMP_VCDIV_EN)"
+    },
+    {
+      "name": "COMP_VREFCMP_DIV_VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_0 | COMP_CSR_COMP_VCDIV_EN)",
+      "desc": "分压输出完整 VREFCMP(16/16)",
+      "group": "VREFCMP 分压",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_DIV_VREFCMP       (COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_0 | COMP_CSR_COMP_VCDIV_EN)"
+    },
+    {
+      "name": "COMP_VREFCMP_SOURCE_VREFBUF",
+      "value": "(0x00000000U)",
+      "desc": "内部基准缓冲 Vrefbuf 作为基准源",
+      "group": "VREFCMP 基准源",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_SOURCE_VREFBUF       (0x00000000U)                /* Vrefbuf 1.5V */"
+    },
+    {
+      "name": "COMP_VREFCMP_SOURCE_VREFBUF1P5V",
+      "value": "COMP_VREFCMP_SOURCE_VREFBUF",
+      "desc": "内部基准缓冲 1.5V(推荐, 精度更高)",
+      "group": "VREFCMP 基准源",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_SOURCE_VREFBUF1P5V   COMP_VREFCMP_SOURCE_VREFBUF  /* Vrefbuf 1.5V */"
+    },
+    {
+      "name": "COMP_VREFCMP_SOURCE_VREFBUF2P048V",
+      "value": "ADC_CR_VREFBUFF_SEL_0",
+      "desc": "内部基准缓冲 2.048V",
+      "group": "VREFCMP 基准源",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_SOURCE_VREFBUF2P048V ADC_CR_VREFBUFF_SEL_0        /* Vrefbuf 2.048V */"
+    },
+    {
+      "name": "COMP_VREFCMP_SOURCE_VREFBUF2P5V",
+      "value": "ADC_CR_VREFBUFF_SEL_1",
+      "desc": "内部基准缓冲 2.5V",
+      "group": "VREFCMP 基准源",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_SOURCE_VREFBUF2P5V   ADC_CR_VREFBUFF_SEL_1        /* Vrefbuf 2.5V */"
+    },
+    {
+      "name": "COMP_VREFCMP_SOURCE_VCC",
+      "value": "(COMP_CSR_COMP_VCSEL)",
+      "desc": "VCC 电源作为基准源",
+      "group": "VREFCMP 基准源",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_VREFCMP_SOURCE_VCC           (COMP_CSR_COMP_VCSEL)"
+    },
+    {
+      "name": "COMP_OUTPUT_LEVEL_LOW",
+      "value": "(0x00000000UL)",
+      "desc": "输出低电平",
+      "group": "输出电平",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_OUTPUT_LEVEL_LOW              (0x00000000UL)"
+    },
+    {
+      "name": "COMP_OUTPUT_LEVEL_HIGH",
+      "value": "(0x00000001UL)",
+      "desc": "输出高电平",
+      "group": "输出电平",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_OUTPUT_LEVEL_HIGH             (0x00000001UL)"
+    },
+    {
+      "name": "COMP_TRIGGERMODE_NONE",
+      "value": "(0x00000000UL)",
+      "desc": "比较器输出不触发 EXTI",
+      "group": "EXTI 触发模式",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_TRIGGERMODE_NONE                 (0x00000000UL)                                            /*!< Comparator output triggering no External Interrupt Line */"
+    },
+    {
+      "name": "COMP_TRIGGERMODE_IT_RISING",
+      "value": "(COMP_EXTI_IT | COMP_EXTI_RISING)",
+      "desc": "中断模式, 上升沿触发",
+      "group": "EXTI 触发模式",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_TRIGGERMODE_IT_RISING            (COMP_EXTI_IT | COMP_EXTI_RISING)                         /*!< Comparator output triggering External Interrupt Line event with interruption, on rising edge */"
+    },
+    {
+      "name": "COMP_TRIGGERMODE_IT_FALLING",
+      "value": "(COMP_EXTI_IT | COMP_EXTI_FALLING)",
+      "desc": "中断模式, 下降沿触发",
+      "group": "EXTI 触发模式",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_TRIGGERMODE_IT_FALLING           (COMP_EXTI_IT | COMP_EXTI_FALLING)                        /*!< Comparator output triggering External Interrupt Line event with interruption, on falling edge */"
+    },
+    {
+      "name": "COMP_TRIGGERMODE_IT_RISING_FALLING",
+      "value": "(COMP_EXTI_IT | COMP_EXTI_RISING | COMP_EXTI_FALLING)",
+      "desc": "中断模式, 上升/下降沿均触发",
+      "group": "EXTI 触发模式",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_TRIGGERMODE_IT_RISING_FALLING    (COMP_EXTI_IT | COMP_EXTI_RISING | COMP_EXTI_FALLING)     /*!< Comparator output triggering External Interrupt Line event with interruption, on both rising and falling edges */"
+    },
+    {
+      "name": "COMP_TRIGGERMODE_EVENT_RISING",
+      "value": "(COMP_EXTI_EVENT | COMP_EXTI_RISING)",
+      "desc": "事件模式(无中断), 上升沿触发",
+      "group": "EXTI 触发模式",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_TRIGGERMODE_EVENT_RISING         (COMP_EXTI_EVENT | COMP_EXTI_RISING)                      /*!< Comparator output triggering External Interrupt Line event only (without interruption), on rising edge */"
+    },
+    {
+      "name": "COMP_TRIGGERMODE_EVENT_FALLING",
+      "value": "(COMP_EXTI_EVENT | COMP_EXTI_FALLING)",
+      "desc": "事件模式(无中断), 下降沿触发",
+      "group": "EXTI 触发模式",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_TRIGGERMODE_EVENT_FALLING        (COMP_EXTI_EVENT | COMP_EXTI_FALLING)                     /*!< Comparator output triggering External Interrupt Line event only (without interruption), on falling edge */"
+    },
+    {
+      "name": "COMP_TRIGGERMODE_EVENT_RISING_FALLING",
+      "value": "(COMP_EXTI_EVENT | COMP_EXTI_RISING | COMP_EXTI_FALLING)",
+      "desc": "事件模式(无中断), 上升/下降沿均触发",
+      "group": "EXTI 触发模式",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_TRIGGERMODE_EVENT_RISING_FALLING (COMP_EXTI_EVENT | COMP_EXTI_RISING | COMP_EXTI_FALLING)  /*!< Comparator output triggering External Interrupt Line event only (without interruption), on both rising and falling edges */"
+    },
+    {
+      "name": "COMP_WINDOWMODE_COMP2",
+      "value": "0x00001000U",
+      "desc": "窗口模式公共输入取自 COMP2 的区分位(私有常量)",
+      "group": "窗口模式",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_WINDOWMODE_COMP2          0x00001000U       /*!< COMP window mode using common input of COMP instance: COMP2 */"
+    },
+    {
+      "name": "COMP_EXTI_LINE_COMP1",
+      "value": "(EXTI_IMR_IM17)",
+      "desc": "COMP1 输出连接的 EXTI 线路 17",
+      "group": "COMP EXTI 线路",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_EXTI_LINE_COMP1           (EXTI_IMR_IM17)  /*!< EXTI line 17 connected to COMP1 output */"
+    },
+    {
+      "name": "COMP_EXTI_LINE_COMP2",
+      "value": "(EXTI_IMR_IM18)",
+      "desc": "COMP2 输出连接的 EXTI 线路 18",
+      "group": "COMP EXTI 线路",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_EXTI_LINE_COMP2           (EXTI_IMR_IM18)  /*!< EXTI line 18 connected to COMP2 output */"
+    },
+    {
+      "name": "COMP_EXTI_IT",
+      "value": "(0x00000001UL)",
+      "desc": "EXTI 线路事件带中断",
+      "group": "EXTI 模式位",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_EXTI_IT                        (0x00000001UL)  /*!< EXTI line event with interruption */"
+    },
+    {
+      "name": "COMP_EXTI_EVENT",
+      "value": "(0x00000002UL)",
+      "desc": "EXTI 线路事件(无中断)",
+      "group": "EXTI 模式位",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_EXTI_EVENT                     (0x00000002UL)  /*!< EXTI line event only (without interruption) */"
+    },
+    {
+      "name": "COMP_EXTI_RISING",
+      "value": "(0x00000010UL)",
+      "desc": "上升沿触发",
+      "group": "EXTI 模式位",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_EXTI_RISING                    (0x00000010UL)  /*!< EXTI line event on rising edge */"
+    },
+    {
+      "name": "COMP_EXTI_FALLING",
+      "value": "(0x00000020UL)",
+      "desc": "下降沿触发",
+      "group": "EXTI 模式位",
+      "file": "py32f002b_hal_comp.h",
+      "src": "#define COMP_EXTI_FALLING                   (0x00000020UL)  /*!< EXTI line event on falling edge */"
+    },
+    {
+      "name": "LL_COMP_WINDOWMODE_DISABLE",
+      "value": "(0x00000000U)",
+      "desc": "禁止窗口模式: COMP1/COMP2 相互独立",
+      "group": "LL 窗口模式",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_WINDOWMODE_DISABLE                 (0x00000000U)                                                    /*!< Window mode disable: Comparators 1 and 2 are independent */"
+    },
+    {
+      "name": "LL_COMP_WINDOWMODE_COMP2_INPUT_PLUS_COMMON",
+      "value": "(COMP_CSR_WINMODE | LL_COMP_WINDOWMODE_COMP_ODD_REGOFFSET_MASK)",
+      "desc": "使能窗口模式: 公共输入为 COMP2 正输入",
+      "group": "LL 窗口模式",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_WINDOWMODE_COMP2_INPUT_PLUS_COMMON (COMP_CSR_WINMODE | LL_COMP_WINDOWMODE_COMP_ODD_REGOFFSET_MASK)  /*!< Window mode enable: if used from COMP1 or COMP2 instance, comparators instances pair COMP1 and COMP2 have their input plus connected together, the common input is COMP2 input plus (COMP1 input plus is no more accessible). */"
+    },
+    {
+      "name": "LL_COMP_INPUT_PLUS_IO1",
+      "value": "(0x00000000U)",
+      "desc": "正输入接 IO1(COMP1 保留; COMP2 为 PA3)",
+      "group": "LL 输入正端选择",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_INPUT_PLUS_IO1          (0x00000000U)     /*!< Comparator input plus connected to IO1 (Reserved for COMP1, pin PA3 for COMP2) */"
+    },
+    {
+      "name": "LL_COMP_INPUT_PLUS_IO2",
+      "value": "(COMP_CSR_INPSEL)",
+      "desc": "正输入接 IO2(COMP1 保留; COMP2 为 VREFCMP)",
+      "group": "LL 输入正端选择",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_INPUT_PLUS_IO2          (COMP_CSR_INPSEL) /*!< Comparator input plus connected to IO2 (Reserved for COMP1, VREFCMP for COMP2) */"
+    },
+    {
+      "name": "LL_COMP_INPUT_MINUS_IO1",
+      "value": "(0x00000000U)",
+      "desc": "负输入接 IO1(COMP1 为 PB0; COMP2 为 PA4)",
+      "group": "LL 输入负端选择",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_INPUT_MINUS_IO1         (0x00000000U)     /*!< Comparator input minus connected to IO1 (pin PB0 for COMP1, pin PA4 for COMP2) */"
+    },
+    {
+      "name": "LL_COMP_INPUT_MINUS_IO2",
+      "value": "(COMP_CSR_INNSEL)",
+      "desc": "负输入接 IO2(COMP1 为 PB1; COMP2 为 PA3)",
+      "group": "LL 输入负端选择",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_INPUT_MINUS_IO2         (COMP_CSR_INNSEL) /*!< Comparator input minus connected to IO2 (pin PB1 for COMP1, pin PA3 for COMP2) */"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_DIV_1_16VREFCMP",
+      "value": "(0x00000000U)",
+      "desc": "分压输出 VREFCMP 的 1/16(不含使能位, 需配合 LL_COMP_EnableVrefCmpDivider())",
+      "group": "LL VREFCMP 分压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_DIV_1_16VREFCMP     (0x00000000U)"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_DIV_2_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_0)",
+      "desc": "分压输出 VREFCMP 的 2/16(不含使能位)",
+      "group": "LL VREFCMP 分压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_DIV_2_16VREFCMP     (                                                                        COMP_CSR_COMP_VCDIV_0)"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_DIV_3_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_1)",
+      "desc": "分压输出 VREFCMP 的 3/16(不含使能位)",
+      "group": "LL VREFCMP 分压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_DIV_3_16VREFCMP     (                                                COMP_CSR_COMP_VCDIV_1                        )"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_DIV_4_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_0)",
+      "desc": "分压输出 VREFCMP 的 4/16(不含使能位)",
+      "group": "LL VREFCMP 分压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_DIV_4_16VREFCMP     (                                                COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_0)"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_DIV_5_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_2)",
+      "desc": "分压输出 VREFCMP 的 5/16(不含使能位)",
+      "group": "LL VREFCMP 分压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_DIV_5_16VREFCMP     (                        COMP_CSR_COMP_VCDIV_2                                                )"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_DIV_6_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_0)",
+      "desc": "分压输出 VREFCMP 的 6/16(不含使能位)",
+      "group": "LL VREFCMP 分压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_DIV_6_16VREFCMP     (                        COMP_CSR_COMP_VCDIV_2                         | COMP_CSR_COMP_VCDIV_0)"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_DIV_7_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_1)",
+      "desc": "分压输出 VREFCMP 的 7/16(不含使能位)",
+      "group": "LL VREFCMP 分压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_DIV_7_16VREFCMP     (                        COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_1                        )"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_DIV_8_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_0)",
+      "desc": "分压输出 VREFCMP 的 8/16(不含使能位)",
+      "group": "LL VREFCMP 分压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_DIV_8_16VREFCMP     (                        COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_0)"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_DIV_9_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_3)",
+      "desc": "分压输出 VREFCMP 的 9/16(不含使能位)",
+      "group": "LL VREFCMP 分压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_DIV_9_16VREFCMP     (COMP_CSR_COMP_VCDIV_3                                                                        )"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_DIV_10_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_0)",
+      "desc": "分压输出 VREFCMP 的 10/16(不含使能位)",
+      "group": "LL VREFCMP 分压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_DIV_10_16VREFCMP    (COMP_CSR_COMP_VCDIV_3                                                 | COMP_CSR_COMP_VCDIV_0)"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_DIV_11_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_1)",
+      "desc": "分压输出 VREFCMP 的 11/16(不含使能位)",
+      "group": "LL VREFCMP 分压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_DIV_11_16VREFCMP    (COMP_CSR_COMP_VCDIV_3                         | COMP_CSR_COMP_VCDIV_1                        )"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_DIV_12_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_0)",
+      "desc": "分压输出 VREFCMP 的 12/16(不含使能位)",
+      "group": "LL VREFCMP 分压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_DIV_12_16VREFCMP    (COMP_CSR_COMP_VCDIV_3                         | COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_0)"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_DIV_13_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_2)",
+      "desc": "分压输出 VREFCMP 的 13/16(不含使能位)",
+      "group": "LL VREFCMP 分压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_DIV_13_16VREFCMP    (COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_2                                                )"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_DIV_14_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_0)",
+      "desc": "分压输出 VREFCMP 的 14/16(不含使能位)",
+      "group": "LL VREFCMP 分压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_DIV_14_16VREFCMP    (COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_2                         | COMP_CSR_COMP_VCDIV_0)"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_DIV_15_16VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_1)",
+      "desc": "分压输出 VREFCMP 的 15/16(不含使能位)",
+      "group": "LL VREFCMP 分压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_DIV_15_16VREFCMP    (COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_1                        )"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_DIV_VREFCMP",
+      "value": "(COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_0)",
+      "desc": "分压输出完整 VREFCMP(16/16, 不含使能位)",
+      "group": "LL VREFCMP 分压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_DIV_VREFCMP         (COMP_CSR_COMP_VCDIV_3 | COMP_CSR_COMP_VCDIV_2 | COMP_CSR_COMP_VCDIV_1 | COMP_CSR_COMP_VCDIV_0)"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_SOURCE_VREFBUF",
+      "value": "(0x00000000U)",
+      "desc": "内部基准缓冲 Vrefbuf 作为基准源",
+      "group": "LL VREFCMP 基准源",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_SOURCE_VREFBUF       (0x00000000U)"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_SOURCE_VCC",
+      "value": "(COMP_CSR_COMP_VCSEL)",
+      "desc": "VCC 电源作为基准源",
+      "group": "LL VREFCMP 基准源",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_SOURCE_VCC           (COMP_CSR_COMP_VCSEL)"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_SOURCE_VREFBUF1P5V",
+      "value": "LL_COMP_VREFCMP_SOURCE_VREFBUF",
+      "desc": "内部基准缓冲 1.5V(推荐, 精度更高)",
+      "group": "LL VREFCMP 基准电压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_SOURCE_VREFBUF1P5V   LL_COMP_VREFCMP_SOURCE_VREFBUF"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_SOURCE_VREFBUF2P048V",
+      "value": "ADC_CR_VREFBUFF_SEL_0",
+      "desc": "内部基准缓冲 2.048V",
+      "group": "LL VREFCMP 基准电压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_SOURCE_VREFBUF2P048V ADC_CR_VREFBUFF_SEL_0"
+    },
+    {
+      "name": "LL_COMP_VREFCMP_SOURCE_VREFBUF2P5V",
+      "value": "ADC_CR_VREFBUFF_SEL_1",
+      "desc": "内部基准缓冲 2.5V",
+      "group": "LL VREFCMP 基准电压",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_VREFCMP_SOURCE_VREFBUF2P5V   ADC_CR_VREFBUFF_SEL_1"
+    },
+    {
+      "name": "LL_COMP_OUTPUTPOL_NONINVERTED",
+      "value": "(0x00000000U)",
+      "desc": "输出不反相(正输入高于负输入时输出高)",
+      "group": "LL 输出极性",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_OUTPUTPOL_NONINVERTED   (0x00000000U)           /*!< COMP output polarity is not inverted: comparator output is high when the plus (non-inverting) input is at a higher voltage than the minus (inverting) input */"
+    },
+    {
+      "name": "LL_COMP_OUTPUTPOL_INVERTED",
+      "value": "(COMP_CSR_POLARITY)",
+      "desc": "输出反相(相对非反相配置输出取反)",
+      "group": "LL 输出极性",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_OUTPUTPOL_INVERTED      (COMP_CSR_POLARITY)     /*!< COMP output polarity is inverted: comparator output is low when the plus (non-inverting) input is at a lower voltage than the minus (inverting) input */"
+    },
+    {
+      "name": "LL_COMP_OUTPUT_LEVEL_LOW",
+      "value": "(0x00000000U)",
+      "desc": "输出低电平",
+      "group": "LL 输出电平",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_OUTPUT_LEVEL_LOW        (0x00000000U)          /*!< Comparator output level low (if the polarity is not inverted, otherwise to be complemented) */"
+    },
+    {
+      "name": "LL_COMP_OUTPUT_LEVEL_HIGH",
+      "value": "(0x00000001U)",
+      "desc": "输出高电平",
+      "group": "LL 输出电平",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_OUTPUT_LEVEL_HIGH       (0x00000001U)          /*!< Comparator output level high (if the polarity is not inverted, otherwise to be complemented) */"
+    },
+    {
+      "name": "LL_COMP_DELAY_STARTUP_US",
+      "value": "(80U)",
+      "desc": "比较器启动延时(µs, 对应数据手册 tSTART 最大值)",
+      "group": "LL 硬件延时",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_DELAY_STARTUP_US          ( 80U) /*!< Delay for COMP startup time */"
+    },
+    {
+      "name": "LL_COMP_DELAY_VOLTAGE_SCALER_STAB_US",
+      "value": "(200U)",
+      "desc": "电压缩放器稳定延时(µs, 对应数据手册 tSTART_SCALER 最大值)",
+      "group": "LL 硬件延时",
+      "file": "py32f002b_ll_comp.h",
+      "src": "#define LL_COMP_DELAY_VOLTAGE_SCALER_STAB_US ( 200U) /*!< Delay for COMP voltage scaler stabilization time */"
+    }
+  ]
+}
